@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.13.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policy-troubleshooter-v1.13.2...google-cloud-policy-troubleshooter-v1.13.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [1.13.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policy-troubleshooter-v1.13.1...google-cloud-policy-troubleshooter-v1.13.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policy-troubleshooter-v1.13.0...google-cloud-policy-troubleshooter-v1.13.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
 ## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policy-troubleshooter-v1.12.1...google-cloud-policy-troubleshooter-v1.13.0) (2024-12-12)
 
 

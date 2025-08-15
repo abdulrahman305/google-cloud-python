@@ -4,6 +4,57 @@
 
 [1]: https://pypi.org/project/google-cloud-asset/#history
 
+## [3.30.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.30.0...google-cloud-asset-v3.30.1) (2025-05-08)
+
+
+### Documentation
+
+* fix typos in documentation ([deb14f3](https://github.com/googleapis/google-cloud-python/commit/deb14f34f821ab238692e0597fd0f7b79833fc26))
+
+## [3.30.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.29.2...google-cloud-asset-v3.30.0) (2025-04-24)
+
+
+### Features
+
+* A new field `enrichments` is added to message `.google.cloud.asset.v1.ResourceSearchResult` ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A new message `AssetEnrichment` is added ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A new message `ResourceOwners` is added ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A new value `GOVERN_TAGS` is added to enum `MethodType` ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A new value `REMOVE_GRANT` is added to enum `MethodType` ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+
+
+### Documentation
+
+* A comment for field `attached_resource` in message `.google.cloud.asset.v1.EffectiveTagDetails` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A comment for field `consolidated_policy` in message `.google.cloud.asset.v1.AnalyzeOrgPoliciesResponse` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A comment for field `policy_bundle` in message `.google.cloud.asset.v1.AnalyzeOrgPoliciesResponse` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A comment for field `policy_bundle` in message `.google.cloud.asset.v1.AnalyzeOrgPolicyGovernedAssetsResponse` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A comment for field `policy_bundle` in message `.google.cloud.asset.v1.AnalyzeOrgPolicyGovernedContainersResponse` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+* A comment for field `service_account_impersonation_analysis` in message `.google.cloud.asset.v1.AnalyzeIamPolicyResponse` is changed ([b464b68](https://github.com/googleapis/google-cloud-python/commit/b464b68f31f1c54ec98881262a903de85f21cb8c))
+
+## [3.29.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.29.1...google-cloud-asset-v3.29.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.29.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.29.0...google-cloud-asset-v3.29.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [3.29.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.28.0...google-cloud-asset-v3.29.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [3.28.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-asset-v3.27.1...google-cloud-asset-v3.28.0) (2024-12-12)
 
 

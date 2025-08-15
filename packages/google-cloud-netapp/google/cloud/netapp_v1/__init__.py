@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,7 +56,13 @@ from .types.backup_vault import (
     UpdateBackupVaultRequest,
 )
 from .types.cloud_netapp_service import OperationMetadata
-from .types.common import EncryptionType, LocationMetadata, ServiceLevel
+from .types.common import (
+    DirectoryServiceType,
+    EncryptionType,
+    FlexPerformance,
+    LocationMetadata,
+    ServiceLevel,
+)
 from .types.kms import (
     CreateKmsConfigRequest,
     DeleteKmsConfigRequest,
@@ -68,6 +74,15 @@ from .types.kms import (
     UpdateKmsConfigRequest,
     VerifyKmsConfigRequest,
     VerifyKmsConfigResponse,
+)
+from .types.quota_rule import (
+    CreateQuotaRuleRequest,
+    DeleteQuotaRuleRequest,
+    GetQuotaRuleRequest,
+    ListQuotaRulesRequest,
+    ListQuotaRulesResponse,
+    QuotaRule,
+    UpdateQuotaRuleRequest,
 )
 from .types.replication import (
     CreateReplicationRequest,
@@ -104,6 +119,7 @@ from .types.storage_pool import (
     StoragePool,
     SwitchActiveReplicaZoneRequest,
     UpdateStoragePoolRequest,
+    ValidateDirectoryServiceRequest,
 )
 from .types.volume import (
     AccessType,
@@ -146,6 +162,7 @@ __all__ = (
     "CreateBackupRequest",
     "CreateBackupVaultRequest",
     "CreateKmsConfigRequest",
+    "CreateQuotaRuleRequest",
     "CreateReplicationRequest",
     "CreateSnapshotRequest",
     "CreateStoragePoolRequest",
@@ -156,20 +173,24 @@ __all__ = (
     "DeleteBackupRequest",
     "DeleteBackupVaultRequest",
     "DeleteKmsConfigRequest",
+    "DeleteQuotaRuleRequest",
     "DeleteReplicationRequest",
     "DeleteSnapshotRequest",
     "DeleteStoragePoolRequest",
     "DeleteVolumeRequest",
     "DestinationVolumeParameters",
+    "DirectoryServiceType",
     "EncryptVolumesRequest",
     "EncryptionType",
     "EstablishPeeringRequest",
     "ExportPolicy",
+    "FlexPerformance",
     "GetActiveDirectoryRequest",
     "GetBackupPolicyRequest",
     "GetBackupRequest",
     "GetBackupVaultRequest",
     "GetKmsConfigRequest",
+    "GetQuotaRuleRequest",
     "GetReplicationRequest",
     "GetSnapshotRequest",
     "GetStoragePoolRequest",
@@ -188,6 +209,8 @@ __all__ = (
     "ListBackupsResponse",
     "ListKmsConfigsRequest",
     "ListKmsConfigsResponse",
+    "ListQuotaRulesRequest",
+    "ListQuotaRulesResponse",
     "ListReplicationsRequest",
     "ListReplicationsResponse",
     "ListSnapshotsRequest",
@@ -202,6 +225,7 @@ __all__ = (
     "NetAppClient",
     "OperationMetadata",
     "Protocols",
+    "QuotaRule",
     "Replication",
     "RestoreParameters",
     "RestrictedAction",
@@ -225,10 +249,12 @@ __all__ = (
     "UpdateBackupRequest",
     "UpdateBackupVaultRequest",
     "UpdateKmsConfigRequest",
+    "UpdateQuotaRuleRequest",
     "UpdateReplicationRequest",
     "UpdateSnapshotRequest",
     "UpdateStoragePoolRequest",
     "UpdateVolumeRequest",
+    "ValidateDirectoryServiceRequest",
     "VerifyKmsConfigRequest",
     "VerifyKmsConfigResponse",
     "Volume",

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,13 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.apps.chat_v1 import gapic_version as package_version
+from google.apps.chat_v1.types import (
+    space_notification_setting as gc_space_notification_setting,
+)
 from google.apps.chat_v1.types import attachment
 from google.apps.chat_v1.types import membership
 from google.apps.chat_v1.types import membership as gc_membership
@@ -36,6 +40,7 @@ from google.apps.chat_v1.types import reaction as gc_reaction
 from google.apps.chat_v1.types import space
 from google.apps.chat_v1.types import space as gc_space
 from google.apps.chat_v1.types import space_event
+from google.apps.chat_v1.types import space_notification_setting
 from google.apps.chat_v1.types import space_read_state
 from google.apps.chat_v1.types import space_read_state as gc_space_read_state
 from google.apps.chat_v1.types import space_setup, thread_read_state
@@ -43,6 +48,9 @@ from google.apps.chat_v1.types import space_setup, thread_read_state
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ChatServiceTransport(abc.ABC):
@@ -54,7 +62,13 @@ class ChatServiceTransport(abc.ABC):
         "https://www.googleapis.com/auth/chat.admin.memberships.readonly",
         "https://www.googleapis.com/auth/chat.admin.spaces",
         "https://www.googleapis.com/auth/chat.admin.spaces.readonly",
+        "https://www.googleapis.com/auth/chat.app.delete",
+        "https://www.googleapis.com/auth/chat.app.memberships",
+        "https://www.googleapis.com/auth/chat.app.spaces",
+        "https://www.googleapis.com/auth/chat.app.spaces.create",
         "https://www.googleapis.com/auth/chat.bot",
+        "https://www.googleapis.com/auth/chat.customemojis",
+        "https://www.googleapis.com/auth/chat.customemojis.readonly",
         "https://www.googleapis.com/auth/chat.delete",
         "https://www.googleapis.com/auth/chat.import",
         "https://www.googleapis.com/auth/chat.memberships",
@@ -71,6 +85,7 @@ class ChatServiceTransport(abc.ABC):
         "https://www.googleapis.com/auth/chat.spaces.readonly",
         "https://www.googleapis.com/auth/chat.users.readstate",
         "https://www.googleapis.com/auth/chat.users.readstate.readonly",
+        "https://www.googleapis.com/auth/chat.users.spacesettings",
     )
 
     DEFAULT_HOST: str = "chat.googleapis.com"
@@ -500,6 +515,62 @@ class ChatServiceTransport(abc.ABC):
                 default_timeout=30.0,
                 client_info=client_info,
             ),
+            self.create_custom_emoji: gapic_v1.method.wrap_method(
+                self.create_custom_emoji,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.get_custom_emoji: gapic_v1.method.wrap_method(
+                self.get_custom_emoji,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.list_custom_emojis: gapic_v1.method.wrap_method(
+                self.list_custom_emojis,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.delete_custom_emoji: gapic_v1.method.wrap_method(
+                self.delete_custom_emoji,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
             self.get_space_read_state: gapic_v1.method.wrap_method(
                 self.get_space_read_state,
                 default_retry=retries.Retry(
@@ -558,6 +629,34 @@ class ChatServiceTransport(abc.ABC):
             ),
             self.list_space_events: gapic_v1.method.wrap_method(
                 self.list_space_events,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.get_space_notification_setting: gapic_v1.method.wrap_method(
+                self.get_space_notification_setting,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=30.0,
+                ),
+                default_timeout=30.0,
+                client_info=client_info,
+            ),
+            self.update_space_notification_setting: gapic_v1.method.wrap_method(
+                self.update_space_notification_setting,
                 default_retry=retries.Retry(
                     initial=1.0,
                     maximum=10.0,
@@ -800,6 +899,45 @@ class ChatServiceTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def create_custom_emoji(
+        self,
+    ) -> Callable[
+        [reaction.CreateCustomEmojiRequest],
+        Union[reaction.CustomEmoji, Awaitable[reaction.CustomEmoji]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_custom_emoji(
+        self,
+    ) -> Callable[
+        [reaction.GetCustomEmojiRequest],
+        Union[reaction.CustomEmoji, Awaitable[reaction.CustomEmoji]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_custom_emojis(
+        self,
+    ) -> Callable[
+        [reaction.ListCustomEmojisRequest],
+        Union[
+            reaction.ListCustomEmojisResponse,
+            Awaitable[reaction.ListCustomEmojisResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_custom_emoji(
+        self,
+    ) -> Callable[
+        [reaction.DeleteCustomEmojiRequest],
+        Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def get_space_read_state(
         self,
     ) -> Callable[
@@ -851,6 +989,30 @@ class ChatServiceTransport(abc.ABC):
         Union[
             space_event.ListSpaceEventsResponse,
             Awaitable[space_event.ListSpaceEventsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_space_notification_setting(
+        self,
+    ) -> Callable[
+        [space_notification_setting.GetSpaceNotificationSettingRequest],
+        Union[
+            space_notification_setting.SpaceNotificationSetting,
+            Awaitable[space_notification_setting.SpaceNotificationSetting],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_space_notification_setting(
+        self,
+    ) -> Callable[
+        [gc_space_notification_setting.UpdateSpaceNotificationSettingRequest],
+        Union[
+            gc_space_notification_setting.SpaceNotificationSetting,
+            Awaitable[gc_space_notification_setting.SpaceNotificationSetting],
         ],
     ]:
         raise NotImplementedError()

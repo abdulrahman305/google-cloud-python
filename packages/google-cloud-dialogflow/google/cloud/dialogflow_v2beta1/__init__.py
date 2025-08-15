@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ from .services.generators import GeneratorsAsyncClient, GeneratorsClient
 from .services.intents import IntentsAsyncClient, IntentsClient
 from .services.knowledge_bases import KnowledgeBasesAsyncClient, KnowledgeBasesClient
 from .services.participants import ParticipantsAsyncClient, ParticipantsClient
+from .services.phone_numbers import PhoneNumbersAsyncClient, PhoneNumbersClient
 from .services.session_entity_types import (
     SessionEntityTypesAsyncClient,
     SessionEntityTypesClient,
@@ -108,7 +109,10 @@ from .types.conversation import (
     GenerateStatelessSuggestionResponse,
     GenerateStatelessSummaryRequest,
     GenerateStatelessSummaryResponse,
+    GenerateSuggestionsRequest,
     GetConversationRequest,
+    IngestContextReferencesRequest,
+    IngestContextReferencesResponse,
     ListConversationsRequest,
     ListConversationsResponse,
     ListMessagesRequest,
@@ -199,6 +203,8 @@ from .types.generator import (
     CreateGeneratorRequest,
     DeleteGeneratorRequest,
     FewShotExample,
+    FreeFormContext,
+    FreeFormSuggestion,
     Generator,
     GeneratorSuggestion,
     GetGeneratorRequest,
@@ -251,6 +257,7 @@ from .types.participant import (
     DialogflowAssistAnswer,
     DtmfParameters,
     FaqAnswer,
+    GenerateSuggestionsResponse,
     GetParticipantRequest,
     InputTextConfig,
     IntentInput,
@@ -282,6 +289,14 @@ from .types.participant import (
     SuggestSmartRepliesRequest,
     SuggestSmartRepliesResponse,
     UpdateParticipantRequest,
+)
+from .types.phone_number import (
+    DeletePhoneNumberRequest,
+    ListPhoneNumbersRequest,
+    ListPhoneNumbersResponse,
+    PhoneNumber,
+    UndeletePhoneNumberRequest,
+    UpdatePhoneNumberRequest,
 )
 from .types.session import (
     CloudConversationDebuggingInfo,
@@ -346,6 +361,7 @@ __all__ = (
     "IntentsAsyncClient",
     "KnowledgeBasesAsyncClient",
     "ParticipantsAsyncClient",
+    "PhoneNumbersAsyncClient",
     "SessionEntityTypesAsyncClient",
     "SessionsAsyncClient",
     "SipTrunksAsyncClient",
@@ -418,6 +434,7 @@ __all__ = (
     "DeleteGeneratorRequest",
     "DeleteIntentRequest",
     "DeleteKnowledgeBaseRequest",
+    "DeletePhoneNumberRequest",
     "DeleteSessionEntityTypeRequest",
     "DeleteSipTrunkRequest",
     "DeleteVersionRequest",
@@ -441,6 +458,8 @@ __all__ = (
     "ExportOperationMetadata",
     "FaqAnswer",
     "FewShotExample",
+    "FreeFormContext",
+    "FreeFormSuggestion",
     "Fulfillment",
     "FulfillmentsClient",
     "GcsDestination",
@@ -450,6 +469,8 @@ __all__ = (
     "GenerateStatelessSuggestionResponse",
     "GenerateStatelessSummaryRequest",
     "GenerateStatelessSummaryResponse",
+    "GenerateSuggestionsRequest",
+    "GenerateSuggestionsResponse",
     "Generator",
     "GeneratorSuggestion",
     "GeneratorsClient",
@@ -480,6 +501,8 @@ __all__ = (
     "ImportDocumentsRequest",
     "ImportDocumentsResponse",
     "InferenceParameter",
+    "IngestContextReferencesRequest",
+    "IngestContextReferencesResponse",
     "InitializeEncryptionSpecMetadata",
     "InitializeEncryptionSpecRequest",
     "InitializeEncryptionSpecResponse",
@@ -520,6 +543,8 @@ __all__ = (
     "ListMessagesResponse",
     "ListParticipantsRequest",
     "ListParticipantsResponse",
+    "ListPhoneNumbersRequest",
+    "ListPhoneNumbersResponse",
     "ListSessionEntityTypesRequest",
     "ListSessionEntityTypesResponse",
     "ListSipTrunksRequest",
@@ -539,6 +564,8 @@ __all__ = (
     "OutputAudioEncoding",
     "Participant",
     "ParticipantsClient",
+    "PhoneNumber",
+    "PhoneNumbersClient",
     "QueryInput",
     "QueryParameters",
     "QueryResult",
@@ -599,6 +626,7 @@ __all__ = (
     "TextToSpeechSettings",
     "TrainAgentRequest",
     "TriggerEvent",
+    "UndeletePhoneNumberRequest",
     "UpdateAnswerRecordRequest",
     "UpdateContextRequest",
     "UpdateConversationProfileRequest",
@@ -610,6 +638,7 @@ __all__ = (
     "UpdateIntentRequest",
     "UpdateKnowledgeBaseRequest",
     "UpdateParticipantRequest",
+    "UpdatePhoneNumberRequest",
     "UpdateSessionEntityTypeRequest",
     "UpdateSipTrunkRequest",
     "UpdateVersionRequest",

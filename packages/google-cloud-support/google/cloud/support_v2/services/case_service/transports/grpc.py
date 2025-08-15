@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,12 +71,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.support.v2.CaseService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -326,7 +325,7 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     def get_case(self) -> Callable[[case_service.GetCaseRequest], case.Case]:
         r"""Return a callable for the get case method over gRPC.
 
-        Retrieve the specified case.
+        Retrieve a case.
 
         Returns:
             Callable[[~.GetCaseRequest],
@@ -352,12 +351,12 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     ) -> Callable[[case_service.ListCasesRequest], case_service.ListCasesResponse]:
         r"""Return a callable for the list cases method over gRPC.
 
-        Retrieve all cases under the specified parent.
+        Retrieve all cases under a parent, but not its children.
 
-        Note: Listing cases under an Organization returns only the cases
-        directly parented by that organization. To retrieve all cases
-        under an organization, including cases parented by projects
-        under that organization, use ``cases.search``.
+        For example, listing cases under an organization only returns
+        the cases that are directly parented by that organization. To
+        retrieve cases under an organization and its projects, use
+        ``cases.search``.
 
         Returns:
             Callable[[~.ListCasesRequest],
@@ -383,7 +382,7 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     ) -> Callable[[case_service.SearchCasesRequest], case_service.SearchCasesResponse]:
         r"""Return a callable for the search cases method over gRPC.
 
-        Search cases using the specified query.
+        Search for cases using a query.
 
         Returns:
             Callable[[~.SearchCasesRequest],
@@ -407,10 +406,12 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     def create_case(self) -> Callable[[case_service.CreateCaseRequest], gcs_case.Case]:
         r"""Return a callable for the create case method over gRPC.
 
-        Create a new case and associate it with the given Google Cloud
-        Resource. The case object must have the following fields set:
-        ``display_name``, ``description``, ``classification``, and
-        ``priority``.
+        Create a new case and associate it with a parent.
+
+        It must have the following fields set: ``display_name``,
+        ``description``, ``classification``, and ``priority``. If you're
+        just testing the API and don't want to route your case to an
+        agent, set ``testCase=true``.
 
         Returns:
             Callable[[~.CreateCaseRequest],
@@ -434,8 +435,7 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     def update_case(self) -> Callable[[case_service.UpdateCaseRequest], gcs_case.Case]:
         r"""Return a callable for the update case method over gRPC.
 
-        Update the specified case. Only a subset of fields
-        can be updated.
+        Update a case. Only some fields can be updated.
 
         Returns:
             Callable[[~.UpdateCaseRequest],
@@ -459,14 +459,13 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     def escalate_case(self) -> Callable[[case_service.EscalateCaseRequest], case.Case]:
         r"""Return a callable for the escalate case method over gRPC.
 
-        Escalate a case. Escalating a case will initiate the
-        Google Cloud Support escalation management process.
+        Escalate a case, starting the Google Cloud Support
+        escalation management process.
 
-        This operation is only available to certain Customer
-        Care tiers. Go to https://cloud.google.com/support and
+        This operation is only available for some support
+        services. Go to https://cloud.google.com/support and
         look for 'Technical support escalations' in the feature
-        list to find out which tiers are able to perform
-        escalations.
+        list to find out which ones let you do that.
 
         Returns:
             Callable[[~.EscalateCaseRequest],
@@ -490,7 +489,7 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     def close_case(self) -> Callable[[case_service.CloseCaseRequest], case.Case]:
         r"""Return a callable for the close case method over gRPC.
 
-        Close the specified case.
+        Close a case.
 
         Returns:
             Callable[[~.CloseCaseRequest],
@@ -519,11 +518,18 @@ class CaseServiceGrpcTransport(CaseServiceTransport):
     ]:
         r"""Return a callable for the search case classifications method over gRPC.
 
-        Retrieve valid classifications to be used when
-        creating a support case. The classications are
-        hierarchical, with each classification containing all
-        levels of the hierarchy, separated by " > ". For example
-        "Technical Issue > Compute > Compute Engine".
+        Retrieve valid classifications to use when creating a support
+        case.
+
+        Classifications are hierarchical. Each classification is a
+        string containing all levels of the hierarchy separated by
+        ``" > "``. For example,
+        ``"Technical Issue > Compute > Compute Engine"``.
+
+        Classification IDs returned by this endpoint are valid for at
+        least six months. When a classification is deactivated, this
+        endpoint immediately stops returning it. After six months,
+        ``case.create`` requests using the classification will fail.
 
         Returns:
             Callable[[~.SearchCaseClassificationsRequest],

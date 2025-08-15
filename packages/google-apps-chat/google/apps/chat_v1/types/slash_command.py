@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,13 +28,13 @@ __protobuf__ = proto.module(
 
 
 class SlashCommand(proto.Message):
-    r"""A `slash
-    command <https://developers.google.com/workspace/chat/slash-commands>`__
+    r"""Metadata about a `slash
+    command <https://developers.google.com/workspace/chat/commands>`__
     in Google Chat.
 
     Attributes:
         command_id (int):
-            The ID of the slash command invoked.
+            The ID of the slash command.
     """
 
     command_id: int = proto.Field(

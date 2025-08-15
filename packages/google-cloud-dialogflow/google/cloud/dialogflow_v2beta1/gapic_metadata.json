@@ -486,9 +486,19 @@
                 "generate_stateless_summary"
               ]
             },
+            "GenerateSuggestions": {
+              "methods": [
+                "generate_suggestions"
+              ]
+            },
             "GetConversation": {
               "methods": [
                 "get_conversation"
+              ]
+            },
+            "IngestContextReferences": {
+              "methods": [
+                "ingest_context_references"
               ]
             },
             "ListConversations": {
@@ -541,9 +551,19 @@
                 "generate_stateless_summary"
               ]
             },
+            "GenerateSuggestions": {
+              "methods": [
+                "generate_suggestions"
+              ]
+            },
             "GetConversation": {
               "methods": [
                 "get_conversation"
+              ]
+            },
+            "IngestContextReferences": {
+              "methods": [
+                "ingest_context_references"
               ]
             },
             "ListConversations": {
@@ -596,9 +616,19 @@
                 "generate_stateless_summary"
               ]
             },
+            "GenerateSuggestions": {
+              "methods": [
+                "generate_suggestions"
+              ]
+            },
             "GetConversation": {
               "methods": [
                 "get_conversation"
+              ]
+            },
+            "IngestContextReferences": {
+              "methods": [
+                "ingest_context_references"
               ]
             },
             "ListConversations": {
@@ -1630,6 +1660,85 @@
             "UpdateParticipant": {
               "methods": [
                 "update_participant"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "PhoneNumbers": {
+      "clients": {
+        "grpc": {
+          "libraryClient": "PhoneNumbersClient",
+          "rpcs": {
+            "DeletePhoneNumber": {
+              "methods": [
+                "delete_phone_number"
+              ]
+            },
+            "ListPhoneNumbers": {
+              "methods": [
+                "list_phone_numbers"
+              ]
+            },
+            "UndeletePhoneNumber": {
+              "methods": [
+                "undelete_phone_number"
+              ]
+            },
+            "UpdatePhoneNumber": {
+              "methods": [
+                "update_phone_number"
+              ]
+            }
+          }
+        },
+        "grpc-async": {
+          "libraryClient": "PhoneNumbersAsyncClient",
+          "rpcs": {
+            "DeletePhoneNumber": {
+              "methods": [
+                "delete_phone_number"
+              ]
+            },
+            "ListPhoneNumbers": {
+              "methods": [
+                "list_phone_numbers"
+              ]
+            },
+            "UndeletePhoneNumber": {
+              "methods": [
+                "undelete_phone_number"
+              ]
+            },
+            "UpdatePhoneNumber": {
+              "methods": [
+                "update_phone_number"
+              ]
+            }
+          }
+        },
+        "rest": {
+          "libraryClient": "PhoneNumbersClient",
+          "rpcs": {
+            "DeletePhoneNumber": {
+              "methods": [
+                "delete_phone_number"
+              ]
+            },
+            "ListPhoneNumbers": {
+              "methods": [
+                "list_phone_numbers"
+              ]
+            },
+            "UndeletePhoneNumber": {
+              "methods": [
+                "undelete_phone_number"
+              ]
+            },
+            "UpdatePhoneNumber": {
+              "methods": [
+                "update_phone_number"
               ]
             }
           }

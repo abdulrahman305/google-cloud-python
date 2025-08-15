@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,13 @@ from google.cloud.compute_v1.services.instances import (
     transports,
 )
 from google.cloud.compute_v1.types import compute
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -292,6 +299,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         InstancesClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = InstancesClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = InstancesClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -7680,6 +7730,450 @@ def test_remove_resource_policies_unary_rest_flattened_error(transport: str = "r
             instance="instance_value",
             instances_remove_resource_policies_request_resource=compute.InstancesRemoveResourcePoliciesRequest(
                 resource_policies=["resource_policies_value"]
+            ),
+        )
+
+
+def test_report_host_as_faulty_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = InstancesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.report_host_as_faulty
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.report_host_as_faulty
+        ] = mock_rpc
+
+        request = {}
+        client.report_host_as_faulty(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.report_host_as_faulty(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_report_host_as_faulty_rest_required_fields(
+    request_type=compute.ReportHostAsFaultyInstanceRequest,
+):
+    transport_class = transports.InstancesRestTransport
+
+    request_init = {}
+    request_init["instance"] = ""
+    request_init["project"] = ""
+    request_init["zone"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).report_host_as_faulty._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instance"] = "instance_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["zone"] = "zone_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).report_host_as_faulty._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instance" in jsonified_request
+    assert jsonified_request["instance"] == "instance_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "zone" in jsonified_request
+    assert jsonified_request["zone"] == "zone_value"
+
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.report_host_as_faulty(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_report_host_as_faulty_rest_unset_required_fields():
+    transport = transports.InstancesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.report_host_as_faulty._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instance",
+                "instancesReportHostAsFaultyRequestResource",
+                "project",
+                "zone",
+            )
+        )
+    )
+
+
+def test_report_host_as_faulty_rest_flattened():
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "zone": "sample2",
+            "instance": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            zone="zone_value",
+            instance="instance_value",
+            instances_report_host_as_faulty_request_resource=compute.InstancesReportHostAsFaultyRequest(
+                disruption_schedule="disruption_schedule_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.report_host_as_faulty(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/zones/{zone}/instances/{instance}/reportHostAsFaulty"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_report_host_as_faulty_rest_flattened_error(transport: str = "rest"):
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.report_host_as_faulty(
+            compute.ReportHostAsFaultyInstanceRequest(),
+            project="project_value",
+            zone="zone_value",
+            instance="instance_value",
+            instances_report_host_as_faulty_request_resource=compute.InstancesReportHostAsFaultyRequest(
+                disruption_schedule="disruption_schedule_value"
+            ),
+        )
+
+
+def test_report_host_as_faulty_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = InstancesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.report_host_as_faulty
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.report_host_as_faulty
+        ] = mock_rpc
+
+        request = {}
+        client.report_host_as_faulty_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.report_host_as_faulty_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_report_host_as_faulty_unary_rest_required_fields(
+    request_type=compute.ReportHostAsFaultyInstanceRequest,
+):
+    transport_class = transports.InstancesRestTransport
+
+    request_init = {}
+    request_init["instance"] = ""
+    request_init["project"] = ""
+    request_init["zone"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).report_host_as_faulty._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["instance"] = "instance_value"
+    jsonified_request["project"] = "project_value"
+    jsonified_request["zone"] = "zone_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).report_host_as_faulty._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "instance" in jsonified_request
+    assert jsonified_request["instance"] == "instance_value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "zone" in jsonified_request
+    assert jsonified_request["zone"] == "zone_value"
+
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.report_host_as_faulty_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_report_host_as_faulty_unary_rest_unset_required_fields():
+    transport = transports.InstancesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.report_host_as_faulty._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "instance",
+                "instancesReportHostAsFaultyRequestResource",
+                "project",
+                "zone",
+            )
+        )
+    )
+
+
+def test_report_host_as_faulty_unary_rest_flattened():
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "zone": "sample2",
+            "instance": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            zone="zone_value",
+            instance="instance_value",
+            instances_report_host_as_faulty_request_resource=compute.InstancesReportHostAsFaultyRequest(
+                disruption_schedule="disruption_schedule_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.report_host_as_faulty_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/zones/{zone}/instances/{instance}/reportHostAsFaulty"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_report_host_as_faulty_unary_rest_flattened_error(transport: str = "rest"):
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.report_host_as_faulty_unary(
+            compute.ReportHostAsFaultyInstanceRequest(),
+            project="project_value",
+            zone="zone_value",
+            instance="instance_value",
+            instances_report_host_as_faulty_request_resource=compute.InstancesReportHostAsFaultyRequest(
+                disruption_schedule="disruption_schedule_value"
             ),
         )
 
@@ -19741,10 +20235,13 @@ def test_add_access_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_add_access_config"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_add_access_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_add_access_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AddAccessConfigInstanceRequest.pb(
             compute.AddAccessConfigInstanceRequest()
         )
@@ -19768,6 +20265,7 @@ def test_add_access_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.add_access_config(
             request,
@@ -19779,6 +20277,7 @@ def test_add_access_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_add_resource_policies_rest_bad_request(
@@ -19988,10 +20487,13 @@ def test_add_resource_policies_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_add_resource_policies"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_add_resource_policies_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_add_resource_policies"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AddResourcePoliciesInstanceRequest.pb(
             compute.AddResourcePoliciesInstanceRequest()
         )
@@ -20015,6 +20517,7 @@ def test_add_resource_policies_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.add_resource_policies(
             request,
@@ -20026,6 +20529,7 @@ def test_add_resource_policies_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_aggregated_list_rest_bad_request(
@@ -20116,10 +20620,13 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_aggregated_list"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_aggregated_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_aggregated_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AggregatedListInstancesRequest.pb(
             compute.AggregatedListInstancesRequest()
         )
@@ -20145,6 +20652,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.InstanceAggregatedList()
+        post_with_metadata.return_value = compute.InstanceAggregatedList(), metadata
 
         client.aggregated_list(
             request,
@@ -20156,6 +20664,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_attach_disk_rest_bad_request(request_type=compute.AttachDiskInstanceRequest):
@@ -20401,10 +20910,13 @@ def test_attach_disk_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_attach_disk"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_attach_disk_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_attach_disk"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AttachDiskInstanceRequest.pb(
             compute.AttachDiskInstanceRequest()
         )
@@ -20428,6 +20940,7 @@ def test_attach_disk_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.attach_disk(
             request,
@@ -20439,6 +20952,7 @@ def test_attach_disk_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_bulk_insert_rest_bad_request(request_type=compute.BulkInsertInstanceRequest):
@@ -20626,6 +21140,7 @@ def test_bulk_insert_rest_call_success(request_type):
             "scheduling": {
                 "automatic_restart": True,
                 "availability_domain": 2002,
+                "host_error_timeout_seconds": 2811,
                 "instance_termination_action": "instance_termination_action_value",
                 "local_ssd_recovery_timeout": {"nanos": 543, "seconds": 751},
                 "location_hint": "location_hint_value",
@@ -20824,10 +21339,13 @@ def test_bulk_insert_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_bulk_insert"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_bulk_insert_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_bulk_insert"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.BulkInsertInstanceRequest.pb(
             compute.BulkInsertInstanceRequest()
         )
@@ -20851,6 +21369,7 @@ def test_bulk_insert_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.bulk_insert(
             request,
@@ -20862,6 +21381,7 @@ def test_bulk_insert_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_rest_bad_request(request_type=compute.DeleteInstanceRequest):
@@ -20984,10 +21504,13 @@ def test_delete_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_delete"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_delete_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_delete"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.DeleteInstanceRequest.pb(compute.DeleteInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -21009,6 +21532,7 @@ def test_delete_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.delete(
             request,
@@ -21020,6 +21544,7 @@ def test_delete_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_access_config_rest_bad_request(
@@ -21144,10 +21669,13 @@ def test_delete_access_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_delete_access_config"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_delete_access_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_delete_access_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.DeleteAccessConfigInstanceRequest.pb(
             compute.DeleteAccessConfigInstanceRequest()
         )
@@ -21171,6 +21699,7 @@ def test_delete_access_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.delete_access_config(
             request,
@@ -21182,6 +21711,7 @@ def test_delete_access_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_detach_disk_rest_bad_request(request_type=compute.DetachDiskInstanceRequest):
@@ -21304,10 +21834,13 @@ def test_detach_disk_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_detach_disk"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_detach_disk_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_detach_disk"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.DetachDiskInstanceRequest.pb(
             compute.DetachDiskInstanceRequest()
         )
@@ -21331,6 +21864,7 @@ def test_detach_disk_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.detach_disk(
             request,
@@ -21342,6 +21876,7 @@ def test_detach_disk_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_rest_bad_request(request_type=compute.GetInstanceRequest):
@@ -21474,10 +22009,13 @@ def test_get_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_get_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetInstanceRequest.pb(compute.GetInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -21499,6 +22037,7 @@ def test_get_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Instance()
+        post_with_metadata.return_value = compute.Instance(), metadata
 
         client.get(
             request,
@@ -21510,6 +22049,7 @@ def test_get_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_effective_firewalls_rest_bad_request(
@@ -21589,10 +22129,14 @@ def test_get_effective_firewalls_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_effective_firewalls"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_get_effective_firewalls_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_effective_firewalls"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetEffectiveFirewallsInstanceRequest.pb(
             compute.GetEffectiveFirewallsInstanceRequest()
         )
@@ -21618,6 +22162,10 @@ def test_get_effective_firewalls_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.InstancesGetEffectiveFirewallsResponse()
+        post_with_metadata.return_value = (
+            compute.InstancesGetEffectiveFirewallsResponse(),
+            metadata,
+        )
 
         client.get_effective_firewalls(
             request,
@@ -21629,6 +22177,7 @@ def test_get_effective_firewalls_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_guest_attributes_rest_bad_request(
@@ -21719,10 +22268,13 @@ def test_get_guest_attributes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_guest_attributes"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_get_guest_attributes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_guest_attributes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetGuestAttributesInstanceRequest.pb(
             compute.GetGuestAttributesInstanceRequest()
         )
@@ -21746,6 +22298,7 @@ def test_get_guest_attributes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.GuestAttributes()
+        post_with_metadata.return_value = compute.GuestAttributes(), metadata
 
         client.get_guest_attributes(
             request,
@@ -21757,6 +22310,7 @@ def test_get_guest_attributes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_iam_policy_rest_bad_request(
@@ -21843,10 +22397,13 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_iam_policy"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_get_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetIamPolicyInstanceRequest.pb(
             compute.GetIamPolicyInstanceRequest()
         )
@@ -21870,6 +22427,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.get_iam_policy(
             request,
@@ -21881,6 +22439,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_screenshot_rest_bad_request(
@@ -21965,10 +22524,13 @@ def test_get_screenshot_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_screenshot"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_get_screenshot_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_screenshot"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetScreenshotInstanceRequest.pb(
             compute.GetScreenshotInstanceRequest()
         )
@@ -21992,6 +22554,7 @@ def test_get_screenshot_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Screenshot()
+        post_with_metadata.return_value = compute.Screenshot(), metadata
 
         client.get_screenshot(
             request,
@@ -22003,6 +22566,7 @@ def test_get_screenshot_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_serial_port_output_rest_bad_request(
@@ -22093,10 +22657,13 @@ def test_get_serial_port_output_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_serial_port_output"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_get_serial_port_output_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_serial_port_output"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetSerialPortOutputInstanceRequest.pb(
             compute.GetSerialPortOutputInstanceRequest()
         )
@@ -22120,6 +22687,7 @@ def test_get_serial_port_output_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.SerialPortOutput()
+        post_with_metadata.return_value = compute.SerialPortOutput(), metadata
 
         client.get_serial_port_output(
             request,
@@ -22131,6 +22699,7 @@ def test_get_serial_port_output_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_shielded_instance_identity_rest_bad_request(
@@ -22213,10 +22782,14 @@ def test_get_shielded_instance_identity_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_get_shielded_instance_identity"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_get_shielded_instance_identity_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_get_shielded_instance_identity"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetShieldedInstanceIdentityInstanceRequest.pb(
             compute.GetShieldedInstanceIdentityInstanceRequest()
         )
@@ -22242,6 +22815,7 @@ def test_get_shielded_instance_identity_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.ShieldedInstanceIdentity()
+        post_with_metadata.return_value = compute.ShieldedInstanceIdentity(), metadata
 
         client.get_shielded_instance_identity(
             request,
@@ -22253,6 +22827,7 @@ def test_get_shielded_instance_identity_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_insert_rest_bad_request(request_type=compute.InsertInstanceRequest):
@@ -22442,10 +23017,21 @@ def test_insert_rest_call_success(request_type):
         "resource_policies": ["resource_policies_value1", "resource_policies_value2"],
         "resource_status": {
             "physical_host": "physical_host_value",
+            "physical_host_topology": {
+                "block": "block_value",
+                "cluster": "cluster_value",
+                "host": "host_value",
+                "subblock": "subblock_value",
+            },
             "scheduling": {"availability_domain": 2002},
             "upcoming_maintenance": {
                 "can_reschedule": True,
                 "latest_window_start_time": "latest_window_start_time_value",
+                "maintenance_on_shutdown": True,
+                "maintenance_reasons": [
+                    "maintenance_reasons_value1",
+                    "maintenance_reasons_value2",
+                ],
                 "maintenance_status": "maintenance_status_value",
                 "type_": "type__value",
                 "window_end_time": "window_end_time_value",
@@ -22457,6 +23043,7 @@ def test_insert_rest_call_success(request_type):
         "scheduling": {
             "automatic_restart": True,
             "availability_domain": 2002,
+            "host_error_timeout_seconds": 2811,
             "instance_termination_action": "instance_termination_action_value",
             "local_ssd_recovery_timeout": {"nanos": 543, "seconds": 751},
             "location_hint": "location_hint_value",
@@ -22646,10 +23233,13 @@ def test_insert_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_insert"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_insert_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_insert"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.InsertInstanceRequest.pb(compute.InsertInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -22671,6 +23261,7 @@ def test_insert_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.insert(
             request,
@@ -22682,6 +23273,7 @@ def test_insert_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_rest_bad_request(request_type=compute.ListInstancesRequest):
@@ -22768,10 +23360,13 @@ def test_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_list"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ListInstancesRequest.pb(compute.ListInstancesRequest())
         transcode.return_value = {
             "method": "post",
@@ -22793,6 +23388,7 @@ def test_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.InstanceList()
+        post_with_metadata.return_value = compute.InstanceList(), metadata
 
         client.list(
             request,
@@ -22804,6 +23400,7 @@ def test_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_referrers_rest_bad_request(
@@ -22892,10 +23489,13 @@ def test_list_referrers_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_list_referrers"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_list_referrers_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_list_referrers"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ListReferrersInstancesRequest.pb(
             compute.ListReferrersInstancesRequest()
         )
@@ -22921,6 +23521,7 @@ def test_list_referrers_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.InstanceListReferrers()
+        post_with_metadata.return_value = compute.InstanceListReferrers(), metadata
 
         client.list_referrers(
             request,
@@ -22932,6 +23533,7 @@ def test_list_referrers_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_perform_maintenance_rest_bad_request(
@@ -23056,10 +23658,13 @@ def test_perform_maintenance_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_perform_maintenance"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_perform_maintenance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_perform_maintenance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.PerformMaintenanceInstanceRequest.pb(
             compute.PerformMaintenanceInstanceRequest()
         )
@@ -23083,6 +23688,7 @@ def test_perform_maintenance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.perform_maintenance(
             request,
@@ -23094,6 +23700,7 @@ def test_perform_maintenance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_remove_resource_policies_rest_bad_request(
@@ -23303,10 +23910,14 @@ def test_remove_resource_policies_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_remove_resource_policies"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_remove_resource_policies_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_remove_resource_policies"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.RemoveResourcePoliciesInstanceRequest.pb(
             compute.RemoveResourcePoliciesInstanceRequest()
         )
@@ -23330,6 +23941,7 @@ def test_remove_resource_policies_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.remove_resource_policies(
             request,
@@ -23341,6 +23953,262 @@ def test_remove_resource_policies_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_report_host_as_faulty_rest_bad_request(
+    request_type=compute.ReportHostAsFaultyInstanceRequest,
+):
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "instance": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.report_host_as_faulty(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.ReportHostAsFaultyInstanceRequest,
+        dict,
+    ],
+)
+def test_report_host_as_faulty_rest_call_success(request_type):
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "instance": "sample3"}
+    request_init["instances_report_host_as_faulty_request_resource"] = {
+        "disruption_schedule": "disruption_schedule_value",
+        "fault_reasons": [
+            {"behavior": "behavior_value", "description": "description_value"}
+        ],
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.ReportHostAsFaultyInstanceRequest.meta.fields[
+        "instances_report_host_as_faulty_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "instances_report_host_as_faulty_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "instances_report_host_as_faulty_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "instances_report_host_as_faulty_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init["instances_report_host_as_faulty_request_resource"][
+                    field
+                ][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.report_host_as_faulty(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_report_host_as_faulty_rest_interceptors(null_interceptor):
+    transport = transports.InstancesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None if null_interceptor else transports.InstancesRestInterceptor(),
+    )
+    client = InstancesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_report_host_as_faulty"
+    ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_report_host_as_faulty_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.InstancesRestInterceptor, "pre_report_host_as_faulty"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = compute.ReportHostAsFaultyInstanceRequest.pb(
+            compute.ReportHostAsFaultyInstanceRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.ReportHostAsFaultyInstanceRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
+
+        client.report_host_as_faulty(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_reset_rest_bad_request(request_type=compute.ResetInstanceRequest):
@@ -23463,10 +24331,13 @@ def test_reset_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_reset"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_reset_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_reset"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ResetInstanceRequest.pb(compute.ResetInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -23488,6 +24359,7 @@ def test_reset_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.reset(
             request,
@@ -23499,6 +24371,7 @@ def test_reset_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_resume_rest_bad_request(request_type=compute.ResumeInstanceRequest):
@@ -23621,10 +24494,13 @@ def test_resume_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_resume"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_resume_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_resume"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ResumeInstanceRequest.pb(compute.ResumeInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -23646,6 +24522,7 @@ def test_resume_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.resume(
             request,
@@ -23657,6 +24534,7 @@ def test_resume_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_send_diagnostic_interrupt_rest_bad_request(
@@ -23736,10 +24614,14 @@ def test_send_diagnostic_interrupt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_send_diagnostic_interrupt"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_send_diagnostic_interrupt_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_send_diagnostic_interrupt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SendDiagnosticInterruptInstanceRequest.pb(
             compute.SendDiagnosticInterruptInstanceRequest()
         )
@@ -23765,6 +24647,10 @@ def test_send_diagnostic_interrupt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.SendDiagnosticInterruptInstanceResponse()
+        post_with_metadata.return_value = (
+            compute.SendDiagnosticInterruptInstanceResponse(),
+            metadata,
+        )
 
         client.send_diagnostic_interrupt(
             request,
@@ -23776,6 +24662,7 @@ def test_send_diagnostic_interrupt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_deletion_protection_rest_bad_request(
@@ -23900,10 +24787,14 @@ def test_set_deletion_protection_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_deletion_protection"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_set_deletion_protection_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_deletion_protection"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetDeletionProtectionInstanceRequest.pb(
             compute.SetDeletionProtectionInstanceRequest()
         )
@@ -23927,6 +24818,7 @@ def test_set_deletion_protection_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_deletion_protection(
             request,
@@ -23938,6 +24830,7 @@ def test_set_deletion_protection_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_disk_auto_delete_rest_bad_request(
@@ -24062,10 +24955,13 @@ def test_set_disk_auto_delete_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_disk_auto_delete"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_disk_auto_delete_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_disk_auto_delete"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetDiskAutoDeleteInstanceRequest.pb(
             compute.SetDiskAutoDeleteInstanceRequest()
         )
@@ -24089,6 +24985,7 @@ def test_set_disk_auto_delete_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_disk_auto_delete(
             request,
@@ -24100,6 +24997,7 @@ def test_set_disk_auto_delete_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_iam_policy_rest_bad_request(
@@ -24302,10 +25200,13 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_iam_policy"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetIamPolicyInstanceRequest.pb(
             compute.SetIamPolicyInstanceRequest()
         )
@@ -24329,6 +25230,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.set_iam_policy(
             request,
@@ -24340,6 +25242,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_labels_rest_bad_request(request_type=compute.SetLabelsInstanceRequest):
@@ -24543,10 +25446,13 @@ def test_set_labels_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_labels"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_labels_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_labels"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetLabelsInstanceRequest.pb(
             compute.SetLabelsInstanceRequest()
         )
@@ -24570,6 +25476,7 @@ def test_set_labels_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_labels(
             request,
@@ -24581,6 +25488,7 @@ def test_set_labels_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_machine_resources_rest_bad_request(
@@ -24792,10 +25700,13 @@ def test_set_machine_resources_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_machine_resources"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_machine_resources_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_machine_resources"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetMachineResourcesInstanceRequest.pb(
             compute.SetMachineResourcesInstanceRequest()
         )
@@ -24819,6 +25730,7 @@ def test_set_machine_resources_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_machine_resources(
             request,
@@ -24830,6 +25742,7 @@ def test_set_machine_resources_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_machine_type_rest_bad_request(
@@ -25039,10 +25952,13 @@ def test_set_machine_type_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_machine_type"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_machine_type_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_machine_type"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetMachineTypeInstanceRequest.pb(
             compute.SetMachineTypeInstanceRequest()
         )
@@ -25066,6 +25982,7 @@ def test_set_machine_type_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_machine_type(
             request,
@@ -25077,6 +25994,7 @@ def test_set_machine_type_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_metadata_rest_bad_request(request_type=compute.SetMetadataInstanceRequest):
@@ -25271,10 +26189,13 @@ def test_set_metadata_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_metadata"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_metadata_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_metadata"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetMetadataInstanceRequest.pb(
             compute.SetMetadataInstanceRequest()
         )
@@ -25298,6 +26219,7 @@ def test_set_metadata_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_metadata(
             request,
@@ -25309,6 +26231,7 @@ def test_set_metadata_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_min_cpu_platform_rest_bad_request(
@@ -25518,10 +26441,13 @@ def test_set_min_cpu_platform_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_min_cpu_platform"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_min_cpu_platform_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_min_cpu_platform"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetMinCpuPlatformInstanceRequest.pb(
             compute.SetMinCpuPlatformInstanceRequest()
         )
@@ -25545,6 +26471,7 @@ def test_set_min_cpu_platform_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_min_cpu_platform(
             request,
@@ -25556,6 +26483,7 @@ def test_set_min_cpu_platform_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_name_rest_bad_request(request_type=compute.SetNameInstanceRequest):
@@ -25757,10 +26685,13 @@ def test_set_name_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_name"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_name_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_name"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetNameInstanceRequest.pb(compute.SetNameInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -25782,6 +26713,7 @@ def test_set_name_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_name(
             request,
@@ -25793,6 +26725,7 @@ def test_set_name_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_scheduling_rest_bad_request(
@@ -25837,6 +26770,7 @@ def test_set_scheduling_rest_call_success(request_type):
     request_init["scheduling_resource"] = {
         "automatic_restart": True,
         "availability_domain": 2002,
+        "host_error_timeout_seconds": 2811,
         "instance_termination_action": "instance_termination_action_value",
         "local_ssd_recovery_timeout": {"nanos": 543, "seconds": 751},
         "location_hint": "location_hint_value",
@@ -26005,10 +26939,13 @@ def test_set_scheduling_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_scheduling"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_scheduling_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_scheduling"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetSchedulingInstanceRequest.pb(
             compute.SetSchedulingInstanceRequest()
         )
@@ -26032,6 +26969,7 @@ def test_set_scheduling_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_scheduling(
             request,
@@ -26043,6 +26981,7 @@ def test_set_scheduling_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_security_policy_rest_bad_request(
@@ -26256,10 +27195,13 @@ def test_set_security_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_security_policy"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_security_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_security_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetSecurityPolicyInstanceRequest.pb(
             compute.SetSecurityPolicyInstanceRequest()
         )
@@ -26283,6 +27225,7 @@ def test_set_security_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_security_policy(
             request,
@@ -26294,6 +27237,7 @@ def test_set_security_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_service_account_rest_bad_request(
@@ -26504,10 +27448,13 @@ def test_set_service_account_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_service_account"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_service_account_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_service_account"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetServiceAccountInstanceRequest.pb(
             compute.SetServiceAccountInstanceRequest()
         )
@@ -26531,6 +27478,7 @@ def test_set_service_account_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_service_account(
             request,
@@ -26542,6 +27490,7 @@ def test_set_service_account_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_shielded_instance_integrity_policy_rest_bad_request(
@@ -26753,10 +27702,14 @@ def test_set_shielded_instance_integrity_policy_rest_interceptors(null_intercept
         "post_set_shielded_instance_integrity_policy",
     ) as post, mock.patch.object(
         transports.InstancesRestInterceptor,
+        "post_set_shielded_instance_integrity_policy_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.InstancesRestInterceptor,
         "pre_set_shielded_instance_integrity_policy",
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetShieldedInstanceIntegrityPolicyInstanceRequest.pb(
             compute.SetShieldedInstanceIntegrityPolicyInstanceRequest()
         )
@@ -26780,6 +27733,7 @@ def test_set_shielded_instance_integrity_policy_rest_interceptors(null_intercept
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_shielded_instance_integrity_policy(
             request,
@@ -26791,6 +27745,7 @@ def test_set_shielded_instance_integrity_policy_rest_interceptors(null_intercept
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_tags_rest_bad_request(request_type=compute.SetTagsInstanceRequest):
@@ -26984,10 +27939,13 @@ def test_set_tags_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_set_tags"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_set_tags_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_set_tags"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetTagsInstanceRequest.pb(compute.SetTagsInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -27009,6 +27967,7 @@ def test_set_tags_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.set_tags(
             request,
@@ -27020,6 +27979,7 @@ def test_set_tags_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_simulate_maintenance_event_rest_bad_request(
@@ -27144,10 +28104,14 @@ def test_simulate_maintenance_event_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_simulate_maintenance_event"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_simulate_maintenance_event_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_simulate_maintenance_event"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SimulateMaintenanceEventInstanceRequest.pb(
             compute.SimulateMaintenanceEventInstanceRequest()
         )
@@ -27171,6 +28135,7 @@ def test_simulate_maintenance_event_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.simulate_maintenance_event(
             request,
@@ -27182,6 +28147,7 @@ def test_simulate_maintenance_event_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_start_rest_bad_request(request_type=compute.StartInstanceRequest):
@@ -27304,10 +28270,13 @@ def test_start_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_start"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_start_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_start"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.StartInstanceRequest.pb(compute.StartInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -27329,6 +28298,7 @@ def test_start_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.start(
             request,
@@ -27340,6 +28310,7 @@ def test_start_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_start_with_encryption_key_rest_bad_request(
@@ -27560,10 +28531,14 @@ def test_start_with_encryption_key_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_start_with_encryption_key"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_start_with_encryption_key_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_start_with_encryption_key"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.StartWithEncryptionKeyInstanceRequest.pb(
             compute.StartWithEncryptionKeyInstanceRequest()
         )
@@ -27587,6 +28562,7 @@ def test_start_with_encryption_key_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.start_with_encryption_key(
             request,
@@ -27598,6 +28574,7 @@ def test_start_with_encryption_key_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_stop_rest_bad_request(request_type=compute.StopInstanceRequest):
@@ -27720,10 +28697,13 @@ def test_stop_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_stop"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_stop_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_stop"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.StopInstanceRequest.pb(compute.StopInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -27745,6 +28725,7 @@ def test_stop_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.stop(
             request,
@@ -27756,6 +28737,7 @@ def test_stop_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_suspend_rest_bad_request(request_type=compute.SuspendInstanceRequest):
@@ -27878,10 +28860,13 @@ def test_suspend_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_suspend"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_suspend_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_suspend"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SuspendInstanceRequest.pb(compute.SuspendInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -27903,6 +28888,7 @@ def test_suspend_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.suspend(
             request,
@@ -27914,6 +28900,7 @@ def test_suspend_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_test_iam_permissions_rest_bad_request(
@@ -28074,10 +29061,13 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_test_iam_permissions"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_test_iam_permissions_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_test_iam_permissions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.TestIamPermissionsInstanceRequest.pb(
             compute.TestIamPermissionsInstanceRequest()
         )
@@ -28103,6 +29093,7 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.TestPermissionsResponse()
+        post_with_metadata.return_value = compute.TestPermissionsResponse(), metadata
 
         client.test_iam_permissions(
             request,
@@ -28114,6 +29105,7 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_rest_bad_request(request_type=compute.UpdateInstanceRequest):
@@ -28303,10 +29295,21 @@ def test_update_rest_call_success(request_type):
         "resource_policies": ["resource_policies_value1", "resource_policies_value2"],
         "resource_status": {
             "physical_host": "physical_host_value",
+            "physical_host_topology": {
+                "block": "block_value",
+                "cluster": "cluster_value",
+                "host": "host_value",
+                "subblock": "subblock_value",
+            },
             "scheduling": {"availability_domain": 2002},
             "upcoming_maintenance": {
                 "can_reschedule": True,
                 "latest_window_start_time": "latest_window_start_time_value",
+                "maintenance_on_shutdown": True,
+                "maintenance_reasons": [
+                    "maintenance_reasons_value1",
+                    "maintenance_reasons_value2",
+                ],
                 "maintenance_status": "maintenance_status_value",
                 "type_": "type__value",
                 "window_end_time": "window_end_time_value",
@@ -28318,6 +29321,7 @@ def test_update_rest_call_success(request_type):
         "scheduling": {
             "automatic_restart": True,
             "availability_domain": 2002,
+            "host_error_timeout_seconds": 2811,
             "instance_termination_action": "instance_termination_action_value",
             "local_ssd_recovery_timeout": {"nanos": 543, "seconds": 751},
             "location_hint": "location_hint_value",
@@ -28507,10 +29511,13 @@ def test_update_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_update"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_update_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_update"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateInstanceRequest.pb(compute.UpdateInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -28532,6 +29539,7 @@ def test_update_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update(
             request,
@@ -28543,6 +29551,7 @@ def test_update_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_access_config_rest_bad_request(
@@ -28750,10 +29759,13 @@ def test_update_access_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_update_access_config"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_update_access_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_update_access_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateAccessConfigInstanceRequest.pb(
             compute.UpdateAccessConfigInstanceRequest()
         )
@@ -28777,6 +29789,7 @@ def test_update_access_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update_access_config(
             request,
@@ -28788,6 +29801,7 @@ def test_update_access_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_display_device_rest_bad_request(
@@ -28984,10 +29998,13 @@ def test_update_display_device_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_update_display_device"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor, "post_update_display_device_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_update_display_device"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateDisplayDeviceInstanceRequest.pb(
             compute.UpdateDisplayDeviceInstanceRequest()
         )
@@ -29011,6 +30028,7 @@ def test_update_display_device_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update_display_device(
             request,
@@ -29022,6 +30040,7 @@ def test_update_display_device_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_network_interface_rest_bad_request(
@@ -29255,10 +30274,14 @@ def test_update_network_interface_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_update_network_interface"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_update_network_interface_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_update_network_interface"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateNetworkInterfaceInstanceRequest.pb(
             compute.UpdateNetworkInterfaceInstanceRequest()
         )
@@ -29282,6 +30305,7 @@ def test_update_network_interface_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update_network_interface(
             request,
@@ -29293,6 +30317,7 @@ def test_update_network_interface_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_shielded_instance_config_rest_bad_request(
@@ -29497,10 +30522,14 @@ def test_update_shielded_instance_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.InstancesRestInterceptor, "post_update_shielded_instance_config"
     ) as post, mock.patch.object(
+        transports.InstancesRestInterceptor,
+        "post_update_shielded_instance_config_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.InstancesRestInterceptor, "pre_update_shielded_instance_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateShieldedInstanceConfigInstanceRequest.pb(
             compute.UpdateShieldedInstanceConfigInstanceRequest()
         )
@@ -29524,6 +30553,7 @@ def test_update_shielded_instance_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update_shielded_instance_config(
             request,
@@ -29535,6 +30565,7 @@ def test_update_shielded_instance_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():
@@ -29958,6 +30989,28 @@ def test_remove_resource_policies_unary_empty_call_rest():
         call.assert_called()
         _, args, _ = call.mock_calls[0]
         request_msg = compute.RemoveResourcePoliciesInstanceRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_report_host_as_faulty_unary_empty_call_rest():
+    client = InstancesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.report_host_as_faulty), "__call__"
+    ) as call:
+        client.report_host_as_faulty_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.ReportHostAsFaultyInstanceRequest()
 
         assert args[0] == request_msg
 
@@ -30594,6 +31647,7 @@ def test_instances_base_transport():
         "list_referrers",
         "perform_maintenance",
         "remove_resource_policies",
+        "report_host_as_faulty",
         "reset",
         "resume",
         "send_diagnostic_interrupt",
@@ -30818,6 +31872,9 @@ def test_instances_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.remove_resource_policies._session
     session2 = client2.transport.remove_resource_policies._session
+    assert session1 != session2
+    session1 = client1.transport.report_host_as_faulty._session
+    session2 = client2.transport.report_host_as_faulty._session
     assert session1 != session2
     session1 = client1.transport.reset._session
     session2 = client2.transport.reset._session

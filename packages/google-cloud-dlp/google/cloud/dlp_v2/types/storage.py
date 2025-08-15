@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1477,9 +1477,9 @@ class BigQueryTable(proto.Message):
 
     Attributes:
         project_id (str):
-            The Google Cloud Platform project ID of the
-            project containing the table. If omitted,
-            project ID is inferred from the API call.
+            The Google Cloud project ID of the project
+            containing the table. If omitted, project ID is
+            inferred from the API call.
         dataset_id (str):
             Dataset ID of the table.
         table_id (str):
@@ -1509,6 +1509,12 @@ class TableReference(proto.Message):
             Dataset ID of the table.
         table_id (str):
             Name of the table.
+        project_id (str):
+            The Google Cloud project ID of the project
+            containing the table. If omitted, the project ID
+            is inferred from the parent project. This field
+            is required if the parent resource is an
+            organization.
     """
 
     dataset_id: str = proto.Field(
@@ -1518,6 +1524,10 @@ class TableReference(proto.Message):
     table_id: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+    project_id: str = proto.Field(
+        proto.STRING,
+        number=3,
     )
 
 

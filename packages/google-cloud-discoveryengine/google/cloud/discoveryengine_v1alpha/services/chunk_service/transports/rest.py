@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ChunkServiceRestInterceptor:
@@ -107,11 +111,32 @@ class ChunkServiceRestInterceptor:
     def post_get_chunk(self, response: chunk.Chunk) -> chunk.Chunk:
         """Post-rpc interceptor for get_chunk
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_chunk_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChunkService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_chunk` interceptor runs
+        before the `post_get_chunk_with_metadata` interceptor.
         """
         return response
+
+    def post_get_chunk_with_metadata(
+        self, response: chunk.Chunk, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[chunk.Chunk, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_chunk
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChunkService server but before it is returned to user code.
+
+        We recommend only using this `post_get_chunk_with_metadata`
+        interceptor in new development instead of the `post_get_chunk` interceptor.
+        When both interceptors are used, this `post_get_chunk_with_metadata` interceptor runs after the
+        `post_get_chunk` interceptor. The (possibly modified) response returned by
+        `post_get_chunk` will be passed to
+        `post_get_chunk_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_chunks(
         self,
@@ -132,11 +157,36 @@ class ChunkServiceRestInterceptor:
     ) -> chunk_service.ListChunksResponse:
         """Post-rpc interceptor for list_chunks
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_chunks_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChunkService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_chunks` interceptor runs
+        before the `post_list_chunks_with_metadata` interceptor.
         """
         return response
+
+    def post_list_chunks_with_metadata(
+        self,
+        response: chunk_service.ListChunksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        chunk_service.ListChunksResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_chunks
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChunkService server but before it is returned to user code.
+
+        We recommend only using this `post_list_chunks_with_metadata`
+        interceptor in new development instead of the `post_list_chunks` interceptor.
+        When both interceptors are used, this `post_list_chunks_with_metadata` interceptor runs after the
+        `post_list_chunks` interceptor. The (possibly modified) response returned by
+        `post_list_chunks` will be passed to
+        `post_list_chunks_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_operation(
         self,
@@ -424,6 +474,10 @@ class ChunkServiceRestTransport(_BaseChunkServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_chunk(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_chunk_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -573,6 +627,10 @@ class ChunkServiceRestTransport(_BaseChunkServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_chunks(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_chunks_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

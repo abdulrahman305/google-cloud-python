@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.11...google-cloud-managedkafka-v0.1.12) (2025-07-10)
+
+
+### Features
+
+* update libraries and clients for Managed Kafka ([feb3366](https://github.com/googleapis/google-cloud-python/commit/feb3366d4b5c7263210d6513854535bec6de8422))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.10...google-cloud-managedkafka-v0.1.11) (2025-05-26)
+
+
+### Features
+
+* [google-cloud-managedkafka] add Managed Kafka ACL API ([#13939](https://github.com/googleapis/google-cloud-python/issues/13939)) ([0e1d6b0](https://github.com/googleapis/google-cloud-python/commit/0e1d6b09c6b901f137665a73ddc0a34d46d807ab))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.9...google-cloud-managedkafka-v0.1.10) (2025-05-08)
+
+
+### Documentation
+
+* [google-cloud-managedkafka] A comment for message `TaskRetryPolicy` is changed ([#13858](https://github.com/googleapis/google-cloud-python/issues/13858)) ([5ac97c4](https://github.com/googleapis/google-cloud-python/commit/5ac97c4e21a43018cb314008da4efb1f69d7501e))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.8...google-cloud-managedkafka-v0.1.9) (2025-03-19)
+
+
+### Features
+
+* [google-cloud-managedkafka] add Managed Kafka Connect API ([887357d](https://github.com/googleapis/google-cloud-python/commit/887357da2ede1d41f14258fc44275f5f592f2478))
+* Add Managed Kafka Connect API ([#13677](https://github.com/googleapis/google-cloud-python/issues/13677)) ([887357d](https://github.com/googleapis/google-cloud-python/commit/887357da2ede1d41f14258fc44275f5f592f2478))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.7...google-cloud-managedkafka-v0.1.8) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+* An existing google.api.http annotation `http_uri` is changed for method `DeleteConsumerGroup` in service `ManagedKafka` ([6a10ce5](https://github.com/googleapis/google-cloud-python/commit/6a10ce547d22f48b7e95dc7dd0bad06f62aae67d))
+* An existing google.api.http annotation `http_uri` is changed for method `UpdateConsumerGroup` in service `ManagedKafka` ([6a10ce5](https://github.com/googleapis/google-cloud-python/commit/6a10ce547d22f48b7e95dc7dd0bad06f62aae67d))
+* An existing google.api.http annotation http_uri is changed for method `GetConsumerGroup` in service `ManagedKafka` ([6a10ce5](https://github.com/googleapis/google-cloud-python/commit/6a10ce547d22f48b7e95dc7dd0bad06f62aae67d))
+
+
+### Documentation
+
+* A comment for field `subnet` in message `.google.cloud.managedkafka.v1.NetworkConfig` is changed ([6a10ce5](https://github.com/googleapis/google-cloud-python/commit/6a10ce547d22f48b7e95dc7dd0bad06f62aae67d))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.6...google-cloud-managedkafka-v0.1.7) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
 ## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-managedkafka-v0.1.5...google-cloud-managedkafka-v0.1.6) (2024-12-12)
 
 

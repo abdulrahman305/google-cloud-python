@@ -1,5 +1,83 @@
 # Changelog
 
+## [0.24.1](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.24.0...google-analytics-admin-v0.24.1) (2025-06-19)
+
+
+### Features
+
+* add the `GetSubpropertySyncConfigRequest` method ([223c62b](https://github.com/googleapis/google-cloud-python/commit/223c62bb9548d21de59e8bf5b950d30e8264afd6))
+* add the `ListSubpropertySyncConfigsRequest` method ([223c62b](https://github.com/googleapis/google-cloud-python/commit/223c62bb9548d21de59e8bf5b950d30e8264afd6))
+* add the `UpdateSubpropertySyncConfigRequest` method ([223c62b](https://github.com/googleapis/google-cloud-python/commit/223c62bb9548d21de59e8bf5b950d30e8264afd6))
+
+## [0.24.0](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.23.6...google-analytics-admin-v0.24.0) (2025-04-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* change an existing value KEY_EVENT = 32 to KEY_EVENT = 30 in enum `ChangeHistoryResourceType`.
+* rename an existing field `key_event` to `reporting_data_annotation` in `ChangeHistoryChange`.
+
+### Features
+
+* add `key_event`, `reporting_data_annotation` fields to the `ChangeHistoryResource` resource ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `CreateReportingDataAnnotation` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `DeleteReportingDataAnnotation` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `GetReportingDataAnnotation` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `ListReportingDataAnnotations` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `REPORTING_DATA_ANNOTATION` resource type to the `ChangeHistoryResourceType` enum ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `ReportingDataAnnotation` type ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `SubmitUserDeletion` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* add the `UpdateReportingDataAnnotation` method ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+
+
+### Bug Fixes
+
+* change an existing value KEY_EVENT = 32 to KEY_EVENT = 30 in enum `ChangeHistoryResourceType`. ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* rename an existing field `key_event` to `reporting_data_annotation` in `ChangeHistoryChange`. ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+
+
+### Documentation
+
+* announce the deprecation of the `sharing_with_google_any_sales_enabled` field of the `DataSharingSettings` type ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+* update the documentation of `sharing_with_google_support_enabled`, `sharing_with_google_assigned_sales_enabled`, 'sharing_with_google_products_enabled', 'sharing_with_others_enabled' fields of the `DataSharingSettings` type ([c59a5c9](https://github.com/googleapis/google-cloud-python/commit/c59a5c9a88038f81f8899003988bfd3201bf40ed))
+
+## [0.23.6](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.23.5...google-analytics-admin-v0.23.6) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.23.5](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.23.4...google-analytics-admin-v0.23.5) (2025-03-06)
+
+
+### Features
+
+* added support for KeyEvents AdminAPI ChangeHistory ([1cc1a3d](https://github.com/googleapis/google-cloud-python/commit/1cc1a3d09ee59e4be030d3019d147f33b4009a34))
+
+## [0.23.4](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.23.3...google-analytics-admin-v0.23.4) (2025-02-12)
+
+
+### Features
+
+* add `user_data_retention` field to `DataRetentionSettings` and mark as `REQUIRED` ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+* add `user_data_retention` field to `DataRetentionSettings` and mark as `REQUIRED` ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+* Add REST Interceptors which support reading metadata ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+* Add support for reading selective GAPIC generation methods from service YAML ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+
+
+### Bug Fixes
+
+* mark `event_data_retention` field in `DataRetentionSettings` as `REQUIRED` ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+* mark `event_data_retention` field in `DataRetentionSettings` as `REQUIRED` ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+
+
+### Documentation
+
+* replace "GA4" with "Google Analytics" or "GA" in all comments ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+* replace "GA4" with "Google Analytics" or "GA" in all comments ([96aefef](https://github.com/googleapis/google-cloud-python/commit/96aefef02f806d12a2f4c1847a228181ab5b4afa))
+
 ## [0.23.3](https://github.com/googleapis/google-cloud-python/compare/google-analytics-admin-v0.23.2...google-analytics-admin-v0.23.3) (2024-12-12)
 
 

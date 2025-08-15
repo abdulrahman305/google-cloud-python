@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-logging-v1.4.2...google-cloud-iam-logging-v1.4.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [1.4.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-logging-v1.4.1...google-cloud-iam-logging-v1.4.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.4.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-logging-v1.4.0...google-cloud-iam-logging-v1.4.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
 ## [1.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-logging-v1.3.5...google-cloud-iam-logging-v1.4.0) (2024-10-24)
 
 

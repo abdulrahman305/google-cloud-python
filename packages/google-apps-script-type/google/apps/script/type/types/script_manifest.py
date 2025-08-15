@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class HttpAuthorizationHeader(proto.Enum):
             Default value, equivalent to ``SYSTEM_ID_TOKEN``
         SYSTEM_ID_TOKEN (1):
             Send an ID token for the project-specific
-            Google Workspace Add-ons system service account
+            Google Workspace add-ons system service account
             (default)
         USER_ID_TOKEN (2):
             Send an ID token for the end user

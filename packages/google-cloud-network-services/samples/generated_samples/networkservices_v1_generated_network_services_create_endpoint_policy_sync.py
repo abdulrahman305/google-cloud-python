@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ def sample_create_endpoint_policy():
 
     # Initialize request argument(s)
     endpoint_policy = network_services_v1.EndpointPolicy()
-    endpoint_policy.name = "name_value"
     endpoint_policy.type_ = "GRPC_SERVER"
 
     request = network_services_v1.CreateEndpointPolicyRequest(

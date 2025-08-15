@@ -4,6 +4,30 @@
 
 [1]: https://pypi.org/project/grafeas/#history
 
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.14.1...grafeas-v1.15.0) (2025-05-08)
+
+
+### Features
+
+* Add support for Layer Details ([f7fc9c4](https://github.com/googleapis/google-cloud-python/commit/f7fc9c4b7432ad60fa488d6a902ab35586543dc5))
+* Add support for Secrets ([f7fc9c4](https://github.com/googleapis/google-cloud-python/commit/f7fc9c4b7432ad60fa488d6a902ab35586543dc5))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.14.0...grafeas-v1.14.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([36e8ba1](https://github.com/googleapis/google-cloud-python/commit/36e8ba12eac92dd221ac3ddf1061da3845135791))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.13.0...grafeas-v1.14.0) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/grafeas-v1.12.1...grafeas-v1.13.0) (2024-12-12)
 
 

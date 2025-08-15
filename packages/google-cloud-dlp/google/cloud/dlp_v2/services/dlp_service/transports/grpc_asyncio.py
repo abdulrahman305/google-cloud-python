@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -389,6 +389,10 @@ class DlpServiceGrpcAsyncIOTransport(DlpServiceTransport):
         detectors to run. By default this may be all types, but
         may change over time as detectors are updated.
 
+        Only the first frame of each multiframe image is
+        redacted. Metadata and other frames are omitted in the
+        response.
+
         Returns:
             Callable[[~.RedactImageRequest],
                     Awaitable[~.RedactImageResponse]]:
@@ -481,7 +485,7 @@ class DlpServiceGrpcAsyncIOTransport(DlpServiceTransport):
         r"""Return a callable for the list info types method over gRPC.
 
         Returns a list of the sensitive information types
-        that DLP API supports. See
+        that the DLP API supports. See
         https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference
         to learn more.
 

@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-quota-v0.1.8...google-shopping-merchant-quota-v0.1.9) (2025-08-06)
+
+
+### Features
+
+* add quota API for v1 ([29d65ad](https://github.com/googleapis/google-cloud-python/commit/29d65adc3fdb813641c21ceebe0b46305a47fbe5))
+* add quota API for v1 ([#14177](https://github.com/googleapis/google-cloud-python/issues/14177)) ([29d65ad](https://github.com/googleapis/google-cloud-python/commit/29d65adc3fdb813641c21ceebe0b46305a47fbe5))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-quota-v0.1.7...google-shopping-merchant-quota-v0.1.8) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([4f0a027](https://github.com/googleapis/google-cloud-python/commit/4f0a0270b494d47e80373b87e7668283dbbceec7))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-quota-v0.1.6...google-shopping-merchant-quota-v0.1.7) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([36e8ba1](https://github.com/googleapis/google-cloud-python/commit/36e8ba12eac92dd221ac3ddf1061da3845135791))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-quota-v0.1.5...google-shopping-merchant-quota-v0.1.6) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-quota-v0.1.4...google-shopping-merchant-quota-v0.1.5) (2024-12-12)
 
 

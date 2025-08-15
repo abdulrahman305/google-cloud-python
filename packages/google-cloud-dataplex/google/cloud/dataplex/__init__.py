@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ from google.cloud.dataplex_v1.services.catalog_service.async_client import (
 from google.cloud.dataplex_v1.services.catalog_service.client import (
     CatalogServiceClient,
 )
+from google.cloud.dataplex_v1.services.cmek_service.async_client import (
+    CmekServiceAsyncClient,
+)
+from google.cloud.dataplex_v1.services.cmek_service.client import CmekServiceClient
 from google.cloud.dataplex_v1.services.content_service.async_client import (
     ContentServiceAsyncClient,
 )
@@ -101,6 +105,15 @@ from google.cloud.dataplex_v1.types.catalog import (
     UpdateEntryRequest,
     UpdateEntryTypeRequest,
 )
+from google.cloud.dataplex_v1.types.cmek import (
+    CreateEncryptionConfigRequest,
+    DeleteEncryptionConfigRequest,
+    EncryptionConfig,
+    GetEncryptionConfigRequest,
+    ListEncryptionConfigsRequest,
+    ListEncryptionConfigsResponse,
+    UpdateEncryptionConfigRequest,
+)
 from google.cloud.dataplex_v1.types.content import (
     CreateContentRequest,
     DeleteContentRequest,
@@ -168,9 +181,11 @@ from google.cloud.dataplex_v1.types.datascans import (
     UpdateDataScanRequest,
 )
 from google.cloud.dataplex_v1.types.logs import (
+    BusinessGlossaryEvent,
     DataQualityScanRuleResult,
     DataScanEvent,
     DiscoveryEvent,
+    EntryLinkEvent,
     GovernanceEvent,
     JobEvent,
     SessionEvent,
@@ -254,6 +269,8 @@ from google.cloud.dataplex_v1.types.tasks import Job, Task
 __all__ = (
     "CatalogServiceClient",
     "CatalogServiceAsyncClient",
+    "CmekServiceClient",
+    "CmekServiceAsyncClient",
     "ContentServiceClient",
     "ContentServiceAsyncClient",
     "DataplexServiceClient",
@@ -311,6 +328,13 @@ __all__ = (
     "UpdateEntryTypeRequest",
     "EntryView",
     "TransferStatus",
+    "CreateEncryptionConfigRequest",
+    "DeleteEncryptionConfigRequest",
+    "EncryptionConfig",
+    "GetEncryptionConfigRequest",
+    "ListEncryptionConfigsRequest",
+    "ListEncryptionConfigsResponse",
+    "UpdateEncryptionConfigRequest",
     "CreateContentRequest",
     "DeleteContentRequest",
     "GetContentRequest",
@@ -365,9 +389,11 @@ __all__ = (
     "RunDataScanResponse",
     "UpdateDataScanRequest",
     "DataScanType",
+    "BusinessGlossaryEvent",
     "DataQualityScanRuleResult",
     "DataScanEvent",
     "DiscoveryEvent",
+    "EntryLinkEvent",
     "GovernanceEvent",
     "JobEvent",
     "SessionEvent",

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,11 @@ class CustomTargetingValue(proto.Message):
         name (str):
             Identifier. The resource name of the
             ``CustomTargetingValue``. Format:
-            ``networks/{network_code}/customTargetingKeys/{custom_targeting_key_id}/customTargetingValues/{custom_targeting_value_id}``
+            ``networks/{network_code}/customTargetingValues/{custom_targeting_value_id}``
+        custom_targeting_key (str):
+            Required. Immutable. The resource name of the
+            ``CustomTargetingKey``. Format:
+            ``networks/{network_code}/customTargetingKeys/{custom_targeting_key_id}``
         ad_tag_name (str):
             Immutable. Name of the ``CustomTargetingValue``. Values can
             contain up to 40 characters each. You can use alphanumeric
@@ -57,6 +61,10 @@ class CustomTargetingValue(proto.Message):
     name: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+    custom_targeting_key: str = proto.Field(
+        proto.STRING,
+        number=8,
     )
     ad_tag_name: str = proto.Field(
         proto.STRING,

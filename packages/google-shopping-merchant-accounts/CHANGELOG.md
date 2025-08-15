@@ -1,5 +1,121 @@
 # Changelog
 
+## [0.3.6](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.5...google-shopping-merchant-accounts-v0.3.6) (2025-08-06)
+
+
+### Features
+
+* [google-shopping-merchant-accounts] add accounts API client libraries for v1 ([#14187](https://github.com/googleapis/google-cloud-python/issues/14187)) ([df0012e](https://github.com/googleapis/google-cloud-python/commit/df0012e9d45c78d94cd244337261f4a1a516c124))
+
+## [0.3.5](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.4...google-shopping-merchant-accounts-v0.3.5) (2025-07-02)
+
+
+### Features
+
+* [google-shopping-merchant-accounts] Add CheckoutSettings service ([#14044](https://github.com/googleapis/google-cloud-python/issues/14044)) ([975b921](https://github.com/googleapis/google-cloud-python/commit/975b9212036325a23094af65fe1498c8bcb19945))
+
+## [0.3.4](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.3...google-shopping-merchant-accounts-v0.3.4) (2025-05-21)
+
+
+### Features
+
+* A new method_signature `parent,online_return_policy` is added to method `CreateOnlineReturnPolicy` in service `OnlineReturnPolicyService` ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+
+
+### Documentation
+
+* A comment for field `accept_defective_only` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `accept_exchange` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `online_return_policy` in message `.google.shopping.merchant.accounts.v1beta.CreateOnlineReturnPolicyRequest` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `online_return_policy` in message `.google.shopping.merchant.accounts.v1beta.UpdateOnlineReturnPolicyRequest` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `parent` in message `.google.shopping.merchant.accounts.v1beta.CreateOnlineReturnPolicyRequest` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `process_refund_days` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `return_label_source` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for field `update_mask` in message `.google.shopping.merchant.accounts.v1beta.UpdateOnlineReturnPolicyRequest` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for message `UpdateOnlineReturnPolicyRequest` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+* A comment for method `DeleteOnlineReturnPolicy` in service `OnlineReturnPolicyService` is changed ([a96ff25](https://github.com/googleapis/google-cloud-python/commit/a96ff25fc48a9d5c7f22717bf3070361b8387fac))
+
+## [0.3.3](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.2...google-shopping-merchant-accounts-v0.3.3) (2025-05-20)
+
+
+### Features
+
+* [google-shopping-merchant-accounts] Add OmnichannelSetingsService, LfpProvidersService and GbpAccountsService ([#13915](https://github.com/googleapis/google-cloud-python/issues/13915)) ([863c743](https://github.com/googleapis/google-cloud-python/commit/863c743e3ee562430cbea72839c3d4fead2f8748))
+
+## [0.3.2](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.1...google-shopping-merchant-accounts-v0.3.2) (2025-05-15)
+
+
+### Features
+
+* updated comments for returns sub-API publication ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+
+
+### Documentation
+
+* A comment for field `item_conditions` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for field `parent` in message `.google.shopping.merchant.accounts.v1beta.ListOnlineReturnPoliciesRequest` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for field `policy` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for field `restocking_fee` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for field `return_methods` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for field `return_shipping_fee` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for method `GetOnlineReturnPolicy` in service `OnlineReturnPolicyService` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for method `ListOnlineReturnPolicies` in service `OnlineReturnPolicyService` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+* A comment for service `OnlineReturnPolicyService` is changed ([bd0cd8f](https://github.com/googleapis/google-cloud-python/commit/bd0cd8f0f869e1df711e64f1166cd3aa3037ea89))
+
+## [0.3.1](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.3.0...google-shopping-merchant-accounts-v0.3.1) (2025-03-15)
+
+
+### Features
+
+* [google-shopping-merchant-accounts] Add AutomaticImprovements service ([#13654](https://github.com/googleapis/google-cloud-python/issues/13654)) ([de91574](https://github.com/googleapis/google-cloud-python/commit/de91574cdaeb557fcfce2dde03e633df96392012))
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.3.0](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.2.4...google-shopping-merchant-accounts-v0.3.0) (2025-03-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* An existing optional field `type` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy
+* An existing optional field `label` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy
+* An existing optional field `countries` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy
+* An existing optional field `return_policy_uri` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy
+
+### Features
+
+* A new field `seasonal_overrides` is added to message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* A new message `SeasonalOverride` is added ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+
+
+### Bug Fixes
+
+* An existing optional field `countries` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* An existing optional field `label` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* An existing optional field `return_policy_uri` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* An existing optional field `type` is converted to required field in message .google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+
+
+### Documentation
+
+* The documentation for field `countries` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for field `label` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for field `parent` in message `.google.shopping.merchant.accounts.v1beta.ListOnlineReturnPoliciesRequest` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for field `return_policy_uri` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for field `type` in message `.google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for method `GetOnlineReturnPolicy` in service `OnlineReturnPolicyService` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+* The documentation for method `ListOnlineReturnPolicies` in service `OnlineReturnPolicyService` is improved ([0d67a43](https://github.com/googleapis/google-cloud-python/commit/0d67a43217055096adcc825455011e4a7dfa40e7))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.2.3...google-shopping-merchant-accounts-v0.2.4) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-accounts-v0.2.2...google-shopping-merchant-accounts-v0.2.3) (2024-12-12)
 
 

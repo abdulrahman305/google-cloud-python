@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,12 +69,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.support.v2.CaseAttachmentService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -111,7 +110,7 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class CaseAttachmentServiceGrpcTransport(CaseAttachmentServiceTransport):
     """gRPC backend transport for CaseAttachmentService.
 
-    A service to manage file attachment for Google Cloud support
+    A service to manage file attachments for Google Cloud support
     cases.
 
     This class defines the same methods as the primary client, so the
@@ -330,7 +329,7 @@ class CaseAttachmentServiceGrpcTransport(CaseAttachmentServiceTransport):
     ]:
         r"""Return a callable for the list attachments method over gRPC.
 
-        Retrieve all attachments associated with a support
+        List all the attachments associated with a support
         case.
 
         Returns:

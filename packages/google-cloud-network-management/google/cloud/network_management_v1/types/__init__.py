@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ from .trace import (
     CloudRunRevisionInfo,
     CloudSQLInstanceInfo,
     DeliverInfo,
+    DirectVpcEgressConnectionInfo,
     DropInfo,
     EndpointInfo,
     FirewallInfo,
@@ -56,6 +57,7 @@ from .trace import (
     RedisClusterInfo,
     RedisInstanceInfo,
     RouteInfo,
+    ServerlessExternalConnectionInfo,
     ServerlessNegInfo,
     Step,
     StorageBucketInfo,
@@ -64,6 +66,15 @@ from .trace import (
     VpnGatewayInfo,
     VpnTunnelInfo,
 )
+from .vpc_flow_logs import (
+    CreateVpcFlowLogsConfigRequest,
+    DeleteVpcFlowLogsConfigRequest,
+    GetVpcFlowLogsConfigRequest,
+    ListVpcFlowLogsConfigsRequest,
+    ListVpcFlowLogsConfigsResponse,
+    UpdateVpcFlowLogsConfigRequest,
+)
+from .vpc_flow_logs_config import VpcFlowLogsConfig
 
 __all__ = (
     "ConnectivityTest",
@@ -86,6 +97,7 @@ __all__ = (
     "CloudRunRevisionInfo",
     "CloudSQLInstanceInfo",
     "DeliverInfo",
+    "DirectVpcEgressConnectionInfo",
     "DropInfo",
     "EndpointInfo",
     "FirewallInfo",
@@ -103,6 +115,7 @@ __all__ = (
     "RedisClusterInfo",
     "RedisInstanceInfo",
     "RouteInfo",
+    "ServerlessExternalConnectionInfo",
     "ServerlessNegInfo",
     "Step",
     "StorageBucketInfo",
@@ -111,4 +124,11 @@ __all__ = (
     "VpnGatewayInfo",
     "VpnTunnelInfo",
     "LoadBalancerType",
+    "CreateVpcFlowLogsConfigRequest",
+    "DeleteVpcFlowLogsConfigRequest",
+    "GetVpcFlowLogsConfigRequest",
+    "ListVpcFlowLogsConfigsRequest",
+    "ListVpcFlowLogsConfigsResponse",
+    "UpdateVpcFlowLogsConfigRequest",
+    "VpcFlowLogsConfig",
 )

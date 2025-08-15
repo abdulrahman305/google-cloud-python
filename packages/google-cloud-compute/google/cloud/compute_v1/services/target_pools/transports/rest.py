@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class TargetPoolsRestInterceptor:
@@ -187,11 +191,34 @@ class TargetPoolsRestInterceptor:
     def post_add_health_check(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for add_health_check
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_add_health_check_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_add_health_check` interceptor runs
+        before the `post_add_health_check_with_metadata` interceptor.
         """
         return response
+
+    def post_add_health_check_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for add_health_check
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_add_health_check_with_metadata`
+        interceptor in new development instead of the `post_add_health_check` interceptor.
+        When both interceptors are used, this `post_add_health_check_with_metadata` interceptor runs after the
+        `post_add_health_check` interceptor. The (possibly modified) response returned by
+        `post_add_health_check` will be passed to
+        `post_add_health_check_with_metadata`.
+        """
+        return response, metadata
 
     def pre_add_instance(
         self,
@@ -210,11 +237,34 @@ class TargetPoolsRestInterceptor:
     def post_add_instance(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for add_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_add_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_add_instance` interceptor runs
+        before the `post_add_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_add_instance_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for add_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_add_instance_with_metadata`
+        interceptor in new development instead of the `post_add_instance` interceptor.
+        When both interceptors are used, this `post_add_instance_with_metadata` interceptor runs after the
+        `post_add_instance` interceptor. The (possibly modified) response returned by
+        `post_add_instance` will be passed to
+        `post_add_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_aggregated_list(
         self,
@@ -236,11 +286,36 @@ class TargetPoolsRestInterceptor:
     ) -> compute.TargetPoolAggregatedList:
         """Post-rpc interceptor for aggregated_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_aggregated_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_aggregated_list` interceptor runs
+        before the `post_aggregated_list_with_metadata` interceptor.
         """
         return response
+
+    def post_aggregated_list_with_metadata(
+        self,
+        response: compute.TargetPoolAggregatedList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.TargetPoolAggregatedList, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for aggregated_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_aggregated_list_with_metadata`
+        interceptor in new development instead of the `post_aggregated_list` interceptor.
+        When both interceptors are used, this `post_aggregated_list_with_metadata` interceptor runs after the
+        `post_aggregated_list` interceptor. The (possibly modified) response returned by
+        `post_aggregated_list` will be passed to
+        `post_aggregated_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete(
         self,
@@ -259,11 +334,34 @@ class TargetPoolsRestInterceptor:
     def post_delete(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for delete
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete` interceptor runs
+        before the `post_delete_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_delete_with_metadata`
+        interceptor in new development instead of the `post_delete` interceptor.
+        When both interceptors are used, this `post_delete_with_metadata` interceptor runs after the
+        `post_delete` interceptor. The (possibly modified) response returned by
+        `post_delete` will be passed to
+        `post_delete_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get(
         self,
@@ -280,11 +378,34 @@ class TargetPoolsRestInterceptor:
     def post_get(self, response: compute.TargetPool) -> compute.TargetPool:
         """Post-rpc interceptor for get
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get` interceptor runs
+        before the `post_get_with_metadata` interceptor.
         """
         return response
+
+    def post_get_with_metadata(
+        self,
+        response: compute.TargetPool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.TargetPool, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_get_with_metadata`
+        interceptor in new development instead of the `post_get` interceptor.
+        When both interceptors are used, this `post_get_with_metadata` interceptor runs after the
+        `post_get` interceptor. The (possibly modified) response returned by
+        `post_get` will be passed to
+        `post_get_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_health(
         self,
@@ -305,11 +426,36 @@ class TargetPoolsRestInterceptor:
     ) -> compute.TargetPoolInstanceHealth:
         """Post-rpc interceptor for get_health
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_health_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_health` interceptor runs
+        before the `post_get_health_with_metadata` interceptor.
         """
         return response
+
+    def post_get_health_with_metadata(
+        self,
+        response: compute.TargetPoolInstanceHealth,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.TargetPoolInstanceHealth, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_health
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_get_health_with_metadata`
+        interceptor in new development instead of the `post_get_health` interceptor.
+        When both interceptors are used, this `post_get_health_with_metadata` interceptor runs after the
+        `post_get_health` interceptor. The (possibly modified) response returned by
+        `post_get_health` will be passed to
+        `post_get_health_with_metadata`.
+        """
+        return response, metadata
 
     def pre_insert(
         self,
@@ -328,11 +474,34 @@ class TargetPoolsRestInterceptor:
     def post_insert(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for insert
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_insert_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_insert` interceptor runs
+        before the `post_insert_with_metadata` interceptor.
         """
         return response
+
+    def post_insert_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for insert
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_insert_with_metadata`
+        interceptor in new development instead of the `post_insert` interceptor.
+        When both interceptors are used, this `post_insert_with_metadata` interceptor runs after the
+        `post_insert` interceptor. The (possibly modified) response returned by
+        `post_insert` will be passed to
+        `post_insert_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list(
         self,
@@ -349,11 +518,34 @@ class TargetPoolsRestInterceptor:
     def post_list(self, response: compute.TargetPoolList) -> compute.TargetPoolList:
         """Post-rpc interceptor for list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list` interceptor runs
+        before the `post_list_with_metadata` interceptor.
         """
         return response
+
+    def post_list_with_metadata(
+        self,
+        response: compute.TargetPoolList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.TargetPoolList, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_list_with_metadata`
+        interceptor in new development instead of the `post_list` interceptor.
+        When both interceptors are used, this `post_list_with_metadata` interceptor runs after the
+        `post_list` interceptor. The (possibly modified) response returned by
+        `post_list` will be passed to
+        `post_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_remove_health_check(
         self,
@@ -375,11 +567,34 @@ class TargetPoolsRestInterceptor:
     ) -> compute.Operation:
         """Post-rpc interceptor for remove_health_check
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_remove_health_check_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_remove_health_check` interceptor runs
+        before the `post_remove_health_check_with_metadata` interceptor.
         """
         return response
+
+    def post_remove_health_check_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for remove_health_check
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_remove_health_check_with_metadata`
+        interceptor in new development instead of the `post_remove_health_check` interceptor.
+        When both interceptors are used, this `post_remove_health_check_with_metadata` interceptor runs after the
+        `post_remove_health_check` interceptor. The (possibly modified) response returned by
+        `post_remove_health_check` will be passed to
+        `post_remove_health_check_with_metadata`.
+        """
+        return response, metadata
 
     def pre_remove_instance(
         self,
@@ -398,11 +613,34 @@ class TargetPoolsRestInterceptor:
     def post_remove_instance(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for remove_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_remove_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_remove_instance` interceptor runs
+        before the `post_remove_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_remove_instance_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for remove_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_remove_instance_with_metadata`
+        interceptor in new development instead of the `post_remove_instance` interceptor.
+        When both interceptors are used, this `post_remove_instance_with_metadata` interceptor runs after the
+        `post_remove_instance` interceptor. The (possibly modified) response returned by
+        `post_remove_instance` will be passed to
+        `post_remove_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_backup(
         self,
@@ -421,11 +659,34 @@ class TargetPoolsRestInterceptor:
     def post_set_backup(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for set_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_backup` interceptor runs
+        before the `post_set_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_set_backup_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_set_backup_with_metadata`
+        interceptor in new development instead of the `post_set_backup` interceptor.
+        When both interceptors are used, this `post_set_backup_with_metadata` interceptor runs after the
+        `post_set_backup` interceptor. The (possibly modified) response returned by
+        `post_set_backup` will be passed to
+        `post_set_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_security_policy(
         self,
@@ -447,11 +708,34 @@ class TargetPoolsRestInterceptor:
     ) -> compute.Operation:
         """Post-rpc interceptor for set_security_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_security_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the TargetPools server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_security_policy` interceptor runs
+        before the `post_set_security_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_security_policy_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_security_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the TargetPools server but before it is returned to user code.
+
+        We recommend only using this `post_set_security_policy_with_metadata`
+        interceptor in new development instead of the `post_set_security_policy` interceptor.
+        When both interceptors are used, this `post_set_security_policy_with_metadata` interceptor runs after the
+        `post_set_security_policy` interceptor. The (possibly modified) response returned by
+        `post_set_security_policy` will be passed to
+        `post_set_security_policy_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -688,6 +972,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_add_health_check(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_health_check_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -859,6 +1147,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_add_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1001,6 +1293,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_aggregated_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_aggregated_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1162,6 +1458,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1312,6 +1612,8 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1462,6 +1764,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_health(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_health_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1629,6 +1935,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_insert(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_insert_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1773,6 +2083,8 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1940,6 +2252,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_remove_health_check(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_remove_health_check_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2105,6 +2421,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_remove_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_remove_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2272,6 +2592,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2439,6 +2763,10 @@ class TargetPoolsRestTransport(_BaseTargetPoolsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_security_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_security_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

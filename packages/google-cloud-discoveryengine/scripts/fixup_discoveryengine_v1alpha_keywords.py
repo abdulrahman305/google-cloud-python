@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ class discoveryengineCallTransformer(cst.CSTTransformer):
         'get_sample_query_set': ('name', ),
         'get_schema': ('name', ),
         'get_serving_config': ('name', ),
-        'get_session': ('name', ),
+        'get_session': ('name', 'include_answer_details', ),
         'get_site_search_engine': ('name', ),
         'get_target_site': ('name', ),
         'get_uri_pattern_document_data': ('site_search_engine', ),
@@ -106,6 +106,7 @@ class discoveryengineCallTransformer(cst.CSTTransformer):
         'list_engines': ('parent', 'page_size', 'page_token', 'filter', ),
         'list_evaluation_results': ('evaluation', 'page_size', 'page_token', ),
         'list_evaluations': ('parent', 'page_size', 'page_token', ),
+        'list_files': ('parent', 'filter', 'page_size', 'page_token', ),
         'list_sample_queries': ('parent', 'page_size', 'page_token', ),
         'list_sample_query_sets': ('parent', 'page_size', 'page_token', ),
         'list_schemas': ('parent', 'page_size', 'page_token', ),

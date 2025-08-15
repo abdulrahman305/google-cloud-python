@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.17.36](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.35...google-cloud-batch-v0.17.36) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [0.17.35](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.34...google-cloud-batch-v0.17.35) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.17.34](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.33...google-cloud-batch-v0.17.34) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* promote cancel job API to GA ([559dea7](https://github.com/googleapis/google-cloud-python/commit/559dea77a99dcd314df941be54ed204aa65c33c7))
+
 ## [0.17.33](https://github.com/googleapis/google-cloud-python/compare/google-cloud-batch-v0.17.32...google-cloud-batch-v0.17.33) (2025-01-02)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,10 +40,6 @@ async def sample_update_node_pool():
 
     # Initialize request argument(s)
     request = container_v1beta1.UpdateNodePoolRequest(
-        project_id="project_id_value",
-        zone="zone_value",
-        cluster_id="cluster_id_value",
-        node_pool_id="node_pool_id_value",
         node_version="node_version_value",
         image_type="image_type_value",
     )

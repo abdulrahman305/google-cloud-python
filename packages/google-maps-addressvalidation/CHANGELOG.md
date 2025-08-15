@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.20](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.19...google-maps-addressvalidation-v0.3.20) (2025-07-16)
+
+
+### Features
+
+* add has_spell_corrected_components field to the Address Validation verdict in the API response ([07eae34](https://github.com/googleapis/google-cloud-python/commit/07eae3433833700a6d9effba92e2b241b77d9b0b))
+
+
+### Documentation
+
+* update proto field descriptions ([07eae34](https://github.com/googleapis/google-cloud-python/commit/07eae3433833700a6d9effba92e2b241b77d9b0b))
+
+## [0.3.19](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.18...google-maps-addressvalidation-v0.3.19) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.3.18](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.17...google-maps-addressvalidation-v0.3.18) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.3.17](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.16...google-maps-addressvalidation-v0.3.17) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.3.16](https://github.com/googleapis/google-cloud-python/compare/google-maps-addressvalidation-v0.3.15...google-maps-addressvalidation-v0.3.16) (2024-12-12)
 
 

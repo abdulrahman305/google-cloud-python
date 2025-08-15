@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class CloudBuildRestInterceptor:
@@ -233,11 +237,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for approve_build
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_approve_build_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_approve_build` interceptor runs
+        before the `post_approve_build_with_metadata` interceptor.
         """
         return response
+
+    def post_approve_build_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for approve_build
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_approve_build_with_metadata`
+        interceptor in new development instead of the `post_approve_build` interceptor.
+        When both interceptors are used, this `post_approve_build_with_metadata` interceptor runs after the
+        `post_approve_build` interceptor. The (possibly modified) response returned by
+        `post_approve_build` will be passed to
+        `post_approve_build_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_build(
         self,
@@ -254,11 +281,34 @@ class CloudBuildRestInterceptor:
     def post_cancel_build(self, response: cloudbuild.Build) -> cloudbuild.Build:
         """Post-rpc interceptor for cancel_build
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_cancel_build_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_cancel_build` interceptor runs
+        before the `post_cancel_build_with_metadata` interceptor.
         """
         return response
+
+    def post_cancel_build_with_metadata(
+        self,
+        response: cloudbuild.Build,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.Build, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for cancel_build
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_cancel_build_with_metadata`
+        interceptor in new development instead of the `post_cancel_build` interceptor.
+        When both interceptors are used, this `post_cancel_build_with_metadata` interceptor runs after the
+        `post_cancel_build` interceptor. The (possibly modified) response returned by
+        `post_cancel_build` will be passed to
+        `post_cancel_build_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_build(
         self,
@@ -277,11 +327,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_build
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_build_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_build` interceptor runs
+        before the `post_create_build_with_metadata` interceptor.
         """
         return response
+
+    def post_create_build_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_build
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_create_build_with_metadata`
+        interceptor in new development instead of the `post_create_build` interceptor.
+        When both interceptors are used, this `post_create_build_with_metadata` interceptor runs after the
+        `post_create_build` interceptor. The (possibly modified) response returned by
+        `post_create_build` will be passed to
+        `post_create_build_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_build_trigger(
         self,
@@ -302,11 +375,34 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.BuildTrigger:
         """Post-rpc interceptor for create_build_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_build_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_build_trigger` interceptor runs
+        before the `post_create_build_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_create_build_trigger_with_metadata(
+        self,
+        response: cloudbuild.BuildTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.BuildTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_build_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_create_build_trigger_with_metadata`
+        interceptor in new development instead of the `post_create_build_trigger` interceptor.
+        When both interceptors are used, this `post_create_build_trigger_with_metadata` interceptor runs after the
+        `post_create_build_trigger` interceptor. The (possibly modified) response returned by
+        `post_create_build_trigger` will be passed to
+        `post_create_build_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_worker_pool(
         self,
@@ -327,11 +423,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_worker_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_worker_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_worker_pool` interceptor runs
+        before the `post_create_worker_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_create_worker_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_worker_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_create_worker_pool_with_metadata`
+        interceptor in new development instead of the `post_create_worker_pool` interceptor.
+        When both interceptors are used, this `post_create_worker_pool_with_metadata` interceptor runs after the
+        `post_create_worker_pool` interceptor. The (possibly modified) response returned by
+        `post_create_worker_pool` will be passed to
+        `post_create_worker_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_build_trigger(
         self,
@@ -366,11 +485,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_worker_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_worker_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_worker_pool` interceptor runs
+        before the `post_delete_worker_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_worker_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_worker_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_delete_worker_pool_with_metadata`
+        interceptor in new development instead of the `post_delete_worker_pool` interceptor.
+        When both interceptors are used, this `post_delete_worker_pool_with_metadata` interceptor runs after the
+        `post_delete_worker_pool` interceptor. The (possibly modified) response returned by
+        `post_delete_worker_pool` will be passed to
+        `post_delete_worker_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_build(
         self,
@@ -387,11 +529,34 @@ class CloudBuildRestInterceptor:
     def post_get_build(self, response: cloudbuild.Build) -> cloudbuild.Build:
         """Post-rpc interceptor for get_build
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_build_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_build` interceptor runs
+        before the `post_get_build_with_metadata` interceptor.
         """
         return response
+
+    def post_get_build_with_metadata(
+        self,
+        response: cloudbuild.Build,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.Build, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_build
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_get_build_with_metadata`
+        interceptor in new development instead of the `post_get_build` interceptor.
+        When both interceptors are used, this `post_get_build_with_metadata` interceptor runs after the
+        `post_get_build` interceptor. The (possibly modified) response returned by
+        `post_get_build` will be passed to
+        `post_get_build_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_build_trigger(
         self,
@@ -412,11 +577,34 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.BuildTrigger:
         """Post-rpc interceptor for get_build_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_build_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_build_trigger` interceptor runs
+        before the `post_get_build_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_get_build_trigger_with_metadata(
+        self,
+        response: cloudbuild.BuildTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.BuildTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_build_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_get_build_trigger_with_metadata`
+        interceptor in new development instead of the `post_get_build_trigger` interceptor.
+        When both interceptors are used, this `post_get_build_trigger_with_metadata` interceptor runs after the
+        `post_get_build_trigger` interceptor. The (possibly modified) response returned by
+        `post_get_build_trigger` will be passed to
+        `post_get_build_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_worker_pool(
         self,
@@ -437,11 +625,34 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.WorkerPool:
         """Post-rpc interceptor for get_worker_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_worker_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_worker_pool` interceptor runs
+        before the `post_get_worker_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_get_worker_pool_with_metadata(
+        self,
+        response: cloudbuild.WorkerPool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.WorkerPool, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_worker_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_get_worker_pool_with_metadata`
+        interceptor in new development instead of the `post_get_worker_pool` interceptor.
+        When both interceptors are used, this `post_get_worker_pool_with_metadata` interceptor runs after the
+        `post_get_worker_pool` interceptor. The (possibly modified) response returned by
+        `post_get_worker_pool` will be passed to
+        `post_get_worker_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_builds(
         self,
@@ -460,11 +671,34 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.ListBuildsResponse:
         """Post-rpc interceptor for list_builds
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_builds_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_builds` interceptor runs
+        before the `post_list_builds_with_metadata` interceptor.
         """
         return response
+
+    def post_list_builds_with_metadata(
+        self,
+        response: cloudbuild.ListBuildsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.ListBuildsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_builds
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_list_builds_with_metadata`
+        interceptor in new development instead of the `post_list_builds` interceptor.
+        When both interceptors are used, this `post_list_builds_with_metadata` interceptor runs after the
+        `post_list_builds` interceptor. The (possibly modified) response returned by
+        `post_list_builds` will be passed to
+        `post_list_builds_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_build_triggers(
         self,
@@ -485,11 +719,36 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.ListBuildTriggersResponse:
         """Post-rpc interceptor for list_build_triggers
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_build_triggers_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_build_triggers` interceptor runs
+        before the `post_list_build_triggers_with_metadata` interceptor.
         """
         return response
+
+    def post_list_build_triggers_with_metadata(
+        self,
+        response: cloudbuild.ListBuildTriggersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloudbuild.ListBuildTriggersResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_build_triggers
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_list_build_triggers_with_metadata`
+        interceptor in new development instead of the `post_list_build_triggers` interceptor.
+        When both interceptors are used, this `post_list_build_triggers_with_metadata` interceptor runs after the
+        `post_list_build_triggers` interceptor. The (possibly modified) response returned by
+        `post_list_build_triggers` will be passed to
+        `post_list_build_triggers_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_worker_pools(
         self,
@@ -510,11 +769,36 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.ListWorkerPoolsResponse:
         """Post-rpc interceptor for list_worker_pools
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_worker_pools_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_worker_pools` interceptor runs
+        before the `post_list_worker_pools_with_metadata` interceptor.
         """
         return response
+
+    def post_list_worker_pools_with_metadata(
+        self,
+        response: cloudbuild.ListWorkerPoolsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloudbuild.ListWorkerPoolsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_worker_pools
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_list_worker_pools_with_metadata`
+        interceptor in new development instead of the `post_list_worker_pools` interceptor.
+        When both interceptors are used, this `post_list_worker_pools_with_metadata` interceptor runs after the
+        `post_list_worker_pools` interceptor. The (possibly modified) response returned by
+        `post_list_worker_pools` will be passed to
+        `post_list_worker_pools_with_metadata`.
+        """
+        return response, metadata
 
     def pre_receive_trigger_webhook(
         self,
@@ -535,11 +819,37 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.ReceiveTriggerWebhookResponse:
         """Post-rpc interceptor for receive_trigger_webhook
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_receive_trigger_webhook_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_receive_trigger_webhook` interceptor runs
+        before the `post_receive_trigger_webhook_with_metadata` interceptor.
         """
         return response
+
+    def post_receive_trigger_webhook_with_metadata(
+        self,
+        response: cloudbuild.ReceiveTriggerWebhookResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloudbuild.ReceiveTriggerWebhookResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for receive_trigger_webhook
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_receive_trigger_webhook_with_metadata`
+        interceptor in new development instead of the `post_receive_trigger_webhook` interceptor.
+        When both interceptors are used, this `post_receive_trigger_webhook_with_metadata` interceptor runs after the
+        `post_receive_trigger_webhook` interceptor. The (possibly modified) response returned by
+        `post_receive_trigger_webhook` will be passed to
+        `post_receive_trigger_webhook_with_metadata`.
+        """
+        return response, metadata
 
     def pre_retry_build(
         self,
@@ -558,11 +868,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for retry_build
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_retry_build_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_retry_build` interceptor runs
+        before the `post_retry_build_with_metadata` interceptor.
         """
         return response
+
+    def post_retry_build_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for retry_build
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_retry_build_with_metadata`
+        interceptor in new development instead of the `post_retry_build` interceptor.
+        When both interceptors are used, this `post_retry_build_with_metadata` interceptor runs after the
+        `post_retry_build` interceptor. The (possibly modified) response returned by
+        `post_retry_build` will be passed to
+        `post_retry_build_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_build_trigger(
         self,
@@ -583,11 +916,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for run_build_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_build_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_build_trigger` interceptor runs
+        before the `post_run_build_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_run_build_trigger_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for run_build_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_run_build_trigger_with_metadata`
+        interceptor in new development instead of the `post_run_build_trigger` interceptor.
+        When both interceptors are used, this `post_run_build_trigger_with_metadata` interceptor runs after the
+        `post_run_build_trigger` interceptor. The (possibly modified) response returned by
+        `post_run_build_trigger` will be passed to
+        `post_run_build_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_build_trigger(
         self,
@@ -608,11 +964,34 @@ class CloudBuildRestInterceptor:
     ) -> cloudbuild.BuildTrigger:
         """Post-rpc interceptor for update_build_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_build_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_build_trigger` interceptor runs
+        before the `post_update_build_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_update_build_trigger_with_metadata(
+        self,
+        response: cloudbuild.BuildTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudbuild.BuildTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_build_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_update_build_trigger_with_metadata`
+        interceptor in new development instead of the `post_update_build_trigger` interceptor.
+        When both interceptors are used, this `post_update_build_trigger_with_metadata` interceptor runs after the
+        `post_update_build_trigger` interceptor. The (possibly modified) response returned by
+        `post_update_build_trigger` will be passed to
+        `post_update_build_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_worker_pool(
         self,
@@ -633,11 +1012,34 @@ class CloudBuildRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_worker_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_worker_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBuild server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_worker_pool` interceptor runs
+        before the `post_update_worker_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_update_worker_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_worker_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBuild server but before it is returned to user code.
+
+        We recommend only using this `post_update_worker_pool_with_metadata`
+        interceptor in new development instead of the `post_update_worker_pool` interceptor.
+        When both interceptors are used, this `post_update_worker_pool_with_metadata` interceptor runs after the
+        `post_update_worker_pool` interceptor. The (possibly modified) response returned by
+        `post_update_worker_pool` will be passed to
+        `post_update_worker_pool_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -915,6 +1317,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_approve_build(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_approve_build_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1089,6 +1495,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_cancel_build(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_cancel_build_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1240,6 +1650,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_build(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_build_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1391,6 +1805,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_build_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_build_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1540,6 +1958,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_worker_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_worker_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1791,6 +2213,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_worker_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_worker_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1957,6 +2383,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_build(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_build_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2102,6 +2532,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_build_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_build_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2261,6 +2695,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_worker_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_worker_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2403,6 +2841,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_builds(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_builds_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2545,6 +2987,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_build_triggers(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_build_triggers_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2689,6 +3135,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_worker_pools(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_worker_pools_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2843,6 +3293,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_receive_trigger_webhook(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_receive_trigger_webhook_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2994,6 +3448,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_retry_build(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_retry_build_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3144,6 +3602,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_build_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_build_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3295,6 +3757,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_build_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_build_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3444,6 +3910,10 @@ class CloudBuildRestTransport(_BaseCloudBuildRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_worker_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_worker_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

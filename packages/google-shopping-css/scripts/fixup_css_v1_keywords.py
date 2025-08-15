@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ class cssCallTransformer(cst.CSTTransformer):
         'list_account_labels': ('parent', 'page_size', 'page_token', ),
         'list_child_accounts': ('parent', 'label_id', 'full_name', 'page_size', 'page_token', ),
         'list_css_products': ('parent', 'page_size', 'page_token', ),
+        'list_quota_groups': ('parent', 'page_size', 'page_token', ),
         'update_account_label': ('account_label', ),
         'update_css_product_input': ('css_product_input', 'update_mask', ),
         'update_labels': ('name', 'label_ids', 'parent', ),

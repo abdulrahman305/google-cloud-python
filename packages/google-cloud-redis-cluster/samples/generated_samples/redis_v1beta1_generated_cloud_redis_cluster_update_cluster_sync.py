@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ def sample_update_cluster():
     # Initialize request argument(s)
     cluster = redis_cluster_v1beta1.Cluster()
     cluster.name = "name_value"
-    cluster.psc_configs.network = "network_value"
 
     request = redis_cluster_v1beta1.UpdateClusterRequest(
         cluster=cluster,

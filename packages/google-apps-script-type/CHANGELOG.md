@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.14...google-apps-script-type-v0.3.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([1562bb7](https://github.com/googleapis/google-cloud-python/commit/1562bb740c7cd56179e52185dde3c32af861de5e))
+
+## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.13...google-apps-script-type-v0.3.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.3.13](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.12...google-apps-script-type-v0.3.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
+## [0.3.12](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.11...google-apps-script-type-v0.3.12) (2025-01-27)
+
+
+### Documentation
+
+* [google-apps-script-type] Minor documentation edits ([#13464](https://github.com/googleapis/google-cloud-python/issues/13464)) ([c45e8e9](https://github.com/googleapis/google-cloud-python/commit/c45e8e9bb4efbeeb2e1ffb1b4e9847364c33d76a))
+
 ## [0.3.11](https://github.com/googleapis/google-cloud-python/compare/google-apps-script-type-v0.3.10...google-apps-script-type-v0.3.11) (2024-10-24)
 
 

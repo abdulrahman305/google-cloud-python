@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,12 +39,19 @@ def partition(
 class storageinsightsCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'create_dataset_config': ('parent', 'dataset_config_id', 'dataset_config', 'request_id', ),
         'create_report_config': ('parent', 'report_config', 'request_id', ),
+        'delete_dataset_config': ('name', 'request_id', ),
         'delete_report_config': ('name', 'force', 'request_id', ),
+        'get_dataset_config': ('name', ),
         'get_report_config': ('name', ),
         'get_report_detail': ('name', ),
+        'link_dataset': ('name', ),
+        'list_dataset_configs': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_report_configs': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_report_details': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'unlink_dataset': ('name', ),
+        'update_dataset_config': ('update_mask', 'dataset_config', 'request_id', ),
         'update_report_config': ('update_mask', 'report_config', 'request_id', ),
     }
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.eventarc_publishing_v1 import gapic_version as package_version
 
@@ -114,19 +117,26 @@ class PublisherClient(metaclass=PublisherClientMeta):
     A partner is a third-party event provider that is integrated
     with Eventarc.
 
-    A subscriber is a GCP customer interested in receiving events.
+    A subscriber is a Google Cloud customer interested in receiving
+    events.
 
     Channel is a first-class Eventarc resource that is created and
-    managed by the subscriber in their GCP project. A Channel
-    represents a subscriber's intent to receive events from an event
-    provider. A Channel is associated with exactly one event
-    provider.
+    managed by the subscriber in their Google Cloud project. A
+    Channel represents a subscriber's intent to receive events from
+    an event provider. A Channel is associated with exactly one
+    event provider.
 
     ChannelConnection is a first-class Eventarc resource that is
-    created and managed by the partner in their GCP project. A
-    ChannelConnection represents a connection between a partner and
-    a subscriber's Channel. A ChannelConnection has a one-to-one
-    mapping with a Channel.
+    created and managed by the partner in their Google Cloud
+    project. A ChannelConnection represents a connection between a
+    partner and a subscriber's Channel. A ChannelConnection has a
+    one-to-one mapping with a Channel.
+
+    Bus is a first-class Eventarc resource that is created and
+    managed in a Google Cloud project. A Bus provides a discoverable
+    endpoint for events and is a router that receives all events
+    published by event providers and delivers them to zero or more
+    subscribers.
 
     Publisher allows an event provider to publish events to
     Eventarc.
@@ -486,6 +496,33 @@ class PublisherClient(metaclass=PublisherClientMeta):
 
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
+
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
 
     @property
     def api_endpoint(self):
@@ -965,5 +1002,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("PublisherClient",)

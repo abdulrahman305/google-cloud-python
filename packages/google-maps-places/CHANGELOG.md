@@ -1,5 +1,102 @@
 # Changelog
 
+## [0.2.2](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.2.1...google-maps-places-v0.2.2) (2025-07-02)
+
+
+### Documentation
+
+* [google-maps-places] clarify behavior of primary types and weekday text ([#14050](https://github.com/googleapis/google-cloud-python/issues/14050)) ([cf3183e](https://github.com/googleapis/google-cloud-python/commit/cf3183ec0774fb22afedea6e03716c31a9004b3a))
+
+## [0.2.1](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.2.0...google-maps-places-v0.2.1) (2025-05-29)
+
+
+### Documentation
+
+* add link to handwritten samples for google-maps-places ([#13953](https://github.com/googleapis/google-cloud-python/issues/13953)) ([ff38a2f](https://github.com/googleapis/google-cloud-python/commit/ff38a2f251311ca9c70fd010a954a49fa72ef3ed))
+* remove auto-generated snippets for google/maps/places/v1 ([2a9a069](https://github.com/googleapis/google-cloud-python/commit/2a9a0698759a369c1bfae9d8a39c0231dace5ff8))
+
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.25...google-maps-places-v0.2.0) (2025-05-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* An existing field `references` is removed from message `.google.maps.places.v1.Place`
+* An existing message `AreaSummary` is removed
+* An existing field `area_summary` is removed from message `.google.maps.places.v1.Place`
+* An existing field `description` is removed from message `.google.maps.places.v1.Place`
+
+### Features
+
+* add address descriptor proto ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* add new GoogleMapsLinks fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* add new NeighborhoodSummary fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* add new photo fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* add new review fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* add new ReviewSummary fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* update GenerativeSummary fields ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+
+
+### Bug Fixes
+
+* An existing field `area_summary` is removed from message `.google.maps.places.v1.Place` ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* An existing field `description` is removed from message `.google.maps.places.v1.Place` ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* An existing field `references` is removed from message `.google.maps.places.v1.Place` ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+* An existing message `AreaSummary` is removed ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+
+
+### Documentation
+
+* change comments for some fields in Places API ([657feee](https://github.com/googleapis/google-cloud-python/commit/657feee6e32efc9fef8a8df11790a24d8750ad36))
+
+## [0.1.25](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.24...google-maps-places-v0.1.25) (2025-03-15)
+
+
+### Features
+
+* Add postal_address and time_zone to Place ([bde4694](https://github.com/googleapis/google-cloud-python/commit/bde469472b1a74a39c8d8607c3c834e988bb0a7e))
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+
+### Documentation
+
+* [google-maps-places] Change comments in some fields in Places API ([#13635](https://github.com/googleapis/google-cloud-python/issues/13635)) ([bde4694](https://github.com/googleapis/google-cloud-python/commit/bde469472b1a74a39c8d8607c3c834e988bb0a7e))
+
+## [0.1.24](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.23...google-maps-places-v0.1.24) (2025-02-27)
+
+
+### Features
+
+* [google-maps-places] add NACS EVCS connector type support ([#13555](https://github.com/googleapis/google-cloud-python/issues/13555)) ([fdff960](https://github.com/googleapis/google-cloud-python/commit/fdff960cd7bf521e2c19e2e7ad1d17bf01fefefb))
+
+## [0.1.23](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.22...google-maps-places-v0.1.23) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([24b5afe](https://github.com/googleapis/google-cloud-python/commit/24b5afe41f5b62be671301e19a1ddc6ee97a24f2))
+* Add support for reading selective GAPIC generation methods from service YAML ([24b5afe](https://github.com/googleapis/google-cloud-python/commit/24b5afe41f5b62be671301e19a1ddc6ee97a24f2))
+
+
+### Bug Fixes
+
+* add oauth scopes to Places proto ([24b5afe](https://github.com/googleapis/google-cloud-python/commit/24b5afe41f5b62be671301e19a1ddc6ee97a24f2))
+
+## [0.1.22](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.21...google-maps-places-v0.1.22) (2025-01-27)
+
+
+### Features
+
+* add more fuel type enum values ([254b142](https://github.com/googleapis/google-cloud-python/commit/254b14252f7f22f0d47aa4038fc77252ca138ba6))
+
+
+### Documentation
+
+* A comment for enum value `LPG` in enum `FuelType` is changed to be clearer. ([254b142](https://github.com/googleapis/google-cloud-python/commit/254b14252f7f22f0d47aa4038fc77252ca138ba6))
+
 ## [0.1.21](https://github.com/googleapis/google-cloud-python/compare/google-maps-places-v0.1.20...google-maps-places-v0.1.21) (2024-12-12)
 
 

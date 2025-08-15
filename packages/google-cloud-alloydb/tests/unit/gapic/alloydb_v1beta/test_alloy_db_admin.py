@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
+from google.type import date_pb2  # type: ignore
 from google.type import dayofweek_pb2  # type: ignore
 from google.type import timeofday_pb2  # type: ignore
 
@@ -85,6 +86,13 @@ from google.cloud.alloydb_v1beta.types import (
     resources,
     service,
 )
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -327,6 +335,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AlloyDBAdminClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = AlloyDBAdminClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = AlloyDBAdminClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1622,6 +1673,7 @@ def test_get_cluster(request_type, transport: str = "grpc"):
             reconciling=True,
             satisfies_pzs=True,
             subscription_type=resources.SubscriptionType.STANDARD,
+            service_account_email="service_account_email_value",
         )
         response = client.get_cluster(request)
 
@@ -1644,6 +1696,7 @@ def test_get_cluster(request_type, transport: str = "grpc"):
     assert response.reconciling is True
     assert response.satisfies_pzs is True
     assert response.subscription_type == resources.SubscriptionType.STANDARD
+    assert response.service_account_email == "service_account_email_value"
 
 
 def test_get_cluster_non_empty_request_with_auto_populated_field():
@@ -1780,6 +1833,7 @@ async def test_get_cluster_async(
                 reconciling=True,
                 satisfies_pzs=True,
                 subscription_type=resources.SubscriptionType.STANDARD,
+                service_account_email="service_account_email_value",
             )
         )
         response = await client.get_cluster(request)
@@ -1803,6 +1857,7 @@ async def test_get_cluster_async(
     assert response.reconciling is True
     assert response.satisfies_pzs is True
     assert response.subscription_type == resources.SubscriptionType.STANDARD
+    assert response.service_account_email == "service_account_email_value"
 
 
 @pytest.mark.asyncio
@@ -2658,6 +2713,748 @@ async def test_update_cluster_flattened_error_async():
                 backup_source=resources.BackupSource(backup_uid="backup_uid_value")
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ExportClusterRequest,
+        dict,
+    ],
+)
+def test_export_cluster(request_type, transport: str = "grpc"):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = service.ExportClusterRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_export_cluster_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = service.ExportClusterRequest(
+        name="name_value",
+        database="database_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.export_cluster(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == service.ExportClusterRequest(
+            name="name_value",
+            database="database_value",
+        )
+
+
+def test_export_cluster_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.export_cluster in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.export_cluster] = mock_rpc
+        request = {}
+        client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.export_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.export_cluster
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.export_cluster
+        ] = mock_rpc
+
+        request = {}
+        await client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.export_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_async(
+    transport: str = "grpc_asyncio", request_type=service.ExportClusterRequest
+):
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = service.ExportClusterRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_async_from_dict():
+    await test_export_cluster_async(request_type=dict)
+
+
+def test_export_cluster_field_headers():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = service.ExportClusterRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_field_headers_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = service.ExportClusterRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_export_cluster_flattened():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.export_cluster(
+            name="name_value",
+            gcs_destination=service.GcsDestination(uri="uri_value"),
+            database="database_value",
+            csv_export_options=service.ExportClusterRequest.CsvExportOptions(
+                select_query="select_query_value"
+            ),
+            sql_export_options=service.ExportClusterRequest.SqlExportOptions(
+                tables=["tables_value"]
+            ),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].database
+        mock_val = "database_value"
+        assert arg == mock_val
+        assert args[0].gcs_destination == service.GcsDestination(uri="uri_value")
+        assert args[
+            0
+        ].sql_export_options == service.ExportClusterRequest.SqlExportOptions(
+            tables=["tables_value"]
+        )
+
+
+def test_export_cluster_flattened_error():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.export_cluster(
+            service.ExportClusterRequest(),
+            name="name_value",
+            gcs_destination=service.GcsDestination(uri="uri_value"),
+            database="database_value",
+            csv_export_options=service.ExportClusterRequest.CsvExportOptions(
+                select_query="select_query_value"
+            ),
+            sql_export_options=service.ExportClusterRequest.SqlExportOptions(
+                tables=["tables_value"]
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_flattened_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.export_cluster(
+            name="name_value",
+            gcs_destination=service.GcsDestination(uri="uri_value"),
+            database="database_value",
+            csv_export_options=service.ExportClusterRequest.CsvExportOptions(
+                select_query="select_query_value"
+            ),
+            sql_export_options=service.ExportClusterRequest.SqlExportOptions(
+                tables=["tables_value"]
+            ),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].database
+        mock_val = "database_value"
+        assert arg == mock_val
+        assert args[0].gcs_destination == service.GcsDestination(uri="uri_value")
+        assert args[
+            0
+        ].sql_export_options == service.ExportClusterRequest.SqlExportOptions(
+            tables=["tables_value"]
+        )
+
+
+@pytest.mark.asyncio
+async def test_export_cluster_flattened_error_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.export_cluster(
+            service.ExportClusterRequest(),
+            name="name_value",
+            gcs_destination=service.GcsDestination(uri="uri_value"),
+            database="database_value",
+            csv_export_options=service.ExportClusterRequest.CsvExportOptions(
+                select_query="select_query_value"
+            ),
+            sql_export_options=service.ExportClusterRequest.SqlExportOptions(
+                tables=["tables_value"]
+            ),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ImportClusterRequest,
+        dict,
+    ],
+)
+def test_import_cluster(request_type, transport: str = "grpc"):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = service.ImportClusterRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_import_cluster_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = service.ImportClusterRequest(
+        name="name_value",
+        gcs_uri="gcs_uri_value",
+        database="database_value",
+        user="user_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.import_cluster(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == service.ImportClusterRequest(
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+
+
+def test_import_cluster_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.import_cluster in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.import_cluster] = mock_rpc
+        request = {}
+        client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.import_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.import_cluster
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.import_cluster
+        ] = mock_rpc
+
+        request = {}
+        await client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.import_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_async(
+    transport: str = "grpc_asyncio", request_type=service.ImportClusterRequest
+):
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = service.ImportClusterRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_async_from_dict():
+    await test_import_cluster_async(request_type=dict)
+
+
+def test_import_cluster_field_headers():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = service.ImportClusterRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_field_headers_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = service.ImportClusterRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_import_cluster_flattened():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.import_cluster(
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].gcs_uri
+        mock_val = "gcs_uri_value"
+        assert arg == mock_val
+        arg = args[0].database
+        mock_val = "database_value"
+        assert arg == mock_val
+        arg = args[0].user
+        mock_val = "user_value"
+        assert arg == mock_val
+
+
+def test_import_cluster_flattened_error():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.import_cluster(
+            service.ImportClusterRequest(),
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_flattened_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.import_cluster(
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+        arg = args[0].gcs_uri
+        mock_val = "gcs_uri_value"
+        assert arg == mock_val
+        arg = args[0].database
+        mock_val = "database_value"
+        assert arg == mock_val
+        arg = args[0].user
+        mock_val = "user_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_import_cluster_flattened_error_async():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.import_cluster(
+            service.ImportClusterRequest(),
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
         )
 
 
@@ -5201,6 +5998,7 @@ def test_get_instance(request_type, transport: str = "grpc"):
             etag="etag_value",
             satisfies_pzs=True,
             outbound_public_ip_addresses=["outbound_public_ip_addresses_value"],
+            activation_policy=resources.Instance.ActivationPolicy.ALWAYS,
         )
         response = client.get_instance(request)
 
@@ -5227,6 +6025,7 @@ def test_get_instance(request_type, transport: str = "grpc"):
     assert response.outbound_public_ip_addresses == [
         "outbound_public_ip_addresses_value"
     ]
+    assert response.activation_policy == resources.Instance.ActivationPolicy.ALWAYS
 
 
 def test_get_instance_non_empty_request_with_auto_populated_field():
@@ -5365,6 +6164,7 @@ async def test_get_instance_async(
                 etag="etag_value",
                 satisfies_pzs=True,
                 outbound_public_ip_addresses=["outbound_public_ip_addresses_value"],
+                activation_policy=resources.Instance.ActivationPolicy.ALWAYS,
             )
         )
         response = await client.get_instance(request)
@@ -5392,6 +6192,7 @@ async def test_get_instance_async(
     assert response.outbound_public_ip_addresses == [
         "outbound_public_ip_addresses_value"
     ]
+    assert response.activation_policy == resources.Instance.ActivationPolicy.ALWAYS
 
 
 @pytest.mark.asyncio
@@ -14993,6 +15794,398 @@ def test_update_cluster_rest_flattened_error(transport: str = "rest"):
         )
 
 
+def test_export_cluster_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.export_cluster in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.export_cluster] = mock_rpc
+
+        request = {}
+        client.export_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.export_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_export_cluster_rest_required_fields(request_type=service.ExportClusterRequest):
+    transport_class = transports.AlloyDBAdminRestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request_init["database"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).export_cluster._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+    jsonified_request["database"] = "database_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).export_cluster._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+    assert "database" in jsonified_request
+    assert jsonified_request["database"] == "database_value"
+
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.export_cluster(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_export_cluster_rest_unset_required_fields():
+    transport = transports.AlloyDBAdminRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.export_cluster._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(())
+        & set(
+            (
+                "gcsDestination",
+                "name",
+                "database",
+            )
+        )
+    )
+
+
+def test_export_cluster_rest_flattened():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+            database="database_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.export_cluster(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1beta/{name=projects/*/locations/*/clusters/*}:export"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_export_cluster_rest_flattened_error(transport: str = "rest"):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.export_cluster(
+            service.ExportClusterRequest(),
+            name="name_value",
+            gcs_destination=service.GcsDestination(uri="uri_value"),
+            database="database_value",
+            csv_export_options=service.ExportClusterRequest.CsvExportOptions(
+                select_query="select_query_value"
+            ),
+            sql_export_options=service.ExportClusterRequest.SqlExportOptions(
+                tables=["tables_value"]
+            ),
+        )
+
+
+def test_import_cluster_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = AlloyDBAdminClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.import_cluster in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.import_cluster] = mock_rpc
+
+        request = {}
+        client.import_cluster(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.import_cluster(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_import_cluster_rest_required_fields(request_type=service.ImportClusterRequest):
+    transport_class = transports.AlloyDBAdminRestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request_init["gcs_uri"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).import_cluster._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+    jsonified_request["gcsUri"] = "gcs_uri_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).import_cluster._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+    assert "gcsUri" in jsonified_request
+    assert jsonified_request["gcsUri"] == "gcs_uri_value"
+
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.import_cluster(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_import_cluster_rest_unset_required_fields():
+    transport = transports.AlloyDBAdminRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.import_cluster._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(())
+        & set(
+            (
+                "name",
+                "gcsUri",
+            )
+        )
+    )
+
+
+def test_import_cluster_rest_flattened():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.import_cluster(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1beta/{name=projects/*/locations/*/clusters/*}:import"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_import_cluster_rest_flattened_error(transport: str = "rest"):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.import_cluster(
+            service.ImportClusterRequest(),
+            name="name_value",
+            gcs_uri="gcs_uri_value",
+            database="database_value",
+            user="user_value",
+        )
+
+
 def test_upgrade_cluster_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -19380,6 +20573,7 @@ def test_list_supported_database_flags_rest_required_fields(
         (
             "page_size",
             "page_token",
+            "scope",
         )
     )
     jsonified_request.update(unset_fields)
@@ -19443,6 +20637,7 @@ def test_list_supported_database_flags_rest_unset_required_fields():
             (
                 "pageSize",
                 "pageToken",
+                "scope",
             )
         )
         & set(("parent",))
@@ -21434,6 +22629,48 @@ def test_update_cluster_empty_call_grpc():
 
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
+def test_export_cluster_empty_call_grpc():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.export_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ExportClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_import_cluster_empty_call_grpc():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.import_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ImportClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
 def test_upgrade_cluster_empty_call_grpc():
     client = AlloyDBAdminClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -22166,6 +23403,7 @@ async def test_get_cluster_empty_call_grpc_asyncio():
                 reconciling=True,
                 satisfies_pzs=True,
                 subscription_type=resources.SubscriptionType.STANDARD,
+                service_account_email="service_account_email_value",
             )
         )
         await client.get_cluster(request=None)
@@ -22224,6 +23462,56 @@ async def test_update_cluster_empty_call_grpc_asyncio():
         call.assert_called()
         _, args, _ = call.mock_calls[0]
         request_msg = service.UpdateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_export_cluster_empty_call_grpc_asyncio():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.export_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ExportClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_import_cluster_empty_call_grpc_asyncio():
+    client = AlloyDBAdminAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.import_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ImportClusterRequest()
 
         assert args[0] == request_msg
 
@@ -22437,6 +23725,7 @@ async def test_get_instance_empty_call_grpc_asyncio():
                 etag="etag_value",
                 satisfies_pzs=True,
                 outbound_public_ip_addresses=["outbound_public_ip_addresses_value"],
+                activation_policy=resources.Instance.ActivationPolicy.ALWAYS,
             )
         )
         await client.get_instance(request=None)
@@ -23176,10 +24465,13 @@ def test_list_clusters_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_clusters"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_list_clusters_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_clusters"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListClustersRequest.pb(service.ListClustersRequest())
         transcode.return_value = {
             "method": "post",
@@ -23203,6 +24495,7 @@ def test_list_clusters_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListClustersResponse()
+        post_with_metadata.return_value = service.ListClustersResponse(), metadata
 
         client.list_clusters(
             request,
@@ -23214,6 +24507,7 @@ def test_list_clusters_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_cluster_rest_bad_request(request_type=service.GetClusterRequest):
@@ -23270,6 +24564,7 @@ def test_get_cluster_rest_call_success(request_type):
             reconciling=True,
             satisfies_pzs=True,
             subscription_type=resources.SubscriptionType.STANDARD,
+            service_account_email="service_account_email_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -23297,6 +24592,7 @@ def test_get_cluster_rest_call_success(request_type):
     assert response.reconciling is True
     assert response.satisfies_pzs is True
     assert response.subscription_type == resources.SubscriptionType.STANDARD
+    assert response.service_account_email == "service_account_email_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -23316,10 +24612,13 @@ def test_get_cluster_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_get_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_get_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_get_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetClusterRequest.pb(service.GetClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -23341,6 +24640,7 @@ def test_get_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.Cluster()
+        post_with_metadata.return_value = resources.Cluster(), metadata
 
         client.get_cluster(
             request,
@@ -23352,6 +24652,7 @@ def test_get_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_cluster_rest_bad_request(request_type=service.CreateClusterRequest):
@@ -23467,9 +24768,16 @@ def test_create_cluster_rest_call_success(request_type):
             ]
         },
         "satisfies_pzs": True,
-        "psc_config": {"psc_enabled": True},
+        "psc_config": {"psc_enabled": True, "service_owned_project_number": 2987},
         "maintenance_update_policy": {
-            "maintenance_windows": [{"day": 1, "start_time": {}}]
+            "maintenance_windows": [{"day": 1, "start_time": {}}],
+            "deny_maintenance_periods": [
+                {
+                    "start_date": {"year": 433, "month": 550, "day": 318},
+                    "end_date": {},
+                    "time": {},
+                }
+            ],
         },
         "maintenance_schedule": {"start_time": {}},
         "gemini_config": {"entitled": True},
@@ -23481,6 +24789,7 @@ def test_create_cluster_rest_call_success(request_type):
             "grace_end_time": {},
         },
         "tags": {},
+        "service_account_email": "service_account_email_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -23588,10 +24897,13 @@ def test_create_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_create_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateClusterRequest.pb(service.CreateClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -23613,6 +24925,7 @@ def test_create_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_cluster(
             request,
@@ -23624,6 +24937,7 @@ def test_create_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_cluster_rest_bad_request(request_type=service.UpdateClusterRequest):
@@ -23743,9 +25057,16 @@ def test_update_cluster_rest_call_success(request_type):
             ]
         },
         "satisfies_pzs": True,
-        "psc_config": {"psc_enabled": True},
+        "psc_config": {"psc_enabled": True, "service_owned_project_number": 2987},
         "maintenance_update_policy": {
-            "maintenance_windows": [{"day": 1, "start_time": {}}]
+            "maintenance_windows": [{"day": 1, "start_time": {}}],
+            "deny_maintenance_periods": [
+                {
+                    "start_date": {"year": 433, "month": 550, "day": 318},
+                    "end_date": {},
+                    "time": {},
+                }
+            ],
         },
         "maintenance_schedule": {"start_time": {}},
         "gemini_config": {"entitled": True},
@@ -23757,6 +25078,7 @@ def test_update_cluster_rest_call_success(request_type):
             "grace_end_time": {},
         },
         "tags": {},
+        "service_account_email": "service_account_email_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -23864,10 +25186,13 @@ def test_update_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_update_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_update_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_update_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateClusterRequest.pb(service.UpdateClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -23889,6 +25214,7 @@ def test_update_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_cluster(
             request,
@@ -23900,6 +25226,245 @@ def test_update_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_export_cluster_rest_bad_request(request_type=service.ExportClusterRequest):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.export_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ExportClusterRequest,
+        dict,
+    ],
+)
+def test_export_cluster_rest_call_success(request_type):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.export_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_export_cluster_rest_interceptors(null_interceptor):
+    transport = transports.AlloyDBAdminRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlloyDBAdminRestInterceptor(),
+    )
+    client = AlloyDBAdminClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_export_cluster"
+    ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_export_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "pre_export_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = service.ExportClusterRequest.pb(service.ExportClusterRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = service.ExportClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.export_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_import_cluster_rest_bad_request(request_type=service.ImportClusterRequest):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.import_cluster(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        service.ImportClusterRequest,
+        dict,
+    ],
+)
+def test_import_cluster_rest_call_success(request_type):
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/clusters/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.import_cluster(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_import_cluster_rest_interceptors(null_interceptor):
+    transport = transports.AlloyDBAdminRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.AlloyDBAdminRestInterceptor(),
+    )
+    client = AlloyDBAdminClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_import_cluster"
+    ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_import_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "pre_import_cluster"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = service.ImportClusterRequest.pb(service.ImportClusterRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = service.ImportClusterRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.import_cluster(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_upgrade_cluster_rest_bad_request(request_type=service.UpgradeClusterRequest):
@@ -23978,10 +25543,13 @@ def test_upgrade_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_upgrade_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_upgrade_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_upgrade_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpgradeClusterRequest.pb(service.UpgradeClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -24003,6 +25571,7 @@ def test_upgrade_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.upgrade_cluster(
             request,
@@ -24014,6 +25583,7 @@ def test_upgrade_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_cluster_rest_bad_request(request_type=service.DeleteClusterRequest):
@@ -24092,10 +25662,13 @@ def test_delete_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_delete_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_delete_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_delete_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.DeleteClusterRequest.pb(service.DeleteClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -24117,6 +25690,7 @@ def test_delete_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_cluster(
             request,
@@ -24128,6 +25702,7 @@ def test_delete_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_promote_cluster_rest_bad_request(request_type=service.PromoteClusterRequest):
@@ -24206,10 +25781,13 @@ def test_promote_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_promote_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_promote_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_promote_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.PromoteClusterRequest.pb(service.PromoteClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -24231,6 +25809,7 @@ def test_promote_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.promote_cluster(
             request,
@@ -24242,6 +25821,7 @@ def test_promote_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_switchover_cluster_rest_bad_request(
@@ -24322,10 +25902,13 @@ def test_switchover_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_switchover_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_switchover_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_switchover_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.SwitchoverClusterRequest.pb(
             service.SwitchoverClusterRequest()
         )
@@ -24349,6 +25932,7 @@ def test_switchover_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.switchover_cluster(
             request,
@@ -24360,6 +25944,7 @@ def test_switchover_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_restore_cluster_rest_bad_request(request_type=service.RestoreClusterRequest):
@@ -24438,10 +26023,13 @@ def test_restore_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_restore_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_restore_cluster_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_restore_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.RestoreClusterRequest.pb(service.RestoreClusterRequest())
         transcode.return_value = {
             "method": "post",
@@ -24463,6 +26051,7 @@ def test_restore_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.restore_cluster(
             request,
@@ -24474,6 +26063,7 @@ def test_restore_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_secondary_cluster_rest_bad_request(
@@ -24591,9 +26181,16 @@ def test_create_secondary_cluster_rest_call_success(request_type):
             ]
         },
         "satisfies_pzs": True,
-        "psc_config": {"psc_enabled": True},
+        "psc_config": {"psc_enabled": True, "service_owned_project_number": 2987},
         "maintenance_update_policy": {
-            "maintenance_windows": [{"day": 1, "start_time": {}}]
+            "maintenance_windows": [{"day": 1, "start_time": {}}],
+            "deny_maintenance_periods": [
+                {
+                    "start_date": {"year": 433, "month": 550, "day": 318},
+                    "end_date": {},
+                    "time": {},
+                }
+            ],
         },
         "maintenance_schedule": {"start_time": {}},
         "gemini_config": {"entitled": True},
@@ -24605,6 +26202,7 @@ def test_create_secondary_cluster_rest_call_success(request_type):
             "grace_end_time": {},
         },
         "tags": {},
+        "service_account_email": "service_account_email_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -24712,10 +26310,14 @@ def test_create_secondary_cluster_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_secondary_cluster"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor,
+        "post_create_secondary_cluster_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_secondary_cluster"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateSecondaryClusterRequest.pb(
             service.CreateSecondaryClusterRequest()
         )
@@ -24739,6 +26341,7 @@ def test_create_secondary_cluster_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_secondary_cluster(
             request,
@@ -24750,6 +26353,7 @@ def test_create_secondary_cluster_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_instances_rest_bad_request(request_type=service.ListInstancesRequest):
@@ -24834,10 +26438,13 @@ def test_list_instances_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_instances"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_list_instances_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_instances"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListInstancesRequest.pb(service.ListInstancesRequest())
         transcode.return_value = {
             "method": "post",
@@ -24861,6 +26468,7 @@ def test_list_instances_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListInstancesResponse()
+        post_with_metadata.return_value = service.ListInstancesResponse(), metadata
 
         client.list_instances(
             request,
@@ -24872,6 +26480,7 @@ def test_list_instances_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_instance_rest_bad_request(request_type=service.GetInstanceRequest):
@@ -24934,6 +26543,7 @@ def test_get_instance_rest_call_success(request_type):
             etag="etag_value",
             satisfies_pzs=True,
             outbound_public_ip_addresses=["outbound_public_ip_addresses_value"],
+            activation_policy=resources.Instance.ActivationPolicy.ALWAYS,
         )
 
         # Wrap the value into a proper Response obj
@@ -24965,6 +26575,7 @@ def test_get_instance_rest_call_success(request_type):
     assert response.outbound_public_ip_addresses == [
         "outbound_public_ip_addresses_value"
     ]
+    assert response.activation_policy == resources.Instance.ActivationPolicy.ALWAYS
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -24984,10 +26595,13 @@ def test_get_instance_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_get_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_get_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_get_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetInstanceRequest.pb(service.GetInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -25009,6 +26623,7 @@ def test_get_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.Instance()
+        post_with_metadata.return_value = resources.Instance(), metadata
 
         client.get_instance(
             request,
@@ -25020,6 +26635,7 @@ def test_get_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_instance_rest_bad_request(request_type=service.CreateInstanceRequest):
@@ -25069,7 +26685,7 @@ def test_create_instance_rest_call_success(request_type):
         "labels": {},
         "state": 1,
         "instance_type": 1,
-        "machine_config": {"cpu_count": 976},
+        "machine_config": {"cpu_count": 976, "machine_type": "machine_type_value"},
         "availability_type": 1,
         "gce_zone": "gce_zone_value",
         "database_flags": {},
@@ -25096,6 +26712,7 @@ def test_create_instance_rest_call_success(request_type):
             "query_plans_per_minute": 2378,
             "track_active_queries": True,
             "track_client_address": True,
+            "assistive_experiences_enabled": True,
         },
         "read_pool_config": {"node_count": 1070},
         "ip_address": "ip_address_value",
@@ -25116,17 +26733,34 @@ def test_create_instance_rest_call_success(request_type):
                 "allowed_consumer_projects_value2",
             ],
             "psc_dns_name": "psc_dns_name_value",
+            "psc_interface_configs": [
+                {"network_attachment_resource": "network_attachment_resource_value"}
+            ],
+            "psc_auto_connections": [
+                {
+                    "consumer_project": "consumer_project_value",
+                    "consumer_network": "consumer_network_value",
+                    "ip_address": "ip_address_value",
+                    "status": "status_value",
+                    "consumer_network_status": "consumer_network_status_value",
+                }
+            ],
         },
         "network_config": {
             "authorized_external_networks": [{"cidr_range": "cidr_range_value"}],
             "enable_public_ip": True,
             "enable_outbound_public_ip": True,
+            "network": "network_value",
+            "allocated_ip_range_override": "allocated_ip_range_override_value",
         },
         "gemini_config": {"entitled": True},
         "outbound_public_ip_addresses": [
             "outbound_public_ip_addresses_value1",
             "outbound_public_ip_addresses_value2",
         ],
+        "activation_policy": 1,
+        "connection_pool_config": {"enabled": True, "flags": {}},
+        "gca_config": {"gca_entitlement": 1},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -25234,10 +26868,13 @@ def test_create_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_create_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateInstanceRequest.pb(service.CreateInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -25259,6 +26896,7 @@ def test_create_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_instance(
             request,
@@ -25270,6 +26908,7 @@ def test_create_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_secondary_instance_rest_bad_request(
@@ -25321,7 +26960,7 @@ def test_create_secondary_instance_rest_call_success(request_type):
         "labels": {},
         "state": 1,
         "instance_type": 1,
-        "machine_config": {"cpu_count": 976},
+        "machine_config": {"cpu_count": 976, "machine_type": "machine_type_value"},
         "availability_type": 1,
         "gce_zone": "gce_zone_value",
         "database_flags": {},
@@ -25348,6 +26987,7 @@ def test_create_secondary_instance_rest_call_success(request_type):
             "query_plans_per_minute": 2378,
             "track_active_queries": True,
             "track_client_address": True,
+            "assistive_experiences_enabled": True,
         },
         "read_pool_config": {"node_count": 1070},
         "ip_address": "ip_address_value",
@@ -25368,17 +27008,34 @@ def test_create_secondary_instance_rest_call_success(request_type):
                 "allowed_consumer_projects_value2",
             ],
             "psc_dns_name": "psc_dns_name_value",
+            "psc_interface_configs": [
+                {"network_attachment_resource": "network_attachment_resource_value"}
+            ],
+            "psc_auto_connections": [
+                {
+                    "consumer_project": "consumer_project_value",
+                    "consumer_network": "consumer_network_value",
+                    "ip_address": "ip_address_value",
+                    "status": "status_value",
+                    "consumer_network_status": "consumer_network_status_value",
+                }
+            ],
         },
         "network_config": {
             "authorized_external_networks": [{"cidr_range": "cidr_range_value"}],
             "enable_public_ip": True,
             "enable_outbound_public_ip": True,
+            "network": "network_value",
+            "allocated_ip_range_override": "allocated_ip_range_override_value",
         },
         "gemini_config": {"entitled": True},
         "outbound_public_ip_addresses": [
             "outbound_public_ip_addresses_value1",
             "outbound_public_ip_addresses_value2",
         ],
+        "activation_policy": 1,
+        "connection_pool_config": {"enabled": True, "flags": {}},
+        "gca_config": {"gca_entitlement": 1},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -25486,10 +27143,14 @@ def test_create_secondary_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_secondary_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor,
+        "post_create_secondary_instance_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_secondary_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateSecondaryInstanceRequest.pb(
             service.CreateSecondaryInstanceRequest()
         )
@@ -25513,6 +27174,7 @@ def test_create_secondary_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_secondary_instance(
             request,
@@ -25524,6 +27186,7 @@ def test_create_secondary_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_batch_create_instances_rest_bad_request(
@@ -25580,7 +27243,10 @@ def test_batch_create_instances_rest_call_success(request_type):
                     "labels": {},
                     "state": 1,
                     "instance_type": 1,
-                    "machine_config": {"cpu_count": 976},
+                    "machine_config": {
+                        "cpu_count": 976,
+                        "machine_type": "machine_type_value",
+                    },
                     "availability_type": 1,
                     "gce_zone": "gce_zone_value",
                     "database_flags": {},
@@ -25607,6 +27273,7 @@ def test_batch_create_instances_rest_call_success(request_type):
                         "query_plans_per_minute": 2378,
                         "track_active_queries": True,
                         "track_client_address": True,
+                        "assistive_experiences_enabled": True,
                     },
                     "read_pool_config": {"node_count": 1070},
                     "ip_address": "ip_address_value",
@@ -25627,6 +27294,20 @@ def test_batch_create_instances_rest_call_success(request_type):
                             "allowed_consumer_projects_value2",
                         ],
                         "psc_dns_name": "psc_dns_name_value",
+                        "psc_interface_configs": [
+                            {
+                                "network_attachment_resource": "network_attachment_resource_value"
+                            }
+                        ],
+                        "psc_auto_connections": [
+                            {
+                                "consumer_project": "consumer_project_value",
+                                "consumer_network": "consumer_network_value",
+                                "ip_address": "ip_address_value",
+                                "status": "status_value",
+                                "consumer_network_status": "consumer_network_status_value",
+                            }
+                        ],
                     },
                     "network_config": {
                         "authorized_external_networks": [
@@ -25634,12 +27315,17 @@ def test_batch_create_instances_rest_call_success(request_type):
                         ],
                         "enable_public_ip": True,
                         "enable_outbound_public_ip": True,
+                        "network": "network_value",
+                        "allocated_ip_range_override": "allocated_ip_range_override_value",
                     },
                     "gemini_config": {"entitled": True},
                     "outbound_public_ip_addresses": [
                         "outbound_public_ip_addresses_value1",
                         "outbound_public_ip_addresses_value2",
                     ],
+                    "activation_policy": 1,
+                    "connection_pool_config": {"enabled": True, "flags": {}},
+                    "gca_config": {"gca_entitlement": 1},
                 },
                 "request_id": "request_id_value",
                 "validate_only": True,
@@ -25752,10 +27438,14 @@ def test_batch_create_instances_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_batch_create_instances"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor,
+        "post_batch_create_instances_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_batch_create_instances"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.BatchCreateInstancesRequest.pb(
             service.BatchCreateInstancesRequest()
         )
@@ -25779,6 +27469,7 @@ def test_batch_create_instances_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.batch_create_instances(
             request,
@@ -25790,6 +27481,7 @@ def test_batch_create_instances_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_instance_rest_bad_request(request_type=service.UpdateInstanceRequest):
@@ -25847,7 +27539,7 @@ def test_update_instance_rest_call_success(request_type):
         "labels": {},
         "state": 1,
         "instance_type": 1,
-        "machine_config": {"cpu_count": 976},
+        "machine_config": {"cpu_count": 976, "machine_type": "machine_type_value"},
         "availability_type": 1,
         "gce_zone": "gce_zone_value",
         "database_flags": {},
@@ -25874,6 +27566,7 @@ def test_update_instance_rest_call_success(request_type):
             "query_plans_per_minute": 2378,
             "track_active_queries": True,
             "track_client_address": True,
+            "assistive_experiences_enabled": True,
         },
         "read_pool_config": {"node_count": 1070},
         "ip_address": "ip_address_value",
@@ -25894,17 +27587,34 @@ def test_update_instance_rest_call_success(request_type):
                 "allowed_consumer_projects_value2",
             ],
             "psc_dns_name": "psc_dns_name_value",
+            "psc_interface_configs": [
+                {"network_attachment_resource": "network_attachment_resource_value"}
+            ],
+            "psc_auto_connections": [
+                {
+                    "consumer_project": "consumer_project_value",
+                    "consumer_network": "consumer_network_value",
+                    "ip_address": "ip_address_value",
+                    "status": "status_value",
+                    "consumer_network_status": "consumer_network_status_value",
+                }
+            ],
         },
         "network_config": {
             "authorized_external_networks": [{"cidr_range": "cidr_range_value"}],
             "enable_public_ip": True,
             "enable_outbound_public_ip": True,
+            "network": "network_value",
+            "allocated_ip_range_override": "allocated_ip_range_override_value",
         },
         "gemini_config": {"entitled": True},
         "outbound_public_ip_addresses": [
             "outbound_public_ip_addresses_value1",
             "outbound_public_ip_addresses_value2",
         ],
+        "activation_policy": 1,
+        "connection_pool_config": {"enabled": True, "flags": {}},
+        "gca_config": {"gca_entitlement": 1},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -26012,10 +27722,13 @@ def test_update_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_update_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_update_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_update_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateInstanceRequest.pb(service.UpdateInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -26037,6 +27750,7 @@ def test_update_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_instance(
             request,
@@ -26048,6 +27762,7 @@ def test_update_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_instance_rest_bad_request(request_type=service.DeleteInstanceRequest):
@@ -26130,10 +27845,13 @@ def test_delete_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_delete_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_delete_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_delete_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.DeleteInstanceRequest.pb(service.DeleteInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -26155,6 +27873,7 @@ def test_delete_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_instance(
             request,
@@ -26166,6 +27885,7 @@ def test_delete_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_failover_instance_rest_bad_request(
@@ -26250,10 +27970,13 @@ def test_failover_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_failover_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_failover_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_failover_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.FailoverInstanceRequest.pb(
             service.FailoverInstanceRequest()
         )
@@ -26277,6 +28000,7 @@ def test_failover_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.failover_instance(
             request,
@@ -26288,6 +28012,7 @@ def test_failover_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_inject_fault_rest_bad_request(request_type=service.InjectFaultRequest):
@@ -26370,10 +28095,13 @@ def test_inject_fault_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_inject_fault"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_inject_fault_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_inject_fault"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.InjectFaultRequest.pb(service.InjectFaultRequest())
         transcode.return_value = {
             "method": "post",
@@ -26395,6 +28123,7 @@ def test_inject_fault_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.inject_fault(
             request,
@@ -26406,6 +28135,7 @@ def test_inject_fault_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_restart_instance_rest_bad_request(request_type=service.RestartInstanceRequest):
@@ -26488,10 +28218,13 @@ def test_restart_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_restart_instance"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_restart_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_restart_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.RestartInstanceRequest.pb(service.RestartInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -26513,6 +28246,7 @@ def test_restart_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.restart_instance(
             request,
@@ -26524,6 +28258,7 @@ def test_restart_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_execute_sql_rest_bad_request(request_type=service.ExecuteSqlRequest):
@@ -26607,10 +28342,13 @@ def test_execute_sql_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_execute_sql"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_execute_sql_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_execute_sql"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ExecuteSqlRequest.pb(service.ExecuteSqlRequest())
         transcode.return_value = {
             "method": "post",
@@ -26632,6 +28370,7 @@ def test_execute_sql_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ExecuteSqlResponse()
+        post_with_metadata.return_value = service.ExecuteSqlResponse(), metadata
 
         client.execute_sql(
             request,
@@ -26643,6 +28382,7 @@ def test_execute_sql_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_backups_rest_bad_request(request_type=service.ListBackupsRequest):
@@ -26727,10 +28467,13 @@ def test_list_backups_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_backups"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_list_backups_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_backups"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListBackupsRequest.pb(service.ListBackupsRequest())
         transcode.return_value = {
             "method": "post",
@@ -26754,6 +28497,7 @@ def test_list_backups_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListBackupsResponse()
+        post_with_metadata.return_value = service.ListBackupsResponse(), metadata
 
         client.list_backups(
             request,
@@ -26765,6 +28509,7 @@ def test_list_backups_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_backup_rest_bad_request(request_type=service.GetBackupRequest):
@@ -26871,10 +28616,13 @@ def test_get_backup_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_get_backup"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_get_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_get_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetBackupRequest.pb(service.GetBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -26896,6 +28644,7 @@ def test_get_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.Backup()
+        post_with_metadata.return_value = resources.Backup(), metadata
 
         client.get_backup(
             request,
@@ -26907,6 +28656,7 @@ def test_get_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_backup_rest_bad_request(request_type=service.CreateBackupRequest):
@@ -26953,6 +28703,7 @@ def test_create_backup_rest_call_success(request_type):
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
         "delete_time": {},
+        "create_completion_time": {},
         "labels": {},
         "state": 1,
         "type_": 1,
@@ -27080,10 +28831,13 @@ def test_create_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_backup"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_create_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateBackupRequest.pb(service.CreateBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -27105,6 +28859,7 @@ def test_create_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_backup(
             request,
@@ -27116,6 +28871,7 @@ def test_create_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_backup_rest_bad_request(request_type=service.UpdateBackupRequest):
@@ -27166,6 +28922,7 @@ def test_update_backup_rest_call_success(request_type):
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
         "delete_time": {},
+        "create_completion_time": {},
         "labels": {},
         "state": 1,
         "type_": 1,
@@ -27293,10 +29050,13 @@ def test_update_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_update_backup"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_update_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_update_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateBackupRequest.pb(service.UpdateBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -27318,6 +29078,7 @@ def test_update_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_backup(
             request,
@@ -27329,6 +29090,7 @@ def test_update_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_backup_rest_bad_request(request_type=service.DeleteBackupRequest):
@@ -27407,10 +29169,13 @@ def test_delete_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_delete_backup"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_delete_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_delete_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.DeleteBackupRequest.pb(service.DeleteBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -27432,6 +29197,7 @@ def test_delete_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_backup(
             request,
@@ -27443,6 +29209,7 @@ def test_delete_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_supported_database_flags_rest_bad_request(
@@ -27527,10 +29294,14 @@ def test_list_supported_database_flags_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_supported_database_flags"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor,
+        "post_list_supported_database_flags_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_supported_database_flags"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListSupportedDatabaseFlagsRequest.pb(
             service.ListSupportedDatabaseFlagsRequest()
         )
@@ -27556,6 +29327,10 @@ def test_list_supported_database_flags_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListSupportedDatabaseFlagsResponse()
+        post_with_metadata.return_value = (
+            service.ListSupportedDatabaseFlagsResponse(),
+            metadata,
+        )
 
         client.list_supported_database_flags(
             request,
@@ -27567,6 +29342,7 @@ def test_list_supported_database_flags_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_generate_client_certificate_rest_bad_request(
@@ -27655,10 +29431,14 @@ def test_generate_client_certificate_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_generate_client_certificate"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor,
+        "post_generate_client_certificate_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_generate_client_certificate"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GenerateClientCertificateRequest.pb(
             service.GenerateClientCertificateRequest()
         )
@@ -27684,6 +29464,10 @@ def test_generate_client_certificate_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.GenerateClientCertificateResponse()
+        post_with_metadata.return_value = (
+            service.GenerateClientCertificateResponse(),
+            metadata,
+        )
 
         client.generate_client_certificate(
             request,
@@ -27695,6 +29479,7 @@ def test_generate_client_certificate_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_connection_info_rest_bad_request(
@@ -27793,10 +29578,13 @@ def test_get_connection_info_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_get_connection_info"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_get_connection_info_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_get_connection_info"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetConnectionInfoRequest.pb(
             service.GetConnectionInfoRequest()
         )
@@ -27820,6 +29608,7 @@ def test_get_connection_info_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.ConnectionInfo()
+        post_with_metadata.return_value = resources.ConnectionInfo(), metadata
 
         client.get_connection_info(
             request,
@@ -27831,6 +29620,7 @@ def test_get_connection_info_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_users_rest_bad_request(request_type=service.ListUsersRequest):
@@ -27915,10 +29705,13 @@ def test_list_users_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_users"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_list_users_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_users"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListUsersRequest.pb(service.ListUsersRequest())
         transcode.return_value = {
             "method": "post",
@@ -27940,6 +29733,7 @@ def test_list_users_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListUsersResponse()
+        post_with_metadata.return_value = service.ListUsersResponse(), metadata
 
         client.list_users(
             request,
@@ -27951,6 +29745,7 @@ def test_list_users_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_user_rest_bad_request(request_type=service.GetUserRequest):
@@ -28045,10 +29840,13 @@ def test_get_user_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_get_user"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_get_user_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_get_user"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetUserRequest.pb(service.GetUserRequest())
         transcode.return_value = {
             "method": "post",
@@ -28070,6 +29868,7 @@ def test_get_user_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.User()
+        post_with_metadata.return_value = resources.User(), metadata
 
         client.get_user(
             request,
@@ -28081,6 +29880,7 @@ def test_get_user_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_user_rest_bad_request(request_type=service.CreateUserRequest):
@@ -28245,10 +30045,13 @@ def test_create_user_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_create_user"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_create_user_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_create_user"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateUserRequest.pb(service.CreateUserRequest())
         transcode.return_value = {
             "method": "post",
@@ -28270,6 +30073,7 @@ def test_create_user_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.User()
+        post_with_metadata.return_value = resources.User(), metadata
 
         client.create_user(
             request,
@@ -28281,6 +30085,7 @@ def test_create_user_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_user_rest_bad_request(request_type=service.UpdateUserRequest):
@@ -28453,10 +30258,13 @@ def test_update_user_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_update_user"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_update_user_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_update_user"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateUserRequest.pb(service.UpdateUserRequest())
         transcode.return_value = {
             "method": "post",
@@ -28478,6 +30286,7 @@ def test_update_user_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.User()
+        post_with_metadata.return_value = resources.User(), metadata
 
         client.update_user(
             request,
@@ -28489,6 +30298,7 @@ def test_update_user_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_user_rest_bad_request(request_type=service.DeleteUserRequest):
@@ -28680,10 +30490,13 @@ def test_list_databases_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "post_list_databases"
     ) as post, mock.patch.object(
+        transports.AlloyDBAdminRestInterceptor, "post_list_databases_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AlloyDBAdminRestInterceptor, "pre_list_databases"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListDatabasesRequest.pb(service.ListDatabasesRequest())
         transcode.return_value = {
             "method": "post",
@@ -28707,6 +30520,7 @@ def test_list_databases_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListDatabasesResponse()
+        post_with_metadata.return_value = service.ListDatabasesResponse(), metadata
 
         client.list_databases(
             request,
@@ -28718,6 +30532,7 @@ def test_list_databases_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
@@ -29171,6 +30986,46 @@ def test_update_cluster_empty_call_rest():
         call.assert_called()
         _, args, _ = call.mock_calls[0]
         request_msg = service.UpdateClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_export_cluster_empty_call_rest():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.export_cluster), "__call__") as call:
+        client.export_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ExportClusterRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_import_cluster_empty_call_rest():
+    client = AlloyDBAdminClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.import_cluster), "__call__") as call:
+        client.import_cluster(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = service.ImportClusterRequest()
 
         assert args[0] == request_msg
 
@@ -29865,6 +31720,8 @@ def test_alloy_db_admin_base_transport():
         "get_cluster",
         "create_cluster",
         "update_cluster",
+        "export_cluster",
+        "import_cluster",
         "upgrade_cluster",
         "delete_cluster",
         "promote_cluster",
@@ -30173,6 +32030,12 @@ def test_alloy_db_admin_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.update_cluster._session
     session2 = client2.transport.update_cluster._session
+    assert session1 != session2
+    session1 = client1.transport.export_cluster._session
+    session2 = client2.transport.export_cluster._session
+    assert session1 != session2
+    session1 = client1.transport.import_cluster._session
+    session2 = client2.transport.import_cluster._session
     assert session1 != session2
     session1 = client1.transport.upgrade_cluster._session
     session2 = client2.transport.upgrade_cluster._session

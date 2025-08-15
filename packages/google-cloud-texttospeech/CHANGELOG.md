@@ -4,6 +4,61 @@
 
 [1]: https://pypi.org/project/google-cloud-texttospeech/#history
 
+## [2.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.26.0...google-cloud-texttospeech-v2.27.0) (2025-05-08)
+
+
+### Features
+
+* Support markup input for Cloud TTS Chirp 3: HD voice synthesis ([c423602](https://github.com/googleapis/google-cloud-python/commit/c423602d3a0a40119526b751d30382b0b35952d1))
+* Support pinyin/yomigana custom pronunciation encodings for cmn-cn/ja-jp ([c423602](https://github.com/googleapis/google-cloud-python/commit/c423602d3a0a40119526b751d30382b0b35952d1))
+
+## [2.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.25.1...google-cloud-texttospeech-v2.26.0) (2025-04-12)
+
+
+### Features
+
+* Support HD voice custom pronunciations ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+
+
+### Documentation
+
+* A comment for enum value `OGG_OPUS` in enum `AudioEncoding` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for enum value `PCM` in enum `AudioEncoding` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for enum value `PHONETIC_ENCODING_IPA` in enum `PhoneticEncoding` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for enum value `PHONETIC_ENCODING_X_SAMPA` in enum `PhoneticEncoding` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `audio_encoding` in message `.google.cloud.texttospeech.v1.StreamingAudioConfig` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `custom_pronunciations` in message `.google.cloud.texttospeech.v1.SynthesisInput` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `low_latency_journey_synthesis` in message `.google.cloud.texttospeech.v1.AdvancedVoiceOptions` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `phrase` in message `.google.cloud.texttospeech.v1.CustomPronunciationParams` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `pronunciations` in message `.google.cloud.texttospeech.v1.CustomPronunciations` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `text` in message `.google.cloud.texttospeech.v1.StreamingSynthesisInput` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for field `voice_clone` in message `.google.cloud.texttospeech.v1.VoiceSelectionParams` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for message `MultiSpeakerMarkup` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+* A comment for method `StreamingSynthesize` in service `TextToSpeech` is changed ([4da3cf3](https://github.com/googleapis/google-cloud-python/commit/4da3cf330b4e2b3af2963a89aa73a7f8df4154ec))
+
+## [2.25.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.25.0...google-cloud-texttospeech-v2.25.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.24.0...google-cloud-texttospeech-v2.25.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
+## [2.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.23.0...google-cloud-texttospeech-v2.24.0) (2025-01-13)
+
+
+### Features
+
+* [google-cloud-texttospeech] StreamingSynthesize now supports opus ([#13406](https://github.com/googleapis/google-cloud-python/issues/13406)) ([9f278d6](https://github.com/googleapis/google-cloud-python/commit/9f278d60dd3bd0ce4a34d1b3492f71372350aa28))
+
 ## [2.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-texttospeech-v2.22.0...google-cloud-texttospeech-v2.23.0) (2024-12-18)
 
 

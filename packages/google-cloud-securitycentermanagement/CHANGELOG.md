@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.22](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycentermanagement-v0.1.21...google-cloud-securitycentermanagement-v0.1.22) (2025-04-12)
+
+
+### Documentation
+
+* group Security Command Center packages together on cloud.google.com ([#13715](https://github.com/googleapis/google-cloud-python/issues/13715)) ([3ce0eda](https://github.com/googleapis/google-cloud-python/commit/3ce0eda3fe7b86acf2e67102077c803bf743f613)), closes [#13714](https://github.com/googleapis/google-cloud-python/issues/13714)
+
+## [0.1.21](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycentermanagement-v0.1.20...google-cloud-securitycentermanagement-v0.1.21) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+
+## [0.1.20](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycentermanagement-v0.1.19...google-cloud-securitycentermanagement-v0.1.20) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [0.1.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycentermanagement-v0.1.18...google-cloud-securitycentermanagement-v0.1.19) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycentermanagement-v0.1.17...google-cloud-securitycentermanagement-v0.1.18) (2024-12-12)
 
 

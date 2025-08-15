@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,13 +74,15 @@ class dialogflowCallTransformer(cst.CSTTransformer):
         'delete_generator': ('name', ),
         'delete_intent': ('name', ),
         'delete_knowledge_base': ('name', 'force', ),
+        'delete_phone_number': ('name', ),
         'delete_session_entity_type': ('name', ),
         'delete_sip_trunk': ('name', ),
         'delete_version': ('name', ),
         'detect_intent': ('session', 'query_input', 'query_params', 'output_audio_config', 'output_audio_config_mask', 'input_audio', ),
         'export_agent': ('parent', 'agent_uri', ),
-        'generate_stateless_suggestion': ('parent', 'generator', 'generator_name', 'conversation_context', 'trigger_events', ),
+        'generate_stateless_suggestion': ('parent', 'generator', 'generator_name', 'context_references', 'conversation_context', 'trigger_events', ),
         'generate_stateless_summary': ('stateless_conversation', 'conversation_profile', 'latest_message', 'max_context_size', ),
+        'generate_suggestions': ('conversation', 'latest_message', 'trigger_events', ),
         'get_agent': ('parent', ),
         'get_answer_record': ('name', ),
         'get_context': ('name', ),
@@ -102,6 +104,7 @@ class dialogflowCallTransformer(cst.CSTTransformer):
         'get_version': ('name', ),
         'import_agent': ('parent', 'agent_uri', 'agent_content', ),
         'import_documents': ('parent', 'document_template', 'gcs_source', 'import_gcs_custom_metadata', ),
+        'ingest_context_references': ('conversation', 'context_references', ),
         'initialize_encryption_spec': ('encryption_spec', ),
         'list_answer_records': ('parent', 'filter', 'page_size', 'page_token', ),
         'list_contexts': ('parent', 'page_size', 'page_token', ),
@@ -115,6 +118,7 @@ class dialogflowCallTransformer(cst.CSTTransformer):
         'list_knowledge_bases': ('parent', 'page_size', 'page_token', 'filter', ),
         'list_messages': ('parent', 'filter', 'page_size', 'page_token', ),
         'list_participants': ('parent', 'page_size', 'page_token', ),
+        'list_phone_numbers': ('parent', 'page_size', 'page_token', 'show_deleted', ),
         'list_session_entity_types': ('parent', 'page_size', 'page_token', ),
         'list_sip_trunks': ('parent', 'page_size', 'page_token', ),
         'list_suggestions': ('parent', 'page_size', 'page_token', 'filter', ),
@@ -133,6 +137,7 @@ class dialogflowCallTransformer(cst.CSTTransformer):
         'suggest_knowledge_assist': ('parent', 'latest_message', 'context_size', 'previous_suggested_query', ),
         'suggest_smart_replies': ('parent', 'current_text_input', 'latest_message', 'context_size', ),
         'train_agent': ('parent', ),
+        'undelete_phone_number': ('name', ),
         'update_answer_record': ('answer_record', 'update_mask', ),
         'update_context': ('context', 'update_mask', ),
         'update_conversation_profile': ('conversation_profile', 'update_mask', ),
@@ -144,6 +149,7 @@ class dialogflowCallTransformer(cst.CSTTransformer):
         'update_intent': ('intent', 'language_code', 'update_mask', 'intent_view', ),
         'update_knowledge_base': ('knowledge_base', 'update_mask', ),
         'update_participant': ('participant', 'update_mask', ),
+        'update_phone_number': ('phone_number', 'update_mask', ),
         'update_session_entity_type': ('session_entity_type', 'update_mask', ),
         'update_sip_trunk': ('sip_trunk', 'update_mask', ),
         'update_version': ('version', 'update_mask', ),

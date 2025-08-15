@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.speech_v1p1beta1 import gapic_version as package_version
 
@@ -80,6 +81,12 @@ class SpeechAsyncClient:
     _DEFAULT_ENDPOINT_TEMPLATE = SpeechClient._DEFAULT_ENDPOINT_TEMPLATE
     _DEFAULT_UNIVERSE = SpeechClient._DEFAULT_UNIVERSE
 
+    crypto_key_path = staticmethod(SpeechClient.crypto_key_path)
+    parse_crypto_key_path = staticmethod(SpeechClient.parse_crypto_key_path)
+    crypto_key_version_path = staticmethod(SpeechClient.crypto_key_version_path)
+    parse_crypto_key_version_path = staticmethod(
+        SpeechClient.parse_crypto_key_version_path
+    )
     custom_class_path = staticmethod(SpeechClient.custom_class_path)
     parse_custom_class_path = staticmethod(SpeechClient.parse_custom_class_path)
     phrase_set_path = staticmethod(SpeechClient.phrase_set_path)
@@ -369,7 +376,10 @@ class SpeechAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([config, audio])
+        flattened_params = [config, audio]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -504,7 +514,10 @@ class SpeechAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([config, audio])
+        flattened_params = [config, audio]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -827,6 +840,9 @@ class SpeechAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("SpeechAsyncClient",)

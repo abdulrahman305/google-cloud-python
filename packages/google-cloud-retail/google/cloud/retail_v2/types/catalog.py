@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -134,8 +134,8 @@ class CatalogAttribute(proto.Message):
 
             [CatalogAttribute][google.cloud.retail.v2.CatalogAttribute]
             can be pre-loaded by using
-            [CatalogService.AddCatalogAttribute][google.cloud.retail.v2.CatalogService.AddCatalogAttribute],
-            [CatalogService.ImportCatalogAttributes][], or
+            [CatalogService.AddCatalogAttribute][google.cloud.retail.v2.CatalogService.AddCatalogAttribute]
+            or
             [CatalogService.UpdateAttributesConfig][google.cloud.retail.v2.CatalogService.UpdateAttributesConfig]
             APIs. This field is ``False`` for pre-loaded
             [CatalogAttribute][google.cloud.retail.v2.CatalogAttribute]s.

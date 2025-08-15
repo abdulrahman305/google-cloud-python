@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.visionai_v1alpha1 import gapic_version as package_version
 
@@ -521,6 +524,33 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -791,7 +821,10 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -904,7 +937,10 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1029,7 +1065,10 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, analysis, analysis_id])
+        flattened_params = [parent, analysis, analysis_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1161,7 +1200,10 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([analysis, update_mask])
+        flattened_params = [analysis, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1289,7 +1331,10 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1394,16 +1439,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_operation(
         self,
@@ -1449,16 +1498,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def delete_operation(
         self,
@@ -1681,16 +1734,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_iam_policy(
         self,
@@ -1803,16 +1860,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def test_iam_permissions(
         self,
@@ -1863,16 +1924,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_location(
         self,
@@ -1918,16 +1983,20 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def list_locations(
         self,
@@ -1973,21 +2042,27 @@ class LiveVideoAnalyticsClient(metaclass=LiveVideoAnalyticsClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("LiveVideoAnalyticsClient",)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,12 @@ from .services.grafeas import GrafeasAsyncClient, GrafeasClient
 from .types.attestation import AttestationNote, AttestationOccurrence, Jwt
 from .types.build import BuildNote, BuildOccurrence
 from .types.common import (
+    BaseImage,
     Digest,
     Envelope,
     EnvelopeSignature,
     FileLocation,
+    LayerDetails,
     License,
     NoteKind,
     RelatedUrl,
@@ -102,6 +104,13 @@ from .types.sbom import (
     SBOMReferenceNote,
     SBOMReferenceOccurrence,
 )
+from .types.secret import (
+    SecretKind,
+    SecretLocation,
+    SecretNote,
+    SecretOccurrence,
+    SecretStatus,
+)
 from .types.severity import Severity
 from .types.slsa_provenance import SlsaProvenance
 from .types.slsa_provenance_zero_two import SlsaProvenanceZeroTwo
@@ -121,6 +130,7 @@ __all__ = (
     "Artifact",
     "AttestationNote",
     "AttestationOccurrence",
+    "BaseImage",
     "BatchCreateNotesRequest",
     "BatchCreateNotesResponse",
     "BatchCreateOccurrencesRequest",
@@ -169,6 +179,7 @@ __all__ = (
     "InTotoStatement",
     "Jwt",
     "Layer",
+    "LayerDetails",
     "License",
     "ListNoteOccurrencesRequest",
     "ListNoteOccurrencesResponse",
@@ -192,6 +203,11 @@ __all__ = (
     "SBOMReferenceOccurrence",
     "SbomReferenceIntotoPayload",
     "SbomReferenceIntotoPredicate",
+    "SecretKind",
+    "SecretLocation",
+    "SecretNote",
+    "SecretOccurrence",
+    "SecretStatus",
     "Severity",
     "Signature",
     "SlsaProvenance",

@@ -4,6 +4,36 @@
 
 [1]: https://pypi.org/project/google-cloud-tasks/#history
 
+## [2.19.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tasks-v2.19.2...google-cloud-tasks-v2.19.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [2.19.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tasks-v2.19.1...google-cloud-tasks-v2.19.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tasks-v2.19.0...google-cloud-tasks-v2.19.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [2.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tasks-v2.18.0...google-cloud-tasks-v2.19.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [2.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tasks-v2.17.1...google-cloud-tasks-v2.18.0) (2024-12-12)
 
 

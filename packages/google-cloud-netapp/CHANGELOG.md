@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.3.23](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.22...google-cloud-netapp-v0.3.23) (2025-05-20)
+
+
+### Features
+
+* [google-cloud-netapp] A new message `google.cloud.netapp.v1.BackupRetentionPolicy` is added in `google.cloud.netapp.v1.BackupVault` ([1423ec9](https://github.com/googleapis/google-cloud-python/commit/1423ec9bacb0f81f7e46929a6b82ecb5f20d24eb))
+* A new field `enforced_retention_end_time` in message `google.cloud.netapp.v1.Backup` is added ([1423ec9](https://github.com/googleapis/google-cloud-python/commit/1423ec9bacb0f81f7e46929a6b82ecb5f20d24eb))
+* New fields `custom_performance_enabled`, `total_throughput_mibps`, `total_iops` in message `google.cloud.netapp.v1.StoragePool` are added ([1423ec9](https://github.com/googleapis/google-cloud-python/commit/1423ec9bacb0f81f7e46929a6b82ecb5f20d24eb))
+
+
+### Documentation
+
+* A comment for field `transfer_bytes` in message `.google.cloud.netapp.v1.TransferStats` is changed ([1423ec9](https://github.com/googleapis/google-cloud-python/commit/1423ec9bacb0f81f7e46929a6b82ecb5f20d24eb))
+
+## [0.3.22](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.21...google-cloud-netapp-v0.3.22) (2025-05-08)
+
+
+### Features
+
+* add `source_region`, `backup_region`, `source_backup_vault`, `destination_backup_vault`, `backup_vault_type` to `BackupVault` message ([baa765a](https://github.com/googleapis/google-cloud-python/commit/baa765afd28c859df2e4003fd449d70ff7f424b1))
+* add `volume_region` and `backup_region` to backup `Backup` message ([baa765a](https://github.com/googleapis/google-cloud-python/commit/baa765afd28c859df2e4003fd449d70ff7f424b1))
+
+## [0.3.21](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.20...google-cloud-netapp-v0.3.21) (2025-04-17)
+
+
+### Documentation
+
+* [google-cloud-netapp] A comment for field `cooling_threshold_days` in message `.google.cloud.netapp.v1.TieringPolicy` is changed ([#13795](https://github.com/googleapis/google-cloud-python/issues/13795)) ([5035014](https://github.com/googleapis/google-cloud-python/commit/503501456f77783c07076530b63e58292f26dec4))
+
+## [0.3.20](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.19...google-cloud-netapp-v0.3.20) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+
+## [0.3.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.18...google-cloud-netapp-v0.3.19) (2025-02-12)
+
+
+### Features
+
+* add ipAddress field to MountOption ([b266867](https://github.com/googleapis/google-cloud-python/commit/b2668671a5afa4164ff9be4a24888c63256e6b1b))
+* Add REST Interceptors which support reading metadata ([b266867](https://github.com/googleapis/google-cloud-python/commit/b2668671a5afa4164ff9be4a24888c63256e6b1b))
+
+## [0.3.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.17...google-cloud-netapp-v0.3.18) (2025-01-13)
+
+
+### Features
+
+* Add ValidateDirectoryService API for testing AD connection of a storage pool ([b45a11d](https://github.com/googleapis/google-cloud-python/commit/b45a11db722f709f055d703f4ef7fd4cbf8655fa))
+
+
+### Documentation
+
+* Remove the format for `replication` in message `google.cloud.netapp.v1.HybridReplicationParameters` ([b45a11d](https://github.com/googleapis/google-cloud-python/commit/b45a11db722f709f055d703f4ef7fd4cbf8655fa))
+
 ## [0.3.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-netapp-v0.3.16...google-cloud-netapp-v0.3.17) (2024-12-12)
 
 

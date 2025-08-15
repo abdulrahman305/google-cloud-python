@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ from google.auth.exceptions import MutualTLSChannelError
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.cloud.speech_v1p1beta1.services.adaptation import (
     AdaptationAsyncClient,
@@ -61,6 +62,13 @@ from google.cloud.speech_v1p1beta1.services.adaptation import (
     transports,
 )
 from google.cloud.speech_v1p1beta1.types import cloud_speech_adaptation, resource
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -295,6 +303,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AdaptationClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = AdaptationClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = AdaptationClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1046,6 +1097,13 @@ def test_create_phrase_set(request_type, transport: str = "grpc"):
         call.return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.create_phrase_set(request)
 
@@ -1059,6 +1117,13 @@ def test_create_phrase_set(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_create_phrase_set_non_empty_request_with_auto_populated_field():
@@ -1195,6 +1260,13 @@ async def test_create_phrase_set_async(
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.create_phrase_set(request)
@@ -1209,6 +1281,13 @@ async def test_create_phrase_set_async(
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -1406,6 +1485,13 @@ def test_get_phrase_set(request_type, transport: str = "grpc"):
         call.return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.get_phrase_set(request)
 
@@ -1419,6 +1505,13 @@ def test_get_phrase_set(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_get_phrase_set_non_empty_request_with_auto_populated_field():
@@ -1547,6 +1640,13 @@ async def test_get_phrase_set_async(
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.get_phrase_set(request)
@@ -1561,6 +1661,13 @@ async def test_get_phrase_set_async(
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -2252,6 +2359,13 @@ def test_update_phrase_set(request_type, transport: str = "grpc"):
         call.return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.update_phrase_set(request)
 
@@ -2265,6 +2379,13 @@ def test_update_phrase_set(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_update_phrase_set_non_empty_request_with_auto_populated_field():
@@ -2395,6 +2516,13 @@ async def test_update_phrase_set_async(
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.update_phrase_set(request)
@@ -2409,6 +2537,13 @@ async def test_update_phrase_set_async(
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -2926,6 +3061,13 @@ def test_create_custom_class(request_type, transport: str = "grpc"):
         call.return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.create_custom_class(request)
 
@@ -2939,6 +3081,13 @@ def test_create_custom_class(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_create_custom_class_non_empty_request_with_auto_populated_field():
@@ -3077,6 +3226,13 @@ async def test_create_custom_class_async(
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.create_custom_class(request)
@@ -3091,6 +3247,13 @@ async def test_create_custom_class_async(
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -3292,6 +3455,13 @@ def test_get_custom_class(request_type, transport: str = "grpc"):
         call.return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.get_custom_class(request)
 
@@ -3305,6 +3475,13 @@ def test_get_custom_class(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_get_custom_class_non_empty_request_with_auto_populated_field():
@@ -3435,6 +3612,13 @@ async def test_get_custom_class_async(
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.get_custom_class(request)
@@ -3449,6 +3633,13 @@ async def test_get_custom_class_async(
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -4170,6 +4361,13 @@ def test_update_custom_class(request_type, transport: str = "grpc"):
         call.return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
         response = client.update_custom_class(request)
 
@@ -4183,6 +4381,13 @@ def test_update_custom_class(request_type, transport: str = "grpc"):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 def test_update_custom_class_non_empty_request_with_auto_populated_field():
@@ -4315,6 +4520,13 @@ async def test_update_custom_class_async(
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         response = await client.update_custom_class(request)
@@ -4329,6 +4541,13 @@ async def test_update_custom_class_async(
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.asyncio
@@ -7198,6 +7417,13 @@ async def test_create_phrase_set_empty_call_grpc_asyncio():
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.create_phrase_set(request=None)
@@ -7226,6 +7452,13 @@ async def test_get_phrase_set_empty_call_grpc_asyncio():
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.get_phrase_set(request=None)
@@ -7283,6 +7516,13 @@ async def test_update_phrase_set_empty_call_grpc_asyncio():
             resource.PhraseSet(
                 name="name_value",
                 boost=0.551,
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.PhraseSet.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.update_phrase_set(request=None)
@@ -7338,6 +7578,13 @@ async def test_create_custom_class_empty_call_grpc_asyncio():
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.create_custom_class(request=None)
@@ -7366,6 +7613,13 @@ async def test_get_custom_class_empty_call_grpc_asyncio():
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.get_custom_class(request=None)
@@ -7425,6 +7679,13 @@ async def test_update_custom_class_empty_call_grpc_asyncio():
             resource.CustomClass(
                 name="name_value",
                 custom_class_id="custom_class_id_value",
+                kms_key_name="kms_key_name_value",
+                kms_key_version_name="kms_key_version_name_value",
+                uid="uid_value",
+                display_name="display_name_value",
+                state=resource.CustomClass.State.ACTIVE,
+                etag="etag_value",
+                reconciling=True,
             )
         )
         await client.update_custom_class(request=None)
@@ -7516,6 +7777,13 @@ def test_create_phrase_set_rest_call_success(request_type):
         return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -7534,6 +7802,13 @@ def test_create_phrase_set_rest_call_success(request_type):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -7553,10 +7828,13 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_create_phrase_set"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_create_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_create_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.CreatePhraseSetRequest.pb(
             cloud_speech_adaptation.CreatePhraseSetRequest()
         )
@@ -7580,6 +7858,7 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.PhraseSet()
+        post_with_metadata.return_value = resource.PhraseSet(), metadata
 
         client.create_phrase_set(
             request,
@@ -7591,6 +7870,7 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_phrase_set_rest_bad_request(
@@ -7640,6 +7920,13 @@ def test_get_phrase_set_rest_call_success(request_type):
         return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -7658,6 +7945,13 @@ def test_get_phrase_set_rest_call_success(request_type):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -7677,10 +7971,13 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_get_phrase_set"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_get_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_get_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.GetPhraseSetRequest.pb(
             cloud_speech_adaptation.GetPhraseSetRequest()
         )
@@ -7704,6 +8001,7 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.PhraseSet()
+        post_with_metadata.return_value = resource.PhraseSet(), metadata
 
         client.get_phrase_set(
             request,
@@ -7715,6 +8013,7 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_phrase_set_rest_bad_request(
@@ -7799,10 +8098,13 @@ def test_list_phrase_set_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_list_phrase_set"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_list_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_list_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.ListPhraseSetRequest.pb(
             cloud_speech_adaptation.ListPhraseSetRequest()
         )
@@ -7828,6 +8130,10 @@ def test_list_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech_adaptation.ListPhraseSetResponse()
+        post_with_metadata.return_value = (
+            cloud_speech_adaptation.ListPhraseSetResponse(),
+            metadata,
+        )
 
         client.list_phrase_set(
             request,
@@ -7839,6 +8145,7 @@ def test_list_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_phrase_set_rest_bad_request(
@@ -7888,6 +8195,16 @@ def test_update_phrase_set_rest_call_success(request_type):
         "name": "projects/sample1/locations/sample2/phraseSets/sample3",
         "phrases": [{"value": "value_value", "boost": 0.551}],
         "boost": 0.551,
+        "kms_key_name": "kms_key_name_value",
+        "kms_key_version_name": "kms_key_version_name_value",
+        "uid": "uid_value",
+        "display_name": "display_name_value",
+        "state": 2,
+        "delete_time": {"seconds": 751, "nanos": 543},
+        "expire_time": {},
+        "annotations": {},
+        "etag": "etag_value",
+        "reconciling": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -7966,6 +8283,13 @@ def test_update_phrase_set_rest_call_success(request_type):
         return_value = resource.PhraseSet(
             name="name_value",
             boost=0.551,
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.PhraseSet.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -7984,6 +8308,13 @@ def test_update_phrase_set_rest_call_success(request_type):
     assert isinstance(response, resource.PhraseSet)
     assert response.name == "name_value"
     assert math.isclose(response.boost, 0.551, rel_tol=1e-6)
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.PhraseSet.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8003,10 +8334,13 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_update_phrase_set"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_update_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_update_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.UpdatePhraseSetRequest.pb(
             cloud_speech_adaptation.UpdatePhraseSetRequest()
         )
@@ -8030,6 +8364,7 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.PhraseSet()
+        post_with_metadata.return_value = resource.PhraseSet(), metadata
 
         client.update_phrase_set(
             request,
@@ -8041,6 +8376,7 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_phrase_set_rest_bad_request(
@@ -8199,6 +8535,13 @@ def test_create_custom_class_rest_call_success(request_type):
         return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -8217,6 +8560,13 @@ def test_create_custom_class_rest_call_success(request_type):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8236,10 +8586,13 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_create_custom_class"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_create_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_create_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.CreateCustomClassRequest.pb(
             cloud_speech_adaptation.CreateCustomClassRequest()
         )
@@ -8263,6 +8616,7 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.CustomClass()
+        post_with_metadata.return_value = resource.CustomClass(), metadata
 
         client.create_custom_class(
             request,
@@ -8274,6 +8628,7 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_custom_class_rest_bad_request(
@@ -8323,6 +8678,13 @@ def test_get_custom_class_rest_call_success(request_type):
         return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -8341,6 +8703,13 @@ def test_get_custom_class_rest_call_success(request_type):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8360,10 +8729,13 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_get_custom_class"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_get_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_get_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.GetCustomClassRequest.pb(
             cloud_speech_adaptation.GetCustomClassRequest()
         )
@@ -8387,6 +8759,7 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.CustomClass()
+        post_with_metadata.return_value = resource.CustomClass(), metadata
 
         client.get_custom_class(
             request,
@@ -8398,6 +8771,7 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_custom_classes_rest_bad_request(
@@ -8484,10 +8858,13 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_list_custom_classes"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_list_custom_classes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_list_custom_classes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.ListCustomClassesRequest.pb(
             cloud_speech_adaptation.ListCustomClassesRequest()
         )
@@ -8513,6 +8890,10 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech_adaptation.ListCustomClassesResponse()
+        post_with_metadata.return_value = (
+            cloud_speech_adaptation.ListCustomClassesResponse(),
+            metadata,
+        )
 
         client.list_custom_classes(
             request,
@@ -8524,6 +8905,7 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_custom_class_rest_bad_request(
@@ -8577,6 +8959,16 @@ def test_update_custom_class_rest_call_success(request_type):
         "name": "projects/sample1/locations/sample2/customClasses/sample3",
         "custom_class_id": "custom_class_id_value",
         "items": [{"value": "value_value"}],
+        "kms_key_name": "kms_key_name_value",
+        "kms_key_version_name": "kms_key_version_name_value",
+        "uid": "uid_value",
+        "display_name": "display_name_value",
+        "state": 2,
+        "delete_time": {"seconds": 751, "nanos": 543},
+        "expire_time": {},
+        "annotations": {},
+        "etag": "etag_value",
+        "reconciling": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -8655,6 +9047,13 @@ def test_update_custom_class_rest_call_success(request_type):
         return_value = resource.CustomClass(
             name="name_value",
             custom_class_id="custom_class_id_value",
+            kms_key_name="kms_key_name_value",
+            kms_key_version_name="kms_key_version_name_value",
+            uid="uid_value",
+            display_name="display_name_value",
+            state=resource.CustomClass.State.ACTIVE,
+            etag="etag_value",
+            reconciling=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -8673,6 +9072,13 @@ def test_update_custom_class_rest_call_success(request_type):
     assert isinstance(response, resource.CustomClass)
     assert response.name == "name_value"
     assert response.custom_class_id == "custom_class_id_value"
+    assert response.kms_key_name == "kms_key_name_value"
+    assert response.kms_key_version_name == "kms_key_version_name_value"
+    assert response.uid == "uid_value"
+    assert response.display_name == "display_name_value"
+    assert response.state == resource.CustomClass.State.ACTIVE
+    assert response.etag == "etag_value"
+    assert response.reconciling is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -8692,10 +9098,13 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AdaptationRestInterceptor, "post_update_custom_class"
     ) as post, mock.patch.object(
+        transports.AdaptationRestInterceptor, "post_update_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AdaptationRestInterceptor, "pre_update_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech_adaptation.UpdateCustomClassRequest.pb(
             cloud_speech_adaptation.UpdateCustomClassRequest()
         )
@@ -8719,6 +9128,7 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resource.CustomClass()
+        post_with_metadata.return_value = resource.CustomClass(), metadata
 
         client.update_custom_class(
             request,
@@ -8730,6 +9140,7 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_custom_class_rest_bad_request(
@@ -9632,10 +10043,73 @@ def test_adaptation_transport_channel_mtls_with_adc(transport_class):
             assert transport.grpc_channel == mock_grpc_channel
 
 
-def test_custom_class_path():
+def test_crypto_key_path():
     project = "squid"
     location = "clam"
-    custom_class = "whelk"
+    key_ring = "whelk"
+    crypto_key = "octopus"
+    expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}".format(
+        project=project,
+        location=location,
+        key_ring=key_ring,
+        crypto_key=crypto_key,
+    )
+    actual = AdaptationClient.crypto_key_path(project, location, key_ring, crypto_key)
+    assert expected == actual
+
+
+def test_parse_crypto_key_path():
+    expected = {
+        "project": "oyster",
+        "location": "nudibranch",
+        "key_ring": "cuttlefish",
+        "crypto_key": "mussel",
+    }
+    path = AdaptationClient.crypto_key_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AdaptationClient.parse_crypto_key_path(path)
+    assert expected == actual
+
+
+def test_crypto_key_version_path():
+    project = "winkle"
+    location = "nautilus"
+    key_ring = "scallop"
+    crypto_key = "abalone"
+    crypto_key_version = "squid"
+    expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}/cryptoKeyVersions/{crypto_key_version}".format(
+        project=project,
+        location=location,
+        key_ring=key_ring,
+        crypto_key=crypto_key,
+        crypto_key_version=crypto_key_version,
+    )
+    actual = AdaptationClient.crypto_key_version_path(
+        project, location, key_ring, crypto_key, crypto_key_version
+    )
+    assert expected == actual
+
+
+def test_parse_crypto_key_version_path():
+    expected = {
+        "project": "clam",
+        "location": "whelk",
+        "key_ring": "octopus",
+        "crypto_key": "oyster",
+        "crypto_key_version": "nudibranch",
+    }
+    path = AdaptationClient.crypto_key_version_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AdaptationClient.parse_crypto_key_version_path(path)
+    assert expected == actual
+
+
+def test_custom_class_path():
+    project = "cuttlefish"
+    location = "mussel"
+    custom_class = "winkle"
     expected = (
         "projects/{project}/locations/{location}/customClasses/{custom_class}".format(
             project=project,
@@ -9649,9 +10123,9 @@ def test_custom_class_path():
 
 def test_parse_custom_class_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "custom_class": "nudibranch",
+        "project": "nautilus",
+        "location": "scallop",
+        "custom_class": "abalone",
     }
     path = AdaptationClient.custom_class_path(**expected)
 
@@ -9661,9 +10135,9 @@ def test_parse_custom_class_path():
 
 
 def test_phrase_set_path():
-    project = "cuttlefish"
-    location = "mussel"
-    phrase_set = "winkle"
+    project = "squid"
+    location = "clam"
+    phrase_set = "whelk"
     expected = "projects/{project}/locations/{location}/phraseSets/{phrase_set}".format(
         project=project,
         location=location,
@@ -9675,9 +10149,9 @@ def test_phrase_set_path():
 
 def test_parse_phrase_set_path():
     expected = {
-        "project": "nautilus",
-        "location": "scallop",
-        "phrase_set": "abalone",
+        "project": "octopus",
+        "location": "oyster",
+        "phrase_set": "nudibranch",
     }
     path = AdaptationClient.phrase_set_path(**expected)
 
@@ -9687,7 +10161,7 @@ def test_parse_phrase_set_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "squid"
+    billing_account = "cuttlefish"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -9697,7 +10171,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "clam",
+        "billing_account": "mussel",
     }
     path = AdaptationClient.common_billing_account_path(**expected)
 
@@ -9707,7 +10181,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "whelk"
+    folder = "winkle"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -9717,7 +10191,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "octopus",
+        "folder": "nautilus",
     }
     path = AdaptationClient.common_folder_path(**expected)
 
@@ -9727,7 +10201,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "oyster"
+    organization = "scallop"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -9737,7 +10211,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nudibranch",
+        "organization": "abalone",
     }
     path = AdaptationClient.common_organization_path(**expected)
 
@@ -9747,7 +10221,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "cuttlefish"
+    project = "squid"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -9757,7 +10231,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "mussel",
+        "project": "clam",
     }
     path = AdaptationClient.common_project_path(**expected)
 
@@ -9767,8 +10241,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "winkle"
-    location = "nautilus"
+    project = "whelk"
+    location = "octopus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -9779,8 +10253,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "scallop",
-        "location": "abalone",
+        "project": "oyster",
+        "location": "nudibranch",
     }
     path = AdaptationClient.common_location_path(**expected)
 

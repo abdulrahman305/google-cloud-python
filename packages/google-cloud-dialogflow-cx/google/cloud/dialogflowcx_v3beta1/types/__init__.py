@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ from .data_store_connection import (
     DataStoreConnection,
     DataStoreConnectionSignals,
     DataStoreType,
+    DocumentProcessingMode,
 )
 from .deployment import (
     Deployment,
@@ -209,6 +210,7 @@ from .playbook import (
     DeletePlaybookVersionRequest,
     GetPlaybookRequest,
     GetPlaybookVersionRequest,
+    Handler,
     ListPlaybooksRequest,
     ListPlaybooksResponse,
     ListPlaybookVersionsRequest,
@@ -304,14 +306,22 @@ from .test_case import (
 )
 from .tool import (
     CreateToolRequest,
+    CreateToolVersionRequest,
     DeleteToolRequest,
+    DeleteToolVersionRequest,
     ExportToolsMetadata,
     ExportToolsRequest,
     ExportToolsResponse,
     GetToolRequest,
+    GetToolVersionRequest,
     ListToolsRequest,
     ListToolsResponse,
+    ListToolVersionsRequest,
+    ListToolVersionsResponse,
+    RestoreToolVersionRequest,
+    RestoreToolVersionResponse,
     Tool,
+    ToolVersion,
     UpdateToolRequest,
 )
 from .tool_call import ToolCall, ToolCallResult
@@ -395,6 +405,7 @@ __all__ = (
     "DataStoreConnection",
     "DataStoreConnectionSignals",
     "DataStoreType",
+    "DocumentProcessingMode",
     "Deployment",
     "GetDeploymentRequest",
     "ListDeploymentsRequest",
@@ -523,6 +534,7 @@ __all__ = (
     "DeletePlaybookVersionRequest",
     "GetPlaybookRequest",
     "GetPlaybookVersionRequest",
+    "Handler",
     "ListPlaybooksRequest",
     "ListPlaybooksResponse",
     "ListPlaybookVersionsRequest",
@@ -608,14 +620,22 @@ __all__ = (
     "UpdateTestCaseRequest",
     "TestResult",
     "CreateToolRequest",
+    "CreateToolVersionRequest",
     "DeleteToolRequest",
+    "DeleteToolVersionRequest",
     "ExportToolsMetadata",
     "ExportToolsRequest",
     "ExportToolsResponse",
     "GetToolRequest",
+    "GetToolVersionRequest",
     "ListToolsRequest",
     "ListToolsResponse",
+    "ListToolVersionsRequest",
+    "ListToolVersionsResponse",
+    "RestoreToolVersionRequest",
+    "RestoreToolVersionResponse",
     "Tool",
+    "ToolVersion",
     "UpdateToolRequest",
     "ToolCall",
     "ToolCallResult",

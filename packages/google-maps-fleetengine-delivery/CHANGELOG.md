@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.2.13](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.12...google-maps-fleetengine-delivery-v0.2.13) (2025-07-10)
+
+
+### Features
+
+* [google-maps-fleetengine-delivery] add ability to specify trip attributes to Trip and deprecate Trip.remaining_waypoints_version ([#14071](https://github.com/googleapis/google-cloud-python/issues/14071)) ([5430901](https://github.com/googleapis/google-cloud-python/commit/54309016fb30031824033754687a515891c71697))
+
+## [0.2.12](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.11...google-maps-fleetengine-delivery-v0.2.12) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.2.11](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.10...google-maps-fleetengine-delivery-v0.2.11) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.2.10](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.9...google-maps-fleetengine-delivery-v0.2.10) (2025-03-03)
+
+
+### Features
+
+* [google-maps-fleetengine-delivery] Added Fleet Engine Delete APIs ([a2c1c9a](https://github.com/googleapis/google-cloud-python/commit/a2c1c9aedc2e363df88f7b8b6e8e7a2ea6856365))
+* [google-maps-fleetengine-delivery] Added Fleet Engine Delete APIs ([#13568](https://github.com/googleapis/google-cloud-python/issues/13568)) ([a2c1c9a](https://github.com/googleapis/google-cloud-python/commit/a2c1c9aedc2e363df88f7b8b6e8e7a2ea6856365))
+
+## [0.2.9](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.8...google-maps-fleetengine-delivery-v0.2.9) (2025-02-27)
+
+
+### Features
+
+* A new field `past_locations` is added to message `.maps.fleetengine.delivery.v1.DeliveryVehicle` ([bc69299](https://github.com/googleapis/google-cloud-python/commit/bc69299c381dbae1f24315af8b46f70ddc6b9269))
+
+
+### Documentation
+
+* Updated documentation for field `task` in message `.maps.fleetengine.delivery.v1.CreateTaskRequest` to clarify certain fields can be optionally set. ([bc69299](https://github.com/googleapis/google-cloud-python/commit/bc69299c381dbae1f24315af8b46f70ddc6b9269))
+
+## [0.2.8](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.7...google-maps-fleetengine-delivery-v0.2.8) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.2.7](https://github.com/googleapis/google-cloud-python/compare/google-maps-fleetengine-delivery-v0.2.6...google-maps-fleetengine-delivery-v0.2.7) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ from .types.backupdr import (
     CreateManagementServerRequest,
     DeleteManagementServerRequest,
     GetManagementServerRequest,
+    InitializeServiceRequest,
+    InitializeServiceResponse,
     ListManagementServersRequest,
     ListManagementServersResponse,
     ManagementServer,
@@ -34,25 +36,33 @@ from .types.backupdr import (
 )
 from .types.backupplan import (
     BackupPlan,
+    BackupPlanRevision,
     BackupRule,
     BackupWindow,
     CreateBackupPlanRequest,
     DeleteBackupPlanRequest,
     GetBackupPlanRequest,
+    GetBackupPlanRevisionRequest,
+    ListBackupPlanRevisionsRequest,
+    ListBackupPlanRevisionsResponse,
     ListBackupPlansRequest,
     ListBackupPlansResponse,
     StandardSchedule,
+    UpdateBackupPlanRequest,
     WeekDayOfMonth,
 )
 from .types.backupplanassociation import (
     BackupPlanAssociation,
     CreateBackupPlanAssociationRequest,
     DeleteBackupPlanAssociationRequest,
+    FetchBackupPlanAssociationsForResourceTypeRequest,
+    FetchBackupPlanAssociationsForResourceTypeResponse,
     GetBackupPlanAssociationRequest,
     ListBackupPlanAssociationsRequest,
     ListBackupPlanAssociationsResponse,
     RuleConfigInfo,
     TriggerBackupRequest,
+    UpdateBackupPlanAssociationRequest,
 )
 from .types.backupvault import (
     Backup,
@@ -92,6 +102,20 @@ from .types.backupvault import (
     UpdateDataSourceRequest,
 )
 from .types.backupvault_ba import BackupApplianceBackupProperties
+from .types.backupvault_cloudsql import (
+    CloudSqlInstanceBackupPlanAssociationProperties,
+    CloudSqlInstanceBackupProperties,
+    CloudSqlInstanceDataSourceProperties,
+    CloudSqlInstanceDataSourceReferenceProperties,
+    CloudSqlInstanceInitializationConfig,
+)
+from .types.backupvault_disk import (
+    DiskBackupProperties,
+    DiskDataSourceProperties,
+    DiskRestoreProperties,
+    DiskTargetEnvironment,
+    RegionDiskTargetEnvironment,
+)
 from .types.backupvault_gce import (
     AcceleratorConfig,
     AccessConfig,
@@ -118,6 +142,14 @@ from .types.backupvault_gce import (
     ServiceAccount,
     Tags,
 )
+from .types.datasourcereference import (
+    DataSourceBackupConfigInfo,
+    DataSourceGcpResourceInfo,
+    DataSourceReference,
+    FetchDataSourceReferencesForResourceTypeRequest,
+    FetchDataSourceReferencesForResourceTypeResponse,
+    GetDataSourceReferenceRequest,
+)
 
 __all__ = (
     "BackupDRAsyncClient",
@@ -137,11 +169,17 @@ __all__ = (
     "BackupLock",
     "BackupPlan",
     "BackupPlanAssociation",
+    "BackupPlanRevision",
     "BackupRule",
     "BackupVault",
     "BackupVaultView",
     "BackupView",
     "BackupWindow",
+    "CloudSqlInstanceBackupPlanAssociationProperties",
+    "CloudSqlInstanceBackupProperties",
+    "CloudSqlInstanceDataSourceProperties",
+    "CloudSqlInstanceDataSourceReferenceProperties",
+    "CloudSqlInstanceInitializationConfig",
     "ComputeInstanceBackupProperties",
     "ComputeInstanceDataSourceProperties",
     "ComputeInstanceRestoreProperties",
@@ -154,29 +192,46 @@ __all__ = (
     "CustomerEncryptionKey",
     "DataSource",
     "DataSourceBackupApplianceApplication",
+    "DataSourceBackupConfigInfo",
     "DataSourceGcpResource",
+    "DataSourceGcpResourceInfo",
+    "DataSourceReference",
     "DeleteBackupPlanAssociationRequest",
     "DeleteBackupPlanRequest",
     "DeleteBackupRequest",
     "DeleteBackupVaultRequest",
     "DeleteManagementServerRequest",
+    "DiskBackupProperties",
+    "DiskDataSourceProperties",
+    "DiskRestoreProperties",
+    "DiskTargetEnvironment",
     "DisplayDevice",
     "Entry",
+    "FetchBackupPlanAssociationsForResourceTypeRequest",
+    "FetchBackupPlanAssociationsForResourceTypeResponse",
+    "FetchDataSourceReferencesForResourceTypeRequest",
+    "FetchDataSourceReferencesForResourceTypeResponse",
     "FetchUsableBackupVaultsRequest",
     "FetchUsableBackupVaultsResponse",
     "GcpBackupConfig",
     "GcpResource",
     "GetBackupPlanAssociationRequest",
     "GetBackupPlanRequest",
+    "GetBackupPlanRevisionRequest",
     "GetBackupRequest",
     "GetBackupVaultRequest",
+    "GetDataSourceReferenceRequest",
     "GetDataSourceRequest",
     "GetManagementServerRequest",
     "GuestOsFeature",
+    "InitializeServiceRequest",
+    "InitializeServiceResponse",
     "InstanceParams",
     "KeyRevocationActionType",
     "ListBackupPlanAssociationsRequest",
     "ListBackupPlanAssociationsResponse",
+    "ListBackupPlanRevisionsRequest",
+    "ListBackupPlanRevisionsResponse",
     "ListBackupPlansRequest",
     "ListBackupPlansResponse",
     "ListBackupVaultsRequest",
@@ -194,6 +249,7 @@ __all__ = (
     "NetworkInterface",
     "NetworkPerformanceConfig",
     "OperationMetadata",
+    "RegionDiskTargetEnvironment",
     "RestoreBackupRequest",
     "RestoreBackupResponse",
     "RuleConfigInfo",
@@ -205,6 +261,8 @@ __all__ = (
     "Tags",
     "TargetResource",
     "TriggerBackupRequest",
+    "UpdateBackupPlanAssociationRequest",
+    "UpdateBackupPlanRequest",
     "UpdateBackupRequest",
     "UpdateBackupVaultRequest",
     "UpdateDataSourceRequest",

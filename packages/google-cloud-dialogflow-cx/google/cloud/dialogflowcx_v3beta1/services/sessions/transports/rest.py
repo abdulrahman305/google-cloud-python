@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class SessionsRestInterceptor:
@@ -133,11 +137,34 @@ class SessionsRestInterceptor:
     ) -> session.DetectIntentResponse:
         """Post-rpc interceptor for detect_intent
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_detect_intent_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Sessions server but before
-        it is returned to user code.
+        it is returned to user code. This `post_detect_intent` interceptor runs
+        before the `post_detect_intent_with_metadata` interceptor.
         """
         return response
+
+    def post_detect_intent_with_metadata(
+        self,
+        response: session.DetectIntentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[session.DetectIntentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for detect_intent
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Sessions server but before it is returned to user code.
+
+        We recommend only using this `post_detect_intent_with_metadata`
+        interceptor in new development instead of the `post_detect_intent` interceptor.
+        When both interceptors are used, this `post_detect_intent_with_metadata` interceptor runs after the
+        `post_detect_intent` interceptor. The (possibly modified) response returned by
+        `post_detect_intent` will be passed to
+        `post_detect_intent_with_metadata`.
+        """
+        return response, metadata
 
     def pre_fulfill_intent(
         self,
@@ -156,11 +183,34 @@ class SessionsRestInterceptor:
     ) -> session.FulfillIntentResponse:
         """Post-rpc interceptor for fulfill_intent
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_fulfill_intent_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Sessions server but before
-        it is returned to user code.
+        it is returned to user code. This `post_fulfill_intent` interceptor runs
+        before the `post_fulfill_intent_with_metadata` interceptor.
         """
         return response
+
+    def post_fulfill_intent_with_metadata(
+        self,
+        response: session.FulfillIntentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[session.FulfillIntentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for fulfill_intent
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Sessions server but before it is returned to user code.
+
+        We recommend only using this `post_fulfill_intent_with_metadata`
+        interceptor in new development instead of the `post_fulfill_intent` interceptor.
+        When both interceptors are used, this `post_fulfill_intent_with_metadata` interceptor runs after the
+        `post_fulfill_intent` interceptor. The (possibly modified) response returned by
+        `post_fulfill_intent` will be passed to
+        `post_fulfill_intent_with_metadata`.
+        """
+        return response, metadata
 
     def pre_match_intent(
         self,
@@ -179,11 +229,34 @@ class SessionsRestInterceptor:
     ) -> session.MatchIntentResponse:
         """Post-rpc interceptor for match_intent
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_match_intent_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Sessions server but before
-        it is returned to user code.
+        it is returned to user code. This `post_match_intent` interceptor runs
+        before the `post_match_intent_with_metadata` interceptor.
         """
         return response
+
+    def post_match_intent_with_metadata(
+        self,
+        response: session.MatchIntentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[session.MatchIntentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for match_intent
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Sessions server but before it is returned to user code.
+
+        We recommend only using this `post_match_intent_with_metadata`
+        interceptor in new development instead of the `post_match_intent` interceptor.
+        When both interceptors are used, this `post_match_intent_with_metadata` interceptor runs after the
+        `post_match_intent` interceptor. The (possibly modified) response returned by
+        `post_match_intent` will be passed to
+        `post_match_intent_with_metadata`.
+        """
+        return response, metadata
 
     def pre_server_streaming_detect_intent(
         self,
@@ -202,11 +275,36 @@ class SessionsRestInterceptor:
     ) -> rest_streaming.ResponseIterator:
         """Post-rpc interceptor for server_streaming_detect_intent
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_server_streaming_detect_intent_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Sessions server but before
-        it is returned to user code.
+        it is returned to user code. This `post_server_streaming_detect_intent` interceptor runs
+        before the `post_server_streaming_detect_intent_with_metadata` interceptor.
         """
         return response
+
+    def post_server_streaming_detect_intent_with_metadata(
+        self,
+        response: rest_streaming.ResponseIterator,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        rest_streaming.ResponseIterator, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for server_streaming_detect_intent
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Sessions server but before it is returned to user code.
+
+        We recommend only using this `post_server_streaming_detect_intent_with_metadata`
+        interceptor in new development instead of the `post_server_streaming_detect_intent` interceptor.
+        When both interceptors are used, this `post_server_streaming_detect_intent_with_metadata` interceptor runs after the
+        `post_server_streaming_detect_intent` interceptor. The (possibly modified) response returned by
+        `post_server_streaming_detect_intent` will be passed to
+        `post_server_streaming_detect_intent_with_metadata`.
+        """
+        return response, metadata
 
     def pre_submit_answer_feedback(
         self,
@@ -227,11 +325,34 @@ class SessionsRestInterceptor:
     ) -> session.AnswerFeedback:
         """Post-rpc interceptor for submit_answer_feedback
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_submit_answer_feedback_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Sessions server but before
-        it is returned to user code.
+        it is returned to user code. This `post_submit_answer_feedback` interceptor runs
+        before the `post_submit_answer_feedback_with_metadata` interceptor.
         """
         return response
+
+    def post_submit_answer_feedback_with_metadata(
+        self,
+        response: session.AnswerFeedback,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[session.AnswerFeedback, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for submit_answer_feedback
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Sessions server but before it is returned to user code.
+
+        We recommend only using this `post_submit_answer_feedback_with_metadata`
+        interceptor in new development instead of the `post_submit_answer_feedback` interceptor.
+        When both interceptors are used, this `post_submit_answer_feedback_with_metadata` interceptor runs after the
+        `post_submit_answer_feedback` interceptor. The (possibly modified) response returned by
+        `post_submit_answer_feedback` will be passed to
+        `post_submit_answer_feedback_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -573,6 +694,10 @@ class SessionsRestTransport(_BaseSessionsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_detect_intent(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_detect_intent_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -723,6 +848,10 @@ class SessionsRestTransport(_BaseSessionsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_fulfill_intent(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_fulfill_intent_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -871,6 +1000,10 @@ class SessionsRestTransport(_BaseSessionsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_match_intent(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_match_intent_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1022,6 +1155,13 @@ class SessionsRestTransport(_BaseSessionsRestTransport):
             )
 
             resp = self._interceptor.post_server_streaming_detect_intent(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_server_streaming_detect_intent_with_metadata(
+                resp, response_metadata
+            )
             return resp
 
     class _StreamingDetectIntent(
@@ -1170,6 +1310,10 @@ class SessionsRestTransport(_BaseSessionsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_submit_answer_feedback(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_submit_answer_feedback_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

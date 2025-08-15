@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,12 +31,19 @@ __protobuf__ = proto.module(
 
 
 class Attachment(proto.Message):
-    r"""Represents a file attached to a support case.
+    r"""An Attachment contains metadata about a file that was uploaded to a
+    case - it is NOT a file itself. That being said, the name of an
+    Attachment object can be used to download its accompanying file
+    through the ``media.download`` endpoint.
+
+    While attachments can be uploaded in the console at the same time as
+    a comment, they're associated on a "case" level, not a "comment"
+    level.
 
     Attributes:
         name (str):
-            Output only. The resource name of the
-            attachment.
+            Output only. Identifier. The resource name of
+            the attachment.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The time at which the attachment
             was created.

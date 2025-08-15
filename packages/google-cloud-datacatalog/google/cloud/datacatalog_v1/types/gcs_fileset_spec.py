@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class GcsFilesetSpec(proto.Message):
             Cloud Storage.
 
             For more information, see [Wildcard Names]
-            (https://cloud.google.com/storage/docs/gsutil/addlhelp/WildcardNames).
+            (https://cloud.google.com/storage/docs/wildcards).
 
             Note: Currently, bucket wildcards are not supported.
 

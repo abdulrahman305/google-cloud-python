@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,16 +22,20 @@ from google.protobuf import timestamp_pb2  # type: ignore
 from google.protobuf import wrappers_pb2  # type: ignore
 import proto  # type: ignore
 
+from google.cloud.bigquery_analyticshub_v1.types import pubsub
+
 __protobuf__ = proto.module(
     package="google.cloud.bigquery.analyticshub.v1",
     manifest={
         "DiscoveryType",
+        "SharedResourceType",
         "DataExchange",
         "SharingEnvironmentConfig",
         "DataProvider",
         "Publisher",
         "DestinationDatasetReference",
         "DestinationDataset",
+        "DestinationPubSubSubscription",
         "Listing",
         "Subscription",
         "ListDataExchangesRequest",
@@ -87,6 +91,23 @@ class DiscoveryType(proto.Enum):
     DISCOVERY_TYPE_PUBLIC = 2
 
 
+class SharedResourceType(proto.Enum):
+    r"""The underlying shared asset type shared in a listing by a
+    publisher.
+
+    Values:
+        SHARED_RESOURCE_TYPE_UNSPECIFIED (0):
+            Not specified.
+        BIGQUERY_DATASET (1):
+            BigQuery Dataset Asset.
+        PUBSUB_TOPIC (2):
+            Pub/Sub Topic Asset.
+    """
+    SHARED_RESOURCE_TYPE_UNSPECIFIED = 0
+    BIGQUERY_DATASET = 1
+    PUBSUB_TOPIC = 2
+
+
 class DataExchange(proto.Message):
     r"""A data exchange is a container that lets you share data.
     Along with the descriptive information about the data exchange,
@@ -98,7 +119,7 @@ class DataExchange(proto.Message):
     Attributes:
         name (str):
             Output only. The resource name of the data exchange. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123``.
+            ``projects/myproject/locations/us/dataExchanges/123``.
         display_name (str):
             Required. Human-readable display name of the data exchange.
             The display name must contain only Unicode letters, numbers
@@ -142,6 +163,12 @@ class DataExchange(proto.Message):
             listings under this exchange.
 
             This field is a member of `oneof`_ ``_discovery_type``.
+        log_linked_dataset_query_user_email (bool):
+            Optional. By default, false.
+            If true, the DataExchange has an email sharing
+            mandate enabled.
+
+            This field is a member of `oneof`_ ``_log_linked_dataset_query_user_email``.
     """
 
     name: str = proto.Field(
@@ -182,6 +209,11 @@ class DataExchange(proto.Message):
         number=9,
         optional=True,
         enum="DiscoveryType",
+    )
+    log_linked_dataset_query_user_email: bool = proto.Field(
+        proto.BOOL,
+        number=10,
+        optional=True,
     )
 
 
@@ -318,8 +350,7 @@ class Publisher(proto.Message):
 
 
 class DestinationDatasetReference(proto.Message):
-    r"""Contains the reference that identifies a destination bigquery
-    dataset.
+    r"""
 
     Attributes:
         dataset_id (str):
@@ -394,24 +425,47 @@ class DestinationDataset(proto.Message):
     )
 
 
+class DestinationPubSubSubscription(proto.Message):
+    r"""Defines the destination Pub/Sub subscription.
+
+    Attributes:
+        pubsub_subscription (google.cloud.bigquery_analyticshub_v1.types.PubSubSubscription):
+            Required. Destination Pub/Sub subscription
+            resource.
+    """
+
+    pubsub_subscription: pubsub.PubSubSubscription = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=pubsub.PubSubSubscription,
+    )
+
+
 class Listing(proto.Message):
     r"""A listing is what gets published into a data exchange that a
     subscriber can subscribe to. It contains a reference to the data
     source along with descriptive information that will help
     subscribers find and subscribe the data.
 
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
 
     .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
     Attributes:
         bigquery_dataset (google.cloud.bigquery_analyticshub_v1.types.Listing.BigQueryDatasetSource):
-            Required. Shared dataset i.e. BigQuery
-            dataset source.
+            Shared dataset i.e. BigQuery dataset source.
+
+            This field is a member of `oneof`_ ``source``.
+        pubsub_topic (google.cloud.bigquery_analyticshub_v1.types.Listing.PubSubTopicSource):
+            Pub/Sub topic source.
 
             This field is a member of `oneof`_ ``source``.
         name (str):
             Output only. The resource name of the listing. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123/listings/456``
+            ``projects/myproject/locations/us/dataExchanges/123/listings/456``
         display_name (str):
             Required. Human-readable display name of the listing. The
             display name must contain only Unicode letters, numbers
@@ -467,6 +521,26 @@ class Listing(proto.Message):
             the discovery page.
 
             This field is a member of `oneof`_ ``_discovery_type``.
+        resource_type (google.cloud.bigquery_analyticshub_v1.types.SharedResourceType):
+            Output only. Listing shared asset type.
+        commercial_info (google.cloud.bigquery_analyticshub_v1.types.Listing.CommercialInfo):
+            Output only. Commercial info contains the
+            information about the commercial data products
+            associated with the listing.
+
+            This field is a member of `oneof`_ ``_commercial_info``.
+        log_linked_dataset_query_user_email (bool):
+            Optional. By default, false.
+            If true, the Listing has an email sharing
+            mandate enabled.
+
+            This field is a member of `oneof`_ ``_log_linked_dataset_query_user_email``.
+        allow_only_metadata_sharing (bool):
+            Optional. If true, the listing is only
+            available to get the resource metadata. Listing
+            is non subscribable.
+
+            This field is a member of `oneof`_ ``_allow_only_metadata_sharing``.
     """
 
     class State(proto.Enum):
@@ -559,14 +633,12 @@ class Listing(proto.Message):
 
         Attributes:
             dataset (str):
-                Resource name of the dataset source for this listing. e.g.
-                ``projects/myproject/datasets/123``
+                Optional. Resource name of the dataset source for this
+                listing. e.g. ``projects/myproject/datasets/123``
             selected_resources (MutableSequence[google.cloud.bigquery_analyticshub_v1.types.Listing.BigQueryDatasetSource.SelectedResource]):
-                Optional. Resources in this dataset that are
-                selectively shared. If this field is empty, then
-                the entire dataset (all resources) are shared.
-                This field is only valid for data clean room
-                exchanges.
+                Optional. Resource in this dataset that is
+                selectively shared. This field is required for
+                data clean room exchanges.
             restricted_export_policy (google.cloud.bigquery_analyticshub_v1.types.Listing.BigQueryDatasetSource.RestrictedExportPolicy):
                 Optional. If set, restricted export policy
                 will be propagated and enforced on the linked
@@ -574,7 +646,12 @@ class Listing(proto.Message):
         """
 
         class SelectedResource(proto.Message):
-            r"""Resource in this dataset that are selectively shared.
+            r"""Resource in this dataset that is selectively shared.
+
+            This message has `oneof`_ fields (mutually exclusive fields).
+            For each oneof, at most one member field can be set at the same time.
+            Setting any member of the oneof automatically clears all other
+            members.
 
             .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
@@ -585,11 +662,22 @@ class Listing(proto.Message):
                     Example:"projects/test_project/datasets/test_dataset/tables/test_table".
 
                     This field is a member of `oneof`_ ``resource``.
+                routine (str):
+                    Optional. Format: For routine:
+                    ``projects/{projectId}/datasets/{datasetId}/routines/{routineId}``
+                    Example:"projects/test_project/datasets/test_dataset/routines/test_routine".
+
+                    This field is a member of `oneof`_ ``resource``.
             """
 
             table: str = proto.Field(
                 proto.STRING,
                 number=1,
+                oneof="resource",
+            )
+            routine: str = proto.Field(
+                proto.STRING,
+                number=2,
                 oneof="resource",
             )
 
@@ -643,6 +731,31 @@ class Listing(proto.Message):
             message="Listing.BigQueryDatasetSource.RestrictedExportPolicy",
         )
 
+    class PubSubTopicSource(proto.Message):
+        r"""Pub/Sub topic source.
+
+        Attributes:
+            topic (str):
+                Required. Resource name of the Pub/Sub topic
+                source for this listing. e.g.
+                projects/myproject/topics/topicId
+            data_affinity_regions (MutableSequence[str]):
+                Optional. Region hint on where the data might
+                be published. Data affinity regions are
+                modifiable. See
+                https://cloud.google.com/about/locations for
+                full listing of possible Cloud regions.
+        """
+
+        topic: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        data_affinity_regions: MutableSequence[str] = proto.RepeatedField(
+            proto.STRING,
+            number=2,
+        )
+
     class RestrictedExportConfig(proto.Message):
         r"""Restricted export config, used to configure restricted export
         on linked dataset.
@@ -672,11 +785,91 @@ class Listing(proto.Message):
             number=2,
         )
 
+    class CommercialInfo(proto.Message):
+        r"""Commercial info contains the information about the commercial
+        data products associated with the listing.
+
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            cloud_marketplace (google.cloud.bigquery_analyticshub_v1.types.Listing.CommercialInfo.GoogleCloudMarketplaceInfo):
+                Output only. Details of the Marketplace Data
+                Product associated with the Listing.
+
+                This field is a member of `oneof`_ ``_cloud_marketplace``.
+        """
+
+        class GoogleCloudMarketplaceInfo(proto.Message):
+            r"""Specifies the details of the Marketplace Data Product
+            associated with the Listing.
+
+
+            .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+            Attributes:
+                service (str):
+                    Output only. Resource name of the commercial
+                    service associated with the Marketplace Data
+                    Product. e.g. example.com
+
+                    This field is a member of `oneof`_ ``_service``.
+                commercial_state (google.cloud.bigquery_analyticshub_v1.types.Listing.CommercialInfo.GoogleCloudMarketplaceInfo.CommercialState):
+                    Output only. Commercial state of the
+                    Marketplace Data Product.
+
+                    This field is a member of `oneof`_ ``_commercial_state``.
+            """
+
+            class CommercialState(proto.Enum):
+                r"""Indicates whether this commercial access is currently active.
+
+                Values:
+                    COMMERCIAL_STATE_UNSPECIFIED (0):
+                        Commercialization is incomplete and cannot be
+                        used.
+                    ONBOARDING (1):
+                        Commercialization has been initialized.
+                    ACTIVE (2):
+                        Commercialization is complete and available
+                        for use.
+                """
+                COMMERCIAL_STATE_UNSPECIFIED = 0
+                ONBOARDING = 1
+                ACTIVE = 2
+
+            service: str = proto.Field(
+                proto.STRING,
+                number=1,
+                optional=True,
+            )
+            commercial_state: "Listing.CommercialInfo.GoogleCloudMarketplaceInfo.CommercialState" = proto.Field(
+                proto.ENUM,
+                number=3,
+                optional=True,
+                enum="Listing.CommercialInfo.GoogleCloudMarketplaceInfo.CommercialState",
+            )
+
+        cloud_marketplace: "Listing.CommercialInfo.GoogleCloudMarketplaceInfo" = (
+            proto.Field(
+                proto.MESSAGE,
+                number=1,
+                optional=True,
+                message="Listing.CommercialInfo.GoogleCloudMarketplaceInfo",
+            )
+        )
+
     bigquery_dataset: BigQueryDatasetSource = proto.Field(
         proto.MESSAGE,
         number=6,
         oneof="source",
         message=BigQueryDatasetSource,
+    )
+    pubsub_topic: PubSubTopicSource = proto.Field(
+        proto.MESSAGE,
+        number=16,
+        oneof="source",
+        message=PubSubTopicSource,
     )
     name: str = proto.Field(
         proto.STRING,
@@ -737,6 +930,27 @@ class Listing(proto.Message):
         optional=True,
         enum="DiscoveryType",
     )
+    resource_type: "SharedResourceType" = proto.Field(
+        proto.ENUM,
+        number=15,
+        enum="SharedResourceType",
+    )
+    commercial_info: CommercialInfo = proto.Field(
+        proto.MESSAGE,
+        number=17,
+        optional=True,
+        message=CommercialInfo,
+    )
+    log_linked_dataset_query_user_email: bool = proto.Field(
+        proto.BOOL,
+        number=18,
+        optional=True,
+    )
+    allow_only_metadata_sharing: bool = proto.Field(
+        proto.BOOL,
+        number=19,
+        optional=True,
+    )
 
 
 class Subscription(proto.Message):
@@ -755,18 +969,18 @@ class Subscription(proto.Message):
         listing (str):
             Output only. Resource name of the source
             Listing. e.g.
-            projects/123/locations/US/dataExchanges/456/listings/789
+            projects/123/locations/us/dataExchanges/456/listings/789
 
             This field is a member of `oneof`_ ``resource_name``.
         data_exchange (str):
             Output only. Resource name of the source Data
             Exchange. e.g.
-            projects/123/locations/US/dataExchanges/456
+            projects/123/locations/us/dataExchanges/456
 
             This field is a member of `oneof`_ ``resource_name``.
         name (str):
             Output only. The resource name of the subscription. e.g.
-            ``projects/myproject/locations/US/subscriptions/123``.
+            ``projects/myproject/locations/us/subscriptions/123``.
         creation_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. Timestamp when the subscription
             was created.
@@ -785,13 +999,33 @@ class Subscription(proto.Message):
         linked_dataset_map (MutableMapping[str, google.cloud.bigquery_analyticshub_v1.types.Subscription.LinkedResource]):
             Output only. Map of listing resource names to associated
             linked resource, e.g.
-            projects/123/locations/US/dataExchanges/456/listings/789 ->
+            projects/123/locations/us/dataExchanges/456/listings/789 ->
             projects/123/datasets/my_dataset
 
             For listing-level subscriptions, this is a map of size 1.
             Only contains values if state == STATE_ACTIVE.
         subscriber_contact (str):
             Output only. Email of the subscriber.
+        linked_resources (MutableSequence[google.cloud.bigquery_analyticshub_v1.types.Subscription.LinkedResource]):
+            Output only. Linked resources created in the subscription.
+            Only contains values if state = STATE_ACTIVE.
+        resource_type (google.cloud.bigquery_analyticshub_v1.types.SharedResourceType):
+            Output only. Listing shared asset type.
+        commercial_info (google.cloud.bigquery_analyticshub_v1.types.Subscription.CommercialInfo):
+            Output only. This is set if this is a
+            commercial subscription i.e. if this
+            subscription was created from subscribing to a
+            commercial listing.
+        log_linked_dataset_query_user_email (bool):
+            Output only. By default, false.
+            If true, the Subscriber agreed to the email
+            sharing mandate that is enabled for
+            DataExchange/Listing.
+
+            This field is a member of `oneof`_ ``_log_linked_dataset_query_user_email``.
+        destination_dataset (google.cloud.bigquery_analyticshub_v1.types.DestinationDataset):
+            Optional. BigQuery destination dataset to
+            create for the subscriber.
     """
 
     class State(proto.Enum):
@@ -820,6 +1054,11 @@ class Subscription(proto.Message):
     class LinkedResource(proto.Message):
         r"""Reference to a linked resource tracked by this Subscription.
 
+        This message has `oneof`_ fields (mutually exclusive fields).
+        For each oneof, at most one member field can be set at the same time.
+        Setting any member of the oneof automatically clears all other
+        members.
+
         .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
         Attributes:
@@ -828,12 +1067,60 @@ class Subscription(proto.Message):
                 projects/subscriberproject/datasets/linked_dataset
 
                 This field is a member of `oneof`_ ``reference``.
+            linked_pubsub_subscription (str):
+                Output only. Name of the Pub/Sub subscription, e.g.
+                projects/subscriberproject/subscriptions/subscriptions/sub_id
+
+                This field is a member of `oneof`_ ``reference``.
+            listing (str):
+                Output only. Listing for which linked
+                resource is created.
         """
 
         linked_dataset: str = proto.Field(
             proto.STRING,
             number=1,
             oneof="reference",
+        )
+        linked_pubsub_subscription: str = proto.Field(
+            proto.STRING,
+            number=3,
+            oneof="reference",
+        )
+        listing: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    class CommercialInfo(proto.Message):
+        r"""Commercial info metadata for this subscription.
+
+        Attributes:
+            cloud_marketplace (google.cloud.bigquery_analyticshub_v1.types.Subscription.CommercialInfo.GoogleCloudMarketplaceInfo):
+                Output only. This is set when the
+                subscription is commercialised via Cloud
+                Marketplace.
+        """
+
+        class GoogleCloudMarketplaceInfo(proto.Message):
+            r"""Cloud Marketplace commercial metadata for this subscription.
+
+            Attributes:
+                order (str):
+                    Resource name of the Marketplace Order.
+            """
+
+            order: str = proto.Field(
+                proto.STRING,
+                number=1,
+            )
+
+        cloud_marketplace: "Subscription.CommercialInfo.GoogleCloudMarketplaceInfo" = (
+            proto.Field(
+                proto.MESSAGE,
+                number=1,
+                message="Subscription.CommercialInfo.GoogleCloudMarketplaceInfo",
+            )
         )
 
     listing: str = proto.Field(
@@ -883,6 +1170,31 @@ class Subscription(proto.Message):
         proto.STRING,
         number=9,
     )
+    linked_resources: MutableSequence[LinkedResource] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=11,
+        message=LinkedResource,
+    )
+    resource_type: "SharedResourceType" = proto.Field(
+        proto.ENUM,
+        number=12,
+        enum="SharedResourceType",
+    )
+    commercial_info: CommercialInfo = proto.Field(
+        proto.MESSAGE,
+        number=13,
+        message=CommercialInfo,
+    )
+    log_linked_dataset_query_user_email: bool = proto.Field(
+        proto.BOOL,
+        number=14,
+        optional=True,
+    )
+    destination_dataset: "DestinationDataset" = proto.Field(
+        proto.MESSAGE,
+        number=15,
+        message="DestinationDataset",
+    )
 
 
 class ListDataExchangesRequest(proto.Message):
@@ -891,7 +1203,7 @@ class ListDataExchangesRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent resource path of the data exchanges.
-            e.g. ``projects/myproject/locations/US``.
+            e.g. ``projects/myproject/locations/us``.
         page_size (int):
             The maximum number of results to return in a
             single response page. Leverage the page tokens
@@ -948,7 +1260,7 @@ class ListOrgDataExchangesRequest(proto.Message):
         organization (str):
             Required. The organization resource path of the projects
             containing DataExchanges. e.g.
-            ``organizations/myorg/locations/US``.
+            ``organizations/myorg/locations/us``.
         page_size (int):
             The maximum number of results to return in a
             single response page. Leverage the page tokens
@@ -1004,7 +1316,7 @@ class GetDataExchangeRequest(proto.Message):
     Attributes:
         name (str):
             Required. The resource name of the data exchange. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123``.
+            ``projects/myproject/locations/us/dataExchanges/123``.
     """
 
     name: str = proto.Field(
@@ -1019,12 +1331,11 @@ class CreateDataExchangeRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent resource path of the data exchange.
-            e.g. ``projects/myproject/locations/US``.
+            e.g. ``projects/myproject/locations/us``.
         data_exchange_id (str):
             Required. The ID of the data exchange. Must contain only
-            Unicode letters, numbers (0-9), underscores (_). Should not
-            use characters that require URL-escaping, or characters
-            outside of ASCII, spaces. Max length: 100 bytes.
+            Unicode letters, numbers (0-9), underscores (_). Max length:
+            100 bytes.
         data_exchange (google.cloud.bigquery_analyticshub_v1.types.DataExchange):
             Required. The data exchange to create.
     """
@@ -1076,7 +1387,7 @@ class DeleteDataExchangeRequest(proto.Message):
         name (str):
             Required. The full name of the data exchange resource that
             you want to delete. For example,
-            ``projects/myproject/locations/US/dataExchanges/123``.
+            ``projects/myproject/locations/us/dataExchanges/123``.
     """
 
     name: str = proto.Field(
@@ -1091,7 +1402,7 @@ class ListListingsRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent resource path of the listing. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123``.
+            ``projects/myproject/locations/us/dataExchanges/123``.
         page_size (int):
             The maximum number of results to return in a
             single response page. Leverage the page tokens
@@ -1146,7 +1457,7 @@ class GetListingRequest(proto.Message):
     Attributes:
         name (str):
             Required. The resource name of the listing. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123/listings/456``.
+            ``projects/myproject/locations/us/dataExchanges/123/listings/456``.
     """
 
     name: str = proto.Field(
@@ -1161,12 +1472,11 @@ class CreateListingRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent resource path of the listing. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123``.
+            ``projects/myproject/locations/us/dataExchanges/123``.
         listing_id (str):
             Required. The ID of the listing to create. Must contain only
-            Unicode letters, numbers (0-9), underscores (_). Should not
-            use characters that require URL-escaping, or characters
-            outside of ASCII, spaces. Max length: 100 bytes.
+            Unicode letters, numbers (0-9), underscores (_). Max length:
+            100 bytes.
         listing (google.cloud.bigquery_analyticshub_v1.types.Listing):
             Required. The listing to create.
     """
@@ -1216,17 +1526,32 @@ class DeleteListingRequest(proto.Message):
     Attributes:
         name (str):
             Required. Resource name of the listing to delete. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123/listings/456``.
+            ``projects/myproject/locations/us/dataExchanges/123/listings/456``.
+        delete_commercial (bool):
+            Optional. If the listing is commercial then
+            this field must be set to true, otherwise a
+            failure is thrown. This acts as a safety guard
+            to avoid deleting commercial listings
+            accidentally.
     """
 
     name: str = proto.Field(
         proto.STRING,
         number=1,
     )
+    delete_commercial: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
 
 
 class SubscribeListingRequest(proto.Message):
     r"""Message for subscribing to a listing.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
 
     .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
@@ -1236,10 +1561,15 @@ class SubscribeListingRequest(proto.Message):
             create for the subscriber.
 
             This field is a member of `oneof`_ ``destination``.
+        destination_pubsub_subscription (google.cloud.bigquery_analyticshub_v1.types.DestinationPubSubSubscription):
+            Input only. Destination Pub/Sub subscription
+            to create for the subscriber.
+
+            This field is a member of `oneof`_ ``destination``.
         name (str):
             Required. Resource name of the listing that you want to
             subscribe to. e.g.
-            ``projects/myproject/locations/US/dataExchanges/123/listings/456``.
+            ``projects/myproject/locations/us/dataExchanges/123/listings/456``.
     """
 
     destination_dataset: "DestinationDataset" = proto.Field(
@@ -1247,6 +1577,12 @@ class SubscribeListingRequest(proto.Message):
         number=3,
         oneof="destination",
         message="DestinationDataset",
+    )
+    destination_pubsub_subscription: "DestinationPubSubSubscription" = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        oneof="destination",
+        message="DestinationPubSubSubscription",
     )
     name: str = proto.Field(
         proto.STRING,
@@ -1276,10 +1612,13 @@ class SubscribeDataExchangeRequest(proto.Message):
     Attributes:
         name (str):
             Required. Resource name of the Data Exchange. e.g.
-            ``projects/publisherproject/locations/US/dataExchanges/123``
+            ``projects/publisherproject/locations/us/dataExchanges/123``
         destination (str):
             Required. The parent resource path of the Subscription. e.g.
-            ``projects/subscriberproject/locations/US``
+            ``projects/subscriberproject/locations/us``
+        destination_dataset (google.cloud.bigquery_analyticshub_v1.types.DestinationDataset):
+            Optional. BigQuery destination dataset to
+            create for the subscriber.
         subscription (str):
             Required. Name of the subscription to create. e.g.
             ``subscription1``
@@ -1294,6 +1633,11 @@ class SubscribeDataExchangeRequest(proto.Message):
     destination: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+    destination_dataset: "DestinationDataset" = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        message="DestinationDataset",
     )
     subscription: str = proto.Field(
         proto.STRING,
@@ -1327,7 +1671,7 @@ class RefreshSubscriptionRequest(proto.Message):
     Attributes:
         name (str):
             Required. Resource name of the Subscription to refresh. e.g.
-            ``projects/subscriberproject/locations/US/subscriptions/123``
+            ``projects/subscriberproject/locations/us/subscriptions/123``
     """
 
     name: str = proto.Field(
@@ -1357,7 +1701,7 @@ class GetSubscriptionRequest(proto.Message):
     Attributes:
         name (str):
             Required. Resource name of the subscription.
-            e.g. projects/123/locations/US/subscriptions/456
+            e.g. projects/123/locations/us/subscriptions/456
     """
 
     name: str = proto.Field(
@@ -1373,7 +1717,7 @@ class ListSubscriptionsRequest(proto.Message):
         parent (str):
             Required. The parent resource path of the
             subscription. e.g.
-            projects/myproject/locations/US
+            projects/myproject/locations/us
         filter (str):
             An expression for filtering the results of the request.
             Eligible fields for filtering are:
@@ -1449,9 +1793,9 @@ class ListSharedResourceSubscriptionsRequest(proto.Message):
             Required. Resource name of the requested
             target. This resource may be either a Listing or
             a DataExchange. e.g.
-            projects/123/locations/US/dataExchanges/456 OR
+            projects/123/locations/us/dataExchanges/456 OR
             e.g.
-            projects/123/locations/US/dataExchanges/456/listings/789
+            projects/123/locations/us/dataExchanges/456/listings/789
         include_deleted_subscriptions (bool):
             If selected, includes deleted subscriptions
             in the response (up to 63 days after deletion).
@@ -1515,17 +1859,30 @@ class RevokeSubscriptionRequest(proto.Message):
         name (str):
             Required. Resource name of the subscription
             to revoke. e.g.
-            projects/123/locations/US/subscriptions/456
+            projects/123/locations/us/subscriptions/456
+        revoke_commercial (bool):
+            Optional. If the subscription is commercial
+            then this field must be set to true, otherwise a
+            failure is thrown. This acts as a safety guard
+            to avoid revoking commercial subscriptions
+            accidentally.
     """
 
     name: str = proto.Field(
         proto.STRING,
         number=1,
     )
+    revoke_commercial: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
 
 
 class RevokeSubscriptionResponse(proto.Message):
-    r"""Message for response when you revoke a subscription."""
+    r"""Message for response when you revoke a subscription.
+    Empty for now.
+
+    """
 
 
 class DeleteSubscriptionRequest(proto.Message):
@@ -1535,7 +1892,7 @@ class DeleteSubscriptionRequest(proto.Message):
         name (str):
             Required. Resource name of the subscription
             to delete. e.g.
-            projects/123/locations/US/subscriptions/456
+            projects/123/locations/us/subscriptions/456
     """
 
     name: str = proto.Field(

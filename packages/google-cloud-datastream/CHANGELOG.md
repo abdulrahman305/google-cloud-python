@@ -1,5 +1,86 @@
 # Changelog
 
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.14.1...google-cloud-datastream-v1.15.0) (2025-08-10)
+
+
+### Features
+
+* Add new field `mongodb_cluster` to message `DiscoverConnectionProfileRequest` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field `mongodb_profile` to message `ConnectionProfile` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field `project_id` to message `BigQueryDestinationConfig` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field `psc_interface_config` to message `PrivateConnection` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field `salesforce_org` to message `DiscoverConnectionProfileRequest` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field `validate_only` to message `CreatePrivateConnectionRequest` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field for server certificate  to message `OracleSslConfig` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+* Add new field for server certificate to message `PostgresqlSslConfig` ([7aed62d](https://github.com/googleapis/google-cloud-python/commit/7aed62d6a94d47c9e75ecfb2ec4a41c92b32578a))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.14.0...google-cloud-datastream-v1.14.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([3d5bc37](https://github.com/googleapis/google-cloud-python/commit/3d5bc3782da6b37742ae83802de8a8b6db96fe29))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.13.2...google-cloud-datastream-v1.14.0) (2025-03-27)
+
+
+### Features
+
+* A new field `blmt_config` is added to message `.google.cloud.datastream.v1.BigQueryDestinationConfig` ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new field `mysql_gtid_position` is added to message `.google.cloud.datastream.v1.CdcStrategy` ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new field `satisfies_pzi` is added to multiple messages. ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new field `satisfies_pzs` is added to multiple messages. ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new field `secret_manager_stored_password` is added to multiple messages ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new message `BlmtConfig` is added ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new message `MysqlGtidPosition` is added ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+* A new messages related to `SalesforceProfile` are added ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+
+
+### Documentation
+
+* documentation improvements and changes for multiple fields ([8bdf223](https://github.com/googleapis/google-cloud-python/commit/8bdf223f1ec50b418776bf53f62da368a8e3c35d))
+
+## [1.13.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.13.1...google-cloud-datastream-v1.13.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.13.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.13.0...google-cloud-datastream-v1.13.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.12.0...google-cloud-datastream-v1.13.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.11.0...google-cloud-datastream-v1.12.0) (2025-01-20)
+
+
+### Features
+
+* A new message `PostgresqlSslConfig` is added ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+
+
+### Documentation
+
+* A comment for field `name` in message `.google.cloud.datastream.v1.ConnectionProfile` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for field `name` in message `.google.cloud.datastream.v1.PrivateConnection` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for field `name` in message `.google.cloud.datastream.v1.Route` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for field `name` in message `.google.cloud.datastream.v1.Stream` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for field `name` in message `.google.cloud.datastream.v1.StreamObject` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for field `password` in message `.google.cloud.datastream.v1.OracleAsmConfig` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+* A comment for message `OracleAsmConfig` is changed ([6fa4ff8](https://github.com/googleapis/google-cloud-python/commit/6fa4ff89f201cc5e3d5ae1dd4c7ced457745f5ef))
+
 ## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datastream-v1.10.1...google-cloud-datastream-v1.11.0) (2024-12-12)
 
 

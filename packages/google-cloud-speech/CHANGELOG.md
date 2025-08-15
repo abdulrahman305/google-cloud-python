@@ -4,6 +4,49 @@
 
 [1]: https://pypi.org/project/google-cloud-speech/#history
 
+## [2.33.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-speech-v2.32.0...google-cloud-speech-v2.33.0) (2025-06-11)
+
+
+### Features
+
+* add denoiser related configuration ([c522070](https://github.com/googleapis/google-cloud-python/commit/c522070c02d2120de8772ddcd7de6e40ef64c548))
+
+
+### Documentation
+
+* updated description of sample_rate_hertz ([c522070](https://github.com/googleapis/google-cloud-python/commit/c522070c02d2120de8772ddcd7de6e40ef64c548))
+
+## [2.32.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-speech-v2.31.1...google-cloud-speech-v2.32.0) (2025-04-12)
+
+
+### Features
+
+* add ALAW support to RecognitionConfig ([c970f9f](https://github.com/googleapis/google-cloud-python/commit/c970f9f158bba8af92e06dd76cf94a86165c44ca))
+* add new fields to CustomClass and PhraseSet.Phrase messages ([c970f9f](https://github.com/googleapis/google-cloud-python/commit/c970f9f158bba8af92e06dd76cf94a86165c44ca))
+* deprecating speaker_tag (int) for speaker_label (string) ([c970f9f](https://github.com/googleapis/google-cloud-python/commit/c970f9f158bba8af92e06dd76cf94a86165c44ca))
+* make transcript_normalization field optional ([c970f9f](https://github.com/googleapis/google-cloud-python/commit/c970f9f158bba8af92e06dd76cf94a86165c44ca))
+
+
+### Documentation
+
+* miscellaneous clarifications ([c970f9f](https://github.com/googleapis/google-cloud-python/commit/c970f9f158bba8af92e06dd76cf94a86165c44ca))
+
+## [2.31.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-speech-v2.31.0...google-cloud-speech-v2.31.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-speech-v2.30.0...google-cloud-speech-v2.31.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [2.30.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-speech-v2.29.0...google-cloud-speech-v2.30.0) (2025-01-02)
 
 

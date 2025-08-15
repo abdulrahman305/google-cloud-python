@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,6 +64,13 @@ from google.cloud.kms_v1.services.autokey_admin import (
     transports,
 )
 from google.cloud.kms_v1.types import autokey_admin
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -306,6 +313,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AutokeyAdminClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = AutokeyAdminClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = AutokeyAdminClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1071,6 +1121,7 @@ def test_update_autokey_config(request_type, transport: str = "grpc"):
             name="name_value",
             key_project="key_project_value",
             state=autokey_admin.AutokeyConfig.State.ACTIVE,
+            etag="etag_value",
         )
         response = client.update_autokey_config(request)
 
@@ -1085,6 +1136,7 @@ def test_update_autokey_config(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 def test_update_autokey_config_non_empty_request_with_auto_populated_field():
@@ -1219,6 +1271,7 @@ async def test_update_autokey_config_async(
                 name="name_value",
                 key_project="key_project_value",
                 state=autokey_admin.AutokeyConfig.State.ACTIVE,
+                etag="etag_value",
             )
         )
         response = await client.update_autokey_config(request)
@@ -1234,6 +1287,7 @@ async def test_update_autokey_config_async(
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 @pytest.mark.asyncio
@@ -1428,6 +1482,7 @@ def test_get_autokey_config(request_type, transport: str = "grpc"):
             name="name_value",
             key_project="key_project_value",
             state=autokey_admin.AutokeyConfig.State.ACTIVE,
+            etag="etag_value",
         )
         response = client.get_autokey_config(request)
 
@@ -1442,6 +1497,7 @@ def test_get_autokey_config(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 def test_get_autokey_config_non_empty_request_with_auto_populated_field():
@@ -1578,6 +1634,7 @@ async def test_get_autokey_config_async(
                 name="name_value",
                 key_project="key_project_value",
                 state=autokey_admin.AutokeyConfig.State.ACTIVE,
+                etag="etag_value",
             )
         )
         response = await client.get_autokey_config(request)
@@ -1593,6 +1650,7 @@ async def test_get_autokey_config_async(
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 @pytest.mark.asyncio
@@ -2860,6 +2918,7 @@ async def test_update_autokey_config_empty_call_grpc_asyncio():
                 name="name_value",
                 key_project="key_project_value",
                 state=autokey_admin.AutokeyConfig.State.ACTIVE,
+                etag="etag_value",
             )
         )
         await client.update_autokey_config(request=None)
@@ -2891,6 +2950,7 @@ async def test_get_autokey_config_empty_call_grpc_asyncio():
                 name="name_value",
                 key_project="key_project_value",
                 state=autokey_admin.AutokeyConfig.State.ACTIVE,
+                etag="etag_value",
             )
         )
         await client.get_autokey_config(request=None)
@@ -2982,6 +3042,7 @@ def test_update_autokey_config_rest_call_success(request_type):
         "name": "folders/sample1/autokeyConfig",
         "key_project": "key_project_value",
         "state": 1,
+        "etag": "etag_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -3059,6 +3120,7 @@ def test_update_autokey_config_rest_call_success(request_type):
             name="name_value",
             key_project="key_project_value",
             state=autokey_admin.AutokeyConfig.State.ACTIVE,
+            etag="etag_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -3078,6 +3140,7 @@ def test_update_autokey_config_rest_call_success(request_type):
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -3097,10 +3160,14 @@ def test_update_autokey_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "post_update_autokey_config"
     ) as post, mock.patch.object(
+        transports.AutokeyAdminRestInterceptor,
+        "post_update_autokey_config_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "pre_update_autokey_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = autokey_admin.UpdateAutokeyConfigRequest.pb(
             autokey_admin.UpdateAutokeyConfigRequest()
         )
@@ -3126,6 +3193,7 @@ def test_update_autokey_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = autokey_admin.AutokeyConfig()
+        post_with_metadata.return_value = autokey_admin.AutokeyConfig(), metadata
 
         client.update_autokey_config(
             request,
@@ -3137,6 +3205,7 @@ def test_update_autokey_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_autokey_config_rest_bad_request(
@@ -3187,6 +3256,7 @@ def test_get_autokey_config_rest_call_success(request_type):
             name="name_value",
             key_project="key_project_value",
             state=autokey_admin.AutokeyConfig.State.ACTIVE,
+            etag="etag_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -3206,6 +3276,7 @@ def test_get_autokey_config_rest_call_success(request_type):
     assert response.name == "name_value"
     assert response.key_project == "key_project_value"
     assert response.state == autokey_admin.AutokeyConfig.State.ACTIVE
+    assert response.etag == "etag_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -3225,10 +3296,13 @@ def test_get_autokey_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "post_get_autokey_config"
     ) as post, mock.patch.object(
+        transports.AutokeyAdminRestInterceptor, "post_get_autokey_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "pre_get_autokey_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = autokey_admin.GetAutokeyConfigRequest.pb(
             autokey_admin.GetAutokeyConfigRequest()
         )
@@ -3254,6 +3328,7 @@ def test_get_autokey_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = autokey_admin.AutokeyConfig()
+        post_with_metadata.return_value = autokey_admin.AutokeyConfig(), metadata
 
         client.get_autokey_config(
             request,
@@ -3265,6 +3340,7 @@ def test_get_autokey_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_show_effective_autokey_config_rest_bad_request(
@@ -3349,10 +3425,14 @@ def test_show_effective_autokey_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "post_show_effective_autokey_config"
     ) as post, mock.patch.object(
+        transports.AutokeyAdminRestInterceptor,
+        "post_show_effective_autokey_config_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.AutokeyAdminRestInterceptor, "pre_show_effective_autokey_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = autokey_admin.ShowEffectiveAutokeyConfigRequest.pb(
             autokey_admin.ShowEffectiveAutokeyConfigRequest()
         )
@@ -3378,6 +3458,10 @@ def test_show_effective_autokey_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = autokey_admin.ShowEffectiveAutokeyConfigResponse()
+        post_with_metadata.return_value = (
+            autokey_admin.ShowEffectiveAutokeyConfigResponse(),
+            metadata,
+        )
 
         client.show_effective_autokey_config(
             request,
@@ -3389,6 +3473,7 @@ def test_show_effective_autokey_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):

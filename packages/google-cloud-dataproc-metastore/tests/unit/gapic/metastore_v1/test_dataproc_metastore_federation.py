@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import os
+import re
 
 # try/except added for compatibility with python < 3.8
 try:
@@ -76,6 +77,13 @@ from google.cloud.metastore_v1.services.dataproc_metastore_federation import (
     transports,
 )
 from google.cloud.metastore_v1.types import metastore, metastore_federation
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -358,6 +366,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         DataprocMetastoreFederationClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = DataprocMetastoreFederationClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = DataprocMetastoreFederationClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -4606,10 +4657,14 @@ def test_list_federations_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "post_list_federations"
     ) as post, mock.patch.object(
+        transports.DataprocMetastoreFederationRestInterceptor,
+        "post_list_federations_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "pre_list_federations"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = metastore_federation.ListFederationsRequest.pb(
             metastore_federation.ListFederationsRequest()
         )
@@ -4635,6 +4690,10 @@ def test_list_federations_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = metastore_federation.ListFederationsResponse()
+        post_with_metadata.return_value = (
+            metastore_federation.ListFederationsResponse(),
+            metadata,
+        )
 
         client.list_federations(
             request,
@@ -4646,6 +4705,7 @@ def test_list_federations_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_federation_rest_bad_request(
@@ -4740,10 +4800,14 @@ def test_get_federation_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "post_get_federation"
     ) as post, mock.patch.object(
+        transports.DataprocMetastoreFederationRestInterceptor,
+        "post_get_federation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "pre_get_federation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = metastore_federation.GetFederationRequest.pb(
             metastore_federation.GetFederationRequest()
         )
@@ -4769,6 +4833,7 @@ def test_get_federation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = metastore_federation.Federation()
+        post_with_metadata.return_value = metastore_federation.Federation(), metadata
 
         client.get_federation(
             request,
@@ -4780,6 +4845,7 @@ def test_get_federation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_federation_rest_bad_request(
@@ -4939,10 +5005,14 @@ def test_create_federation_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "post_create_federation"
     ) as post, mock.patch.object(
+        transports.DataprocMetastoreFederationRestInterceptor,
+        "post_create_federation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "pre_create_federation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = metastore_federation.CreateFederationRequest.pb(
             metastore_federation.CreateFederationRequest()
         )
@@ -4966,6 +5036,7 @@ def test_create_federation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_federation(
             request,
@@ -4977,6 +5048,7 @@ def test_create_federation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_federation_rest_bad_request(
@@ -5140,10 +5212,14 @@ def test_update_federation_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "post_update_federation"
     ) as post, mock.patch.object(
+        transports.DataprocMetastoreFederationRestInterceptor,
+        "post_update_federation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "pre_update_federation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = metastore_federation.UpdateFederationRequest.pb(
             metastore_federation.UpdateFederationRequest()
         )
@@ -5167,6 +5243,7 @@ def test_update_federation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_federation(
             request,
@@ -5178,6 +5255,7 @@ def test_update_federation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_federation_rest_bad_request(
@@ -5258,10 +5336,14 @@ def test_delete_federation_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "post_delete_federation"
     ) as post, mock.patch.object(
+        transports.DataprocMetastoreFederationRestInterceptor,
+        "post_delete_federation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DataprocMetastoreFederationRestInterceptor, "pre_delete_federation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = metastore_federation.DeleteFederationRequest.pb(
             metastore_federation.DeleteFederationRequest()
         )
@@ -5285,6 +5367,7 @@ def test_delete_federation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_federation(
             request,
@@ -5296,6 +5379,7 @@ def test_delete_federation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):

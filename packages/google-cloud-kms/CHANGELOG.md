@@ -4,6 +4,63 @@
 
 [1]: https://pypi.org/project/google-cloud-kms/#history
 
+## [3.5.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.5.0...google-cloud-kms-v3.5.1) (2025-05-20)
+
+
+### Documentation
+
+* [google-cloud-kms] A comment for enum value `DESTROYED` in enum `CryptoKeyVersionState` is changed ([#13913](https://github.com/googleapis/google-cloud-python/issues/13913)) ([cdca657](https://github.com/googleapis/google-cloud-python/commit/cdca65752c8ae2289c09f0320e39b66826725417))
+
+## [3.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.4.1...google-cloud-kms-v3.5.0) (2025-05-15)
+
+
+### Features
+
+* Adding eTag field to AutokeyConfig ([5d7b972](https://github.com/googleapis/google-cloud-python/commit/5d7b9728009f7ef561d65d70a8b712400b509d34))
+
+
+### Documentation
+
+* Updating docs for total_size field in KMS List APIs ([5d7b972](https://github.com/googleapis/google-cloud-python/commit/5d7b9728009f7ef561d65d70a8b712400b509d34))
+
+## [3.4.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.4.0...google-cloud-kms-v3.4.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.3.1...google-cloud-kms-v3.4.0) (2025-02-24)
+
+
+### Features
+
+* [google-cloud-kms] Support PQC asymmetric signing algorithms ML_DSA_65 and SLH_DSA_SHA2_128s ([#13538](https://github.com/googleapis/google-cloud-python/issues/13538)) ([891365e](https://github.com/googleapis/google-cloud-python/commit/891365e3030506c1205a56919d1b1e25e0cd926e))
+* Add a PublicKeyFormat enum to allow specifying the format the ([891365e](https://github.com/googleapis/google-cloud-python/commit/891365e3030506c1205a56919d1b1e25e0cd926e))
+
+## [3.3.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.3.0...google-cloud-kms-v3.3.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [3.3.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.2.2...google-cloud-kms-v3.3.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
+## [3.2.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.2.1...google-cloud-kms-v3.2.2) (2025-01-13)
+
+
+### Documentation
+
+* [google-cloud-kms] modify enum comment ([#13410](https://github.com/googleapis/google-cloud-python/issues/13410)) ([129140e](https://github.com/googleapis/google-cloud-python/commit/129140eeb51c96459b22d9e8fedb26a432d36ff6))
+
 ## [3.2.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-v3.2.0...google-cloud-kms-v3.2.1) (2024-12-18)
 
 

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,8 +39,12 @@ def partition(
 class policysimulatorCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'create_org_policy_violations_preview': ('parent', 'org_policy_violations_preview', 'org_policy_violations_preview_id', ),
         'create_replay': ('parent', 'replay', ),
+        'get_org_policy_violations_preview': ('name', ),
         'get_replay': ('name', ),
+        'list_org_policy_violations': ('parent', 'page_size', 'page_token', ),
+        'list_org_policy_violations_previews': ('parent', 'page_size', 'page_token', ),
         'list_replay_results': ('parent', 'page_size', 'page_token', ),
     }
 

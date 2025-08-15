@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.5.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.14...google-cloud-workstations-v0.5.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.5.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.13...google-cloud-workstations-v0.5.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.5.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.12...google-cloud-workstations-v0.5.13) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([0c5f868](https://github.com/googleapis/google-cloud-python/commit/0c5f86820c42e5cd857c1a0eef25f5e6a65b2ad8))
+
+## [0.5.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.11...google-cloud-workstations-v0.5.12) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.5.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-workstations-v0.5.10...google-cloud-workstations-v0.5.11) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from .common import (
     CustomFineTuningSpec,
     DoubleList,
     EmbeddingConfig,
+    FileOriginType,
     GuidedSearchSpec,
     IdpConfig,
     IndustryVertical,
@@ -231,7 +232,17 @@ from .serving_config_service import (
     ListServingConfigsResponse,
     UpdateServingConfigRequest,
 )
-from .session import Query, Session
+from .session import (
+    FileCharacteristics,
+    FileMetadata,
+    FileSource,
+    FileView,
+    ImageCharacteristics,
+    Query,
+    Session,
+    VideoCharacteristics,
+)
+from .session_service import ListFilesRequest, ListFilesResponse
 from .site_search_engine import SiteSearchEngine, SiteVerificationInfo, TargetSite
 from .site_search_engine_service import (
     BatchCreateTargetSiteMetadata,
@@ -297,6 +308,7 @@ __all__ = (
     "Interval",
     "Principal",
     "UserInfo",
+    "FileOriginType",
     "IndustryVertical",
     "SearchAddOn",
     "SearchTier",
@@ -478,8 +490,16 @@ __all__ = (
     "ListServingConfigsRequest",
     "ListServingConfigsResponse",
     "UpdateServingConfigRequest",
+    "FileCharacteristics",
+    "FileMetadata",
+    "FileView",
+    "ImageCharacteristics",
     "Query",
     "Session",
+    "VideoCharacteristics",
+    "FileSource",
+    "ListFilesRequest",
+    "ListFilesResponse",
     "SiteSearchEngine",
     "SiteVerificationInfo",
     "TargetSite",

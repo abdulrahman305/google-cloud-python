@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ from .types.job import (
     UpdateJobRequest,
 )
 from .types.k8s_min import (
+    BuildInfo,
     CloudSqlInstance,
     Container,
     ContainerPort,
@@ -100,6 +101,7 @@ from .types.traffic_target import (
 )
 from .types.vendor_settings import (
     BinaryAuthorization,
+    BuildConfig,
     EncryptionKeyRevocationAction,
     ExecutionEnvironment,
     IngressTraffic,
@@ -118,6 +120,8 @@ __all__ = (
     "ServicesAsyncClient",
     "TasksAsyncClient",
     "BinaryAuthorization",
+    "BuildConfig",
+    "BuildInfo",
     "BuildsClient",
     "CancelExecutionRequest",
     "CloudSqlInstance",

@@ -1,5 +1,95 @@
 # Changelog
 
+## [0.2.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.2.4...google-cloud-backupdr-v0.2.5) (2025-07-23)
+
+
+### Features
+
+* Add BackupPlanRevision resource and associated RPCs ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add DataSourceReference resource and associated RPCs ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add FetchBackupPlanAssociationsForResourceType RPC ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add new states to resources (UPDATING, UPLOADING) ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add ON_DEMAND_OPERATIONAL backup type ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add support for Cloud SQL backup and restore ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add support for GCE Disk backup and restore ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Add Update RPCs for BackupPlan and BackupPlanAssociation ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* Change BackupRule.standard_schedule to be OPTIONAL ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+
+
+### Documentation
+
+* A comment for field backup_retention_days in message .google.cloud.backupdr.v1.BackupRule is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field disks in message .google.cloud.backupdr.v1.ComputeInstanceRestoreProperties is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field hourly_frequency in message .google.cloud.backupdr.v1.StandardSchedule is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field network_interfaces in message .google.cloud.backupdr.v1.ComputeInstanceRestoreProperties is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field resource in message .google.cloud.backupdr.v1.BackupPlanAssociation is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field resource_policies in message .google.cloud.backupdr.v1.ComputeInstanceRestoreProperties is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field resource_type in message .google.cloud.backupdr.v1.BackupPlan is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+* A comment for field resource_type in message .google.cloud.backupdr.v1.BackupPlanAssociation is changed ([0393818](https://github.com/googleapis/google-cloud-python/commit/03938180ed28d9f3f272a4fe7952ea9c0e31ec22))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.2.3...google-cloud-backupdr-v0.2.4) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.2.2...google-cloud-backupdr-v0.2.3) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+
+## [0.2.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.2.1...google-cloud-backupdr-v0.2.2) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.2.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.2.0...google-cloud-backupdr-v0.2.1) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.1.7...google-cloud-backupdr-v0.2.0) (2025-01-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* Update field behavior of `resource_type` field in message `BackupPlanAssociation` to `REQUIRED`
+
+### Features
+
+* `ignore_backup_plan_references` added to the DeleteBackupVaultRequest ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* add enum to Backup Vault Access Restriction field ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* add InitializeServiceAPI ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* Update field behavior of `networks` field in message `ManagementServer` to `OPTIONAL` ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+
+
+### Bug Fixes
+
+* Update field behavior of `resource_type` field in message `BackupPlanAssociation` to `REQUIRED` ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+
+
+### Documentation
+
+* A comment for enum value `ACCESS_RESTRICTION_UNSPECIFIED` in enum `AccessRestriction` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `access_restriction` in message `.google.cloud.backupdr.v1.BackupVault` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `backup_retention_days` in message `.google.cloud.backupdr.v1.BackupRule` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `data_source` in message `.google.cloud.backupdr.v1.BackupPlanAssociation` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `last_backup_error` in message `.google.cloud.backupdr.v1.RuleConfigInfo` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `networks` in message `.google.cloud.backupdr.v1.ManagementServer` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `requested_cancellation` in message `.google.cloud.backupdr.v1.OperationMetadata` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `resource_type` in message `.google.cloud.backupdr.v1.BackupPlan` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `resource_type` in message `.google.cloud.backupdr.v1.BackupPlanAssociation` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `rule_id` in message `.google.cloud.backupdr.v1.RuleConfigInfo` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+* A comment for field `uid` in message `.google.cloud.backupdr.v1.BackupVault` is changed ([b5cdea3](https://github.com/googleapis/google-cloud-python/commit/b5cdea3f1d59f67ff0bd01d1891abf948a4f5582))
+
 ## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-backupdr-v0.1.6...google-cloud-backupdr-v0.1.7) (2024-12-12)
 
 

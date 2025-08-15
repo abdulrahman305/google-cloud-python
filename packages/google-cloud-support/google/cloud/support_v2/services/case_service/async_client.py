@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.support_v2 import gapic_version as package_version
 
@@ -297,7 +298,7 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> case.Case:
-        r"""Retrieve the specified case.
+        r"""Retrieve a case.
 
         .. code-block:: python
 
@@ -330,8 +331,8 @@ class CaseServiceAsyncClient:
                 The request object. The request message for the GetCase
                 endpoint.
             name (:class:`str`):
-                Required. The fully qualified name of
-                a case to be retrieved.
+                Required. The full name of a case to
+                be retrieved.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -346,12 +347,40 @@ class CaseServiceAsyncClient:
 
         Returns:
             google.cloud.support_v2.types.Case:
-                A support case.
+                A Case is an object that contains the details of a support case. It
+                   contains fields for the time it was created, its
+                   priority, its classification, and more. Cases can
+                   also have comments and attachments that get added
+                   over time.
+
+                   A case is parented by a Google Cloud organization or
+                   project.
+
+                   Organizations are identified by a number, so the name
+                   of a case parented by an organization would look like
+                   this:
+
+                   :literal:`\` organizations/123/cases/456`\ \`
+
+                   Projects have two unique identifiers, an ID and a
+                   number, and they look like this:
+
+                   :literal:`\` projects/abc/cases/456`\ \`
+
+                   :literal:`\` projects/123/cases/456`\ \`
+
+                   You can use either of them when calling the API. To
+                   learn more about project identifiers, see
+                   [AIP-2510](https://google.aip.dev/cloud/2510).
+
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -401,12 +430,12 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListCasesAsyncPager:
-        r"""Retrieve all cases under the specified parent.
+        r"""Retrieve all cases under a parent, but not its children.
 
-        Note: Listing cases under an Organization returns only the cases
-        directly parented by that organization. To retrieve all cases
-        under an organization, including cases parented by projects
-        under that organization, use ``cases.search``.
+        For example, listing cases under an organization only returns
+        the cases that are directly parented by that organization. To
+        retrieve cases under an organization and its projects, use
+        ``cases.search``.
 
         .. code-block:: python
 
@@ -440,8 +469,8 @@ class CaseServiceAsyncClient:
                 The request object. The request message for the ListCases
                 endpoint.
             parent (:class:`str`):
-                Required. The fully qualified name of
-                parent resource to list cases under.
+                Required. The name of a parent to
+                list cases under.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -466,7 +495,10 @@ class CaseServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -528,7 +560,7 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.SearchCasesAsyncPager:
-        r"""Search cases using the specified query.
+        r"""Search for cases using a query.
 
         .. code-block:: python
 
@@ -630,10 +662,12 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gcs_case.Case:
-        r"""Create a new case and associate it with the given Google Cloud
-        Resource. The case object must have the following fields set:
-        ``display_name``, ``description``, ``classification``, and
-        ``priority``.
+        r"""Create a new case and associate it with a parent.
+
+        It must have the following fields set: ``display_name``,
+        ``description``, ``classification``, and ``priority``. If you're
+        just testing the API and don't want to route your case to an
+        agent, set ``testCase=true``.
 
         .. code-block:: python
 
@@ -666,9 +700,8 @@ class CaseServiceAsyncClient:
                 The request object. The request message for the
                 CreateCase endpoint.
             parent (:class:`str`):
-                Required. The name of the Google
-                Cloud Resource under which the case
-                should be created.
+                Required. The name of the parent
+                under which the case should be created.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -688,12 +721,40 @@ class CaseServiceAsyncClient:
 
         Returns:
             google.cloud.support_v2.types.Case:
-                A support case.
+                A Case is an object that contains the details of a support case. It
+                   contains fields for the time it was created, its
+                   priority, its classification, and more. Cases can
+                   also have comments and attachments that get added
+                   over time.
+
+                   A case is parented by a Google Cloud organization or
+                   project.
+
+                   Organizations are identified by a number, so the name
+                   of a case parented by an organization would look like
+                   this:
+
+                   :literal:`\` organizations/123/cases/456`\ \`
+
+                   Projects have two unique identifiers, an ID and a
+                   number, and they look like this:
+
+                   :literal:`\` projects/abc/cases/456`\ \`
+
+                   :literal:`\` projects/123/cases/456`\ \`
+
+                   You can use either of them when calling the API. To
+                   learn more about project identifiers, see
+                   [AIP-2510](https://google.aip.dev/cloud/2510).
+
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, case])
+        flattened_params = [parent, case]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -748,8 +809,7 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gcs_case.Case:
-        r"""Update the specified case. Only a subset of fields
-        can be updated.
+        r"""Update a case. Only some fields can be updated.
 
         .. code-block:: python
 
@@ -781,20 +841,19 @@ class CaseServiceAsyncClient:
                 The request object. The request message for the
                 UpdateCase endpoint
             case (:class:`google.cloud.support_v2.types.Case`):
-                Required. The case object to update.
+                Required. The case to update.
                 This corresponds to the ``case`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
-                A list of attributes of the case object that should be
-                updated as part of this request. Supported values are
-                ``priority``, ``display_name``, and
+                A list of attributes of the case that should be updated.
+                Supported values are ``priority``, ``display_name``, and
                 ``subscriber_email_addresses``. If no fields are
                 specified, all supported fields are updated.
 
-                WARNING: If you do not provide a field mask, then you
-                might accidentally clear some fields. For example, if
-                you leave the field mask empty and do not provide a
+                Be careful - if you do not provide a field mask, then
+                you might accidentally clear some fields. For example,
+                if you leave the field mask empty and do not provide a
                 value for ``subscriber_email_addresses``, then
                 ``subscriber_email_addresses`` is updated to empty.
 
@@ -811,12 +870,40 @@ class CaseServiceAsyncClient:
 
         Returns:
             google.cloud.support_v2.types.Case:
-                A support case.
+                A Case is an object that contains the details of a support case. It
+                   contains fields for the time it was created, its
+                   priority, its classification, and more. Cases can
+                   also have comments and attachments that get added
+                   over time.
+
+                   A case is parented by a Google Cloud organization or
+                   project.
+
+                   Organizations are identified by a number, so the name
+                   of a case parented by an organization would look like
+                   this:
+
+                   :literal:`\` organizations/123/cases/456`\ \`
+
+                   Projects have two unique identifiers, an ID and a
+                   number, and they look like this:
+
+                   :literal:`\` projects/abc/cases/456`\ \`
+
+                   :literal:`\` projects/123/cases/456`\ \`
+
+                   You can use either of them when calling the API. To
+                   learn more about project identifiers, see
+                   [AIP-2510](https://google.aip.dev/cloud/2510).
+
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([case, update_mask])
+        flattened_params = [case, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -871,14 +958,13 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> case.Case:
-        r"""Escalate a case. Escalating a case will initiate the
-        Google Cloud Support escalation management process.
+        r"""Escalate a case, starting the Google Cloud Support
+        escalation management process.
 
-        This operation is only available to certain Customer
-        Care tiers. Go to https://cloud.google.com/support and
+        This operation is only available for some support
+        services. Go to https://cloud.google.com/support and
         look for 'Technical support escalations' in the feature
-        list to find out which tiers are able to perform
-        escalations.
+        list to find out which ones let you do that.
 
         .. code-block:: python
 
@@ -920,7 +1006,32 @@ class CaseServiceAsyncClient:
 
         Returns:
             google.cloud.support_v2.types.Case:
-                A support case.
+                A Case is an object that contains the details of a support case. It
+                   contains fields for the time it was created, its
+                   priority, its classification, and more. Cases can
+                   also have comments and attachments that get added
+                   over time.
+
+                   A case is parented by a Google Cloud organization or
+                   project.
+
+                   Organizations are identified by a number, so the name
+                   of a case parented by an organization would look like
+                   this:
+
+                   :literal:`\` organizations/123/cases/456`\ \`
+
+                   Projects have two unique identifiers, an ID and a
+                   number, and they look like this:
+
+                   :literal:`\` projects/abc/cases/456`\ \`
+
+                   :literal:`\` projects/123/cases/456`\ \`
+
+                   You can use either of them when calling the API. To
+                   learn more about project identifiers, see
+                   [AIP-2510](https://google.aip.dev/cloud/2510).
+
         """
         # Create or coerce a protobuf request object.
         # - Use the request object if provided (there's no risk of modifying the input as
@@ -962,7 +1073,7 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> case.Case:
-        r"""Close the specified case.
+        r"""Close a case.
 
         .. code-block:: python
 
@@ -1004,7 +1115,32 @@ class CaseServiceAsyncClient:
 
         Returns:
             google.cloud.support_v2.types.Case:
-                A support case.
+                A Case is an object that contains the details of a support case. It
+                   contains fields for the time it was created, its
+                   priority, its classification, and more. Cases can
+                   also have comments and attachments that get added
+                   over time.
+
+                   A case is parented by a Google Cloud organization or
+                   project.
+
+                   Organizations are identified by a number, so the name
+                   of a case parented by an organization would look like
+                   this:
+
+                   :literal:`\` organizations/123/cases/456`\ \`
+
+                   Projects have two unique identifiers, an ID and a
+                   number, and they look like this:
+
+                   :literal:`\` projects/abc/cases/456`\ \`
+
+                   :literal:`\` projects/123/cases/456`\ \`
+
+                   You can use either of them when calling the API. To
+                   learn more about project identifiers, see
+                   [AIP-2510](https://google.aip.dev/cloud/2510).
+
         """
         # Create or coerce a protobuf request object.
         # - Use the request object if provided (there's no risk of modifying the input as
@@ -1048,11 +1184,18 @@ class CaseServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.SearchCaseClassificationsAsyncPager:
-        r"""Retrieve valid classifications to be used when
-        creating a support case. The classications are
-        hierarchical, with each classification containing all
-        levels of the hierarchy, separated by " > ". For example
-        "Technical Issue > Compute > Compute Engine".
+        r"""Retrieve valid classifications to use when creating a support
+        case.
+
+        Classifications are hierarchical. Each classification is a
+        string containing all levels of the hierarchy separated by
+        ``" > "``. For example,
+        ``"Technical Issue > Compute > Compute Engine"``.
+
+        Classification IDs returned by this endpoint are valid for at
+        least six months. When a classification is deactivated, this
+        endpoint immediately stops returning it. After six months,
+        ``case.create`` requests using the classification will fail.
 
         .. code-block:: python
 
@@ -1082,7 +1225,7 @@ class CaseServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.support_v2.types.SearchCaseClassificationsRequest, dict]]):
-                The request object. The request message for
+                The request object. The request message for the
                 SearchCaseClassifications endpoint.
             retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
                 should be retried.
@@ -1148,6 +1291,9 @@ class CaseServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("CaseServiceAsyncClient",)

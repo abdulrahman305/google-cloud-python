@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.networkconnectivity_v1 import gapic_version as package_version
 from google.cloud.networkconnectivity_v1.types import hub
@@ -35,6 +36,9 @@ from google.cloud.networkconnectivity_v1.types import hub as gcn_hub
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class HubServiceTransport(abc.ABC):
@@ -195,6 +199,16 @@ class HubServiceTransport(abc.ABC):
             ),
             self.accept_hub_spoke: gapic_v1.method.wrap_method(
                 self.accept_hub_spoke,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.accept_spoke_update: gapic_v1.method.wrap_method(
+                self.accept_spoke_update,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.reject_spoke_update: gapic_v1.method.wrap_method(
+                self.reject_spoke_update,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -406,6 +420,24 @@ class HubServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [hub.AcceptHubSpokeRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def accept_spoke_update(
+        self,
+    ) -> Callable[
+        [hub.AcceptSpokeUpdateRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def reject_spoke_update(
+        self,
+    ) -> Callable[
+        [hub.RejectSpokeUpdateRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

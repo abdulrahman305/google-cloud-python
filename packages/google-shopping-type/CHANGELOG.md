@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.0.0](https://github.com/googleapis/google-cloud-python/compare/google-shopping-type-v0.1.12...google-shopping-type-v1.0.0) (2025-08-13)
+
+
+### Features
+
+* update release level to stable ([36b954f](https://github.com/googleapis/google-cloud-python/commit/36b954fa18367a079311efcad7b18444c5c00c03))
+
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-shopping-type-v0.1.11...google-shopping-type-v0.1.12) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([4f0a027](https://github.com/googleapis/google-cloud-python/commit/4f0a0270b494d47e80373b87e7668283dbbceec7))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-shopping-type-v0.1.10...google-shopping-type-v0.1.11) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([36e8ba1](https://github.com/googleapis/google-cloud-python/commit/36e8ba12eac92dd221ac3ddf1061da3845135791))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-shopping-type-v0.1.9...google-shopping-type-v0.1.10) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-shopping-type-v0.1.8...google-shopping-type-v0.1.9) (2024-10-24)
 
 

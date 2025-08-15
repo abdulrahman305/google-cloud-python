@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class CloudBillingRestInterceptor:
@@ -184,11 +188,34 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.BillingAccount:
         """Post-rpc interceptor for create_billing_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_billing_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_billing_account` interceptor runs
+        before the `post_create_billing_account_with_metadata` interceptor.
         """
         return response
+
+    def post_create_billing_account_with_metadata(
+        self,
+        response: cloud_billing.BillingAccount,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloud_billing.BillingAccount, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_billing_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_create_billing_account_with_metadata`
+        interceptor in new development instead of the `post_create_billing_account` interceptor.
+        When both interceptors are used, this `post_create_billing_account_with_metadata` interceptor runs after the
+        `post_create_billing_account` interceptor. The (possibly modified) response returned by
+        `post_create_billing_account` will be passed to
+        `post_create_billing_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_billing_account(
         self,
@@ -209,11 +236,34 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.BillingAccount:
         """Post-rpc interceptor for get_billing_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_billing_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_billing_account` interceptor runs
+        before the `post_get_billing_account_with_metadata` interceptor.
         """
         return response
+
+    def post_get_billing_account_with_metadata(
+        self,
+        response: cloud_billing.BillingAccount,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloud_billing.BillingAccount, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_billing_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_get_billing_account_with_metadata`
+        interceptor in new development instead of the `post_get_billing_account` interceptor.
+        When both interceptors are used, this `post_get_billing_account_with_metadata` interceptor runs after the
+        `post_get_billing_account` interceptor. The (possibly modified) response returned by
+        `post_get_billing_account` will be passed to
+        `post_get_billing_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iam_policy(
         self,
@@ -232,11 +282,34 @@ class CloudBillingRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_project_billing_info(
         self,
@@ -258,11 +331,36 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.ProjectBillingInfo:
         """Post-rpc interceptor for get_project_billing_info
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_project_billing_info_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_project_billing_info` interceptor runs
+        before the `post_get_project_billing_info_with_metadata` interceptor.
         """
         return response
+
+    def post_get_project_billing_info_with_metadata(
+        self,
+        response: cloud_billing.ProjectBillingInfo,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_billing.ProjectBillingInfo, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_project_billing_info
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_get_project_billing_info_with_metadata`
+        interceptor in new development instead of the `post_get_project_billing_info` interceptor.
+        When both interceptors are used, this `post_get_project_billing_info_with_metadata` interceptor runs after the
+        `post_get_project_billing_info` interceptor. The (possibly modified) response returned by
+        `post_get_project_billing_info` will be passed to
+        `post_get_project_billing_info_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_billing_accounts(
         self,
@@ -284,11 +382,37 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.ListBillingAccountsResponse:
         """Post-rpc interceptor for list_billing_accounts
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_billing_accounts_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_billing_accounts` interceptor runs
+        before the `post_list_billing_accounts_with_metadata` interceptor.
         """
         return response
+
+    def post_list_billing_accounts_with_metadata(
+        self,
+        response: cloud_billing.ListBillingAccountsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_billing.ListBillingAccountsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_billing_accounts
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_list_billing_accounts_with_metadata`
+        interceptor in new development instead of the `post_list_billing_accounts` interceptor.
+        When both interceptors are used, this `post_list_billing_accounts_with_metadata` interceptor runs after the
+        `post_list_billing_accounts` interceptor. The (possibly modified) response returned by
+        `post_list_billing_accounts` will be passed to
+        `post_list_billing_accounts_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_project_billing_info(
         self,
@@ -310,11 +434,37 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.ListProjectBillingInfoResponse:
         """Post-rpc interceptor for list_project_billing_info
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_project_billing_info_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_project_billing_info` interceptor runs
+        before the `post_list_project_billing_info_with_metadata` interceptor.
         """
         return response
+
+    def post_list_project_billing_info_with_metadata(
+        self,
+        response: cloud_billing.ListProjectBillingInfoResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_billing.ListProjectBillingInfoResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_project_billing_info
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_list_project_billing_info_with_metadata`
+        interceptor in new development instead of the `post_list_project_billing_info` interceptor.
+        When both interceptors are used, this `post_list_project_billing_info_with_metadata` interceptor runs after the
+        `post_list_project_billing_info` interceptor. The (possibly modified) response returned by
+        `post_list_project_billing_info` will be passed to
+        `post_list_project_billing_info_with_metadata`.
+        """
+        return response, metadata
 
     def pre_move_billing_account(
         self,
@@ -335,11 +485,34 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.BillingAccount:
         """Post-rpc interceptor for move_billing_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_move_billing_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_move_billing_account` interceptor runs
+        before the `post_move_billing_account_with_metadata` interceptor.
         """
         return response
+
+    def post_move_billing_account_with_metadata(
+        self,
+        response: cloud_billing.BillingAccount,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloud_billing.BillingAccount, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for move_billing_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_move_billing_account_with_metadata`
+        interceptor in new development instead of the `post_move_billing_account` interceptor.
+        When both interceptors are used, this `post_move_billing_account_with_metadata` interceptor runs after the
+        `post_move_billing_account` interceptor. The (possibly modified) response returned by
+        `post_move_billing_account` will be passed to
+        `post_move_billing_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -358,11 +531,34 @@ class CloudBillingRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -384,11 +580,37 @@ class CloudBillingRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_billing_account(
         self,
@@ -410,11 +632,34 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.BillingAccount:
         """Post-rpc interceptor for update_billing_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_billing_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_billing_account` interceptor runs
+        before the `post_update_billing_account_with_metadata` interceptor.
         """
         return response
+
+    def post_update_billing_account_with_metadata(
+        self,
+        response: cloud_billing.BillingAccount,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloud_billing.BillingAccount, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_billing_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_update_billing_account_with_metadata`
+        interceptor in new development instead of the `post_update_billing_account` interceptor.
+        When both interceptors are used, this `post_update_billing_account_with_metadata` interceptor runs after the
+        `post_update_billing_account` interceptor. The (possibly modified) response returned by
+        `post_update_billing_account` will be passed to
+        `post_update_billing_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_project_billing_info(
         self,
@@ -436,11 +681,36 @@ class CloudBillingRestInterceptor:
     ) -> cloud_billing.ProjectBillingInfo:
         """Post-rpc interceptor for update_project_billing_info
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_project_billing_info_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudBilling server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_project_billing_info` interceptor runs
+        before the `post_update_project_billing_info_with_metadata` interceptor.
         """
         return response
+
+    def post_update_project_billing_info_with_metadata(
+        self,
+        response: cloud_billing.ProjectBillingInfo,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_billing.ProjectBillingInfo, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_project_billing_info
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudBilling server but before it is returned to user code.
+
+        We recommend only using this `post_update_project_billing_info_with_metadata`
+        interceptor in new development instead of the `post_update_project_billing_info` interceptor.
+        When both interceptors are used, this `post_update_project_billing_info_with_metadata` interceptor runs after the
+        `post_update_project_billing_info` interceptor. The (possibly modified) response returned by
+        `post_update_project_billing_info` will be passed to
+        `post_update_project_billing_info_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -658,6 +928,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_billing_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_billing_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -803,6 +1077,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_billing_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_billing_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1020,6 +1298,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1168,6 +1450,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_project_billing_info(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_project_billing_info_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1312,6 +1598,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_billing_accounts(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_billing_accounts_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1456,6 +1746,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_project_billing_info(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_project_billing_info_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1609,6 +1903,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_move_billing_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_move_billing_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1834,6 +2132,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1982,6 +2284,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2133,6 +2439,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_billing_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_billing_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2291,6 +2601,10 @@ class CloudBillingRestTransport(_BaseCloudBillingRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_project_billing_info(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_project_billing_info_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

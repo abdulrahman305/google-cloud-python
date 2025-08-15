@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.networkconnectivity_v1 import gapic_version as package_version
 
@@ -515,6 +518,33 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -729,7 +759,7 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListPolicyBasedRoutesPager:
-        r"""Lists PolicyBasedRoutes in a given project and
+        r"""Lists policy-based routes in a given project and
         location.
 
         .. code-block:: python
@@ -761,7 +791,8 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
 
         Args:
             request (Union[google.cloud.networkconnectivity_v1.types.ListPolicyBasedRoutesRequest, dict]):
-                The request object. Request for [PolicyBasedRouting.ListPolicyBasedRoutes][]
+                The request object. Request for
+                [PolicyBasedRoutingService.ListPolicyBasedRoutes][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.ListPolicyBasedRoutes]
                 method.
             parent (str):
                 Required. The parent resource's name.
@@ -779,7 +810,8 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         Returns:
             google.cloud.networkconnectivity_v1.services.policy_based_routing_service.pagers.ListPolicyBasedRoutesPager:
                 Response for
-                [PolicyBasedRouting.ListPolicyBasedRoutes][] method.
+                   [PolicyBasedRoutingService.ListPolicyBasedRoutes][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.ListPolicyBasedRoutes]
+                   method.
 
                 Iterating over this object will yield results and
                 resolve additional pages automatically.
@@ -788,7 +820,10 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -850,7 +885,7 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> policy_based_routing.PolicyBasedRoute:
-        r"""Gets details of a single PolicyBasedRoute.
+        r"""Gets details of a single policy-based route.
 
         .. code-block:: python
 
@@ -880,7 +915,8 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
 
         Args:
             request (Union[google.cloud.networkconnectivity_v1.types.GetPolicyBasedRouteRequest, dict]):
-                The request object. Request for [PolicyBasedRouting.GetPolicyBasedRoute][]
+                The request object. Request for
+                [PolicyBasedRoutingService.GetPolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.GetPolicyBasedRoute]
                 method.
             name (str):
                 Required. Name of the
@@ -899,20 +935,22 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
 
         Returns:
             google.cloud.networkconnectivity_v1.types.PolicyBasedRoute:
-                Policy Based Routes (PBR) are more
-                powerful routes that allows GCP
-                customers to route their L4 network
-                traffic based on not just destination
-                IP, but also source IP, protocol and
-                more. A PBR always take precedence when
-                it conflicts with other types of routes.
-                Next id: 22
+                Policy-based routes route L4 network
+                traffic based on not just destination IP
+                address, but also source IP address,
+                protocol, and more. If a policy-based
+                route conflicts with other types of
+                routes, the policy-based route always
+                takes precedence.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -965,8 +1003,8 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""Creates a new PolicyBasedRoute in a given project and
-        location.
+        r"""Creates a new policy-based route in a given project
+        and location.
 
         .. code-block:: python
 
@@ -1008,7 +1046,8 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         Args:
             request (Union[google.cloud.networkconnectivity_v1.types.CreatePolicyBasedRouteRequest, dict]):
                 The request object. Request for
-                [PolicyBasedRouting.CreatePolicyBasedRoute][] method.
+                [PolicyBasedRoutingService.CreatePolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.CreatePolicyBasedRoute]
+                method.
             parent (str):
                 Required. The parent resource's name
                 of the PolicyBasedRoute.
@@ -1018,14 +1057,23 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
                 should not be set.
             policy_based_route (google.cloud.networkconnectivity_v1.types.PolicyBasedRoute):
                 Required. Initial values for a new
-                Policy Based Route.
+                policy-based route.
 
                 This corresponds to the ``policy_based_route`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             policy_based_route_id (str):
-                Required. Unique id for the Policy
-                Based Route to create.
+                Required. Unique id for the policy-based route to
+                create. Provided by the client when the resource is
+                created. The name must comply with
+                https://google.aip.dev/122#resource-id-segments.
+                Specifically, the name must be 1-63 characters long and
+                match the regular expression
+                `a-z <[a-z0-9-]*[a-z0-9]>`__?. The first character must
+                be a lowercase letter, and all following characters
+                (except for the last character) must be a dash,
+                lowercase letter, or digit. The last character must be a
+                lowercase letter or digit.
 
                 This corresponds to the ``policy_based_route_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1042,17 +1090,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
             google.api_core.operation.Operation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.cloud.networkconnectivity_v1.types.PolicyBasedRoute` Policy Based Routes (PBR) are more powerful routes that allows GCP customers
-                   to route their L4 network traffic based on not just
-                   destination IP, but also source IP, protocol and
-                   more. A PBR always take precedence when it conflicts
-                   with other types of routes. Next id: 22
+                The result type for the operation will be :class:`google.cloud.networkconnectivity_v1.types.PolicyBasedRoute` Policy-based routes route L4 network traffic based on not just destination IP
+                   address, but also source IP address, protocol, and
+                   more. If a policy-based route conflicts with other
+                   types of routes, the policy-based route always takes
+                   precedence.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, policy_based_route, policy_based_route_id])
+        flattened_params = [parent, policy_based_route, policy_based_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1117,7 +1168,7 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation.Operation:
-        r"""Deletes a single PolicyBasedRoute.
+        r"""Deletes a single policy-based route.
 
         .. code-block:: python
 
@@ -1152,10 +1203,11 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         Args:
             request (Union[google.cloud.networkconnectivity_v1.types.DeletePolicyBasedRouteRequest, dict]):
                 The request object. Request for
-                [PolicyBasedRouting.DeletePolicyBasedRoute][] method.
+                [PolicyBasedRoutingService.DeletePolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.DeletePolicyBasedRoute]
+                method.
             name (str):
-                Required. Name of the
-                PolicyBasedRoute resource to delete.
+                Required. Name of the policy-based
+                route resource to delete.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1187,7 +1239,10 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1294,16 +1349,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_operation(
         self,
@@ -1349,16 +1408,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def delete_operation(
         self,
@@ -1581,16 +1644,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_iam_policy(
         self,
@@ -1703,16 +1770,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def test_iam_permissions(
         self,
@@ -1763,16 +1834,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_location(
         self,
@@ -1818,16 +1893,20 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def list_locations(
         self,
@@ -1873,21 +1952,27 @@ class PolicyBasedRoutingServiceClient(metaclass=PolicyBasedRoutingServiceClientM
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("PolicyBasedRoutingServiceClient",)

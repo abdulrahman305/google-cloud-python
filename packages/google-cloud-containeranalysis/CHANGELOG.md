@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.18.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.18.0...google-cloud-containeranalysis-v2.18.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [2.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.17.2...google-cloud-containeranalysis-v2.18.0) (2025-03-27)
+
+
+### Features
+
+* add ExportSBOM API method for v1 ([19c7d9c](https://github.com/googleapis/google-cloud-python/commit/19c7d9c4fba0e362165917a7aed0eebc7f17ff12))
+
+
+### Documentation
+
+* Minor formatting changes to proto headers ([19c7d9c](https://github.com/googleapis/google-cloud-python/commit/19c7d9c4fba0e362165917a7aed0eebc7f17ff12))
+
+## [2.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.17.1...google-cloud-containeranalysis-v2.17.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.17.0...google-cloud-containeranalysis-v2.17.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.16.0...google-cloud-containeranalysis-v2.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-containeranalysis-v2.15.1...google-cloud-containeranalysis-v2.16.0) (2024-12-12)
 
 

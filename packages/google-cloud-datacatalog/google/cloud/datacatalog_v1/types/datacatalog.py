@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ from __future__ import annotations
 from typing import MutableMapping, MutableSequence
 
 from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 from google.rpc import status_pb2  # type: ignore
 import proto  # type: ignore
 
@@ -783,7 +784,7 @@ class LookupEntryRequest(proto.Message):
             -  ``datacatalog.entry.{PROJECT_ID}.{LOCATION_ID}.{ENTRY_GROUP_ID}.{ENTRY_ID}``
 
             Identifiers (``*_ID``) should comply with the [Lexical
-            structure in Standard SQL]
+            structure in GoogleSQL]
             (https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical).
 
             This field is a member of `oneof`_ ``target_name``.
@@ -1237,7 +1238,7 @@ class DatabaseTableSpec(proto.Message):
             table and present only in the Dataplex table
             entries.
         database_view_spec (google.cloud.datacatalog_v1.types.DatabaseTableSpec.DatabaseViewSpec):
-            Spec what aplies to tables that are actually
+            Spec what applies to tables that are actually
             views. Not set for "real" tables.
     """
 
@@ -1889,12 +1890,12 @@ class FeatureOnlineStoreSpec(proto.Message):
 
     Attributes:
         storage_type (google.cloud.datacatalog_v1.types.FeatureOnlineStoreSpec.StorageType):
-            Output only. Type of underelaying storage for
+            Output only. Type of underlying storage for
             the FeatureOnlineStore.
     """
 
     class StorageType(proto.Enum):
-        r"""Type of underlaying storage type.
+        r"""Type of underlying storage type.
 
         Values:
             STORAGE_TYPE_UNSPECIFIED (0):
@@ -1902,7 +1903,7 @@ class FeatureOnlineStoreSpec(proto.Message):
             BIGTABLE (1):
                 Underlsying storgae is Bigtable.
             OPTIMIZED (2):
-                Underlaying is optimized online server
+                Underlying is optimized online server
                 (Lightning).
         """
         STORAGE_TYPE_UNSPECIFIED = 0
@@ -2962,6 +2963,10 @@ class MigrationConfig(proto.Message):
             Templates to Dataplex.
         catalog_ui_experience (google.cloud.datacatalog_v1.types.CatalogUIExperience):
             Opt-in status for the UI switch to Dataplex.
+        template_migration_enabled_time (google.protobuf.timestamp_pb2.Timestamp):
+            The time when the Tag Template migration was
+            enabled. If the Tag Template migration is not
+            enabled, this field is not set.
     """
 
     tag_template_migration: "TagTemplateMigration" = proto.Field(
@@ -2973,6 +2978,11 @@ class MigrationConfig(proto.Message):
         proto.ENUM,
         number=2,
         enum="CatalogUIExperience",
+    )
+    template_migration_enabled_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=timestamp_pb2.Timestamp,
     )
 
 

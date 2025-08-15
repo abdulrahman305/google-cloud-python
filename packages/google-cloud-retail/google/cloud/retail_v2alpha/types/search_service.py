@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -359,6 +359,9 @@ class SearchRequest(proto.Message):
 
             If this field is set to an invalid value other than these,
             an INVALID_ARGUMENT error is returned.
+        experiment_id (str):
+            Optional. An ID for the experiment group this
+            search belongs to.
         page_categories (MutableSequence[str]):
             The categories associated with a category page. Must be set
             for category navigation queries to achieve good search
@@ -431,6 +434,39 @@ class SearchRequest(proto.Message):
         tile_navigation_spec (google.cloud.retail_v2alpha.types.SearchRequest.TileNavigationSpec):
             Optional. This field specifies tile
             navigation related parameters.
+        language_code (str):
+            Optional. The BCP-47 language code, such as "en-US" or
+            "sr-Latn"
+            `list <https://www.unicode.org/cldr/charts/46/summary/root.html>`__.
+            For more information, see `Standardized
+            codes <https://google.aip.dev/143>`__. This field helps to
+            better interpret the query. If a value isn't specified, the
+            query language code is automatically detected, which may not
+            be accurate.
+        region_code (str):
+            Optional. The Unicode country/region code (CLDR) of a
+            location, such as "US" and "419"
+            `list <https://www.unicode.org/cldr/charts/46/supplemental/territory_information.html>`__.
+            For more information, see `Standardized
+            codes <https://google.aip.dev/143>`__. If set, then results
+            will be boosted based on the region_code provided.
+        place_id (str):
+            Optional. An id corresponding to a place, such as a store id
+            or region id. When specified, we use the price from the
+            local inventory with the matching product's
+            [LocalInventory.place_id][google.cloud.retail.v2alpha.LocalInventory.place_id]
+            for revenue optimization.
+        user_attributes (MutableMapping[str, google.cloud.retail_v2alpha.types.StringList]):
+            Optional. The user attributes that could be used for
+            personalization of search results.
+
+            -  Populate at most 100 key-value pairs per query.
+            -  Only supports string keys and repeated string values.
+            -  Duplicate keys are not allowed within a single query.
+
+            Example: user_attributes: [ { key: "pets" value { values:
+            "dog" values: "cat" } }, { key: "state" value { values: "CA"
+            } } ]
     """
 
     class RelevanceThreshold(proto.Enum):
@@ -842,7 +878,7 @@ class SearchRequest(proto.Message):
             condition_boost_specs (MutableSequence[google.cloud.retail_v2alpha.types.SearchRequest.BoostSpec.ConditionBoostSpec]):
                 Condition boost specifications. If a product
                 matches multiple conditions in the
-                specifictions, boost scores from these
+                specifications, boost scores from these
                 specifications are all applied and combined in a
                 non-linear way. Maximum number of specifications
                 is 20.
@@ -928,10 +964,11 @@ class SearchRequest(proto.Message):
                 Default to
                 [Condition.DISABLED][google.cloud.retail.v2alpha.SearchRequest.QueryExpansionSpec.Condition.DISABLED].
             pin_unexpanded_results (bool):
-                Whether to pin unexpanded results. If this
-                field is set to true, unexpanded products are
-                always at the top of the search results,
-                followed by the expanded results.
+                Whether to pin unexpanded results. The
+                default value is false. If this field is set to
+                true, unexpanded products are always at the top
+                of the search results, followed by the expanded
+                results.
         """
 
         class Condition(proto.Enum):
@@ -1149,10 +1186,16 @@ class SearchRequest(proto.Message):
                 This field specifies whether the customer
                 would like to request tile navigation.
             applied_tiles (MutableSequence[google.cloud.retail_v2alpha.types.Tile]):
-                This field specifies the tiles which are already clicked in
-                client side. NOTE: This field is not being used for
-                filtering search products. Client side should also put all
-                the applied tiles in
+                This optional field specifies the tiles which are already
+                clicked in client side. While the feature works without this
+                field set, particularly for an initial query, it is highly
+                recommended to set this field because it can improve the
+                quality of the search response and removes possible
+                duplicate tiles.
+
+                NOTE: This field is not being used for filtering search
+                products. Client side should also put all the applied tiles
+                in
                 [SearchRequest.filter][google.cloud.retail.v2alpha.SearchRequest.filter].
         """
 
@@ -1240,6 +1283,10 @@ class SearchRequest(proto.Message):
         proto.STRING,
         number=17,
     )
+    experiment_id: str = proto.Field(
+        proto.STRING,
+        number=18,
+    )
     page_categories: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=23,
@@ -1278,6 +1325,24 @@ class SearchRequest(proto.Message):
         proto.MESSAGE,
         number=41,
         message=TileNavigationSpec,
+    )
+    language_code: str = proto.Field(
+        proto.STRING,
+        number=43,
+    )
+    region_code: str = proto.Field(
+        proto.STRING,
+        number=44,
+    )
+    place_id: str = proto.Field(
+        proto.STRING,
+        number=46,
+    )
+    user_attributes: MutableMapping[str, common.StringList] = proto.MapField(
+        proto.STRING,
+        proto.MESSAGE,
+        number=47,
+        message=common.StringList,
     )
 
 
@@ -1327,15 +1392,23 @@ class SearchResponse(proto.Message):
         applied_controls (MutableSequence[str]):
             The fully qualified resource name of applied
             `controls <https://cloud.google.com/retail/docs/serving-control-rules>`__.
+        pin_control_metadata (google.cloud.retail_v2alpha.types.PinControlMetadata):
+            Metadata for pin controls which were
+            applicable to the request. This contains two map
+            fields, one for all matched pins and one for
+            pins which were matched but not applied.
+
+            The two maps are keyed by pin position, and the
+            values are the product ids which were matched to
+            that pin.
         invalid_condition_boost_specs (MutableSequence[google.cloud.retail_v2alpha.types.SearchRequest.BoostSpec.ConditionBoostSpec]):
             The invalid
             [SearchRequest.BoostSpec.condition_boost_specs][google.cloud.retail.v2alpha.SearchRequest.BoostSpec.condition_boost_specs]
             that are not applied during serving.
         experiment_info (MutableSequence[google.cloud.retail_v2alpha.types.ExperimentInfo]):
-            Metadata related to A/B testing
-            [Experiment][google.cloud.retail.v2alpha.Experiment]
-            associated with this response. Only exists when an
-            experiment is triggered.
+            Metadata related to A/B testing experiment
+            associated with this response. Only exists when
+            an experiment is triggered.
         conversational_search_result (google.cloud.retail_v2alpha.types.SearchResponse.ConversationalSearchResult):
             This field specifies all related information
             that is needed on client side for UI rendering
@@ -1444,6 +1517,8 @@ class SearchResponse(proto.Message):
 
                 -  ``purchased``: Indicates that this product has been
                    purchased before.
+            model_scores (MutableMapping[str, google.cloud.retail_v2alpha.types.DoubleList]):
+                Google provided available scores.
         """
 
         id: str = proto.Field(
@@ -1476,6 +1551,12 @@ class SearchResponse(proto.Message):
         personal_labels: MutableSequence[str] = proto.RepeatedField(
             proto.STRING,
             number=7,
+        )
+        model_scores: MutableMapping[str, common.DoubleList] = proto.MapField(
+            proto.STRING,
+            proto.MESSAGE,
+            number=8,
+            message=common.DoubleList,
         )
 
     class Facet(proto.Message):
@@ -1755,6 +1836,11 @@ class SearchResponse(proto.Message):
         proto.STRING,
         number=12,
     )
+    pin_control_metadata: common.PinControlMetadata = proto.Field(
+        proto.MESSAGE,
+        number=22,
+        message=common.PinControlMetadata,
+    )
     invalid_condition_boost_specs: MutableSequence[
         "SearchRequest.BoostSpec.ConditionBoostSpec"
     ] = proto.RepeatedField(
@@ -1780,9 +1866,7 @@ class SearchResponse(proto.Message):
 
 
 class ExperimentInfo(proto.Message):
-    r"""Metadata for active A/B testing
-    [Experiment][google.cloud.retail.v2alpha.Experiment].
-
+    r"""Metadata for active A/B testing experiment.
 
     .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
@@ -1811,8 +1895,8 @@ class ExperimentInfo(proto.Message):
                 ``projects/*/locations/*/catalogs/*/servingConfigs/*``.
             experiment_serving_config (str):
                 The fully qualified resource name of the serving config
-                [Experiment.VariantArm.serving_config_id][google.cloud.retail.v2alpha.Experiment.VariantArm.serving_config_id]
-                responsible for generating the search response. For example:
+                ``Experiment.VariantArm.serving_config_id`` responsible for
+                generating the search response. For example:
                 ``projects/*/locations/*/catalogs/*/servingConfigs/*``.
         """
 

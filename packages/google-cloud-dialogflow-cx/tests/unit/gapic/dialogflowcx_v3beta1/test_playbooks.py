@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ from google.auth.exceptions import MutualTLSChannelError
 from google.cloud.location import locations_pb2
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import struct_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
@@ -64,12 +65,23 @@ from google.cloud.dialogflowcx_v3beta1.services.playbooks import (
     transports,
 )
 from google.cloud.dialogflowcx_v3beta1.types import (
+    advanced_settings,
     example,
+    fulfillment,
+    gcs,
     generative_settings,
     parameter_definition,
 )
 from google.cloud.dialogflowcx_v3beta1.types import playbook
 from google.cloud.dialogflowcx_v3beta1.types import playbook as gcdc_playbook
+from google.cloud.dialogflowcx_v3beta1.types import response_message, tool_call
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -302,6 +314,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         PlaybooksClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = PlaybooksClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = PlaybooksClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -6926,7 +6981,10 @@ def test_create_playbook_rest_call_success(request_type):
             {"name": "name_value", "type_": 1, "description": "description_value"}
         ],
         "output_parameter_definitions": {},
-        "instruction": {"steps": [{"text": "text_value", "steps": {}}]},
+        "instruction": {
+            "guidelines": "guidelines_value",
+            "steps": [{"text": "text_value", "steps": {}}],
+        },
         "token_count": 1193,
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
@@ -6940,6 +6998,112 @@ def test_create_playbook_rest_call_success(request_type):
             "model": "model_value",
             "prompt_text": "prompt_text_value",
         },
+        "speech_settings": {
+            "endpointer_sensitivity": 2402,
+            "no_speech_timeout": {"seconds": 751, "nanos": 543},
+            "use_timeout_based_endpointing": True,
+            "models": {},
+        },
+        "handlers": [
+            {
+                "event_handler": {
+                    "event": "event_value",
+                    "condition": "condition_value",
+                    "fulfillment": {
+                        "messages": [
+                            {
+                                "text": {
+                                    "text": ["text_value1", "text_value2"],
+                                    "allow_playback_interruption": True,
+                                },
+                                "payload": {"fields": {}},
+                                "conversation_success": {"metadata": {}},
+                                "output_audio_text": {
+                                    "text": "text_value",
+                                    "ssml": "ssml_value",
+                                    "allow_playback_interruption": True,
+                                },
+                                "live_agent_handoff": {"metadata": {}},
+                                "end_interaction": {},
+                                "play_audio": {
+                                    "audio_uri": "audio_uri_value",
+                                    "allow_playback_interruption": True,
+                                },
+                                "mixed_audio": {
+                                    "segments": [
+                                        {
+                                            "audio": b"audio_blob",
+                                            "uri": "uri_value",
+                                            "allow_playback_interruption": True,
+                                        }
+                                    ]
+                                },
+                                "telephony_transfer_call": {
+                                    "phone_number": "phone_number_value"
+                                },
+                                "knowledge_info_card": {},
+                                "tool_call": {
+                                    "tool": "tool_value",
+                                    "action": "action_value",
+                                    "input_parameters": {},
+                                },
+                                "channel": "channel_value",
+                            }
+                        ],
+                        "webhook": "webhook_value",
+                        "return_partial_responses": True,
+                        "tag": "tag_value",
+                        "set_parameter_actions": [
+                            {
+                                "parameter": "parameter_value",
+                                "value": {
+                                    "null_value": 0,
+                                    "number_value": 0.1285,
+                                    "string_value": "string_value_value",
+                                    "bool_value": True,
+                                    "struct_value": {},
+                                    "list_value": {"values": {}},
+                                },
+                            }
+                        ],
+                        "conditional_cases": [
+                            {
+                                "cases": [
+                                    {
+                                        "condition": "condition_value",
+                                        "case_content": [
+                                            {"message": {}, "additional_cases": {}}
+                                        ],
+                                    }
+                                ]
+                            }
+                        ],
+                        "advanced_settings": {
+                            "audio_export_gcs_destination": {"uri": "uri_value"},
+                            "speech_settings": {},
+                            "dtmf_settings": {
+                                "enabled": True,
+                                "max_digits": 1065,
+                                "finish_digit": "finish_digit_value",
+                                "interdigit_timeout_duration": {},
+                                "endpointing_timeout_duration": {},
+                            },
+                            "logging_settings": {
+                                "enable_stackdriver_logging": True,
+                                "enable_interaction_logging": True,
+                                "enable_consent_based_redaction": True,
+                            },
+                        },
+                        "enable_generative_fallback": True,
+                    },
+                },
+                "lifecycle_handler": {
+                    "lifecycle_stage": "lifecycle_stage_value",
+                    "condition": "condition_value",
+                    "fulfillment": {},
+                },
+            }
+        ],
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -7061,10 +7225,13 @@ def test_create_playbook_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_create_playbook"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_create_playbook_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_create_playbook"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gcdc_playbook.CreatePlaybookRequest.pb(
             gcdc_playbook.CreatePlaybookRequest()
         )
@@ -7088,6 +7255,7 @@ def test_create_playbook_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcdc_playbook.Playbook()
+        post_with_metadata.return_value = gcdc_playbook.Playbook(), metadata
 
         client.create_playbook(
             request,
@@ -7099,6 +7267,7 @@ def test_create_playbook_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_playbook_rest_bad_request(request_type=playbook.DeletePlaybookRequest):
@@ -7286,10 +7455,13 @@ def test_list_playbooks_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_list_playbooks"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_list_playbooks_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_list_playbooks"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = playbook.ListPlaybooksRequest.pb(playbook.ListPlaybooksRequest())
         transcode.return_value = {
             "method": "post",
@@ -7313,6 +7485,7 @@ def test_list_playbooks_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = playbook.ListPlaybooksResponse()
+        post_with_metadata.return_value = playbook.ListPlaybooksResponse(), metadata
 
         client.list_playbooks(
             request,
@@ -7324,6 +7497,7 @@ def test_list_playbooks_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_playbook_rest_bad_request(request_type=playbook.GetPlaybookRequest):
@@ -7420,10 +7594,13 @@ def test_get_playbook_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_get_playbook"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_get_playbook_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_get_playbook"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = playbook.GetPlaybookRequest.pb(playbook.GetPlaybookRequest())
         transcode.return_value = {
             "method": "post",
@@ -7445,6 +7622,7 @@ def test_get_playbook_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = playbook.Playbook()
+        post_with_metadata.return_value = playbook.Playbook(), metadata
 
         client.get_playbook(
             request,
@@ -7456,6 +7634,7 @@ def test_get_playbook_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_playbook_rest_bad_request(
@@ -7513,7 +7692,10 @@ def test_update_playbook_rest_call_success(request_type):
             {"name": "name_value", "type_": 1, "description": "description_value"}
         ],
         "output_parameter_definitions": {},
-        "instruction": {"steps": [{"text": "text_value", "steps": {}}]},
+        "instruction": {
+            "guidelines": "guidelines_value",
+            "steps": [{"text": "text_value", "steps": {}}],
+        },
         "token_count": 1193,
         "create_time": {"seconds": 751, "nanos": 543},
         "update_time": {},
@@ -7527,6 +7709,112 @@ def test_update_playbook_rest_call_success(request_type):
             "model": "model_value",
             "prompt_text": "prompt_text_value",
         },
+        "speech_settings": {
+            "endpointer_sensitivity": 2402,
+            "no_speech_timeout": {"seconds": 751, "nanos": 543},
+            "use_timeout_based_endpointing": True,
+            "models": {},
+        },
+        "handlers": [
+            {
+                "event_handler": {
+                    "event": "event_value",
+                    "condition": "condition_value",
+                    "fulfillment": {
+                        "messages": [
+                            {
+                                "text": {
+                                    "text": ["text_value1", "text_value2"],
+                                    "allow_playback_interruption": True,
+                                },
+                                "payload": {"fields": {}},
+                                "conversation_success": {"metadata": {}},
+                                "output_audio_text": {
+                                    "text": "text_value",
+                                    "ssml": "ssml_value",
+                                    "allow_playback_interruption": True,
+                                },
+                                "live_agent_handoff": {"metadata": {}},
+                                "end_interaction": {},
+                                "play_audio": {
+                                    "audio_uri": "audio_uri_value",
+                                    "allow_playback_interruption": True,
+                                },
+                                "mixed_audio": {
+                                    "segments": [
+                                        {
+                                            "audio": b"audio_blob",
+                                            "uri": "uri_value",
+                                            "allow_playback_interruption": True,
+                                        }
+                                    ]
+                                },
+                                "telephony_transfer_call": {
+                                    "phone_number": "phone_number_value"
+                                },
+                                "knowledge_info_card": {},
+                                "tool_call": {
+                                    "tool": "tool_value",
+                                    "action": "action_value",
+                                    "input_parameters": {},
+                                },
+                                "channel": "channel_value",
+                            }
+                        ],
+                        "webhook": "webhook_value",
+                        "return_partial_responses": True,
+                        "tag": "tag_value",
+                        "set_parameter_actions": [
+                            {
+                                "parameter": "parameter_value",
+                                "value": {
+                                    "null_value": 0,
+                                    "number_value": 0.1285,
+                                    "string_value": "string_value_value",
+                                    "bool_value": True,
+                                    "struct_value": {},
+                                    "list_value": {"values": {}},
+                                },
+                            }
+                        ],
+                        "conditional_cases": [
+                            {
+                                "cases": [
+                                    {
+                                        "condition": "condition_value",
+                                        "case_content": [
+                                            {"message": {}, "additional_cases": {}}
+                                        ],
+                                    }
+                                ]
+                            }
+                        ],
+                        "advanced_settings": {
+                            "audio_export_gcs_destination": {"uri": "uri_value"},
+                            "speech_settings": {},
+                            "dtmf_settings": {
+                                "enabled": True,
+                                "max_digits": 1065,
+                                "finish_digit": "finish_digit_value",
+                                "interdigit_timeout_duration": {},
+                                "endpointing_timeout_duration": {},
+                            },
+                            "logging_settings": {
+                                "enable_stackdriver_logging": True,
+                                "enable_interaction_logging": True,
+                                "enable_consent_based_redaction": True,
+                            },
+                        },
+                        "enable_generative_fallback": True,
+                    },
+                },
+                "lifecycle_handler": {
+                    "lifecycle_stage": "lifecycle_stage_value",
+                    "condition": "condition_value",
+                    "fulfillment": {},
+                },
+            }
+        ],
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -7648,10 +7936,13 @@ def test_update_playbook_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_update_playbook"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_update_playbook_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_update_playbook"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gcdc_playbook.UpdatePlaybookRequest.pb(
             gcdc_playbook.UpdatePlaybookRequest()
         )
@@ -7675,6 +7966,7 @@ def test_update_playbook_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcdc_playbook.Playbook()
+        post_with_metadata.return_value = gcdc_playbook.Playbook(), metadata
 
         client.update_playbook(
             request,
@@ -7686,6 +7978,7 @@ def test_update_playbook_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_playbook_version_rest_bad_request(
@@ -7742,7 +8035,10 @@ def test_create_playbook_version_rest_call_success(request_type):
                 {"name": "name_value", "type_": 1, "description": "description_value"}
             ],
             "output_parameter_definitions": {},
-            "instruction": {"steps": [{"text": "text_value", "steps": {}}]},
+            "instruction": {
+                "guidelines": "guidelines_value",
+                "steps": [{"text": "text_value", "steps": {}}],
+            },
             "token_count": 1193,
             "create_time": {"seconds": 751, "nanos": 543},
             "update_time": {},
@@ -7756,13 +8052,119 @@ def test_create_playbook_version_rest_call_success(request_type):
                 "model": "model_value",
                 "prompt_text": "prompt_text_value",
             },
+            "speech_settings": {
+                "endpointer_sensitivity": 2402,
+                "no_speech_timeout": {"seconds": 751, "nanos": 543},
+                "use_timeout_based_endpointing": True,
+                "models": {},
+            },
+            "handlers": [
+                {
+                    "event_handler": {
+                        "event": "event_value",
+                        "condition": "condition_value",
+                        "fulfillment": {
+                            "messages": [
+                                {
+                                    "text": {
+                                        "text": ["text_value1", "text_value2"],
+                                        "allow_playback_interruption": True,
+                                    },
+                                    "payload": {"fields": {}},
+                                    "conversation_success": {"metadata": {}},
+                                    "output_audio_text": {
+                                        "text": "text_value",
+                                        "ssml": "ssml_value",
+                                        "allow_playback_interruption": True,
+                                    },
+                                    "live_agent_handoff": {"metadata": {}},
+                                    "end_interaction": {},
+                                    "play_audio": {
+                                        "audio_uri": "audio_uri_value",
+                                        "allow_playback_interruption": True,
+                                    },
+                                    "mixed_audio": {
+                                        "segments": [
+                                            {
+                                                "audio": b"audio_blob",
+                                                "uri": "uri_value",
+                                                "allow_playback_interruption": True,
+                                            }
+                                        ]
+                                    },
+                                    "telephony_transfer_call": {
+                                        "phone_number": "phone_number_value"
+                                    },
+                                    "knowledge_info_card": {},
+                                    "tool_call": {
+                                        "tool": "tool_value",
+                                        "action": "action_value",
+                                        "input_parameters": {},
+                                    },
+                                    "channel": "channel_value",
+                                }
+                            ],
+                            "webhook": "webhook_value",
+                            "return_partial_responses": True,
+                            "tag": "tag_value",
+                            "set_parameter_actions": [
+                                {
+                                    "parameter": "parameter_value",
+                                    "value": {
+                                        "null_value": 0,
+                                        "number_value": 0.1285,
+                                        "string_value": "string_value_value",
+                                        "bool_value": True,
+                                        "struct_value": {},
+                                        "list_value": {"values": {}},
+                                    },
+                                }
+                            ],
+                            "conditional_cases": [
+                                {
+                                    "cases": [
+                                        {
+                                            "condition": "condition_value",
+                                            "case_content": [
+                                                {"message": {}, "additional_cases": {}}
+                                            ],
+                                        }
+                                    ]
+                                }
+                            ],
+                            "advanced_settings": {
+                                "audio_export_gcs_destination": {"uri": "uri_value"},
+                                "speech_settings": {},
+                                "dtmf_settings": {
+                                    "enabled": True,
+                                    "max_digits": 1065,
+                                    "finish_digit": "finish_digit_value",
+                                    "interdigit_timeout_duration": {},
+                                    "endpointing_timeout_duration": {},
+                                },
+                                "logging_settings": {
+                                    "enable_stackdriver_logging": True,
+                                    "enable_interaction_logging": True,
+                                    "enable_consent_based_redaction": True,
+                                },
+                            },
+                            "enable_generative_fallback": True,
+                        },
+                    },
+                    "lifecycle_handler": {
+                        "lifecycle_stage": "lifecycle_stage_value",
+                        "condition": "condition_value",
+                        "fulfillment": {},
+                    },
+                }
+            ],
         },
         "examples": [
             {
                 "name": "name_value",
                 "playbook_input": {
                     "preceding_conversation_summary": "preceding_conversation_summary_value",
-                    "action_parameters": {"fields": {}},
+                    "action_parameters": {},
                 },
                 "playbook_output": {
                     "execution_summary": "execution_summary_value",
@@ -7774,18 +8176,21 @@ def test_create_playbook_version_rest_call_success(request_type):
                         "agent_utterance": {"text": "text_value"},
                         "tool_use": {
                             "tool": "tool_value",
+                            "display_name": "display_name_value",
                             "action": "action_value",
                             "input_action_parameters": {},
                             "output_action_parameters": {},
                         },
                         "playbook_invocation": {
                             "playbook": "playbook_value",
+                            "display_name": "display_name_value",
                             "playbook_input": {},
                             "playbook_output": {},
                             "playbook_state": 1,
                         },
                         "flow_invocation": {
                             "flow": "flow_value",
+                            "display_name": "display_name_value",
                             "input_action_parameters": {},
                             "output_action_parameters": {},
                             "flow_state": 1,
@@ -7913,10 +8318,14 @@ def test_create_playbook_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_create_playbook_version"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor,
+        "post_create_playbook_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_create_playbook_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = playbook.CreatePlaybookVersionRequest.pb(
             playbook.CreatePlaybookVersionRequest()
         )
@@ -7940,6 +8349,7 @@ def test_create_playbook_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = playbook.PlaybookVersion()
+        post_with_metadata.return_value = playbook.PlaybookVersion(), metadata
 
         client.create_playbook_version(
             request,
@@ -7951,6 +8361,7 @@ def test_create_playbook_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_playbook_version_rest_bad_request(
@@ -8039,10 +8450,13 @@ def test_get_playbook_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_get_playbook_version"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_get_playbook_version_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_get_playbook_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = playbook.GetPlaybookVersionRequest.pb(
             playbook.GetPlaybookVersionRequest()
         )
@@ -8066,6 +8480,7 @@ def test_get_playbook_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = playbook.PlaybookVersion()
+        post_with_metadata.return_value = playbook.PlaybookVersion(), metadata
 
         client.get_playbook_version(
             request,
@@ -8077,6 +8492,7 @@ def test_get_playbook_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_playbook_versions_rest_bad_request(
@@ -8163,10 +8579,13 @@ def test_list_playbook_versions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.PlaybooksRestInterceptor, "post_list_playbook_versions"
     ) as post, mock.patch.object(
+        transports.PlaybooksRestInterceptor, "post_list_playbook_versions_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.PlaybooksRestInterceptor, "pre_list_playbook_versions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = playbook.ListPlaybookVersionsRequest.pb(
             playbook.ListPlaybookVersionsRequest()
         )
@@ -8192,6 +8611,10 @@ def test_list_playbook_versions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = playbook.ListPlaybookVersionsResponse()
+        post_with_metadata.return_value = (
+            playbook.ListPlaybookVersionsResponse(),
+            metadata,
+        )
 
         client.list_playbook_versions(
             request,
@@ -8203,6 +8626,7 @@ def test_list_playbook_versions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_playbook_version_rest_bad_request(
@@ -9433,8 +9857,37 @@ def test_parse_tool_path():
     assert expected == actual
 
 
+def test_webhook_path():
+    project = "winkle"
+    location = "nautilus"
+    agent = "scallop"
+    webhook = "abalone"
+    expected = "projects/{project}/locations/{location}/agents/{agent}/webhooks/{webhook}".format(
+        project=project,
+        location=location,
+        agent=agent,
+        webhook=webhook,
+    )
+    actual = PlaybooksClient.webhook_path(project, location, agent, webhook)
+    assert expected == actual
+
+
+def test_parse_webhook_path():
+    expected = {
+        "project": "squid",
+        "location": "clam",
+        "agent": "whelk",
+        "webhook": "octopus",
+    }
+    path = PlaybooksClient.webhook_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = PlaybooksClient.parse_webhook_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "winkle"
+    billing_account = "oyster"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -9444,7 +9897,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nautilus",
+        "billing_account": "nudibranch",
     }
     path = PlaybooksClient.common_billing_account_path(**expected)
 
@@ -9454,7 +9907,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "scallop"
+    folder = "cuttlefish"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -9464,7 +9917,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "abalone",
+        "folder": "mussel",
     }
     path = PlaybooksClient.common_folder_path(**expected)
 
@@ -9474,7 +9927,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "squid"
+    organization = "winkle"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -9484,7 +9937,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "clam",
+        "organization": "nautilus",
     }
     path = PlaybooksClient.common_organization_path(**expected)
 
@@ -9494,7 +9947,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "whelk"
+    project = "scallop"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -9504,7 +9957,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "octopus",
+        "project": "abalone",
     }
     path = PlaybooksClient.common_project_path(**expected)
 
@@ -9514,8 +9967,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "oyster"
-    location = "nudibranch"
+    project = "squid"
+    location = "clam"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -9526,8 +9979,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "cuttlefish",
-        "location": "mussel",
+        "project": "whelk",
+        "location": "octopus",
     }
     path = PlaybooksClient.common_location_path(**expected)
 

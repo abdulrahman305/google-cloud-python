@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-privilegedaccessmanager-v0.1.8...google-cloud-privilegedaccessmanager-v0.1.9) (2025-08-06)
+
+
+### Features
+
+* [google-cloud-privilegedaccessmanager] Introducing new Grant states for Withdrawal operation ([#14168](https://github.com/googleapis/google-cloud-python/issues/14168)) ([e35550f](https://github.com/googleapis/google-cloud-python/commit/e35550fc0207a480f10c6d2859a971a565b055c9))
+* add a FooBar API ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* add the VeoTuningSpec ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* Remove private preview label from Model Armor protos ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+
+### Documentation
+
+* update comments for rpc BatchCreatePullRequestComments, ResolvePullRequestComments and UnresolvePullRequestComments ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-privilegedaccessmanager-v0.1.7...google-cloud-privilegedaccessmanager-v0.1.8) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-privilegedaccessmanager-v0.1.6...google-cloud-privilegedaccessmanager-v0.1.7) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-privilegedaccessmanager-v0.1.5...google-cloud-privilegedaccessmanager-v0.1.6) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-privilegedaccessmanager-v0.1.4...google-cloud-privilegedaccessmanager-v0.1.5) (2024-12-12)
 
 

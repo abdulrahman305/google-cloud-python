@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,6 +55,32 @@ class DataDiscoverySpec(proto.Message):
                 Optional. The BigQuery connection used to create BigLake
                 tables. Must be in the form
                 ``projects/{project_id}/locations/{location_id}/connections/{connection_id}``
+            location (str):
+                Optional. The location of the BigQuery dataset to publish
+                BigLake external or non-BigLake external tables to.
+
+                1. If the Cloud Storage bucket is located in a multi-region
+                   bucket, then BigQuery dataset can be in the same
+                   multi-region bucket or any single region that is included
+                   in the same multi-region bucket. The datascan can be
+                   created in any single region that is included in the same
+                   multi-region bucket
+                2. If the Cloud Storage bucket is located in a dual-region
+                   bucket, then BigQuery dataset can be located in regions
+                   that are included in the dual-region bucket, or in a
+                   multi-region that includes the dual-region. The datascan
+                   can be created in any single region that is included in
+                   the same dual-region bucket.
+                3. If the Cloud Storage bucket is located in a single
+                   region, then BigQuery dataset can be in the same single
+                   region or any multi-region bucket that includes the same
+                   single region. The datascan will be created in the same
+                   single region as the bucket.
+                4. If the BigQuery dataset is in single region, it must be
+                   in the same single region as the datascan.
+
+                For supported values, refer to
+                https://cloud.google.com/bigquery/docs/locations#supported_locations.
         """
 
         class TableType(proto.Enum):
@@ -88,6 +114,10 @@ class DataDiscoverySpec(proto.Message):
         connection: str = proto.Field(
             proto.STRING,
             number=3,
+        )
+        location: str = proto.Field(
+            proto.STRING,
+            number=4,
         )
 
     class StorageConfig(proto.Message):
@@ -225,6 +255,9 @@ class DataDiscoveryResult(proto.Message):
         bigquery_publishing (google.cloud.dataplex_v1.types.DataDiscoveryResult.BigQueryPublishing):
             Output only. Configuration for metadata
             publishing.
+        scan_statistics (google.cloud.dataplex_v1.types.DataDiscoveryResult.ScanStatistics):
+            Output only. Describes result statistics of a
+            data scan discovery job.
     """
 
     class BigQueryPublishing(proto.Message):
@@ -232,20 +265,92 @@ class DataDiscoveryResult(proto.Message):
 
         Attributes:
             dataset (str):
-                Output only. The BigQuery dataset to publish to. It takes
-                the form ``projects/{project_id}/datasets/{dataset_id}``. If
-                not set, the service creates a default publishing dataset.
+                Output only. The BigQuery dataset the
+                discovered tables are published to.
+            location (str):
+                Output only. The location of the BigQuery
+                publishing dataset.
         """
 
         dataset: str = proto.Field(
             proto.STRING,
             number=1,
         )
+        location: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    class ScanStatistics(proto.Message):
+        r"""Describes result statistics of a data scan discovery job.
+
+        Attributes:
+            scanned_file_count (int):
+                The number of files scanned.
+            data_processed_bytes (int):
+                The data processed in bytes.
+            files_excluded (int):
+                The number of files excluded.
+            tables_created (int):
+                The number of tables created.
+            tables_deleted (int):
+                The number of tables deleted.
+            tables_updated (int):
+                The number of tables updated.
+            filesets_created (int):
+                The number of filesets created.
+            filesets_deleted (int):
+                The number of filesets deleted.
+            filesets_updated (int):
+                The number of filesets updated.
+        """
+
+        scanned_file_count: int = proto.Field(
+            proto.INT32,
+            number=1,
+        )
+        data_processed_bytes: int = proto.Field(
+            proto.INT64,
+            number=2,
+        )
+        files_excluded: int = proto.Field(
+            proto.INT32,
+            number=3,
+        )
+        tables_created: int = proto.Field(
+            proto.INT32,
+            number=4,
+        )
+        tables_deleted: int = proto.Field(
+            proto.INT32,
+            number=5,
+        )
+        tables_updated: int = proto.Field(
+            proto.INT32,
+            number=6,
+        )
+        filesets_created: int = proto.Field(
+            proto.INT32,
+            number=7,
+        )
+        filesets_deleted: int = proto.Field(
+            proto.INT32,
+            number=8,
+        )
+        filesets_updated: int = proto.Field(
+            proto.INT32,
+            number=9,
+        )
 
     bigquery_publishing: BigQueryPublishing = proto.Field(
         proto.MESSAGE,
         number=1,
         message=BigQueryPublishing,
+    )
+    scan_statistics: ScanStatistics = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=ScanStatistics,
     )
 
 

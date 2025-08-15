@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -210,9 +210,7 @@ class CreateMembershipRequest(proto.Message):
             -  When `authenticating as an
                app <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__,
                the ``chat.app.memberships`` authorization scope is
-               required. Authenticating as an app is available in
-               `Developer
-               Preview <https://developers.google.com/workspace/preview>`__.
+               required.
 
             -  Set ``user.type`` to ``HUMAN``, and set ``user.name``
                with format ``users/{user}``, where ``{user}`` can be the
@@ -527,9 +525,12 @@ class DeleteMembershipRequest(proto.Message):
             apps can't delete other apps' memberships.
 
             When deleting a human membership, requires the
-            ``chat.memberships`` scope and
-            ``spaces/{space}/members/{member}`` format. You can use the
-            email as an alias for ``{member}``. For example,
+            ``chat.memberships`` scope with `user
+            authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-user>`__
+            or the ``chat.memberships.app`` scope with `app
+            authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
+            and the ``spaces/{space}/members/{member}`` format. You can
+            use the email as an alias for ``{member}``. For example,
             ``spaces/{space}/members/example@gmail.com`` where
             ``example@gmail.com`` is the email of the Google Chat user.
 

@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-config-v1.20.2...google-cloud-os-config-v1.21.0) (2025-08-10)
+
+
+### Features
+
+* Add highest_upgradable_cve_severity field to Vulnerability report ([e8feca7](https://github.com/googleapis/google-cloud-python/commit/e8feca76cfe1a2eaf7e96ff2341715545d15b5a8))
+
+
+### Documentation
+
+* A comment for field `filter` in message `.google.cloud.osconfig.v1.ListVulnerabilityReportsRequest` is changed ([e8feca7](https://github.com/googleapis/google-cloud-python/commit/e8feca76cfe1a2eaf7e96ff2341715545d15b5a8))
+* A comment for field `update_time` in message `.google.cloud.osconfig.v1.VulnerabilityReport` is changed ([e8feca7](https://github.com/googleapis/google-cloud-python/commit/e8feca76cfe1a2eaf7e96ff2341715545d15b5a8))
+
+## [1.20.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-config-v1.20.1...google-cloud-os-config-v1.20.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [1.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-config-v1.20.0...google-cloud-os-config-v1.20.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-config-v1.19.0...google-cloud-os-config-v1.20.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
 ## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-config-v1.18.1...google-cloud-os-config-v1.19.0) (2024-12-12)
 
 

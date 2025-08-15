@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,9 @@ async def sample_commit_repository_changes():
     )
 
     # Make the request
-    await client.commit_repository_changes(request=request)
+    response = await client.commit_repository_changes(request=request)
 
+    # Handle the response
+    print(response)
 
 # [END dataform_v1beta1_generated_Dataform_CommitRepositoryChanges_async]

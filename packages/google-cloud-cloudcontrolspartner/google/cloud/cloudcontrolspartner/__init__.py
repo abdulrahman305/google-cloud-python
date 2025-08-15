@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,12 +47,15 @@ from google.cloud.cloudcontrolspartner_v1.types.customer_workloads import (
     WorkloadOnboardingStep,
 )
 from google.cloud.cloudcontrolspartner_v1.types.customers import (
+    CreateCustomerRequest,
     Customer,
     CustomerOnboardingState,
     CustomerOnboardingStep,
+    DeleteCustomerRequest,
     GetCustomerRequest,
     ListCustomersRequest,
     ListCustomersResponse,
+    UpdateCustomerRequest,
 )
 from google.cloud.cloudcontrolspartner_v1.types.ekm_connections import (
     EkmConnection,
@@ -93,12 +96,15 @@ __all__ = (
     "Workload",
     "WorkloadOnboardingState",
     "WorkloadOnboardingStep",
+    "CreateCustomerRequest",
     "Customer",
     "CustomerOnboardingState",
     "CustomerOnboardingStep",
+    "DeleteCustomerRequest",
     "GetCustomerRequest",
     "ListCustomersRequest",
     "ListCustomersResponse",
+    "UpdateCustomerRequest",
     "EkmConnection",
     "EkmConnections",
     "GetEkmConnectionsRequest",

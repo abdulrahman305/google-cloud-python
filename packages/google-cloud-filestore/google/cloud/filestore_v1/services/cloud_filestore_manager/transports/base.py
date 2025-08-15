@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.filestore_v1 import gapic_version as package_version
 from google.cloud.filestore_v1.types import cloud_filestore_service
@@ -32,6 +33,9 @@ from google.cloud.filestore_v1.types import cloud_filestore_service
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class CloudFilestoreManagerTransport(abc.ABC):
@@ -251,6 +255,11 @@ class CloudFilestoreManagerTransport(abc.ABC):
                 default_timeout=600.0,
                 client_info=client_info,
             ),
+            self.promote_replica: gapic_v1.method.wrap_method(
+                self.promote_replica,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.get_location: gapic_v1.method.wrap_method(
                 self.get_location,
                 default_timeout=None,
@@ -463,6 +472,15 @@ class CloudFilestoreManagerTransport(abc.ABC):
         self,
     ) -> Callable[
         [cloud_filestore_service.UpdateBackupRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def promote_replica(
+        self,
+    ) -> Callable[
+        [cloud_filestore_service.PromoteReplicaRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

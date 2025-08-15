@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -84,12 +84,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -126,7 +125,7 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     """gRPC backend transport for AnalyticsAdminService.
 
-    Service Interface for the Analytics Admin API (GA4).
+    Service Interface for the Google Analytics Admin API.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
@@ -371,7 +370,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Returns all accounts accessible by the caller.
 
-        Note that these accounts might not currently have GA4
+        Note that these accounts might not currently have GA
         properties. Soft-deleted (ie: "trashed") accounts are
         excluded by default. Returns an empty list if no
         relevant accounts are found.
@@ -523,7 +522,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     ) -> Callable[[analytics_admin.GetPropertyRequest], resources.Property]:
         r"""Return a callable for the get property method over gRPC.
 
-        Lookup for a single "GA4" Property.
+        Lookup for a single GA Property.
 
         Returns:
             Callable[[~.GetPropertyRequest],
@@ -553,7 +552,6 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Returns child Properties under the specified parent
         Account.
-        Only "GA4" properties will be returned.
         Properties will be excluded if the caller does not have
         access. Soft-deleted (ie: "trashed") properties are
         excluded by default. Returns an empty list if no
@@ -583,8 +581,8 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     ) -> Callable[[analytics_admin.CreatePropertyRequest], resources.Property]:
         r"""Return a callable for the create property method over gRPC.
 
-        Creates an "GA4" property with the specified location
-        and attributes.
+        Creates a Google Analytics property with the
+        specified location and attributes.
 
         Returns:
             Callable[[~.CreatePropertyRequest],
@@ -622,8 +620,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         permanently purged.
         https://support.google.com/analytics/answer/6154772
 
-        Returns an error if the target is not found, or is not a
-        GA4 Property.
+        Returns an error if the target is not found.
 
         Returns:
             Callable[[~.DeletePropertyRequest],
@@ -930,7 +927,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         r"""Return a callable for the get measurement protocol
         secret method over gRPC.
 
-        Lookup for a single "GA4" MeasurementProtocolSecret.
+        Lookup for a single MeasurementProtocolSecret.
 
         Returns:
             Callable[[~.GetMeasurementProtocolSecretRequest],
@@ -1288,6 +1285,9 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Searches through all changes to an account or its
         children given the specified set of filters.
+
+        Only returns the subset of changes supported by the API.
+        The UI may return additional changes.
 
         Returns:
             Callable[[~.SearchChangeHistoryEventsRequest],
@@ -2844,13 +2844,18 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         related to quota can only be requested on Google Analytics 360
         properties. This method is only available to Administrators.
 
-        These data access records include GA4 UI Reporting, GA4 UI
-        Explorations, GA4 Data API, and other products like Firebase &
+        These data access records include GA UI Reporting, GA UI
+        Explorations, GA Data API, and other products like Firebase &
         Admob that can retrieve data from Google Analytics through a
         linkage. These records don't include property configuration
         changes like adding a stream or changing a property's time zone.
         For configuration change history, see
         `searchChangeHistoryEvents <https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1alpha/accounts/searchChangeHistoryEvents>`__.
+
+        To give your feedback on this API, complete the `Google
+        Analytics Access Reports
+        feedback <https://docs.google.com/forms/d/e/1FAIpQLSdmEBUrMzAEdiEKk5TV5dEHvDUZDRlgWYdQdAeSdtR4hVjEhw/viewform>`__
+        form.
 
         Returns:
             Callable[[~.RunAccessReportRequest],
@@ -4779,6 +4784,286 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
                 response_deserializer=empty_pb2.Empty.FromString,
             )
         return self._stubs["delete_subproperty_event_filter"]
+
+    @property
+    def create_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.CreateReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        r"""Return a callable for the create reporting data
+        annotation method over gRPC.
+
+        Creates a Reporting Data Annotation.
+
+        Returns:
+            Callable[[~.CreateReportingDataAnnotationRequest],
+                    ~.ReportingDataAnnotation]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "create_reporting_data_annotation" not in self._stubs:
+            self._stubs[
+                "create_reporting_data_annotation"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/CreateReportingDataAnnotation",
+                request_serializer=analytics_admin.CreateReportingDataAnnotationRequest.serialize,
+                response_deserializer=resources.ReportingDataAnnotation.deserialize,
+            )
+        return self._stubs["create_reporting_data_annotation"]
+
+    @property
+    def get_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        r"""Return a callable for the get reporting data annotation method over gRPC.
+
+        Lookup a single Reporting Data Annotation.
+
+        Returns:
+            Callable[[~.GetReportingDataAnnotationRequest],
+                    ~.ReportingDataAnnotation]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_reporting_data_annotation" not in self._stubs:
+            self._stubs[
+                "get_reporting_data_annotation"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/GetReportingDataAnnotation",
+                request_serializer=analytics_admin.GetReportingDataAnnotationRequest.serialize,
+                response_deserializer=resources.ReportingDataAnnotation.deserialize,
+            )
+        return self._stubs["get_reporting_data_annotation"]
+
+    @property
+    def list_reporting_data_annotations(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListReportingDataAnnotationsRequest],
+        analytics_admin.ListReportingDataAnnotationsResponse,
+    ]:
+        r"""Return a callable for the list reporting data
+        annotations method over gRPC.
+
+        List all Reporting Data Annotations on a property.
+
+        Returns:
+            Callable[[~.ListReportingDataAnnotationsRequest],
+                    ~.ListReportingDataAnnotationsResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "list_reporting_data_annotations" not in self._stubs:
+            self._stubs[
+                "list_reporting_data_annotations"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/ListReportingDataAnnotations",
+                request_serializer=analytics_admin.ListReportingDataAnnotationsRequest.serialize,
+                response_deserializer=analytics_admin.ListReportingDataAnnotationsResponse.deserialize,
+            )
+        return self._stubs["list_reporting_data_annotations"]
+
+    @property
+    def update_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        r"""Return a callable for the update reporting data
+        annotation method over gRPC.
+
+        Updates a Reporting Data Annotation.
+
+        Returns:
+            Callable[[~.UpdateReportingDataAnnotationRequest],
+                    ~.ReportingDataAnnotation]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "update_reporting_data_annotation" not in self._stubs:
+            self._stubs[
+                "update_reporting_data_annotation"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/UpdateReportingDataAnnotation",
+                request_serializer=analytics_admin.UpdateReportingDataAnnotationRequest.serialize,
+                response_deserializer=resources.ReportingDataAnnotation.deserialize,
+            )
+        return self._stubs["update_reporting_data_annotation"]
+
+    @property
+    def delete_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.DeleteReportingDataAnnotationRequest], empty_pb2.Empty
+    ]:
+        r"""Return a callable for the delete reporting data
+        annotation method over gRPC.
+
+        Deletes a Reporting Data Annotation.
+
+        Returns:
+            Callable[[~.DeleteReportingDataAnnotationRequest],
+                    ~.Empty]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "delete_reporting_data_annotation" not in self._stubs:
+            self._stubs[
+                "delete_reporting_data_annotation"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/DeleteReportingDataAnnotation",
+                request_serializer=analytics_admin.DeleteReportingDataAnnotationRequest.serialize,
+                response_deserializer=empty_pb2.Empty.FromString,
+            )
+        return self._stubs["delete_reporting_data_annotation"]
+
+    @property
+    def submit_user_deletion(
+        self,
+    ) -> Callable[
+        [analytics_admin.SubmitUserDeletionRequest],
+        analytics_admin.SubmitUserDeletionResponse,
+    ]:
+        r"""Return a callable for the submit user deletion method over gRPC.
+
+        Submits a request for user deletion for a property.
+
+        Returns:
+            Callable[[~.SubmitUserDeletionRequest],
+                    ~.SubmitUserDeletionResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "submit_user_deletion" not in self._stubs:
+            self._stubs["submit_user_deletion"] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/SubmitUserDeletion",
+                request_serializer=analytics_admin.SubmitUserDeletionRequest.serialize,
+                response_deserializer=analytics_admin.SubmitUserDeletionResponse.deserialize,
+            )
+        return self._stubs["submit_user_deletion"]
+
+    @property
+    def list_subproperty_sync_configs(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListSubpropertySyncConfigsRequest],
+        analytics_admin.ListSubpropertySyncConfigsResponse,
+    ]:
+        r"""Return a callable for the list subproperty sync configs method over gRPC.
+
+        List all Subproperty Sync Configs on a property.
+
+        Returns:
+            Callable[[~.ListSubpropertySyncConfigsRequest],
+                    ~.ListSubpropertySyncConfigsResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "list_subproperty_sync_configs" not in self._stubs:
+            self._stubs[
+                "list_subproperty_sync_configs"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/ListSubpropertySyncConfigs",
+                request_serializer=analytics_admin.ListSubpropertySyncConfigsRequest.serialize,
+                response_deserializer=analytics_admin.ListSubpropertySyncConfigsResponse.deserialize,
+            )
+        return self._stubs["list_subproperty_sync_configs"]
+
+    @property
+    def update_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateSubpropertySyncConfigRequest],
+        resources.SubpropertySyncConfig,
+    ]:
+        r"""Return a callable for the update subproperty sync config method over gRPC.
+
+        Updates a Subproperty Sync Config.
+
+        Returns:
+            Callable[[~.UpdateSubpropertySyncConfigRequest],
+                    ~.SubpropertySyncConfig]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "update_subproperty_sync_config" not in self._stubs:
+            self._stubs[
+                "update_subproperty_sync_config"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/UpdateSubpropertySyncConfig",
+                request_serializer=analytics_admin.UpdateSubpropertySyncConfigRequest.serialize,
+                response_deserializer=resources.SubpropertySyncConfig.deserialize,
+            )
+        return self._stubs["update_subproperty_sync_config"]
+
+    @property
+    def get_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetSubpropertySyncConfigRequest],
+        resources.SubpropertySyncConfig,
+    ]:
+        r"""Return a callable for the get subproperty sync config method over gRPC.
+
+        Lookup for a single Subproperty Sync Config.
+
+        Returns:
+            Callable[[~.GetSubpropertySyncConfigRequest],
+                    ~.SubpropertySyncConfig]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_subproperty_sync_config" not in self._stubs:
+            self._stubs[
+                "get_subproperty_sync_config"
+            ] = self._logged_channel.unary_unary(
+                "/google.analytics.admin.v1alpha.AnalyticsAdminService/GetSubpropertySyncConfig",
+                request_serializer=analytics_admin.GetSubpropertySyncConfigRequest.serialize,
+                response_deserializer=resources.SubpropertySyncConfig.deserialize,
+            )
+        return self._stubs["get_subproperty_sync_config"]
 
     def close(self):
         self._logged_channel.close()

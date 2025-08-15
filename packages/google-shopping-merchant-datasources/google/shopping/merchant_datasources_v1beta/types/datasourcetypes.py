@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import MutableMapping, MutableSequence
 
+from google.shopping.type.types import types
 import proto  # type: ignore
 
 __protobuf__ = proto.module(
@@ -27,6 +28,8 @@ __protobuf__ = proto.module(
         "LocalInventoryDataSource",
         "RegionalInventoryDataSource",
         "PromotionDataSource",
+        "ProductReviewDataSource",
+        "MerchantReviewDataSource",
         "DataSourceReference",
     },
 )
@@ -39,7 +42,7 @@ class PrimaryProductDataSource(proto.Message):
 
     Attributes:
         channel (google.shopping.merchant_datasources_v1beta.types.PrimaryProductDataSource.Channel):
-            Required. Immutable. Specifies the type of
+            Optional. Immutable. Specifies the type of
             data source channel.
         feed_label (str):
             Optional. Immutable. The feed label that is specified on the
@@ -81,6 +84,31 @@ class PrimaryProductDataSource(proto.Message):
             Optional. Default rule management of the data
             source. If set, the linked data sources will be
             replaced.
+        destinations (MutableSequence[google.shopping.merchant_datasources_v1beta.types.PrimaryProductDataSource.Destination]):
+            Optional. A list of destinations describing
+            where products of the data source can be shown.
+
+            When retrieving the data source, the list
+            contains all the destinations that can be used
+            for the data source, including the ones that are
+            disabled for the data source but enabled for the
+            account.
+
+            Only destinations that are enabled on the
+            account, for example through program
+            participation, can be enabled on the data
+            source.
+
+            If unset, during creation, the destinations will
+            be inherited based on the account level program
+            participation.
+
+            If set, during creation or update, the data
+            source will be set only for the specified
+            destinations.
+
+            Updating this field requires at least one
+            destination.
     """
 
     class Channel(proto.Enum):
@@ -123,10 +151,7 @@ class PrimaryProductDataSource(proto.Message):
                 a new reference to this list (in sequential order).
 
                 To unlink the data source from the default rule, you need to
-                remove the given reference from this list. To create
-                attribute rules that are different from the default rule,
-                see `Set up your attribute
-                rules <//support.google.com/merchants/answer/14994083>`__.
+                remove the given reference from this list.
 
                 Changing the order of this list will result in changing the
                 priority of data sources in the default rule.
@@ -143,6 +168,46 @@ class PrimaryProductDataSource(proto.Message):
             proto.MESSAGE,
             number=1,
             message="DataSourceReference",
+        )
+
+    class Destination(proto.Message):
+        r"""Destinations also known as `Marketing
+        methods <https://support.google.com/merchants/answer/15130232>`__
+        selections.
+
+        Attributes:
+            destination (google.shopping.type.types.Destination.DestinationEnum):
+                `Marketing
+                methods <https://support.google.com/merchants/answer/15130232>`__
+                (also known as destination) selections.
+            state (google.shopping.merchant_datasources_v1beta.types.PrimaryProductDataSource.Destination.State):
+                The state of the destination.
+        """
+
+        class State(proto.Enum):
+            r"""The state of the destination.
+
+            Values:
+                STATE_UNSPECIFIED (0):
+                    Not specified.
+                ENABLED (1):
+                    Indicates that the destination is enabled.
+                DISABLED (2):
+                    Indicates that the destination is disabled.
+            """
+            STATE_UNSPECIFIED = 0
+            ENABLED = 1
+            DISABLED = 2
+
+        destination: types.Destination.DestinationEnum = proto.Field(
+            proto.ENUM,
+            number=1,
+            enum=types.Destination.DestinationEnum,
+        )
+        state: "PrimaryProductDataSource.Destination.State" = proto.Field(
+            proto.ENUM,
+            number=2,
+            enum="PrimaryProductDataSource.Destination.State",
         )
 
     channel: Channel = proto.Field(
@@ -169,16 +234,18 @@ class PrimaryProductDataSource(proto.Message):
         number=7,
         message=DefaultRule,
     )
+    destinations: MutableSequence[Destination] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=10,
+        message=Destination,
+    )
 
 
 class SupplementalProductDataSource(proto.Message):
     r"""The supplemental data source for local and online products.
-    Supplemental API data sources must not have ``feedLabel`` and
-    ``contentLanguage`` fields set. You can only use supplemental data
-    sources to update existing products. For information about creating
-    a supplemental data source, see `Create a supplemental data source
-    and link it to the primary data
-    source </merchant/api/guides/data-sources/overview#create-supplemental-data-source>`__.
+    After creation, you should make sure to link the supplemental
+    product data source into one or more primary product data
+    sources.
 
 
     .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
@@ -196,7 +263,11 @@ class SupplementalProductDataSource(proto.Message):
 
             ``feedLabel`` and ``contentLanguage`` must be either both
             set or unset for data sources with product content type.
-            They must be set for data sources with a file input.
+
+            They must be set for data sources with a [file
+            input][google.shopping.merchant.datasources.v1main.FileInput].
+            The fields must be unset for data sources without [file
+            input][google.shopping.merchant.datasources.v1main.FileInput].
 
             If set, the data source will only accept products matching
             this combination. If unset, the data source will accept
@@ -325,6 +396,14 @@ class PromotionDataSource(proto.Message):
         proto.STRING,
         number=2,
     )
+
+
+class ProductReviewDataSource(proto.Message):
+    r"""The product review data source."""
+
+
+class MerchantReviewDataSource(proto.Message):
+    r"""The merchant review data source."""
 
 
 class DataSourceReference(proto.Message):

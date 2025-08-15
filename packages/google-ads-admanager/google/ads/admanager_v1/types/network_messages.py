@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class Network(proto.Message):
             Output only. Top most `Ad
             Unit <google.ads.admanager.v1.AdUnit>`__ to which descendant
             Ad Units can be added. Format:
-            networks/{network_code}/adUnit/{ad_unit_id}
+            networks/{network_code}/adUnits/{ad_unit}
         test_network (bool):
             Output only. Whether this is a test network.
         network_id (int):

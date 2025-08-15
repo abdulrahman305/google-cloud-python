@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,26 +18,30 @@ from google.shopping.merchant_inventories import gapic_version as package_versio
 __version__ = package_version.__version__
 
 
-from google.shopping.merchant_inventories_v1beta.services.local_inventory_service.async_client import (
+from google.shopping.merchant_inventories_v1.services.local_inventory_service.async_client import (
     LocalInventoryServiceAsyncClient,
 )
-from google.shopping.merchant_inventories_v1beta.services.local_inventory_service.client import (
+from google.shopping.merchant_inventories_v1.services.local_inventory_service.client import (
     LocalInventoryServiceClient,
 )
-from google.shopping.merchant_inventories_v1beta.services.regional_inventory_service.async_client import (
+from google.shopping.merchant_inventories_v1.services.regional_inventory_service.async_client import (
     RegionalInventoryServiceAsyncClient,
 )
-from google.shopping.merchant_inventories_v1beta.services.regional_inventory_service.client import (
+from google.shopping.merchant_inventories_v1.services.regional_inventory_service.client import (
     RegionalInventoryServiceClient,
 )
-from google.shopping.merchant_inventories_v1beta.types.localinventory import (
+from google.shopping.merchant_inventories_v1.types.inventories_common import (
+    LocalInventoryAttributes,
+    RegionalInventoryAttributes,
+)
+from google.shopping.merchant_inventories_v1.types.localinventory import (
     DeleteLocalInventoryRequest,
     InsertLocalInventoryRequest,
     ListLocalInventoriesRequest,
     ListLocalInventoriesResponse,
     LocalInventory,
 )
-from google.shopping.merchant_inventories_v1beta.types.regionalinventory import (
+from google.shopping.merchant_inventories_v1.types.regionalinventory import (
     DeleteRegionalInventoryRequest,
     InsertRegionalInventoryRequest,
     ListRegionalInventoriesRequest,
@@ -50,6 +54,8 @@ __all__ = (
     "LocalInventoryServiceAsyncClient",
     "RegionalInventoryServiceClient",
     "RegionalInventoryServiceAsyncClient",
+    "LocalInventoryAttributes",
+    "RegionalInventoryAttributes",
     "DeleteLocalInventoryRequest",
     "InsertLocalInventoryRequest",
     "ListLocalInventoriesRequest",

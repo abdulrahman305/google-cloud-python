@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,7 +81,10 @@ from .oracledatabase import (
     ListGiVersionsRequest,
     ListGiVersionsResponse,
     OperationMetadata,
+    RestartAutonomousDatabaseRequest,
     RestoreAutonomousDatabaseRequest,
+    StartAutonomousDatabaseRequest,
+    StopAutonomousDatabaseRequest,
 )
 from .vm_cluster import CloudVmCluster, CloudVmClusterProperties, DataCollectionOptions
 
@@ -150,7 +153,10 @@ __all__ = (
     "ListGiVersionsRequest",
     "ListGiVersionsResponse",
     "OperationMetadata",
+    "RestartAutonomousDatabaseRequest",
     "RestoreAutonomousDatabaseRequest",
+    "StartAutonomousDatabaseRequest",
+    "StopAutonomousDatabaseRequest",
     "CloudVmCluster",
     "CloudVmClusterProperties",
     "DataCollectionOptions",

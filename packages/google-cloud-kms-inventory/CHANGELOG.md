@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-inventory-v0.2.14...google-cloud-kms-inventory-v0.2.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [0.2.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-inventory-v0.2.13...google-cloud-kms-inventory-v0.2.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+
+## [0.2.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-inventory-v0.2.12...google-cloud-kms-inventory-v0.2.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [0.2.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-kms-inventory-v0.2.11...google-cloud-kms-inventory-v0.2.12) (2024-12-12)
 
 

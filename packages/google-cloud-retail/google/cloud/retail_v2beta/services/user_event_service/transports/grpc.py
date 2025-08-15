@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,12 +78,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.retail.v2beta.UserEventService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -379,9 +378,11 @@ class UserEventServiceGrpcTransport(UserEventServiceTransport):
     ) -> Callable[[user_event_service.CollectUserEventRequest], httpbody_pb2.HttpBody]:
         r"""Return a callable for the collect user event method over gRPC.
 
-        Writes a single user event from the browser. This
-        uses a GET request to due to browser restriction of
-        POST-ing to a 3rd party domain.
+        Writes a single user event from the browser.
+
+        For larger user event payload over 16 KB, the POST
+        method should be used instead, otherwise a 400 Bad
+        Request error is returned.
 
         This method is used only by the Retail API JavaScript
         pixel and Google Tag Manager. Users should not call this

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ def sample_import_crypto_key_version():
     request = kms_v1.ImportCryptoKeyVersionRequest(
         rsa_aes_wrapped_key=b'rsa_aes_wrapped_key_blob',
         parent="parent_value",
-        algorithm="EXTERNAL_SYMMETRIC_ENCRYPTION",
+        algorithm="PQ_SIGN_SLH_DSA_SHA2_128S",
         import_job="import_job_value",
     )
 

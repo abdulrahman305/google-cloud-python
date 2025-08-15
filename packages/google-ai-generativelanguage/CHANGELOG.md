@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.6.18](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.17...google-ai-generativelanguage-v0.6.18) (2025-04-29)
+
+
+### Features
+
+* add CODE_RETRIEVAL_QUERY embedding task type ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add CODE_RETRIEVAL_QUERY embedding task type ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add language_code to speech config ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add minimum, maximum, any_of, property_ordering, default and null type to Schema ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add seed to GenerationConfig ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add support for live API (https://github.com/googleapis/go-genai/issues/275) ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add support for ModalityTokenCounts in UsageMetadata responses ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add support for ModalityTokenCounts in UsageMetadata responses ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add support for Veo: PredictLongRunning and generated/downloadable files ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+* add ThinkingConfig, MediaResolution, and seed to GenerationConfig ([d530650](https://github.com/googleapis/google-cloud-python/commit/d530650ea02714abaef4c8295717d286743ed4f1))
+
+## [0.6.17](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.16...google-ai-generativelanguage-v0.6.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.6.16](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.15...google-ai-generativelanguage-v0.6.16) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
+## [0.6.15](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.14...google-ai-generativelanguage-v0.6.15) (2025-01-13)
+
+
+### Features
+
+* Add BidiGenerateContent + all the necessary protos ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add civic_integrity toggle to generation_config ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add GoogleSearch tool type ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add id to FunctionCall and FunctionResponse ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add image_safety block_reason + finish_reason ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add response_modalities to generation_config ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add return type `Schema response` to function declarations ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add TuningMultiturnExample ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add v1alpha ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+* Add voice_config to generation_config ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+
+
+### Documentation
+
+* Update safety filter list to include civic_integrity ([2c1e359](https://github.com/googleapis/google-cloud-python/commit/2c1e35981f7064f293669109097eb4b8c4942692))
+
 ## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-ai-generativelanguage-v0.6.13...google-ai-generativelanguage-v0.6.14) (2024-12-12)
 
 

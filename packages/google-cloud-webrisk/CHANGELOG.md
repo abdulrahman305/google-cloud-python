@@ -3,6 +3,42 @@
 [PyPI History][1]
 
 [1]: https://pypi.org/project/google-cloud-webrisk/#history
+## [1.18.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-webrisk-v1.18.0...google-cloud-webrisk-v1.18.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [1.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-webrisk-v1.17.1...google-cloud-webrisk-v1.18.0) (2025-04-12)
+
+
+### Features
+
+* A new method_signature `parent,submission` is added to method `SubmitUri` in service `WebRiskService` ([a6545c5](https://github.com/googleapis/google-cloud-python/commit/a6545c56895c2208d02aadbeceb020be08cb0256))
+
+
+### Documentation
+
+* A comment for message `SubmitUriMetadata` is changed ([a6545c5](https://github.com/googleapis/google-cloud-python/commit/a6545c56895c2208d02aadbeceb020be08cb0256))
+* A comment for message `ThreatInfo` is changed ([a6545c5](https://github.com/googleapis/google-cloud-python/commit/a6545c56895c2208d02aadbeceb020be08cb0256))
+
+## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-webrisk-v1.17.0...google-cloud-webrisk-v1.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-webrisk-v1.16.0...google-cloud-webrisk-v1.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-webrisk-v1.15.1...google-cloud-webrisk-v1.16.0) (2024-12-12)
 
 

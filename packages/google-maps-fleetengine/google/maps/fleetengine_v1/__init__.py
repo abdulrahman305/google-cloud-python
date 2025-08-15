@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from .types.fleetengine import (
     PolylineFormatType,
     TerminalLocation,
     TerminalPointId,
+    TripAttribute,
     TripType,
     TripWaypoint,
     VehicleAttribute,
@@ -36,6 +37,7 @@ from .types.header import RequestHeader
 from .types.traffic import ConsumableTrafficPolyline, SpeedReadingInterval
 from .types.trip_api import (
     CreateTripRequest,
+    DeleteTripRequest,
     GetTripRequest,
     ReportBillableTripRequest,
     SearchTripsRequest,
@@ -51,6 +53,7 @@ from .types.trips import (
 )
 from .types.vehicle_api import (
     CreateVehicleRequest,
+    DeleteVehicleRequest,
     GetVehicleRequest,
     ListVehiclesRequest,
     ListVehiclesResponse,
@@ -85,6 +88,8 @@ __all__ = (
     "ConsumableTrafficPolyline",
     "CreateTripRequest",
     "CreateVehicleRequest",
+    "DeleteTripRequest",
+    "DeleteVehicleRequest",
     "DeviceSettings",
     "GetTripRequest",
     "GetVehicleRequest",
@@ -108,6 +113,7 @@ __all__ = (
     "TerminalPointId",
     "TrafficPolylineData",
     "Trip",
+    "TripAttribute",
     "TripServiceClient",
     "TripStatus",
     "TripType",

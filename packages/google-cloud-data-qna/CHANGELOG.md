@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-data-qna-v0.10.16...google-cloud-data-qna-v0.10.17) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([3d5bc37](https://github.com/googleapis/google-cloud-python/commit/3d5bc3782da6b37742ae83802de8a8b6db96fe29))
+
+## [0.10.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-data-qna-v0.10.15...google-cloud-data-qna-v0.10.16) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.10.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-data-qna-v0.10.14...google-cloud-data-qna-v0.10.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [0.10.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-data-qna-v0.10.13...google-cloud-data-qna-v0.10.14) (2024-12-12)
 
 

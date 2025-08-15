@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,11 +32,38 @@ __protobuf__ = proto.module(
 
 
 class Case(proto.Message):
-    r"""A support case.
+    r"""A Case is an object that contains the details of a support case. It
+    contains fields for the time it was created, its priority, its
+    classification, and more. Cases can also have comments and
+    attachments that get added over time.
+
+    A case is parented by a Google Cloud organization or project.
+
+    Organizations are identified by a number, so the name of a case
+    parented by an organization would look like this:
+
+    ::
+
+       organizations/123/cases/456
+
+    Projects have two unique identifiers, an ID and a number, and they
+    look like this:
+
+    ::
+
+       projects/abc/cases/456
+
+    ::
+
+       projects/123/cases/456
+
+    You can use either of them when calling the API. To learn more about
+    project identifiers, see
+    `AIP-2510 <https://google.aip.dev/cloud/2510>`__.
 
     Attributes:
         name (str):
-            The resource name for the case.
+            Identifier. The resource name for the case.
         display_name (str):
             The short summary of the issue reported in
             this case.
@@ -219,7 +246,13 @@ class Case(proto.Message):
 
 
 class CaseClassification(proto.Message):
-    r"""A classification object with a product type and value.
+    r"""A Case Classification represents the topic that a case is
+    about. It's very important to use accurate classifications,
+    because they're used to route your cases to specialists who can
+    help you.
+
+    A classification always has an ID that is its unique identifier.
+    A valid ID is required when creating a case.
 
     Attributes:
         id (str):
@@ -228,8 +261,19 @@ class CaseClassification(proto.Message):
 
             To retrieve valid classification IDs for case creation, use
             ``caseClassifications.search``.
+
+            Classification IDs returned by
+            ``caseClassifications.search`` are guaranteed to be valid
+            for at least 6 months. If a given classification is
+            deactiveated, it will immediately stop being returned. After
+            6 months, ``case.create`` requests using the classification
+            ID will fail.
         display_name (str):
-            The display name of the classification.
+            A display name for the classification.
+
+            The display name is not static and can change. To uniquely
+            and consistently identify classifications, use the
+            ``CaseClassification.id`` field.
     """
 
     id: str = proto.Field(

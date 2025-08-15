@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.servicecontrol_v2 import gapic_version as package_version
 
@@ -108,9 +111,6 @@ class ServiceControllerClientMeta(type):
 class ServiceControllerClient(metaclass=ServiceControllerClientMeta):
     """`Service Control API
     v2 <https://cloud.google.com/service-infrastructure/docs/service-control/access-control>`__
-
-    Private Preview. This feature is only available for approved
-    services.
 
     This API provides admission control and telemetry reporting for
     services that are integrated with `Service
@@ -472,6 +472,33 @@ class ServiceControllerClient(metaclass=ServiceControllerClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -681,10 +708,7 @@ class ServiceControllerClient(metaclass=ServiceControllerClientMeta):
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> service_controller.CheckResponse:
-        r"""Private Preview. This feature is only available for approved
-        services.
-
-        This method provides admission control for services that are
+        r"""This method provides admission control for services that are
         integrated with `Service
         Infrastructure <https://cloud.google.com/service-infrastructure>`__.
         It checks whether an operation should be allowed based on the
@@ -788,10 +812,7 @@ class ServiceControllerClient(metaclass=ServiceControllerClientMeta):
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> service_controller.ReportResponse:
-        r"""Private Preview. This feature is only available for approved
-        services.
-
-        This method provides telemetry reporting for services that are
+        r"""This method provides telemetry reporting for services that are
         integrated with `Service
         Infrastructure <https://cloud.google.com/service-infrastructure>`__.
         It reports a list of operations that have occurred on a service.
@@ -799,9 +820,8 @@ class ServiceControllerClient(metaclass=ServiceControllerClientMeta):
         more information, see `Telemetry
         Reporting <https://cloud.google.com/service-infrastructure/docs/telemetry-reporting>`__.
 
-        NOTE: The telemetry reporting has a hard limit of 1000
-        operations and 1MB per Report call. It is recommended to have no
-        more than 100 operations per call.
+        NOTE: The telemetry reporting has a hard limit of 100 operations
+        and 1MB per Report call.
 
         This method requires the ``servicemanagement.services.report``
         permission on the specified service. For more information, see
@@ -903,5 +923,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("ServiceControllerClient",)

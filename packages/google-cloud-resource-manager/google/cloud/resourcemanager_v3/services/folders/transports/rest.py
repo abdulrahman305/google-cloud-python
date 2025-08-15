@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -54,6 +55,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class FoldersRestInterceptor:
@@ -182,11 +186,34 @@ class FoldersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_folder` interceptor runs
+        before the `post_create_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_create_folder_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_create_folder_with_metadata`
+        interceptor in new development instead of the `post_create_folder` interceptor.
+        When both interceptors are used, this `post_create_folder_with_metadata` interceptor runs after the
+        `post_create_folder` interceptor. The (possibly modified) response returned by
+        `post_create_folder` will be passed to
+        `post_create_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_folder(
         self,
@@ -205,11 +232,34 @@ class FoldersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_folder` interceptor runs
+        before the `post_delete_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_folder_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_delete_folder_with_metadata`
+        interceptor in new development instead of the `post_delete_folder` interceptor.
+        When both interceptors are used, this `post_delete_folder_with_metadata` interceptor runs after the
+        `post_delete_folder` interceptor. The (possibly modified) response returned by
+        `post_delete_folder` will be passed to
+        `post_delete_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_folder(
         self,
@@ -226,11 +276,34 @@ class FoldersRestInterceptor:
     def post_get_folder(self, response: folders.Folder) -> folders.Folder:
         """Post-rpc interceptor for get_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_folder` interceptor runs
+        before the `post_get_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_get_folder_with_metadata(
+        self,
+        response: folders.Folder,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[folders.Folder, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_get_folder_with_metadata`
+        interceptor in new development instead of the `post_get_folder` interceptor.
+        When both interceptors are used, this `post_get_folder_with_metadata` interceptor runs after the
+        `post_get_folder` interceptor. The (possibly modified) response returned by
+        `post_get_folder` will be passed to
+        `post_get_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iam_policy(
         self,
@@ -249,11 +322,34 @@ class FoldersRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_folders(
         self,
@@ -272,11 +368,34 @@ class FoldersRestInterceptor:
     ) -> folders.ListFoldersResponse:
         """Post-rpc interceptor for list_folders
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_folders_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_folders` interceptor runs
+        before the `post_list_folders_with_metadata` interceptor.
         """
         return response
+
+    def post_list_folders_with_metadata(
+        self,
+        response: folders.ListFoldersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[folders.ListFoldersResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_folders
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_list_folders_with_metadata`
+        interceptor in new development instead of the `post_list_folders` interceptor.
+        When both interceptors are used, this `post_list_folders_with_metadata` interceptor runs after the
+        `post_list_folders` interceptor. The (possibly modified) response returned by
+        `post_list_folders` will be passed to
+        `post_list_folders_with_metadata`.
+        """
+        return response, metadata
 
     def pre_move_folder(
         self,
@@ -295,11 +414,34 @@ class FoldersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for move_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_move_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_move_folder` interceptor runs
+        before the `post_move_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_move_folder_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for move_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_move_folder_with_metadata`
+        interceptor in new development instead of the `post_move_folder` interceptor.
+        When both interceptors are used, this `post_move_folder_with_metadata` interceptor runs after the
+        `post_move_folder` interceptor. The (possibly modified) response returned by
+        `post_move_folder` will be passed to
+        `post_move_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_folders(
         self,
@@ -318,11 +460,34 @@ class FoldersRestInterceptor:
     ) -> folders.SearchFoldersResponse:
         """Post-rpc interceptor for search_folders
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_folders_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_folders` interceptor runs
+        before the `post_search_folders_with_metadata` interceptor.
         """
         return response
+
+    def post_search_folders_with_metadata(
+        self,
+        response: folders.SearchFoldersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[folders.SearchFoldersResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for search_folders
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_search_folders_with_metadata`
+        interceptor in new development instead of the `post_search_folders` interceptor.
+        When both interceptors are used, this `post_search_folders_with_metadata` interceptor runs after the
+        `post_search_folders` interceptor. The (possibly modified) response returned by
+        `post_search_folders` will be passed to
+        `post_search_folders_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -341,11 +506,34 @@ class FoldersRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -367,11 +555,37 @@ class FoldersRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_undelete_folder(
         self,
@@ -390,11 +604,34 @@ class FoldersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for undelete_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_undelete_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_undelete_folder` interceptor runs
+        before the `post_undelete_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_undelete_folder_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for undelete_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_undelete_folder_with_metadata`
+        interceptor in new development instead of the `post_undelete_folder` interceptor.
+        When both interceptors are used, this `post_undelete_folder_with_metadata` interceptor runs after the
+        `post_undelete_folder` interceptor. The (possibly modified) response returned by
+        `post_undelete_folder` will be passed to
+        `post_undelete_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_folder(
         self,
@@ -413,11 +650,34 @@ class FoldersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_folder
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_folder_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Folders server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_folder` interceptor runs
+        before the `post_update_folder_with_metadata` interceptor.
         """
         return response
+
+    def post_update_folder_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_folder
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Folders server but before it is returned to user code.
+
+        We recommend only using this `post_update_folder_with_metadata`
+        interceptor in new development instead of the `post_update_folder` interceptor.
+        When both interceptors are used, this `post_update_folder_with_metadata` interceptor runs after the
+        `post_update_folder` interceptor. The (possibly modified) response returned by
+        `post_update_folder` will be passed to
+        `post_update_folder_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -695,6 +955,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -838,6 +1102,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -981,6 +1249,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1204,6 +1476,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1346,6 +1622,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_folders(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_folders_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1493,6 +1773,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_move_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_move_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1638,6 +1922,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_folders(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_folders_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1861,6 +2149,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2009,6 +2301,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2160,6 +2456,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_undelete_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_undelete_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2316,6 +2616,10 @@ class FoldersRestTransport(_BaseFoldersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_folder(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_folder_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

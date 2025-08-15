@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.developerconnect_v1 import gapic_version as package_version
 from google.cloud.developerconnect_v1.types import developer_connect
@@ -32,6 +33,9 @@ from google.cloud.developerconnect_v1.types import developer_connect
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class DeveloperConnectTransport(abc.ABC):
@@ -308,6 +312,56 @@ class DeveloperConnectTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.list_account_connectors: gapic_v1.method.wrap_method(
+                self.list_account_connectors,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_account_connector: gapic_v1.method.wrap_method(
+                self.get_account_connector,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_account_connector: gapic_v1.method.wrap_method(
+                self.create_account_connector,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_account_connector: gapic_v1.method.wrap_method(
+                self.update_account_connector,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_account_connector: gapic_v1.method.wrap_method(
+                self.delete_account_connector,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.fetch_access_token: gapic_v1.method.wrap_method(
+                self.fetch_access_token,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_users: gapic_v1.method.wrap_method(
+                self.list_users,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_user: gapic_v1.method.wrap_method(
+                self.delete_user,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.fetch_self: gapic_v1.method.wrap_method(
+                self.fetch_self,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_self: gapic_v1.method.wrap_method(
+                self.delete_self,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.get_location: gapic_v1.method.wrap_method(
                 self.get_location,
                 default_timeout=None,
@@ -501,6 +555,108 @@ class DeveloperConnectTransport(abc.ABC):
             developer_connect.FetchGitRefsResponse,
             Awaitable[developer_connect.FetchGitRefsResponse],
         ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_account_connectors(
+        self,
+    ) -> Callable[
+        [developer_connect.ListAccountConnectorsRequest],
+        Union[
+            developer_connect.ListAccountConnectorsResponse,
+            Awaitable[developer_connect.ListAccountConnectorsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_account_connector(
+        self,
+    ) -> Callable[
+        [developer_connect.GetAccountConnectorRequest],
+        Union[
+            developer_connect.AccountConnector,
+            Awaitable[developer_connect.AccountConnector],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_account_connector(
+        self,
+    ) -> Callable[
+        [developer_connect.CreateAccountConnectorRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_account_connector(
+        self,
+    ) -> Callable[
+        [developer_connect.UpdateAccountConnectorRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_account_connector(
+        self,
+    ) -> Callable[
+        [developer_connect.DeleteAccountConnectorRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def fetch_access_token(
+        self,
+    ) -> Callable[
+        [developer_connect.FetchAccessTokenRequest],
+        Union[
+            developer_connect.FetchAccessTokenResponse,
+            Awaitable[developer_connect.FetchAccessTokenResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_users(
+        self,
+    ) -> Callable[
+        [developer_connect.ListUsersRequest],
+        Union[
+            developer_connect.ListUsersResponse,
+            Awaitable[developer_connect.ListUsersResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_user(
+        self,
+    ) -> Callable[
+        [developer_connect.DeleteUserRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def fetch_self(
+        self,
+    ) -> Callable[
+        [developer_connect.FetchSelfRequest],
+        Union[developer_connect.User, Awaitable[developer_connect.User]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_self(
+        self,
+    ) -> Callable[
+        [developer_connect.DeleteSelfRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
 

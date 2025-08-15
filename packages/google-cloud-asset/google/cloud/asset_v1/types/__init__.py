@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from .asset_enrichment_resourceowners import ResourceOwners
 from .asset_service import (
     AnalyzeIamPolicyLongrunningMetadata,
     AnalyzeIamPolicyLongrunningRequest,
@@ -78,6 +79,7 @@ from .asset_service import (
 )
 from .assets import (
     Asset,
+    AssetEnrichment,
     AttachedResource,
     ConditionEvaluation,
     EffectiveTagDetails,
@@ -98,6 +100,7 @@ from .assets import (
 )
 
 __all__ = (
+    "ResourceOwners",
     "AnalyzeIamPolicyLongrunningMetadata",
     "AnalyzeIamPolicyLongrunningRequest",
     "AnalyzeIamPolicyLongrunningResponse",
@@ -160,6 +163,7 @@ __all__ = (
     "UpdateSavedQueryRequest",
     "ContentType",
     "Asset",
+    "AssetEnrichment",
     "AttachedResource",
     "ConditionEvaluation",
     "EffectiveTagDetails",

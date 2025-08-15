@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.apps.meet_v2beta import gapic_version as package_version
@@ -32,11 +33,21 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
+
 
 class SpacesServiceTransport(abc.ABC):
     """Abstract transport class for SpacesService."""
 
-    AUTH_SCOPES = ()
+    AUTH_SCOPES = (
+        "https://www.googleapis.com/auth/meetings.conference.media.audio.readonly",
+        "https://www.googleapis.com/auth/meetings.conference.media.readonly",
+        "https://www.googleapis.com/auth/meetings.conference.media.video.readonly",
+        "https://www.googleapis.com/auth/meetings.space.created",
+        "https://www.googleapis.com/auth/meetings.space.readonly",
+        "https://www.googleapis.com/auth/meetings.space.settings",
+    )
 
     DEFAULT_HOST: str = "meet.googleapis.com"
 
@@ -153,8 +164,33 @@ class SpacesServiceTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.connect_active_conference: gapic_v1.method.wrap_method(
+                self.connect_active_conference,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.end_active_conference: gapic_v1.method.wrap_method(
                 self.end_active_conference,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.create_member: gapic_v1.method.wrap_method(
+                self.create_member,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_member: gapic_v1.method.wrap_method(
+                self.get_member,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_members: gapic_v1.method.wrap_method(
+                self.list_members,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.delete_member: gapic_v1.method.wrap_method(
+                self.delete_member,
                 default_timeout=60.0,
                 client_info=client_info,
             ),
@@ -194,10 +230,57 @@ class SpacesServiceTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def connect_active_conference(
+        self,
+    ) -> Callable[
+        [service.ConnectActiveConferenceRequest],
+        Union[
+            service.ConnectActiveConferenceResponse,
+            Awaitable[service.ConnectActiveConferenceResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def end_active_conference(
         self,
     ) -> Callable[
         [service.EndActiveConferenceRequest],
+        Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_member(
+        self,
+    ) -> Callable[
+        [service.CreateMemberRequest],
+        Union[resource.Member, Awaitable[resource.Member]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_member(
+        self,
+    ) -> Callable[
+        [service.GetMemberRequest], Union[resource.Member, Awaitable[resource.Member]]
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_members(
+        self,
+    ) -> Callable[
+        [service.ListMembersRequest],
+        Union[service.ListMembersResponse, Awaitable[service.ListMembersResponse]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_member(
+        self,
+    ) -> Callable[
+        [service.DeleteMemberRequest],
         Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
     ]:
         raise NotImplementedError()

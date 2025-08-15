@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-enterpriseknowledgegraph-v0.3.16...google-cloud-enterpriseknowledgegraph-v0.3.17) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [0.3.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-enterpriseknowledgegraph-v0.3.15...google-cloud-enterpriseknowledgegraph-v0.3.16) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+
+## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-enterpriseknowledgegraph-v0.3.14...google-cloud-enterpriseknowledgegraph-v0.3.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-enterpriseknowledgegraph-v0.3.13...google-cloud-enterpriseknowledgegraph-v0.3.14) (2024-12-12)
 
 

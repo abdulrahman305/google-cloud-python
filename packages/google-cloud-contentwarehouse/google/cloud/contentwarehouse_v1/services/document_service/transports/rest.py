@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -57,6 +58,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class DocumentServiceRestInterceptor:
@@ -160,11 +164,36 @@ class DocumentServiceRestInterceptor:
     ) -> document_service.CreateDocumentResponse:
         """Post-rpc interceptor for create_document
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_document_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_document` interceptor runs
+        before the `post_create_document_with_metadata` interceptor.
         """
         return response
+
+    def post_create_document_with_metadata(
+        self,
+        response: document_service.CreateDocumentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        document_service.CreateDocumentResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_document
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_create_document_with_metadata`
+        interceptor in new development instead of the `post_create_document` interceptor.
+        When both interceptors are used, this `post_create_document_with_metadata` interceptor runs after the
+        `post_create_document` interceptor. The (possibly modified) response returned by
+        `post_create_document` will be passed to
+        `post_create_document_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_document(
         self,
@@ -201,11 +230,36 @@ class DocumentServiceRestInterceptor:
     ) -> document_service.FetchAclResponse:
         """Post-rpc interceptor for fetch_acl
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_fetch_acl_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_fetch_acl` interceptor runs
+        before the `post_fetch_acl_with_metadata` interceptor.
         """
         return response
+
+    def post_fetch_acl_with_metadata(
+        self,
+        response: document_service.FetchAclResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        document_service.FetchAclResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for fetch_acl
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_fetch_acl_with_metadata`
+        interceptor in new development instead of the `post_fetch_acl` interceptor.
+        When both interceptors are used, this `post_fetch_acl_with_metadata` interceptor runs after the
+        `post_fetch_acl` interceptor. The (possibly modified) response returned by
+        `post_fetch_acl` will be passed to
+        `post_fetch_acl_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_document(
         self,
@@ -227,11 +281,34 @@ class DocumentServiceRestInterceptor:
     ) -> gcc_document.Document:
         """Post-rpc interceptor for get_document
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_document_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_document` interceptor runs
+        before the `post_get_document_with_metadata` interceptor.
         """
         return response
+
+    def post_get_document_with_metadata(
+        self,
+        response: gcc_document.Document,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcc_document.Document, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_document
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_get_document_with_metadata`
+        interceptor in new development instead of the `post_get_document` interceptor.
+        When both interceptors are used, this `post_get_document_with_metadata` interceptor runs after the
+        `post_get_document` interceptor. The (possibly modified) response returned by
+        `post_get_document` will be passed to
+        `post_get_document_with_metadata`.
+        """
+        return response, metadata
 
     def pre_lock_document(
         self,
@@ -253,11 +330,34 @@ class DocumentServiceRestInterceptor:
     ) -> gcc_document.Document:
         """Post-rpc interceptor for lock_document
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_lock_document_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_lock_document` interceptor runs
+        before the `post_lock_document_with_metadata` interceptor.
         """
         return response
+
+    def post_lock_document_with_metadata(
+        self,
+        response: gcc_document.Document,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcc_document.Document, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for lock_document
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_lock_document_with_metadata`
+        interceptor in new development instead of the `post_lock_document` interceptor.
+        When both interceptors are used, this `post_lock_document_with_metadata` interceptor runs after the
+        `post_lock_document` interceptor. The (possibly modified) response returned by
+        `post_lock_document` will be passed to
+        `post_lock_document_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_documents(
         self,
@@ -279,11 +379,37 @@ class DocumentServiceRestInterceptor:
     ) -> document_service.SearchDocumentsResponse:
         """Post-rpc interceptor for search_documents
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_documents_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_documents` interceptor runs
+        before the `post_search_documents_with_metadata` interceptor.
         """
         return response
+
+    def post_search_documents_with_metadata(
+        self,
+        response: document_service.SearchDocumentsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        document_service.SearchDocumentsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for search_documents
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_search_documents_with_metadata`
+        interceptor in new development instead of the `post_search_documents` interceptor.
+        When both interceptors are used, this `post_search_documents_with_metadata` interceptor runs after the
+        `post_search_documents` interceptor. The (possibly modified) response returned by
+        `post_search_documents` will be passed to
+        `post_search_documents_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_acl(
         self,
@@ -304,11 +430,36 @@ class DocumentServiceRestInterceptor:
     ) -> document_service.SetAclResponse:
         """Post-rpc interceptor for set_acl
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_acl_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_acl` interceptor runs
+        before the `post_set_acl_with_metadata` interceptor.
         """
         return response
+
+    def post_set_acl_with_metadata(
+        self,
+        response: document_service.SetAclResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        document_service.SetAclResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for set_acl
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_set_acl_with_metadata`
+        interceptor in new development instead of the `post_set_acl` interceptor.
+        When both interceptors are used, this `post_set_acl_with_metadata` interceptor runs after the
+        `post_set_acl` interceptor. The (possibly modified) response returned by
+        `post_set_acl` will be passed to
+        `post_set_acl_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_document(
         self,
@@ -330,11 +481,36 @@ class DocumentServiceRestInterceptor:
     ) -> document_service.UpdateDocumentResponse:
         """Post-rpc interceptor for update_document
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_document_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DocumentService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_document` interceptor runs
+        before the `post_update_document_with_metadata` interceptor.
         """
         return response
+
+    def post_update_document_with_metadata(
+        self,
+        response: document_service.UpdateDocumentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        document_service.UpdateDocumentResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_document
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DocumentService server but before it is returned to user code.
+
+        We recommend only using this `post_update_document_with_metadata`
+        interceptor in new development instead of the `post_update_document` interceptor.
+        When both interceptors are used, this `post_update_document_with_metadata` interceptor runs after the
+        `post_update_document` interceptor. The (possibly modified) response returned by
+        `post_update_document` will be passed to
+        `post_update_document_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -574,6 +750,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_document(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_document_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -844,6 +1024,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_fetch_acl(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_fetch_acl_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -995,6 +1179,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_document(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_document_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1144,6 +1332,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_lock_document(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_lock_document_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1295,6 +1487,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_documents(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_documents_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1450,6 +1646,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_acl(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_acl_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1599,6 +1799,10 @@ class DocumentServiceRestTransport(_BaseDocumentServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_document(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_document_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -55,6 +56,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     rest_version=f"requests@{requests_version}",
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
+
 
 class ManagedKafkaRestInterceptor:
     """Interceptor for ManagedKafka.
@@ -71,6 +75,22 @@ class ManagedKafkaRestInterceptor:
 
     .. code-block:: python
         class MyCustomManagedKafkaInterceptor(ManagedKafkaRestInterceptor):
+            def pre_add_acl_entry(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_add_acl_entry(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_create_acl(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_acl(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_create_cluster(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -87,6 +107,10 @@ class ManagedKafkaRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_delete_acl(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
             def pre_delete_cluster(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -102,6 +126,14 @@ class ManagedKafkaRestInterceptor:
             def pre_delete_topic(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
+
+            def pre_get_acl(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_acl(self, response):
+                logging.log(f"Received response: {response}")
+                return response
 
             def pre_get_cluster(self, request, metadata):
                 logging.log(f"Received request: {request}")
@@ -127,6 +159,14 @@ class ManagedKafkaRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_list_acls(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_acls(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_list_clusters(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -148,6 +188,22 @@ class ManagedKafkaRestInterceptor:
                 return request, metadata
 
             def post_list_topics(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_remove_acl_entry(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_remove_acl_entry(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_update_acl(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_acl(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -181,6 +237,98 @@ class ManagedKafkaRestInterceptor:
 
     """
 
+    def pre_add_acl_entry(
+        self,
+        request: managed_kafka.AddAclEntryRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.AddAclEntryRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for add_acl_entry
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_add_acl_entry(
+        self, response: managed_kafka.AddAclEntryResponse
+    ) -> managed_kafka.AddAclEntryResponse:
+        """Post-rpc interceptor for add_acl_entry
+
+        DEPRECATED. Please use the `post_add_acl_entry_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_add_acl_entry` interceptor runs
+        before the `post_add_acl_entry_with_metadata` interceptor.
+        """
+        return response
+
+    def post_add_acl_entry_with_metadata(
+        self,
+        response: managed_kafka.AddAclEntryResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.AddAclEntryResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for add_acl_entry
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_add_acl_entry_with_metadata`
+        interceptor in new development instead of the `post_add_acl_entry` interceptor.
+        When both interceptors are used, this `post_add_acl_entry_with_metadata` interceptor runs after the
+        `post_add_acl_entry` interceptor. The (possibly modified) response returned by
+        `post_add_acl_entry` will be passed to
+        `post_add_acl_entry_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_acl(
+        self,
+        request: managed_kafka.CreateAclRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.CreateAclRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for create_acl
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_create_acl(self, response: resources.Acl) -> resources.Acl:
+        """Post-rpc interceptor for create_acl
+
+        DEPRECATED. Please use the `post_create_acl_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_create_acl` interceptor runs
+        before the `post_create_acl_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_acl_with_metadata(
+        self, response: resources.Acl, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[resources.Acl, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_acl
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_create_acl_with_metadata`
+        interceptor in new development instead of the `post_create_acl` interceptor.
+        When both interceptors are used, this `post_create_acl_with_metadata` interceptor runs after the
+        `post_create_acl` interceptor. The (possibly modified) response returned by
+        `post_create_acl` will be passed to
+        `post_create_acl_with_metadata`.
+        """
+        return response, metadata
+
     def pre_create_cluster(
         self,
         request: managed_kafka.CreateClusterRequest,
@@ -200,11 +348,34 @@ class ManagedKafkaRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_cluster` interceptor runs
+        before the `post_create_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_create_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_create_cluster_with_metadata`
+        interceptor in new development instead of the `post_create_cluster` interceptor.
+        When both interceptors are used, this `post_create_cluster_with_metadata` interceptor runs after the
+        `post_create_cluster` interceptor. The (possibly modified) response returned by
+        `post_create_cluster` will be passed to
+        `post_create_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_topic(
         self,
@@ -223,11 +394,46 @@ class ManagedKafkaRestInterceptor:
     def post_create_topic(self, response: resources.Topic) -> resources.Topic:
         """Post-rpc interceptor for create_topic
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_topic_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_topic` interceptor runs
+        before the `post_create_topic_with_metadata` interceptor.
         """
         return response
+
+    def post_create_topic_with_metadata(
+        self,
+        response: resources.Topic,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Topic, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_topic
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_create_topic_with_metadata`
+        interceptor in new development instead of the `post_create_topic` interceptor.
+        When both interceptors are used, this `post_create_topic_with_metadata` interceptor runs after the
+        `post_create_topic` interceptor. The (possibly modified) response returned by
+        `post_create_topic` will be passed to
+        `post_create_topic_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_acl(
+        self,
+        request: managed_kafka.DeleteAclRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.DeleteAclRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for delete_acl
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
 
     def pre_delete_cluster(
         self,
@@ -248,11 +454,34 @@ class ManagedKafkaRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_cluster` interceptor runs
+        before the `post_delete_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_delete_cluster_with_metadata`
+        interceptor in new development instead of the `post_delete_cluster` interceptor.
+        When both interceptors are used, this `post_delete_cluster_with_metadata` interceptor runs after the
+        `post_delete_cluster` interceptor. The (possibly modified) response returned by
+        `post_delete_cluster` will be passed to
+        `post_delete_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_consumer_group(
         self,
@@ -283,6 +512,48 @@ class ManagedKafkaRestInterceptor:
         """
         return request, metadata
 
+    def pre_get_acl(
+        self,
+        request: managed_kafka.GetAclRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.GetAclRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for get_acl
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_get_acl(self, response: resources.Acl) -> resources.Acl:
+        """Post-rpc interceptor for get_acl
+
+        DEPRECATED. Please use the `post_get_acl_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_get_acl` interceptor runs
+        before the `post_get_acl_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_acl_with_metadata(
+        self, response: resources.Acl, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[resources.Acl, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_acl
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_get_acl_with_metadata`
+        interceptor in new development instead of the `post_get_acl` interceptor.
+        When both interceptors are used, this `post_get_acl_with_metadata` interceptor runs after the
+        `post_get_acl` interceptor. The (possibly modified) response returned by
+        `post_get_acl` will be passed to
+        `post_get_acl_with_metadata`.
+        """
+        return response, metadata
+
     def pre_get_cluster(
         self,
         request: managed_kafka.GetClusterRequest,
@@ -300,11 +571,34 @@ class ManagedKafkaRestInterceptor:
     def post_get_cluster(self, response: resources.Cluster) -> resources.Cluster:
         """Post-rpc interceptor for get_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_cluster` interceptor runs
+        before the `post_get_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_get_cluster_with_metadata(
+        self,
+        response: resources.Cluster,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Cluster, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_get_cluster_with_metadata`
+        interceptor in new development instead of the `post_get_cluster` interceptor.
+        When both interceptors are used, this `post_get_cluster_with_metadata` interceptor runs after the
+        `post_get_cluster` interceptor. The (possibly modified) response returned by
+        `post_get_cluster` will be passed to
+        `post_get_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_consumer_group(
         self,
@@ -325,11 +619,34 @@ class ManagedKafkaRestInterceptor:
     ) -> resources.ConsumerGroup:
         """Post-rpc interceptor for get_consumer_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_consumer_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_consumer_group` interceptor runs
+        before the `post_get_consumer_group_with_metadata` interceptor.
         """
         return response
+
+    def post_get_consumer_group_with_metadata(
+        self,
+        response: resources.ConsumerGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConsumerGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_consumer_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_get_consumer_group_with_metadata`
+        interceptor in new development instead of the `post_get_consumer_group` interceptor.
+        When both interceptors are used, this `post_get_consumer_group_with_metadata` interceptor runs after the
+        `post_get_consumer_group` interceptor. The (possibly modified) response returned by
+        `post_get_consumer_group` will be passed to
+        `post_get_consumer_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_topic(
         self,
@@ -346,11 +663,80 @@ class ManagedKafkaRestInterceptor:
     def post_get_topic(self, response: resources.Topic) -> resources.Topic:
         """Post-rpc interceptor for get_topic
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_topic_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_topic` interceptor runs
+        before the `post_get_topic_with_metadata` interceptor.
         """
         return response
+
+    def post_get_topic_with_metadata(
+        self,
+        response: resources.Topic,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Topic, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_topic
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_get_topic_with_metadata`
+        interceptor in new development instead of the `post_get_topic` interceptor.
+        When both interceptors are used, this `post_get_topic_with_metadata` interceptor runs after the
+        `post_get_topic` interceptor. The (possibly modified) response returned by
+        `post_get_topic` will be passed to
+        `post_get_topic_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_acls(
+        self,
+        request: managed_kafka.ListAclsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.ListAclsRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for list_acls
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_list_acls(
+        self, response: managed_kafka.ListAclsResponse
+    ) -> managed_kafka.ListAclsResponse:
+        """Post-rpc interceptor for list_acls
+
+        DEPRECATED. Please use the `post_list_acls_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_list_acls` interceptor runs
+        before the `post_list_acls_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_acls_with_metadata(
+        self,
+        response: managed_kafka.ListAclsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.ListAclsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_acls
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_list_acls_with_metadata`
+        interceptor in new development instead of the `post_list_acls` interceptor.
+        When both interceptors are used, this `post_list_acls_with_metadata` interceptor runs after the
+        `post_list_acls` interceptor. The (possibly modified) response returned by
+        `post_list_acls` will be passed to
+        `post_list_acls_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_clusters(
         self,
@@ -371,11 +757,36 @@ class ManagedKafkaRestInterceptor:
     ) -> managed_kafka.ListClustersResponse:
         """Post-rpc interceptor for list_clusters
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_clusters_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_clusters` interceptor runs
+        before the `post_list_clusters_with_metadata` interceptor.
         """
         return response
+
+    def post_list_clusters_with_metadata(
+        self,
+        response: managed_kafka.ListClustersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.ListClustersResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_clusters
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_list_clusters_with_metadata`
+        interceptor in new development instead of the `post_list_clusters` interceptor.
+        When both interceptors are used, this `post_list_clusters_with_metadata` interceptor runs after the
+        `post_list_clusters` interceptor. The (possibly modified) response returned by
+        `post_list_clusters` will be passed to
+        `post_list_clusters_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_consumer_groups(
         self,
@@ -396,11 +807,37 @@ class ManagedKafkaRestInterceptor:
     ) -> managed_kafka.ListConsumerGroupsResponse:
         """Post-rpc interceptor for list_consumer_groups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_consumer_groups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_consumer_groups` interceptor runs
+        before the `post_list_consumer_groups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_consumer_groups_with_metadata(
+        self,
+        response: managed_kafka.ListConsumerGroupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.ListConsumerGroupsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_consumer_groups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_list_consumer_groups_with_metadata`
+        interceptor in new development instead of the `post_list_consumer_groups` interceptor.
+        When both interceptors are used, this `post_list_consumer_groups_with_metadata` interceptor runs after the
+        `post_list_consumer_groups` interceptor. The (possibly modified) response returned by
+        `post_list_consumer_groups` will be passed to
+        `post_list_consumer_groups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_topics(
         self,
@@ -421,11 +858,128 @@ class ManagedKafkaRestInterceptor:
     ) -> managed_kafka.ListTopicsResponse:
         """Post-rpc interceptor for list_topics
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_topics_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_topics` interceptor runs
+        before the `post_list_topics_with_metadata` interceptor.
         """
         return response
+
+    def post_list_topics_with_metadata(
+        self,
+        response: managed_kafka.ListTopicsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.ListTopicsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_topics
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_list_topics_with_metadata`
+        interceptor in new development instead of the `post_list_topics` interceptor.
+        When both interceptors are used, this `post_list_topics_with_metadata` interceptor runs after the
+        `post_list_topics` interceptor. The (possibly modified) response returned by
+        `post_list_topics` will be passed to
+        `post_list_topics_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_remove_acl_entry(
+        self,
+        request: managed_kafka.RemoveAclEntryRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.RemoveAclEntryRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for remove_acl_entry
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_remove_acl_entry(
+        self, response: managed_kafka.RemoveAclEntryResponse
+    ) -> managed_kafka.RemoveAclEntryResponse:
+        """Post-rpc interceptor for remove_acl_entry
+
+        DEPRECATED. Please use the `post_remove_acl_entry_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_remove_acl_entry` interceptor runs
+        before the `post_remove_acl_entry_with_metadata` interceptor.
+        """
+        return response
+
+    def post_remove_acl_entry_with_metadata(
+        self,
+        response: managed_kafka.RemoveAclEntryResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        managed_kafka.RemoveAclEntryResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for remove_acl_entry
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_remove_acl_entry_with_metadata`
+        interceptor in new development instead of the `post_remove_acl_entry` interceptor.
+        When both interceptors are used, this `post_remove_acl_entry_with_metadata` interceptor runs after the
+        `post_remove_acl_entry` interceptor. The (possibly modified) response returned by
+        `post_remove_acl_entry` will be passed to
+        `post_remove_acl_entry_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_acl(
+        self,
+        request: managed_kafka.UpdateAclRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[managed_kafka.UpdateAclRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for update_acl
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ManagedKafka server.
+        """
+        return request, metadata
+
+    def post_update_acl(self, response: resources.Acl) -> resources.Acl:
+        """Post-rpc interceptor for update_acl
+
+        DEPRECATED. Please use the `post_update_acl_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ManagedKafka server but before
+        it is returned to user code. This `post_update_acl` interceptor runs
+        before the `post_update_acl_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_acl_with_metadata(
+        self, response: resources.Acl, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[resources.Acl, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_acl
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_update_acl_with_metadata`
+        interceptor in new development instead of the `post_update_acl` interceptor.
+        When both interceptors are used, this `post_update_acl_with_metadata` interceptor runs after the
+        `post_update_acl` interceptor. The (possibly modified) response returned by
+        `post_update_acl` will be passed to
+        `post_update_acl_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_cluster(
         self,
@@ -446,11 +1000,34 @@ class ManagedKafkaRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_cluster` interceptor runs
+        before the `post_update_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_update_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_update_cluster_with_metadata`
+        interceptor in new development instead of the `post_update_cluster` interceptor.
+        When both interceptors are used, this `post_update_cluster_with_metadata` interceptor runs after the
+        `post_update_cluster` interceptor. The (possibly modified) response returned by
+        `post_update_cluster` will be passed to
+        `post_update_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_consumer_group(
         self,
@@ -472,11 +1049,34 @@ class ManagedKafkaRestInterceptor:
     ) -> resources.ConsumerGroup:
         """Post-rpc interceptor for update_consumer_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_consumer_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_consumer_group` interceptor runs
+        before the `post_update_consumer_group_with_metadata` interceptor.
         """
         return response
+
+    def post_update_consumer_group_with_metadata(
+        self,
+        response: resources.ConsumerGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConsumerGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_consumer_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_update_consumer_group_with_metadata`
+        interceptor in new development instead of the `post_update_consumer_group` interceptor.
+        When both interceptors are used, this `post_update_consumer_group_with_metadata` interceptor runs after the
+        `post_update_consumer_group` interceptor. The (possibly modified) response returned by
+        `post_update_consumer_group` will be passed to
+        `post_update_consumer_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_topic(
         self,
@@ -495,11 +1095,34 @@ class ManagedKafkaRestInterceptor:
     def post_update_topic(self, response: resources.Topic) -> resources.Topic:
         """Post-rpc interceptor for update_topic
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_topic_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ManagedKafka server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_topic` interceptor runs
+        before the `post_update_topic_with_metadata` interceptor.
         """
         return response
+
+    def post_update_topic_with_metadata(
+        self,
+        response: resources.Topic,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Topic, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_topic
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ManagedKafka server but before it is returned to user code.
+
+        We recommend only using this `post_update_topic_with_metadata`
+        interceptor in new development instead of the `post_update_topic` interceptor.
+        When both interceptors are used, this `post_update_topic_with_metadata` interceptor runs after the
+        `post_update_topic` interceptor. The (possibly modified) response returned by
+        `post_update_topic` will be passed to
+        `post_update_topic_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -789,6 +1412,321 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
         # Return the client from cache.
         return self._operations_client
 
+    class _AddAclEntry(
+        _BaseManagedKafkaRestTransport._BaseAddAclEntry, ManagedKafkaRestStub
+    ):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.AddAclEntry")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.AddAclEntryRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> managed_kafka.AddAclEntryResponse:
+            r"""Call the add acl entry method over HTTP.
+
+            Args:
+                request (~.managed_kafka.AddAclEntryRequest):
+                    The request object. Request for AddAclEntry.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.managed_kafka.AddAclEntryResponse:
+                    Response for AddAclEntry.
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseAddAclEntry._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_add_acl_entry(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseAddAclEntry._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            body = (
+                _BaseManagedKafkaRestTransport._BaseAddAclEntry._get_request_body_json(
+                    transcoded_request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseAddAclEntry._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.AddAclEntry",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "AddAclEntry",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._AddAclEntry._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = managed_kafka.AddAclEntryResponse()
+            pb_resp = managed_kafka.AddAclEntryResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_add_acl_entry(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_acl_entry_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = managed_kafka.AddAclEntryResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.add_acl_entry",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "AddAclEntry",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateAcl(
+        _BaseManagedKafkaRestTransport._BaseCreateAcl, ManagedKafkaRestStub
+    ):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.CreateAcl")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.CreateAclRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.Acl:
+            r"""Call the create acl method over HTTP.
+
+            Args:
+                request (~.managed_kafka.CreateAclRequest):
+                    The request object. Request for CreateAcl.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.resources.Acl:
+                    Represents the set of ACLs for a given Kafka Resource
+                Pattern, which consists of resource_type, resource_name
+                and pattern_type.
+
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseCreateAcl._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_acl(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseCreateAcl._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            body = _BaseManagedKafkaRestTransport._BaseCreateAcl._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseCreateAcl._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.CreateAcl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "CreateAcl",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._CreateAcl._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.Acl()
+            pb_resp = resources.Acl.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_acl(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_acl_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.Acl.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.create_acl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "CreateAcl",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
     class _CreateCluster(
         _BaseManagedKafkaRestTransport._BaseCreateCluster, ManagedKafkaRestStub
     ):
@@ -913,6 +1851,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1065,6 +2007,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_topic(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_topic_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1087,6 +2033,116 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
                     },
                 )
             return resp
+
+    class _DeleteAcl(
+        _BaseManagedKafkaRestTransport._BaseDeleteAcl, ManagedKafkaRestStub
+    ):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.DeleteAcl")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.DeleteAclRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ):
+            r"""Call the delete acl method over HTTP.
+
+            Args:
+                request (~.managed_kafka.DeleteAclRequest):
+                    The request object. Request for DeleteAcl.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseDeleteAcl._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_acl(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseDeleteAcl._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseDeleteAcl._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.DeleteAcl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "DeleteAcl",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._DeleteAcl._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
 
     class _DeleteCluster(
         _BaseManagedKafkaRestTransport._BaseDeleteCluster, ManagedKafkaRestStub
@@ -1206,6 +2262,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1447,6 +2507,155 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             if response.status_code >= 400:
                 raise core_exceptions.from_http_response(response)
 
+    class _GetAcl(_BaseManagedKafkaRestTransport._BaseGetAcl, ManagedKafkaRestStub):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.GetAcl")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.GetAclRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.Acl:
+            r"""Call the get acl method over HTTP.
+
+            Args:
+                request (~.managed_kafka.GetAclRequest):
+                    The request object. Request for GetAcl.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.resources.Acl:
+                    Represents the set of ACLs for a given Kafka Resource
+                Pattern, which consists of resource_type, resource_name
+                and pattern_type.
+
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseGetAcl._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_acl(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseGetAcl._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseGetAcl._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.GetAcl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "GetAcl",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._GetAcl._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.Acl()
+            pb_resp = resources.Acl.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_acl(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_acl_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.Acl.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.get_acl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "GetAcl",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
     class _GetCluster(
         _BaseManagedKafkaRestTransport._BaseGetCluster, ManagedKafkaRestStub
     ):
@@ -1570,6 +2779,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1714,6 +2927,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_consumer_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_consumer_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1856,6 +3073,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_topic(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_topic_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1873,6 +3094,152 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
                     extra={
                         "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
                         "rpcName": "GetTopic",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListAcls(_BaseManagedKafkaRestTransport._BaseListAcls, ManagedKafkaRestStub):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.ListAcls")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.ListAclsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> managed_kafka.ListAclsResponse:
+            r"""Call the list acls method over HTTP.
+
+            Args:
+                request (~.managed_kafka.ListAclsRequest):
+                    The request object. Request for ListAcls.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.managed_kafka.ListAclsResponse:
+                    Response for ListAcls.
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseListAcls._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_acls(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseListAcls._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseListAcls._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.ListAcls",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "ListAcls",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._ListAcls._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = managed_kafka.ListAclsResponse()
+            pb_resp = managed_kafka.ListAclsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_acls(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_acls_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = managed_kafka.ListAclsResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.list_acls",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "ListAcls",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -1998,6 +3365,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_clusters(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_clusters_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2142,6 +3513,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_consumer_groups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_consumer_groups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2288,6 +3663,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_topics(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_topics_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2307,6 +3686,317 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
                     extra={
                         "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
                         "rpcName": "ListTopics",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _RemoveAclEntry(
+        _BaseManagedKafkaRestTransport._BaseRemoveAclEntry, ManagedKafkaRestStub
+    ):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.RemoveAclEntry")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.RemoveAclEntryRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> managed_kafka.RemoveAclEntryResponse:
+            r"""Call the remove acl entry method over HTTP.
+
+            Args:
+                request (~.managed_kafka.RemoveAclEntryRequest):
+                    The request object. Request for RemoveAclEntry.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.managed_kafka.RemoveAclEntryResponse:
+                    Response for RemoveAclEntry.
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseRemoveAclEntry._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_remove_acl_entry(
+                request, metadata
+            )
+            transcoded_request = _BaseManagedKafkaRestTransport._BaseRemoveAclEntry._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseManagedKafkaRestTransport._BaseRemoveAclEntry._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseManagedKafkaRestTransport._BaseRemoveAclEntry._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.RemoveAclEntry",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "RemoveAclEntry",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._RemoveAclEntry._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = managed_kafka.RemoveAclEntryResponse()
+            pb_resp = managed_kafka.RemoveAclEntryResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_remove_acl_entry(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_remove_acl_entry_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = managed_kafka.RemoveAclEntryResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.remove_acl_entry",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "RemoveAclEntry",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateAcl(
+        _BaseManagedKafkaRestTransport._BaseUpdateAcl, ManagedKafkaRestStub
+    ):
+        def __hash__(self):
+            return hash("ManagedKafkaRestTransport.UpdateAcl")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: managed_kafka.UpdateAclRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.Acl:
+            r"""Call the update acl method over HTTP.
+
+            Args:
+                request (~.managed_kafka.UpdateAclRequest):
+                    The request object. Request for UpdateAcl.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.resources.Acl:
+                    Represents the set of ACLs for a given Kafka Resource
+                Pattern, which consists of resource_type, resource_name
+                and pattern_type.
+
+            """
+
+            http_options = (
+                _BaseManagedKafkaRestTransport._BaseUpdateAcl._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_acl(request, metadata)
+            transcoded_request = (
+                _BaseManagedKafkaRestTransport._BaseUpdateAcl._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            body = _BaseManagedKafkaRestTransport._BaseUpdateAcl._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseManagedKafkaRestTransport._BaseUpdateAcl._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.managedkafka_v1.ManagedKafkaClient.UpdateAcl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "UpdateAcl",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ManagedKafkaRestTransport._UpdateAcl._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.Acl()
+            pb_resp = resources.Acl.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_acl(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_acl_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.Acl.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.managedkafka_v1.ManagedKafkaClient.update_acl",
+                    extra={
+                        "serviceName": "google.cloud.managedkafka.v1.ManagedKafka",
+                        "rpcName": "UpdateAcl",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2437,6 +4127,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2587,6 +4281,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_consumer_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_consumer_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2739,6 +4437,10 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_topic(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_topic_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2763,6 +4465,22 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
             return resp
 
     @property
+    def add_acl_entry(
+        self,
+    ) -> Callable[
+        [managed_kafka.AddAclEntryRequest], managed_kafka.AddAclEntryResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._AddAclEntry(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def create_acl(self) -> Callable[[managed_kafka.CreateAclRequest], resources.Acl]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateAcl(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def create_cluster(
         self,
     ) -> Callable[[managed_kafka.CreateClusterRequest], operations_pb2.Operation]:
@@ -2777,6 +4495,12 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._CreateTopic(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def delete_acl(self) -> Callable[[managed_kafka.DeleteAclRequest], empty_pb2.Empty]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteAcl(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def delete_cluster(
@@ -2803,6 +4527,12 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
         return self._DeleteTopic(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_acl(self) -> Callable[[managed_kafka.GetAclRequest], resources.Acl]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetAcl(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_cluster(
         self,
     ) -> Callable[[managed_kafka.GetClusterRequest], resources.Cluster]:
@@ -2823,6 +4553,14 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetTopic(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_acls(
+        self,
+    ) -> Callable[[managed_kafka.ListAclsRequest], managed_kafka.ListAclsResponse]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListAcls(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_clusters(
@@ -2852,6 +4590,22 @@ class ManagedKafkaRestTransport(_BaseManagedKafkaRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListTopics(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def remove_acl_entry(
+        self,
+    ) -> Callable[
+        [managed_kafka.RemoveAclEntryRequest], managed_kafka.RemoveAclEntryResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._RemoveAclEntry(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_acl(self) -> Callable[[managed_kafka.UpdateAclRequest], resources.Acl]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateAcl(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def update_cluster(

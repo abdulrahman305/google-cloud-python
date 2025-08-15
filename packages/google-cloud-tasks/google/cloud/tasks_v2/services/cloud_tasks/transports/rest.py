@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -59,6 +60,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class CloudTasksRestInterceptor:
@@ -217,11 +221,34 @@ class CloudTasksRestInterceptor:
     def post_create_queue(self, response: gct_queue.Queue) -> gct_queue.Queue:
         """Post-rpc interceptor for create_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_queue` interceptor runs
+        before the `post_create_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_create_queue_with_metadata(
+        self,
+        response: gct_queue.Queue,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gct_queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_create_queue_with_metadata`
+        interceptor in new development instead of the `post_create_queue` interceptor.
+        When both interceptors are used, this `post_create_queue_with_metadata` interceptor runs after the
+        `post_create_queue` interceptor. The (possibly modified) response returned by
+        `post_create_queue` will be passed to
+        `post_create_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_task(
         self,
@@ -238,11 +265,32 @@ class CloudTasksRestInterceptor:
     def post_create_task(self, response: gct_task.Task) -> gct_task.Task:
         """Post-rpc interceptor for create_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_task` interceptor runs
+        before the `post_create_task_with_metadata` interceptor.
         """
         return response
+
+    def post_create_task_with_metadata(
+        self, response: gct_task.Task, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[gct_task.Task, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_create_task_with_metadata`
+        interceptor in new development instead of the `post_create_task` interceptor.
+        When both interceptors are used, this `post_create_task_with_metadata` interceptor runs after the
+        `post_create_task` interceptor. The (possibly modified) response returned by
+        `post_create_task` will be passed to
+        `post_create_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_queue(
         self,
@@ -285,11 +333,34 @@ class CloudTasksRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_queue(
         self,
@@ -306,11 +377,32 @@ class CloudTasksRestInterceptor:
     def post_get_queue(self, response: queue.Queue) -> queue.Queue:
         """Post-rpc interceptor for get_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_queue` interceptor runs
+        before the `post_get_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_get_queue_with_metadata(
+        self, response: queue.Queue, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_get_queue_with_metadata`
+        interceptor in new development instead of the `post_get_queue` interceptor.
+        When both interceptors are used, this `post_get_queue_with_metadata` interceptor runs after the
+        `post_get_queue` interceptor. The (possibly modified) response returned by
+        `post_get_queue` will be passed to
+        `post_get_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_task(
         self,
@@ -327,11 +419,32 @@ class CloudTasksRestInterceptor:
     def post_get_task(self, response: task.Task) -> task.Task:
         """Post-rpc interceptor for get_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_task` interceptor runs
+        before the `post_get_task_with_metadata` interceptor.
         """
         return response
+
+    def post_get_task_with_metadata(
+        self, response: task.Task, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[task.Task, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_get_task_with_metadata`
+        interceptor in new development instead of the `post_get_task` interceptor.
+        When both interceptors are used, this `post_get_task_with_metadata` interceptor runs after the
+        `post_get_task` interceptor. The (possibly modified) response returned by
+        `post_get_task` will be passed to
+        `post_get_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_queues(
         self,
@@ -350,11 +463,34 @@ class CloudTasksRestInterceptor:
     ) -> cloudtasks.ListQueuesResponse:
         """Post-rpc interceptor for list_queues
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_queues_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_queues` interceptor runs
+        before the `post_list_queues_with_metadata` interceptor.
         """
         return response
+
+    def post_list_queues_with_metadata(
+        self,
+        response: cloudtasks.ListQueuesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudtasks.ListQueuesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_queues
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_list_queues_with_metadata`
+        interceptor in new development instead of the `post_list_queues` interceptor.
+        When both interceptors are used, this `post_list_queues_with_metadata` interceptor runs after the
+        `post_list_queues` interceptor. The (possibly modified) response returned by
+        `post_list_queues` will be passed to
+        `post_list_queues_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_tasks(
         self,
@@ -373,11 +509,34 @@ class CloudTasksRestInterceptor:
     ) -> cloudtasks.ListTasksResponse:
         """Post-rpc interceptor for list_tasks
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_tasks_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_tasks` interceptor runs
+        before the `post_list_tasks_with_metadata` interceptor.
         """
         return response
+
+    def post_list_tasks_with_metadata(
+        self,
+        response: cloudtasks.ListTasksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloudtasks.ListTasksResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_tasks
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_list_tasks_with_metadata`
+        interceptor in new development instead of the `post_list_tasks` interceptor.
+        When both interceptors are used, this `post_list_tasks_with_metadata` interceptor runs after the
+        `post_list_tasks` interceptor. The (possibly modified) response returned by
+        `post_list_tasks` will be passed to
+        `post_list_tasks_with_metadata`.
+        """
+        return response, metadata
 
     def pre_pause_queue(
         self,
@@ -394,11 +553,32 @@ class CloudTasksRestInterceptor:
     def post_pause_queue(self, response: queue.Queue) -> queue.Queue:
         """Post-rpc interceptor for pause_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_pause_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_pause_queue` interceptor runs
+        before the `post_pause_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_pause_queue_with_metadata(
+        self, response: queue.Queue, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for pause_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_pause_queue_with_metadata`
+        interceptor in new development instead of the `post_pause_queue` interceptor.
+        When both interceptors are used, this `post_pause_queue_with_metadata` interceptor runs after the
+        `post_pause_queue` interceptor. The (possibly modified) response returned by
+        `post_pause_queue` will be passed to
+        `post_pause_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_purge_queue(
         self,
@@ -415,11 +595,32 @@ class CloudTasksRestInterceptor:
     def post_purge_queue(self, response: queue.Queue) -> queue.Queue:
         """Post-rpc interceptor for purge_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_purge_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_purge_queue` interceptor runs
+        before the `post_purge_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_purge_queue_with_metadata(
+        self, response: queue.Queue, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for purge_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_purge_queue_with_metadata`
+        interceptor in new development instead of the `post_purge_queue` interceptor.
+        When both interceptors are used, this `post_purge_queue_with_metadata` interceptor runs after the
+        `post_purge_queue` interceptor. The (possibly modified) response returned by
+        `post_purge_queue` will be passed to
+        `post_purge_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_resume_queue(
         self,
@@ -436,11 +637,32 @@ class CloudTasksRestInterceptor:
     def post_resume_queue(self, response: queue.Queue) -> queue.Queue:
         """Post-rpc interceptor for resume_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_resume_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_resume_queue` interceptor runs
+        before the `post_resume_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_resume_queue_with_metadata(
+        self, response: queue.Queue, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for resume_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_resume_queue_with_metadata`
+        interceptor in new development instead of the `post_resume_queue` interceptor.
+        When both interceptors are used, this `post_resume_queue_with_metadata` interceptor runs after the
+        `post_resume_queue` interceptor. The (possibly modified) response returned by
+        `post_resume_queue` will be passed to
+        `post_resume_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_task(
         self,
@@ -457,11 +679,32 @@ class CloudTasksRestInterceptor:
     def post_run_task(self, response: task.Task) -> task.Task:
         """Post-rpc interceptor for run_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_task` interceptor runs
+        before the `post_run_task_with_metadata` interceptor.
         """
         return response
+
+    def post_run_task_with_metadata(
+        self, response: task.Task, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[task.Task, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for run_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_run_task_with_metadata`
+        interceptor in new development instead of the `post_run_task` interceptor.
+        When both interceptors are used, this `post_run_task_with_metadata` interceptor runs after the
+        `post_run_task` interceptor. The (possibly modified) response returned by
+        `post_run_task` will be passed to
+        `post_run_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -480,11 +723,34 @@ class CloudTasksRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -506,11 +772,37 @@ class CloudTasksRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_queue(
         self,
@@ -527,11 +819,34 @@ class CloudTasksRestInterceptor:
     def post_update_queue(self, response: gct_queue.Queue) -> gct_queue.Queue:
         """Post-rpc interceptor for update_queue
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_queue_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudTasks server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_queue` interceptor runs
+        before the `post_update_queue_with_metadata` interceptor.
         """
         return response
+
+    def post_update_queue_with_metadata(
+        self,
+        response: gct_queue.Queue,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gct_queue.Queue, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_queue
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudTasks server but before it is returned to user code.
+
+        We recommend only using this `post_update_queue_with_metadata`
+        interceptor in new development instead of the `post_update_queue` interceptor.
+        When both interceptors are used, this `post_update_queue_with_metadata` interceptor runs after the
+        `post_update_queue` interceptor. The (possibly modified) response returned by
+        `post_update_queue` will be passed to
+        `post_update_queue_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -805,6 +1120,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -954,6 +1273,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1401,6 +1724,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1550,6 +1877,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1691,6 +2022,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1836,6 +2171,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_queues(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_queues_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1981,6 +2320,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_tasks(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_tasks_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2136,6 +2479,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_pause_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_pause_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2291,6 +2638,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_purge_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_purge_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2448,6 +2799,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_resume_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_resume_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2595,6 +2950,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2822,6 +3181,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2970,6 +3333,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3127,6 +3494,10 @@ class CloudTasksRestTransport(_BaseCloudTasksRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_queue(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_queue_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

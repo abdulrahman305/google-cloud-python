@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ProgramsServiceRestInterceptor:
@@ -121,11 +125,34 @@ class ProgramsServiceRestInterceptor:
     def post_disable_program(self, response: programs.Program) -> programs.Program:
         """Post-rpc interceptor for disable_program
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_disable_program_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProgramsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_disable_program` interceptor runs
+        before the `post_disable_program_with_metadata` interceptor.
         """
         return response
+
+    def post_disable_program_with_metadata(
+        self,
+        response: programs.Program,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[programs.Program, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for disable_program
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProgramsService server but before it is returned to user code.
+
+        We recommend only using this `post_disable_program_with_metadata`
+        interceptor in new development instead of the `post_disable_program` interceptor.
+        When both interceptors are used, this `post_disable_program_with_metadata` interceptor runs after the
+        `post_disable_program` interceptor. The (possibly modified) response returned by
+        `post_disable_program` will be passed to
+        `post_disable_program_with_metadata`.
+        """
+        return response, metadata
 
     def pre_enable_program(
         self,
@@ -142,11 +169,34 @@ class ProgramsServiceRestInterceptor:
     def post_enable_program(self, response: programs.Program) -> programs.Program:
         """Post-rpc interceptor for enable_program
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_enable_program_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProgramsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_enable_program` interceptor runs
+        before the `post_enable_program_with_metadata` interceptor.
         """
         return response
+
+    def post_enable_program_with_metadata(
+        self,
+        response: programs.Program,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[programs.Program, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for enable_program
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProgramsService server but before it is returned to user code.
+
+        We recommend only using this `post_enable_program_with_metadata`
+        interceptor in new development instead of the `post_enable_program` interceptor.
+        When both interceptors are used, this `post_enable_program_with_metadata` interceptor runs after the
+        `post_enable_program` interceptor. The (possibly modified) response returned by
+        `post_enable_program` will be passed to
+        `post_enable_program_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_program(
         self,
@@ -163,11 +213,34 @@ class ProgramsServiceRestInterceptor:
     def post_get_program(self, response: programs.Program) -> programs.Program:
         """Post-rpc interceptor for get_program
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_program_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProgramsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_program` interceptor runs
+        before the `post_get_program_with_metadata` interceptor.
         """
         return response
+
+    def post_get_program_with_metadata(
+        self,
+        response: programs.Program,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[programs.Program, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_program
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProgramsService server but before it is returned to user code.
+
+        We recommend only using this `post_get_program_with_metadata`
+        interceptor in new development instead of the `post_get_program` interceptor.
+        When both interceptors are used, this `post_get_program_with_metadata` interceptor runs after the
+        `post_get_program` interceptor. The (possibly modified) response returned by
+        `post_get_program` will be passed to
+        `post_get_program_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_programs(
         self,
@@ -186,11 +259,34 @@ class ProgramsServiceRestInterceptor:
     ) -> programs.ListProgramsResponse:
         """Post-rpc interceptor for list_programs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_programs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProgramsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_programs` interceptor runs
+        before the `post_list_programs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_programs_with_metadata(
+        self,
+        response: programs.ListProgramsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[programs.ListProgramsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_programs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProgramsService server but before it is returned to user code.
+
+        We recommend only using this `post_list_programs_with_metadata`
+        interceptor in new development instead of the `post_list_programs` interceptor.
+        When both interceptors are used, this `post_list_programs_with_metadata` interceptor runs after the
+        `post_list_programs` interceptor. The (possibly modified) response returned by
+        `post_list_programs` will be passed to
+        `post_list_programs_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -422,6 +518,10 @@ class ProgramsServiceRestTransport(_BaseProgramsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_disable_program(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_disable_program_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -578,6 +678,10 @@ class ProgramsServiceRestTransport(_BaseProgramsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_enable_program(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_enable_program_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -728,6 +832,10 @@ class ProgramsServiceRestTransport(_BaseProgramsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_program(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_program_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -871,6 +979,10 @@ class ProgramsServiceRestTransport(_BaseProgramsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_programs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_programs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

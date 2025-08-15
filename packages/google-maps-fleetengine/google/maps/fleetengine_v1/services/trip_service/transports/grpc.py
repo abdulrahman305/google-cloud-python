@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,12 +70,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "maps.fleetengine.v1.TripService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -369,6 +368,33 @@ class TripServiceGrpcTransport(TripServiceTransport):
                 response_deserializer=trips.Trip.deserialize,
             )
         return self._stubs["get_trip"]
+
+    @property
+    def delete_trip(self) -> Callable[[trip_api.DeleteTripRequest], empty_pb2.Empty]:
+        r"""Return a callable for the delete trip method over gRPC.
+
+        Deletes a single Trip.
+
+        Returns FAILED_PRECONDITION if the Trip is active and assigned
+        to a vehicle.
+
+        Returns:
+            Callable[[~.DeleteTripRequest],
+                    ~.Empty]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "delete_trip" not in self._stubs:
+            self._stubs["delete_trip"] = self._logged_channel.unary_unary(
+                "/maps.fleetengine.v1.TripService/DeleteTrip",
+                request_serializer=trip_api.DeleteTripRequest.serialize,
+                response_deserializer=empty_pb2.Empty.FromString,
+            )
+        return self._stubs["delete_trip"]
 
     @property
     def report_billable_trip(

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ def sample_create_entity_signals_mapping():
     # Initialize request argument(s)
     entity_signals_mapping = admanager_v1.EntitySignalsMapping()
     entity_signals_mapping.audience_segment_id = 1980
-    entity_signals_mapping.taxonomy_category_ids = [2268, 2269]
 
     request = admanager_v1.CreateEntitySignalsMappingRequest(
         parent="parent_value",

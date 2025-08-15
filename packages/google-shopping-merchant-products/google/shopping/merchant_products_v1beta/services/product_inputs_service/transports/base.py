@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.shopping.merchant_products_v1beta import gapic_version as package_version
@@ -31,6 +32,9 @@ from google.shopping.merchant_products_v1beta.types import productinputs
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ProductInputsServiceTransport(abc.ABC):
@@ -134,6 +138,11 @@ class ProductInputsServiceTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.update_product_input: gapic_v1.method.wrap_method(
+                self.update_product_input,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.delete_product_input: gapic_v1.method.wrap_method(
                 self.delete_product_input,
                 default_timeout=None,
@@ -155,6 +164,15 @@ class ProductInputsServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [productinputs.InsertProductInputRequest],
+        Union[productinputs.ProductInput, Awaitable[productinputs.ProductInput]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_product_input(
+        self,
+    ) -> Callable[
+        [productinputs.UpdateProductInputRequest],
         Union[productinputs.ProductInput, Awaitable[productinputs.ProductInput]],
     ]:
         raise NotImplementedError()

@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.16...google-shopping-merchant-reports-v0.1.17) (2025-08-06)
+
+
+### Features
+
+* [google-shopping-merchant-reports] Add additional YouTube report fields to Merchant reports endpoint ([#14166](https://github.com/googleapis/google-cloud-python/issues/14166)) ([b5678de](https://github.com/googleapis/google-cloud-python/commit/b5678de0d3f2306361f5e758fb1722582a6634b5))
+* [google-shopping-merchant-reports] add reports API client libraries for v1 ([#14186](https://github.com/googleapis/google-cloud-python/issues/14186)) ([7752ebf](https://github.com/googleapis/google-cloud-python/commit/7752ebf623a2b91638814a4abc80947dff6d1a72))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.15...google-shopping-merchant-reports-v0.1.16) (2025-07-04)
+
+
+### Features
+
+* [google-shopping-merchant-reports]Add v1alpha version to Merchant reports endpoint ([#14053](https://github.com/googleapis/google-cloud-python/issues/14053)) ([473cbaf](https://github.com/googleapis/google-cloud-python/commit/473cbaf8ee1a2c40c3de7f8f60bc6cdd14449267))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.14...google-shopping-merchant-reports-v0.1.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([4f0a027](https://github.com/googleapis/google-cloud-python/commit/4f0a0270b494d47e80373b87e7668283dbbceec7))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.13...google-shopping-merchant-reports-v0.1.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([36e8ba1](https://github.com/googleapis/google-cloud-python/commit/36e8ba12eac92dd221ac3ddf1061da3845135791))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.12...google-shopping-merchant-reports-v0.1.13) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-reports-v0.1.11...google-shopping-merchant-reports-v0.1.12) (2024-12-12)
 
 

@@ -2,6 +2,25 @@
 
 .. include:: multiprocessing.rst
 
+This package includes clients for multiple versions of Merchant Reports API.
+By default, you will get version ``merchant_reports_v1``.
+
+
+API Reference
+-------------
+.. toctree::
+    :maxdepth: 2
+
+    merchant_reports_v1/services_
+    merchant_reports_v1/types_
+
+API Reference
+-------------
+.. toctree::
+    :maxdepth: 2
+
+    merchant_reports_v1alpha/services_
+    merchant_reports_v1alpha/types_
 
 API Reference
 -------------

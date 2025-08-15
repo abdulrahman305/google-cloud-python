@@ -5,6 +5,29 @@
 [1]: https://pypi.org/project/google-cloud-phishing-protection/#history
 
 
+## [1.14.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-phishing-protection-v1.14.1...google-cloud-phishing-protection-v1.14.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-phishing-protection-v1.14.0...google-cloud-phishing-protection-v1.14.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-phishing-protection-v1.13.0...google-cloud-phishing-protection-v1.14.0) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
 ## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-phishing-protection-v1.12.1...google-cloud-phishing-protection-v1.13.0) (2024-12-12)
 
 

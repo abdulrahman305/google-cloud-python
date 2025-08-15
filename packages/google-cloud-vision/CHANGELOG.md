@@ -4,6 +4,29 @@
 
 [1]: https://pypi.org/project/google-cloud-vision/#history
 
+## [3.10.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vision-v3.10.1...google-cloud-vision-v3.10.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [3.10.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vision-v3.10.0...google-cloud-vision-v3.10.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vision-v3.9.0...google-cloud-vision-v3.10.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [3.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vision-v3.8.1...google-cloud-vision-v3.9.0) (2024-12-12)
 
 

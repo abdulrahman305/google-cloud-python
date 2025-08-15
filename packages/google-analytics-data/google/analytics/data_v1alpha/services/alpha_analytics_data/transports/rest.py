@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AlphaAnalyticsDataRestInterceptor:
@@ -207,11 +211,34 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_audience_list` interceptor runs
+        before the `post_create_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_create_audience_list_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_create_audience_list_with_metadata`
+        interceptor in new development instead of the `post_create_audience_list` interceptor.
+        When both interceptors are used, this `post_create_audience_list_with_metadata` interceptor runs after the
+        `post_create_audience_list` interceptor. The (possibly modified) response returned by
+        `post_create_audience_list` will be passed to
+        `post_create_audience_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_recurring_audience_list(
         self,
@@ -233,11 +260,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RecurringAudienceList:
         """Post-rpc interceptor for create_recurring_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_recurring_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_recurring_audience_list` interceptor runs
+        before the `post_create_recurring_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_create_recurring_audience_list_with_metadata(
+        self,
+        response: analytics_data_api.RecurringAudienceList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RecurringAudienceList,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_recurring_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_create_recurring_audience_list_with_metadata`
+        interceptor in new development instead of the `post_create_recurring_audience_list` interceptor.
+        When both interceptors are used, this `post_create_recurring_audience_list_with_metadata` interceptor runs after the
+        `post_create_recurring_audience_list` interceptor. The (possibly modified) response returned by
+        `post_create_recurring_audience_list` will be passed to
+        `post_create_recurring_audience_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_report_task(
         self,
@@ -259,11 +312,34 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_report_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_report_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_report_task` interceptor runs
+        before the `post_create_report_task_with_metadata` interceptor.
         """
         return response
+
+    def post_create_report_task_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_report_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_create_report_task_with_metadata`
+        interceptor in new development instead of the `post_create_report_task` interceptor.
+        When both interceptors are used, this `post_create_report_task_with_metadata` interceptor runs after the
+        `post_create_report_task` interceptor. The (possibly modified) response returned by
+        `post_create_report_task` will be passed to
+        `post_create_report_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_audience_list(
         self,
@@ -285,11 +361,36 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.AudienceList:
         """Post-rpc interceptor for get_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_audience_list` interceptor runs
+        before the `post_get_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_get_audience_list_with_metadata(
+        self,
+        response: analytics_data_api.AudienceList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.AudienceList, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_audience_list_with_metadata`
+        interceptor in new development instead of the `post_get_audience_list` interceptor.
+        When both interceptors are used, this `post_get_audience_list_with_metadata` interceptor runs after the
+        `post_get_audience_list` interceptor. The (possibly modified) response returned by
+        `post_get_audience_list` will be passed to
+        `post_get_audience_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_property_quotas_snapshot(
         self,
@@ -311,11 +412,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.PropertyQuotasSnapshot:
         """Post-rpc interceptor for get_property_quotas_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_property_quotas_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_property_quotas_snapshot` interceptor runs
+        before the `post_get_property_quotas_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_get_property_quotas_snapshot_with_metadata(
+        self,
+        response: analytics_data_api.PropertyQuotasSnapshot,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.PropertyQuotasSnapshot,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_property_quotas_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_property_quotas_snapshot_with_metadata`
+        interceptor in new development instead of the `post_get_property_quotas_snapshot` interceptor.
+        When both interceptors are used, this `post_get_property_quotas_snapshot_with_metadata` interceptor runs after the
+        `post_get_property_quotas_snapshot` interceptor. The (possibly modified) response returned by
+        `post_get_property_quotas_snapshot` will be passed to
+        `post_get_property_quotas_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_recurring_audience_list(
         self,
@@ -337,11 +464,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RecurringAudienceList:
         """Post-rpc interceptor for get_recurring_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_recurring_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_recurring_audience_list` interceptor runs
+        before the `post_get_recurring_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_get_recurring_audience_list_with_metadata(
+        self,
+        response: analytics_data_api.RecurringAudienceList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RecurringAudienceList,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_recurring_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_recurring_audience_list_with_metadata`
+        interceptor in new development instead of the `post_get_recurring_audience_list` interceptor.
+        When both interceptors are used, this `post_get_recurring_audience_list_with_metadata` interceptor runs after the
+        `post_get_recurring_audience_list` interceptor. The (possibly modified) response returned by
+        `post_get_recurring_audience_list` will be passed to
+        `post_get_recurring_audience_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_report_task(
         self,
@@ -362,11 +515,34 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.ReportTask:
         """Post-rpc interceptor for get_report_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_report_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_report_task` interceptor runs
+        before the `post_get_report_task_with_metadata` interceptor.
         """
         return response
+
+    def post_get_report_task_with_metadata(
+        self,
+        response: analytics_data_api.ReportTask,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[analytics_data_api.ReportTask, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_report_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_report_task_with_metadata`
+        interceptor in new development instead of the `post_get_report_task` interceptor.
+        When both interceptors are used, this `post_get_report_task_with_metadata` interceptor runs after the
+        `post_get_report_task` interceptor. The (possibly modified) response returned by
+        `post_get_report_task` will be passed to
+        `post_get_report_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_audience_lists(
         self,
@@ -388,11 +564,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.ListAudienceListsResponse:
         """Post-rpc interceptor for list_audience_lists
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_audience_lists_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_audience_lists` interceptor runs
+        before the `post_list_audience_lists_with_metadata` interceptor.
         """
         return response
+
+    def post_list_audience_lists_with_metadata(
+        self,
+        response: analytics_data_api.ListAudienceListsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListAudienceListsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_audience_lists
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_list_audience_lists_with_metadata`
+        interceptor in new development instead of the `post_list_audience_lists` interceptor.
+        When both interceptors are used, this `post_list_audience_lists_with_metadata` interceptor runs after the
+        `post_list_audience_lists` interceptor. The (possibly modified) response returned by
+        `post_list_audience_lists` will be passed to
+        `post_list_audience_lists_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_recurring_audience_lists(
         self,
@@ -414,11 +616,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.ListRecurringAudienceListsResponse:
         """Post-rpc interceptor for list_recurring_audience_lists
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_recurring_audience_lists_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_recurring_audience_lists` interceptor runs
+        before the `post_list_recurring_audience_lists_with_metadata` interceptor.
         """
         return response
+
+    def post_list_recurring_audience_lists_with_metadata(
+        self,
+        response: analytics_data_api.ListRecurringAudienceListsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListRecurringAudienceListsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_recurring_audience_lists
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_list_recurring_audience_lists_with_metadata`
+        interceptor in new development instead of the `post_list_recurring_audience_lists` interceptor.
+        When both interceptors are used, this `post_list_recurring_audience_lists_with_metadata` interceptor runs after the
+        `post_list_recurring_audience_lists` interceptor. The (possibly modified) response returned by
+        `post_list_recurring_audience_lists` will be passed to
+        `post_list_recurring_audience_lists_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_report_tasks(
         self,
@@ -440,11 +668,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.ListReportTasksResponse:
         """Post-rpc interceptor for list_report_tasks
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_report_tasks_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_report_tasks` interceptor runs
+        before the `post_list_report_tasks_with_metadata` interceptor.
         """
         return response
+
+    def post_list_report_tasks_with_metadata(
+        self,
+        response: analytics_data_api.ListReportTasksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListReportTasksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_report_tasks
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_list_report_tasks_with_metadata`
+        interceptor in new development instead of the `post_list_report_tasks` interceptor.
+        When both interceptors are used, this `post_list_report_tasks_with_metadata` interceptor runs after the
+        `post_list_report_tasks` interceptor. The (possibly modified) response returned by
+        `post_list_report_tasks` will be passed to
+        `post_list_report_tasks_with_metadata`.
+        """
+        return response, metadata
 
     def pre_query_audience_list(
         self,
@@ -466,11 +720,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.QueryAudienceListResponse:
         """Post-rpc interceptor for query_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_query_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_query_audience_list` interceptor runs
+        before the `post_query_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_query_audience_list_with_metadata(
+        self,
+        response: analytics_data_api.QueryAudienceListResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.QueryAudienceListResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for query_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_query_audience_list_with_metadata`
+        interceptor in new development instead of the `post_query_audience_list` interceptor.
+        When both interceptors are used, this `post_query_audience_list_with_metadata` interceptor runs after the
+        `post_query_audience_list` interceptor. The (possibly modified) response returned by
+        `post_query_audience_list` will be passed to
+        `post_query_audience_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_query_report_task(
         self,
@@ -492,11 +772,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.QueryReportTaskResponse:
         """Post-rpc interceptor for query_report_task
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_query_report_task_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_query_report_task` interceptor runs
+        before the `post_query_report_task_with_metadata` interceptor.
         """
         return response
+
+    def post_query_report_task_with_metadata(
+        self,
+        response: analytics_data_api.QueryReportTaskResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.QueryReportTaskResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for query_report_task
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_query_report_task_with_metadata`
+        interceptor in new development instead of the `post_query_report_task` interceptor.
+        When both interceptors are used, this `post_query_report_task_with_metadata` interceptor runs after the
+        `post_query_report_task` interceptor. The (possibly modified) response returned by
+        `post_query_report_task` will be passed to
+        `post_query_report_task_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_funnel_report(
         self,
@@ -518,11 +824,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RunFunnelReportResponse:
         """Post-rpc interceptor for run_funnel_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_funnel_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_funnel_report` interceptor runs
+        before the `post_run_funnel_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_funnel_report_with_metadata(
+        self,
+        response: analytics_data_api.RunFunnelReportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunFunnelReportResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for run_funnel_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_run_funnel_report_with_metadata`
+        interceptor in new development instead of the `post_run_funnel_report` interceptor.
+        When both interceptors are used, this `post_run_funnel_report_with_metadata` interceptor runs after the
+        `post_run_funnel_report` interceptor. The (possibly modified) response returned by
+        `post_run_funnel_report` will be passed to
+        `post_run_funnel_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_sheet_export_audience_list(
         self,
@@ -544,11 +876,37 @@ class AlphaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.SheetExportAudienceListResponse:
         """Post-rpc interceptor for sheet_export_audience_list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_sheet_export_audience_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlphaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_sheet_export_audience_list` interceptor runs
+        before the `post_sheet_export_audience_list_with_metadata` interceptor.
         """
         return response
+
+    def post_sheet_export_audience_list_with_metadata(
+        self,
+        response: analytics_data_api.SheetExportAudienceListResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.SheetExportAudienceListResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for sheet_export_audience_list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlphaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_sheet_export_audience_list_with_metadata`
+        interceptor in new development instead of the `post_sheet_export_audience_list` interceptor.
+        When both interceptors are used, this `post_sheet_export_audience_list_with_metadata` interceptor runs after the
+        `post_sheet_export_audience_list` interceptor. The (possibly modified) response returned by
+        `post_sheet_export_audience_list` will be passed to
+        `post_sheet_export_audience_list_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -795,6 +1153,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -953,6 +1315,13 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_recurring_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_recurring_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1105,6 +1474,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_report_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_report_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1254,6 +1627,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1402,6 +1779,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_property_quotas_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_property_quotas_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1559,6 +1940,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_recurring_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_recurring_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1703,6 +2088,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_report_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_report_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1849,6 +2238,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_audience_lists(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_audience_lists_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1998,6 +2391,13 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_recurring_audience_lists(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_recurring_audience_lists_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2148,6 +2548,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_report_tasks(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_report_tasks_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2300,6 +2704,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_query_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_query_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2454,6 +2862,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_query_report_task(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_query_report_task_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2609,6 +3021,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_funnel_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_funnel_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2766,6 +3182,10 @@ class AlphaAnalyticsDataRestTransport(_BaseAlphaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_sheet_export_audience_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_sheet_export_audience_list_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

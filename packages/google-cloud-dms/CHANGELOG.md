@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.12.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.12.3...google-cloud-dms-v1.12.4) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([3d5bc37](https://github.com/googleapis/google-cloud-python/commit/3d5bc3782da6b37742ae83802de8a8b6db96fe29))
+
+## [1.12.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.12.2...google-cloud-dms-v1.12.3) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.12.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.12.1...google-cloud-dms-v1.12.2) (2025-02-27)
+
+
+### Documentation
+
+* [google-cloud-dms] fix broken link in comment for field `OperationMetadata.requested_cancellation` ([#13553](https://github.com/googleapis/google-cloud-python/issues/13553)) ([2c83cbc](https://github.com/googleapis/google-cloud-python/commit/2c83cbc1a2ea7da5985425918efa3c125d75fd7e))
+
+## [1.12.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.12.0...google-cloud-dms-v1.12.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.11.0...google-cloud-dms-v1.12.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dms-v1.10.1...google-cloud-dms-v1.11.0) (2024-12-12)
 
 

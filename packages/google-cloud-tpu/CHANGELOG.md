@@ -1,5 +1,71 @@
 # Changelog
 
+## [1.23.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.23.1...google-cloud-tpu-v1.23.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [1.23.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.23.0...google-cloud-tpu-v1.23.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.22.0...google-cloud-tpu-v1.23.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.21.0...google-cloud-tpu-v1.22.0) (2025-01-16)
+
+
+### Features
+
+* **v2alpha1:** A new enum `State` is added ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** add creation timestamp to queued resources ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** add repeated networks ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Add reservation_name field ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Add UNKNOWN to TPU node state, This state will be used to prevent a node from being marked as READY during diagnose after it has failed repair ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** add Usage to CLH getreservations API ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** add workload_type field ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Introduce PerformMaintenance API ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Make V5Litepod accelerator config available ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Make v6e available for public preview ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** Promote `spot` to v2alpha1 API ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** provide WAITING_FOR_CAPACITY state for queued resource, when the session is waiting to be provisioned ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** publish boot_disk_config to support CHD with KMS ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** v5p available for public review ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+
+
+### Documentation
+
+* **v2alpha1:** A comment for field `network_config` in message `.google.cloud.tpu.v2alpha1.Node` is changed ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+* **v2alpha1:** A comment for field `state_initiator` in message `.google.cloud.tpu.v2alpha1.QueuedResourceState` is changed ([c7e1d21](https://github.com/googleapis/google-cloud-python/commit/c7e1d21b96965d8879105874f82c55f23e993adc))
+
+## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.20.0...google-cloud-tpu-v1.21.0) (2025-01-13)
+
+
+### Features
+
+* [google-cloud-tpu] Add UNKNOWN to TPU node state, This state will be used to prevent a node from being marked as READY during diagnose after it has failed repair ([#13429](https://github.com/googleapis/google-cloud-python/issues/13429)) ([9adc081](https://github.com/googleapis/google-cloud-python/commit/9adc081395d805241602aaac71711576dc9340c0))
+* Add UNKNOWN to TPU node state, This state will be used to prevent a node from being marked as READY during diagnose after it has failed repair ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+* Make V5Litepod accelerator config available for v2 ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+* Make v5p available for GA ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+* Make v6e available for GA ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+* Promote network_configs field to v2 API ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+
+
+### Documentation
+
+* A comment for field `network_config` in message `.google.cloud.tpu.v2.Node` is changed ([ad5c169](https://github.com/googleapis/google-cloud-python/commit/ad5c169e9c9d7bc130ab8fc90a8fedb76eede436))
+
 ## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-tpu-v1.19.1...google-cloud-tpu-v1.20.0) (2024-12-12)
 
 

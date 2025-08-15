@@ -4,6 +4,29 @@
 
 [1]: https://pypi.org/project/google-cloud-bigquery-datatransfer/#history
 
+## [3.19.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.19.1...google-cloud-bigquery-datatransfer-v3.19.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [3.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.19.0...google-cloud-bigquery-datatransfer-v3.19.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.18.0...google-cloud-bigquery-datatransfer-v3.19.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [3.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datatransfer-v3.17.1...google-cloud-bigquery-datatransfer-v3.18.0) (2024-12-12)
 
 

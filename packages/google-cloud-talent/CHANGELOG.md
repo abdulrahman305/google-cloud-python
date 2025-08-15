@@ -4,6 +4,44 @@
 
 [1]: https://pypi.org/project/google-cloud-talent/#history
 
+## [2.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.17.1...google-cloud-talent-v2.17.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [2.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.17.0...google-cloud-talent-v2.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.16.0...google-cloud-talent-v2.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
+## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.15.0...google-cloud-talent-v2.16.0) (2025-01-13)
+
+
+### Features
+
+* [google-cloud-talent] A new enum `RelevanceThreshold` is added ([#13399](https://github.com/googleapis/google-cloud-python/issues/13399)) ([d2a6625](https://github.com/googleapis/google-cloud-python/commit/d2a6625b85a9f51fd496b992081453df11832102))
+* A new field `relevance_threshold` is added to message ([d2a6625](https://github.com/googleapis/google-cloud-python/commit/d2a6625b85a9f51fd496b992081453df11832102))
+* **v4:** A new enum `RelevanceThreshold` is added ([d0fee2c](https://github.com/googleapis/google-cloud-python/commit/d0fee2c1854cdcc30523f060834874ca3d31593c))
+* **v4:** A new field `relevance_threshold` is added to message `.google.cloud.talent.v4.SearchJobsRequest` ([d0fee2c](https://github.com/googleapis/google-cloud-python/commit/d0fee2c1854cdcc30523f060834874ca3d31593c))
+
+
+### Documentation
+
+* **v4:** multiple fixes for links in documentation ([d0fee2c](https://github.com/googleapis/google-cloud-python/commit/d0fee2c1854cdcc30523f060834874ca3d31593c))
+
 ## [2.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-talent-v2.14.1...google-cloud-talent-v2.15.0) (2024-12-12)
 
 

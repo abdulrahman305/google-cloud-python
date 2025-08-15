@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-notifications-v0.1.8...google-shopping-merchant-notifications-v0.1.9) (2025-08-06)
+
+
+### Features
+
+* add notifications API client libraries for v1 ([9462b82](https://github.com/googleapis/google-cloud-python/commit/9462b82f477f9a8d727c928aee8f0a9950b82fe1))
+* add notifications API client libraries for v1 ([#14173](https://github.com/googleapis/google-cloud-python/issues/14173)) ([9462b82](https://github.com/googleapis/google-cloud-python/commit/9462b82f477f9a8d727c928aee8f0a9950b82fe1))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-notifications-v0.1.7...google-shopping-merchant-notifications-v0.1.8) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-notifications-v0.1.6...google-shopping-merchant-notifications-v0.1.7) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-notifications-v0.1.5...google-shopping-merchant-notifications-v0.1.6) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-notifications-v0.1.4...google-shopping-merchant-notifications-v0.1.5) (2024-12-12)
 
 

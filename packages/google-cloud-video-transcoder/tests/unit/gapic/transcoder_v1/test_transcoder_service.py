@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,6 +63,13 @@ from google.cloud.video.transcoder_v1.services.transcoder_service import (
     transports,
 )
 from google.cloud.video.transcoder_v1.types import resources, services
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -329,6 +336,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         TranscoderServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = TranscoderServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = TranscoderServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1131,6 +1181,7 @@ def test_create_job(request_type, transport: str = "grpc"):
             mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
             batch_mode_priority=2023,
             optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+            fill_content_gaps=True,
             template_id="template_id_value",
         )
         response = client.create_job(request)
@@ -1151,6 +1202,7 @@ def test_create_job(request_type, transport: str = "grpc"):
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 def test_create_job_non_empty_request_with_auto_populated_field():
@@ -1282,6 +1334,7 @@ async def test_create_job_async(
                 mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
                 batch_mode_priority=2023,
                 optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+                fill_content_gaps=True,
             )
         )
         response = await client.create_job(request)
@@ -1302,6 +1355,7 @@ async def test_create_job_async(
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 @pytest.mark.asyncio
@@ -2012,6 +2066,7 @@ def test_get_job(request_type, transport: str = "grpc"):
             mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
             batch_mode_priority=2023,
             optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+            fill_content_gaps=True,
             template_id="template_id_value",
         )
         response = client.get_job(request)
@@ -2032,6 +2087,7 @@ def test_get_job(request_type, transport: str = "grpc"):
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 def test_get_job_non_empty_request_with_auto_populated_field():
@@ -2163,6 +2219,7 @@ async def test_get_job_async(
                 mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
                 batch_mode_priority=2023,
                 optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+                fill_content_gaps=True,
             )
         )
         response = await client.get_job(request)
@@ -2183,6 +2240,7 @@ async def test_get_job_async(
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 @pytest.mark.asyncio
@@ -6148,6 +6206,7 @@ async def test_create_job_empty_call_grpc_asyncio():
                 mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
                 batch_mode_priority=2023,
                 optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+                fill_content_gaps=True,
             )
         )
         await client.create_job(request=None)
@@ -6210,6 +6269,7 @@ async def test_get_job_empty_call_grpc_asyncio():
                 mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
                 batch_mode_priority=2023,
                 optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+                fill_content_gaps=True,
             )
         )
         await client.get_job(request=None)
@@ -6463,6 +6523,7 @@ def test_create_job_rest_call_success(request_type):
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -6480,11 +6541,14 @@ def test_create_job_rest_call_success(request_type):
                             "profile": "profile_value",
                             "tune": "tune_value",
                             "preset": "preset_value",
+                            "sdr": {},
+                            "hlg": {},
                         },
                         "h265": {
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -6501,11 +6565,15 @@ def test_create_job_rest_call_success(request_type):
                             "profile": "profile_value",
                             "tune": "tune_value",
                             "preset": "preset_value",
+                            "sdr": {},
+                            "hlg": {},
+                            "hdr10": {},
                         },
                         "vp9": {
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -6513,6 +6581,8 @@ def test_create_job_rest_call_success(request_type):
                             "gop_frame_count": 1592,
                             "gop_duration": {},
                             "profile": "profile_value",
+                            "sdr": {},
+                            "hlg": {},
                         },
                     },
                     "audio_stream": {
@@ -6565,6 +6635,7 @@ def test_create_job_rest_call_success(request_type):
                         "individual_segments": True,
                     },
                     "encryption_id": "encryption_id_value",
+                    "fmp4": {"codec_tag": "codec_tag_value"},
                 }
             ],
             "manifests": [
@@ -6651,6 +6722,7 @@ def test_create_job_rest_call_success(request_type):
         "mode": 1,
         "batch_mode_priority": 2023,
         "optimization": 1,
+        "fill_content_gaps": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -6733,6 +6805,7 @@ def test_create_job_rest_call_success(request_type):
             mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
             batch_mode_priority=2023,
             optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+            fill_content_gaps=True,
             template_id="template_id_value",
         )
 
@@ -6758,6 +6831,7 @@ def test_create_job_rest_call_success(request_type):
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -6777,10 +6851,13 @@ def test_create_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_create_job"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor, "post_create_job_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_create_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.CreateJobRequest.pb(services.CreateJobRequest())
         transcode.return_value = {
             "method": "post",
@@ -6802,6 +6879,7 @@ def test_create_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.Job()
+        post_with_metadata.return_value = resources.Job(), metadata
 
         client.create_job(
             request,
@@ -6813,6 +6891,7 @@ def test_create_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_jobs_rest_bad_request(request_type=services.ListJobsRequest):
@@ -6897,10 +6976,13 @@ def test_list_jobs_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_list_jobs"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor, "post_list_jobs_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_list_jobs"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.ListJobsRequest.pb(services.ListJobsRequest())
         transcode.return_value = {
             "method": "post",
@@ -6922,6 +7004,7 @@ def test_list_jobs_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = services.ListJobsResponse()
+        post_with_metadata.return_value = services.ListJobsResponse(), metadata
 
         client.list_jobs(
             request,
@@ -6933,6 +7016,7 @@ def test_list_jobs_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_job_rest_bad_request(request_type=services.GetJobRequest):
@@ -6986,6 +7070,7 @@ def test_get_job_rest_call_success(request_type):
             mode=resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE,
             batch_mode_priority=2023,
             optimization=resources.Job.OptimizationStrategy.AUTODETECT,
+            fill_content_gaps=True,
             template_id="template_id_value",
         )
 
@@ -7011,6 +7096,7 @@ def test_get_job_rest_call_success(request_type):
     assert response.mode == resources.Job.ProcessingMode.PROCESSING_MODE_INTERACTIVE
     assert response.batch_mode_priority == 2023
     assert response.optimization == resources.Job.OptimizationStrategy.AUTODETECT
+    assert response.fill_content_gaps is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -7030,10 +7116,13 @@ def test_get_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_get_job"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor, "post_get_job_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_get_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.GetJobRequest.pb(services.GetJobRequest())
         transcode.return_value = {
             "method": "post",
@@ -7055,6 +7144,7 @@ def test_get_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.Job()
+        post_with_metadata.return_value = resources.Job(), metadata
 
         client.get_job(
             request,
@@ -7066,6 +7156,7 @@ def test_get_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_job_rest_bad_request(request_type=services.DeleteJobRequest):
@@ -7272,6 +7363,7 @@ def test_create_job_template_rest_call_success(request_type):
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -7289,11 +7381,14 @@ def test_create_job_template_rest_call_success(request_type):
                             "profile": "profile_value",
                             "tune": "tune_value",
                             "preset": "preset_value",
+                            "sdr": {},
+                            "hlg": {},
                         },
                         "h265": {
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -7310,11 +7405,15 @@ def test_create_job_template_rest_call_success(request_type):
                             "profile": "profile_value",
                             "tune": "tune_value",
                             "preset": "preset_value",
+                            "sdr": {},
+                            "hlg": {},
+                            "hdr10": {},
                         },
                         "vp9": {
                             "width_pixels": 1300,
                             "height_pixels": 1389,
                             "frame_rate": 0.1046,
+                            "frame_rate_conversion_strategy": 1,
                             "bitrate_bps": 1167,
                             "pixel_format": "pixel_format_value",
                             "rate_control_mode": "rate_control_mode_value",
@@ -7322,6 +7421,8 @@ def test_create_job_template_rest_call_success(request_type):
                             "gop_frame_count": 1592,
                             "gop_duration": {},
                             "profile": "profile_value",
+                            "sdr": {},
+                            "hlg": {},
                         },
                     },
                     "audio_stream": {
@@ -7374,6 +7475,7 @@ def test_create_job_template_rest_call_success(request_type):
                         "individual_segments": True,
                     },
                     "encryption_id": "encryption_id_value",
+                    "fmp4": {"codec_tag": "codec_tag_value"},
                 }
             ],
             "manifests": [
@@ -7553,10 +7655,14 @@ def test_create_job_template_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_create_job_template"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor,
+        "post_create_job_template_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_create_job_template"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.CreateJobTemplateRequest.pb(
             services.CreateJobTemplateRequest()
         )
@@ -7580,6 +7686,7 @@ def test_create_job_template_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.JobTemplate()
+        post_with_metadata.return_value = resources.JobTemplate(), metadata
 
         client.create_job_template(
             request,
@@ -7591,6 +7698,7 @@ def test_create_job_template_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_job_templates_rest_bad_request(
@@ -7677,10 +7785,14 @@ def test_list_job_templates_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_list_job_templates"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor,
+        "post_list_job_templates_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_list_job_templates"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.ListJobTemplatesRequest.pb(
             services.ListJobTemplatesRequest()
         )
@@ -7706,6 +7818,7 @@ def test_list_job_templates_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = services.ListJobTemplatesResponse()
+        post_with_metadata.return_value = services.ListJobTemplatesResponse(), metadata
 
         client.list_job_templates(
             request,
@@ -7717,6 +7830,7 @@ def test_list_job_templates_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_job_template_rest_bad_request(request_type=services.GetJobTemplateRequest):
@@ -7799,10 +7913,14 @@ def test_get_job_template_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "post_get_job_template"
     ) as post, mock.patch.object(
+        transports.TranscoderServiceRestInterceptor,
+        "post_get_job_template_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.TranscoderServiceRestInterceptor, "pre_get_job_template"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = services.GetJobTemplateRequest.pb(services.GetJobTemplateRequest())
         transcode.return_value = {
             "method": "post",
@@ -7824,6 +7942,7 @@ def test_get_job_template_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.JobTemplate()
+        post_with_metadata.return_value = resources.JobTemplate(), metadata
 
         client.get_job_template(
             request,
@@ -7835,6 +7954,7 @@ def test_get_job_template_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_job_template_rest_bad_request(

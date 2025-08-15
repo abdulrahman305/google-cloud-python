@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.discoveryengine_v1 import gapic_version as package_version
 from google.cloud.discoveryengine_v1.types import (
@@ -35,6 +36,9 @@ from google.cloud.discoveryengine_v1.types import (
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class SiteSearchEngineServiceTransport(abc.ABC):
@@ -168,6 +172,21 @@ class SiteSearchEngineServiceTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.create_sitemap: gapic_v1.method.wrap_method(
+                self.create_sitemap,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_sitemap: gapic_v1.method.wrap_method(
+                self.delete_sitemap,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.fetch_sitemaps: gapic_v1.method.wrap_method(
+                self.fetch_sitemaps,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.enable_advanced_site_search: gapic_v1.method.wrap_method(
                 self.enable_advanced_site_search,
                 default_timeout=None,
@@ -289,6 +308,36 @@ class SiteSearchEngineServiceTransport(abc.ABC):
         Union[
             site_search_engine_service.ListTargetSitesResponse,
             Awaitable[site_search_engine_service.ListTargetSitesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_sitemap(
+        self,
+    ) -> Callable[
+        [site_search_engine_service.CreateSitemapRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_sitemap(
+        self,
+    ) -> Callable[
+        [site_search_engine_service.DeleteSitemapRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def fetch_sitemaps(
+        self,
+    ) -> Callable[
+        [site_search_engine_service.FetchSitemapsRequest],
+        Union[
+            site_search_engine_service.FetchSitemapsResponse,
+            Awaitable[site_search_engine_service.FetchSitemapsResponse],
         ],
     ]:
         raise NotImplementedError()

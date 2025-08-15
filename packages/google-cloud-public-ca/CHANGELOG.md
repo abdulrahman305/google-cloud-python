@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.17...google-cloud-public-ca-v0.3.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [0.3.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.16...google-cloud-public-ca-v0.3.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.3.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.15...google-cloud-public-ca-v0.3.16) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
 ## [0.3.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-public-ca-v0.3.14...google-cloud-public-ca-v0.3.15) (2024-12-12)
 
 

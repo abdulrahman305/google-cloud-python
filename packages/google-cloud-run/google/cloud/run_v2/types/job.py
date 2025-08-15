@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -431,11 +431,9 @@ class Job(proto.Message):
             that stage. On read (or output), describes whether the
             resource uses preview features.
 
-            .. raw:: html
-
-                <p>
-                For example, if ALPHA is provided as input, but only BETA and GA-level
-                features are used, this field will be BETA on output.
+            For example, if ALPHA is provided as input, but only BETA
+            and GA-level features are used, this field will be BETA on
+            output.
         binary_authorization (google.cloud.run_v2.types.BinaryAuthorization):
             Settings for the Binary Authorization
             feature.

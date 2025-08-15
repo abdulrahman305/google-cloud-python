@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ from google.rpc import status_pb2  # type: ignore
 import proto  # type: ignore
 
 from google.cloud.dialogflow_v2beta1.types import audio_config as gcd_audio_config
-from google.cloud.dialogflow_v2beta1.types import session
+from google.cloud.dialogflow_v2beta1.types import generator, session
 
 __protobuf__ = proto.module(
     package="google.cloud.dialogflow.v2beta1",
@@ -63,6 +63,7 @@ __protobuf__ = proto.module(
         "SuggestFaqAnswersResponse",
         "SuggestSmartRepliesRequest",
         "SuggestSmartRepliesResponse",
+        "GenerateSuggestionsResponse",
         "SuggestDialogflowAssistsResponse",
         "Suggestion",
         "ListSuggestionsRequest",
@@ -215,6 +216,8 @@ class Message(proto.Message):
             created in Contact Center AI.
         send_time (google.protobuf.timestamp_pb2.Timestamp):
             Optional. The time when the message was sent.
+            For voice messages, this is the time when an
+            utterance started.
         message_annotation (google.cloud.dialogflow_v2beta1.types.MessageAnnotation):
             Output only. The annotation for the message.
         sentiment_analysis (google.cloud.dialogflow_v2beta1.types.SentimentAnalysisResult):
@@ -820,8 +823,8 @@ class AnalyzeContentRequest(proto.Message):
             Note: this field should only be used if you are
             connecting to a Dialogflow CX agent.
         cx_current_page (str):
-            The unique identifier of the CX page to override the
-            ``current_page`` in the session. Format:
+            The unique identifier of the Dialogflow CX page to override
+            the ``current_page`` in the session. Format:
             ``projects/<Project ID>/locations/<Location ID>/agents/<Agent ID>/flows/<Flow ID>/pages/<Page ID>``.
 
             If ``cx_current_page`` is specified, the previous state of
@@ -838,7 +841,8 @@ class AnalyzeContentRequest(proto.Message):
             human agent's perspective. It is used for identifying the
             same message under one participant.
 
-            Given two messages under the same participant:
+            For BatchCreateMessages API only: Given two messages under
+            the same participant:
 
             -  If send time are different regardless of whether the
                content of the messages are exactly the same, the
@@ -1177,8 +1181,8 @@ class StreamingAnalyzeContentRequest(proto.Message):
             Note: this field should only be used if you are
             connecting to a Dialogflow CX agent.
         cx_current_page (str):
-            The unique identifier of the CX page to override the
-            ``current_page`` in the session. Format:
+            The unique identifier of the Dialogflow CX page to override
+            the ``current_page`` in the session. Format:
             ``projects/<Project ID>/locations/<Location ID>/agents/<Agent ID>/flows/<Flow ID>/pages/<Page ID>``.
 
             If ``cx_current_page`` is specified, the previous state of
@@ -1212,10 +1216,10 @@ class StreamingAnalyzeContentRequest(proto.Message):
             You can find more details in
             https://cloud.google.com/agent-assist/docs/extended-streaming
         enable_partial_automated_agent_reply (bool):
-            Enable partial virtual agent responses. If this flag is not
-            enabled, response stream still contains only one final
-            response even if some ``Fulfillment``\ s in Dialogflow
-            virtual agent have been configured to return partial
+            Optional. Enable partial responses from Dialogflow CX agent.
+            If this flag is not enabled, response stream still contains
+            only one final response even if some ``Fulfillment``\ s in
+            Dialogflow CX agent have been configured to return partial
             responses.
         enable_debugging_info (bool):
             if true, ``StreamingAnalyzeContentResponse.debugging_info``
@@ -1378,6 +1382,9 @@ class StreamingAnalyzeContentResponse(proto.Message):
             Debugging info that would get populated when
             ``StreamingAnalyzeContentRequest.enable_debugging_info`` is
             set to true.
+        speech_model (str):
+            The name of the actual Cloud speech model
+            used for speech recognition.
     """
 
     recognition_result: session.StreamingRecognitionResult = proto.Field(
@@ -1427,6 +1434,10 @@ class StreamingAnalyzeContentResponse(proto.Message):
         proto.MESSAGE,
         number=11,
         message=session.CloudConversationDebuggingInfo,
+    )
+    speech_model: str = proto.Field(
+        proto.STRING,
+        number=13,
     )
 
 
@@ -1757,6 +1768,11 @@ class SuggestionResult(proto.Message):
             ENTITY_EXTRACTION.
 
             This field is a member of `oneof`_ ``suggestion_response``.
+        generate_suggestions_response (google.cloud.dialogflow_v2beta1.types.GenerateSuggestionsResponse):
+            Suggestions generated using generators
+            triggered by customer or agent messages.
+
+            This field is a member of `oneof`_ ``suggestion_response``.
     """
 
     error: status_pb2.Status = proto.Field(
@@ -1804,6 +1820,12 @@ class SuggestionResult(proto.Message):
             oneof="suggestion_response",
             message="SuggestDialogflowAssistsResponse",
         )
+    )
+    generate_suggestions_response: "GenerateSuggestionsResponse" = proto.Field(
+        proto.MESSAGE,
+        number=9,
+        oneof="suggestion_response",
+        message="GenerateSuggestionsResponse",
     )
 
 
@@ -2057,6 +2079,65 @@ class SuggestSmartRepliesResponse(proto.Message):
     context_size: int = proto.Field(
         proto.INT32,
         number=3,
+    )
+
+
+class GenerateSuggestionsResponse(proto.Message):
+    r"""The response message for
+    [Conversations.GenerateSuggestions][google.cloud.dialogflow.v2beta1.Conversations.GenerateSuggestions].
+
+    Attributes:
+        generator_suggestion_answers (MutableSequence[google.cloud.dialogflow_v2beta1.types.GenerateSuggestionsResponse.GeneratorSuggestionAnswer]):
+            The answers generated for the conversation
+            based on context.
+        latest_message (str):
+            The name of the latest conversation message used as context
+            for compiling suggestion.
+
+            Format:
+            ``projects/<Project ID>/locations/<Location ID>/conversations/<Conversation ID>/messages/<Message ID>``.
+    """
+
+    class GeneratorSuggestionAnswer(proto.Message):
+        r"""A GeneratorSuggestion answer.
+
+        Attributes:
+            generator_suggestion (google.cloud.dialogflow_v2beta1.types.GeneratorSuggestion):
+                Suggestion details.
+            source_generator (str):
+                The name of the generator used to generate this suggestion.
+                Format:
+                ``projects/<Project ID>/locations/<Location ID>/generators/<Generator ID>``.
+            answer_record (str):
+                Answer record that uniquely identifies the
+                suggestion. This can be used to provide
+                suggestion feedback.
+        """
+
+        generator_suggestion: generator.GeneratorSuggestion = proto.Field(
+            proto.MESSAGE,
+            number=1,
+            message=generator.GeneratorSuggestion,
+        )
+        source_generator: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        answer_record: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+
+    generator_suggestion_answers: MutableSequence[
+        GeneratorSuggestionAnswer
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message=GeneratorSuggestionAnswer,
+    )
+    latest_message: str = proto.Field(
+        proto.STRING,
+        number=2,
     )
 
 
@@ -2467,8 +2548,9 @@ class ResponseMessage(proto.Message):
 
         You may set this, for example:
 
-        -  In the entry fulfillment of a CX Page if entering the page
-           indicates something went extremely wrong in the conversation.
+        -  In the entry fulfillment of a Dialogflow CX Page if entering the
+           page indicates something went extremely wrong in the
+           conversation.
         -  In a webhook response when you determine that the customer issue
            can only be handled by a human.
 
@@ -2647,7 +2729,7 @@ class SuggestKnowledgeAssistRequest(proto.Message):
             Optional. The previously suggested query for
             the given conversation. This helps identify
             whether the next suggestion we generate is
-            resonably different from the previous one. This
+            reasonably different from the previous one. This
             is useful to avoid similar suggestions within
             the conversation.
     """

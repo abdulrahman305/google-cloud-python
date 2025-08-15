@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-transcoder-v1.15.2...google-cloud-video-transcoder-v1.16.0) (2025-07-23)
+
+
+### Features
+
+* added support for converting the input video to a supported high dynamic range (HDR) formats ([dad1378](https://github.com/googleapis/google-cloud-python/commit/dad137832990f592fc9b90bbe387cee1a8973128))
+* added support for DROP_DUPLICATE frame rate conversion strategy to achieve the exact frame rate on the output video ([dad1378](https://github.com/googleapis/google-cloud-python/commit/dad137832990f592fc9b90bbe387cee1a8973128))
+* added support for fill_content_gaps field to allow processing inputs with significant number of missing frames ([dad1378](https://github.com/googleapis/google-cloud-python/commit/dad137832990f592fc9b90bbe387cee1a8973128))
+* added support for specifying HEVC codec tag ([dad1378](https://github.com/googleapis/google-cloud-python/commit/dad137832990f592fc9b90bbe387cee1a8973128))
+
+
+### Documentation
+
+* improve comment formatting, add links, add references ([dad1378](https://github.com/googleapis/google-cloud-python/commit/dad137832990f592fc9b90bbe387cee1a8973128))
+
+## [1.15.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-transcoder-v1.15.1...google-cloud-video-transcoder-v1.15.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [1.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-transcoder-v1.15.0...google-cloud-video-transcoder-v1.15.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-transcoder-v1.14.0...google-cloud-video-transcoder-v1.15.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-transcoder-v1.13.1...google-cloud-video-transcoder-v1.14.0) (2024-12-12)
 
 

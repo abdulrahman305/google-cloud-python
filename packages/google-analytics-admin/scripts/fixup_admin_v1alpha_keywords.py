@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ class adminCallTransformer(cst.CSTTransformer):
         'create_key_event': ('key_event', 'parent', ),
         'create_measurement_protocol_secret': ('parent', 'measurement_protocol_secret', ),
         'create_property': ('property', ),
+        'create_reporting_data_annotation': ('parent', 'reporting_data_annotation', ),
         'create_rollup_property': ('rollup_property', 'source_properties', ),
         'create_rollup_property_source_link': ('parent', 'rollup_property_source_link', ),
         'create_search_ads360_link': ('parent', 'search_ads_360_link', ),
@@ -94,6 +95,7 @@ class adminCallTransformer(cst.CSTTransformer):
         'delete_key_event': ('name', ),
         'delete_measurement_protocol_secret': ('name', ),
         'delete_property': ('name', ),
+        'delete_reporting_data_annotation': ('name', ),
         'delete_rollup_property_source_link': ('name', ),
         'delete_search_ads360_link': ('name', ),
         'delete_sk_ad_network_conversion_value_schema': ('name', ),
@@ -126,10 +128,12 @@ class adminCallTransformer(cst.CSTTransformer):
         'get_key_event': ('name', ),
         'get_measurement_protocol_secret': ('name', ),
         'get_property': ('name', ),
+        'get_reporting_data_annotation': ('name', ),
         'get_rollup_property_source_link': ('name', ),
         'get_search_ads360_link': ('name', ),
         'get_sk_ad_network_conversion_value_schema': ('name', ),
         'get_subproperty_event_filter': ('name', ),
+        'get_subproperty_sync_config': ('name', ),
         'list_access_bindings': ('parent', 'page_size', 'page_token', ),
         'list_accounts': ('page_size', 'page_token', 'show_deleted', ),
         'list_account_summaries': ('page_size', 'page_token', ),
@@ -153,16 +157,19 @@ class adminCallTransformer(cst.CSTTransformer):
         'list_key_events': ('parent', 'page_size', 'page_token', ),
         'list_measurement_protocol_secrets': ('parent', 'page_size', 'page_token', ),
         'list_properties': ('filter', 'page_size', 'page_token', 'show_deleted', ),
+        'list_reporting_data_annotations': ('parent', 'filter', 'page_size', 'page_token', ),
         'list_rollup_property_source_links': ('parent', 'page_size', 'page_token', ),
         'list_search_ads360_links': ('parent', 'page_size', 'page_token', ),
         'list_sk_ad_network_conversion_value_schemas': ('parent', 'page_size', 'page_token', ),
         'list_subproperty_event_filters': ('parent', 'page_size', 'page_token', ),
+        'list_subproperty_sync_configs': ('parent', 'page_size', 'page_token', ),
         'provision_account_ticket': ('account', 'redirect_uri', ),
-        'provision_subproperty': ('subproperty', 'subproperty_event_filter', ),
+        'provision_subproperty': ('subproperty', 'subproperty_event_filter', 'custom_dimension_and_metric_synchronization_mode', ),
         'reorder_event_edit_rules': ('parent', 'event_edit_rules', ),
         'run_access_report': ('entity', 'dimensions', 'metrics', 'date_ranges', 'dimension_filter', 'metric_filter', 'offset', 'limit', 'time_zone', 'order_bys', 'return_entity_quota', 'include_all_users', 'expand_groups', ),
         'search_change_history_events': ('account', 'property', 'resource_type', 'action', 'actor_email', 'earliest_change_time', 'latest_change_time', 'page_size', 'page_token', ),
         'set_automated_ga4_configuration_opt_out': ('property', 'opt_out', ),
+        'submit_user_deletion': ('name', 'user_id', 'client_id', 'app_instance_id', 'user_provided_data', ),
         'update_access_binding': ('access_binding', ),
         'update_account': ('account', 'update_mask', ),
         'update_attribution_settings': ('attribution_settings', 'update_mask', ),
@@ -186,9 +193,11 @@ class adminCallTransformer(cst.CSTTransformer):
         'update_key_event': ('key_event', 'update_mask', ),
         'update_measurement_protocol_secret': ('measurement_protocol_secret', 'update_mask', ),
         'update_property': ('property', 'update_mask', ),
+        'update_reporting_data_annotation': ('reporting_data_annotation', 'update_mask', ),
         'update_search_ads360_link': ('update_mask', 'search_ads_360_link', ),
         'update_sk_ad_network_conversion_value_schema': ('skadnetwork_conversion_value_schema', 'update_mask', ),
         'update_subproperty_event_filter': ('subproperty_event_filter', 'update_mask', ),
+        'update_subproperty_sync_config': ('subproperty_sync_config', 'update_mask', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

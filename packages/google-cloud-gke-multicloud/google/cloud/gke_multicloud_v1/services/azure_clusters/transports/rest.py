@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AzureClustersRestInterceptor:
@@ -246,11 +250,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_azure_client
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_azure_client_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_azure_client` interceptor runs
+        before the `post_create_azure_client_with_metadata` interceptor.
         """
         return response
+
+    def post_create_azure_client_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_azure_client
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_create_azure_client_with_metadata`
+        interceptor in new development instead of the `post_create_azure_client` interceptor.
+        When both interceptors are used, this `post_create_azure_client_with_metadata` interceptor runs after the
+        `post_create_azure_client` interceptor. The (possibly modified) response returned by
+        `post_create_azure_client` will be passed to
+        `post_create_azure_client_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_azure_cluster(
         self,
@@ -271,11 +298,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_azure_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_azure_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_azure_cluster` interceptor runs
+        before the `post_create_azure_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_create_azure_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_azure_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_create_azure_cluster_with_metadata`
+        interceptor in new development instead of the `post_create_azure_cluster` interceptor.
+        When both interceptors are used, this `post_create_azure_cluster_with_metadata` interceptor runs after the
+        `post_create_azure_cluster` interceptor. The (possibly modified) response returned by
+        `post_create_azure_cluster` will be passed to
+        `post_create_azure_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_azure_node_pool(
         self,
@@ -297,11 +347,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_azure_node_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_azure_node_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_azure_node_pool` interceptor runs
+        before the `post_create_azure_node_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_create_azure_node_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_azure_node_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_create_azure_node_pool_with_metadata`
+        interceptor in new development instead of the `post_create_azure_node_pool` interceptor.
+        When both interceptors are used, this `post_create_azure_node_pool_with_metadata` interceptor runs after the
+        `post_create_azure_node_pool` interceptor. The (possibly modified) response returned by
+        `post_create_azure_node_pool` will be passed to
+        `post_create_azure_node_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_azure_client(
         self,
@@ -322,11 +395,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_azure_client
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_azure_client_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_azure_client` interceptor runs
+        before the `post_delete_azure_client_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_azure_client_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_azure_client
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_delete_azure_client_with_metadata`
+        interceptor in new development instead of the `post_delete_azure_client` interceptor.
+        When both interceptors are used, this `post_delete_azure_client_with_metadata` interceptor runs after the
+        `post_delete_azure_client` interceptor. The (possibly modified) response returned by
+        `post_delete_azure_client` will be passed to
+        `post_delete_azure_client_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_azure_cluster(
         self,
@@ -347,11 +443,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_azure_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_azure_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_azure_cluster` interceptor runs
+        before the `post_delete_azure_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_azure_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_azure_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_delete_azure_cluster_with_metadata`
+        interceptor in new development instead of the `post_delete_azure_cluster` interceptor.
+        When both interceptors are used, this `post_delete_azure_cluster_with_metadata` interceptor runs after the
+        `post_delete_azure_cluster` interceptor. The (possibly modified) response returned by
+        `post_delete_azure_cluster` will be passed to
+        `post_delete_azure_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_azure_node_pool(
         self,
@@ -373,11 +492,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_azure_node_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_azure_node_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_azure_node_pool` interceptor runs
+        before the `post_delete_azure_node_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_azure_node_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_azure_node_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_delete_azure_node_pool_with_metadata`
+        interceptor in new development instead of the `post_delete_azure_node_pool` interceptor.
+        When both interceptors are used, this `post_delete_azure_node_pool_with_metadata` interceptor runs after the
+        `post_delete_azure_node_pool` interceptor. The (possibly modified) response returned by
+        `post_delete_azure_node_pool` will be passed to
+        `post_delete_azure_node_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_generate_azure_access_token(
         self,
@@ -399,11 +541,37 @@ class AzureClustersRestInterceptor:
     ) -> azure_service.GenerateAzureAccessTokenResponse:
         """Post-rpc interceptor for generate_azure_access_token
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_generate_azure_access_token_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_generate_azure_access_token` interceptor runs
+        before the `post_generate_azure_access_token_with_metadata` interceptor.
         """
         return response
+
+    def post_generate_azure_access_token_with_metadata(
+        self,
+        response: azure_service.GenerateAzureAccessTokenResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_service.GenerateAzureAccessTokenResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for generate_azure_access_token
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_generate_azure_access_token_with_metadata`
+        interceptor in new development instead of the `post_generate_azure_access_token` interceptor.
+        When both interceptors are used, this `post_generate_azure_access_token_with_metadata` interceptor runs after the
+        `post_generate_azure_access_token` interceptor. The (possibly modified) response returned by
+        `post_generate_azure_access_token` will be passed to
+        `post_generate_azure_access_token_with_metadata`.
+        """
+        return response, metadata
 
     def pre_generate_azure_cluster_agent_token(
         self,
@@ -425,11 +593,37 @@ class AzureClustersRestInterceptor:
     ) -> azure_service.GenerateAzureClusterAgentTokenResponse:
         """Post-rpc interceptor for generate_azure_cluster_agent_token
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_generate_azure_cluster_agent_token_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_generate_azure_cluster_agent_token` interceptor runs
+        before the `post_generate_azure_cluster_agent_token_with_metadata` interceptor.
         """
         return response
+
+    def post_generate_azure_cluster_agent_token_with_metadata(
+        self,
+        response: azure_service.GenerateAzureClusterAgentTokenResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_service.GenerateAzureClusterAgentTokenResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for generate_azure_cluster_agent_token
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_generate_azure_cluster_agent_token_with_metadata`
+        interceptor in new development instead of the `post_generate_azure_cluster_agent_token` interceptor.
+        When both interceptors are used, this `post_generate_azure_cluster_agent_token_with_metadata` interceptor runs after the
+        `post_generate_azure_cluster_agent_token` interceptor. The (possibly modified) response returned by
+        `post_generate_azure_cluster_agent_token` will be passed to
+        `post_generate_azure_cluster_agent_token_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_client(
         self,
@@ -450,11 +644,34 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureClient:
         """Post-rpc interceptor for get_azure_client
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_client_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_client` interceptor runs
+        before the `post_get_azure_client_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_client_with_metadata(
+        self,
+        response: azure_resources.AzureClient,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[azure_resources.AzureClient, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_azure_client
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_client_with_metadata`
+        interceptor in new development instead of the `post_get_azure_client` interceptor.
+        When both interceptors are used, this `post_get_azure_client_with_metadata` interceptor runs after the
+        `post_get_azure_client` interceptor. The (possibly modified) response returned by
+        `post_get_azure_client` will be passed to
+        `post_get_azure_client_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_cluster(
         self,
@@ -475,11 +692,34 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureCluster:
         """Post-rpc interceptor for get_azure_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_cluster` interceptor runs
+        before the `post_get_azure_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_cluster_with_metadata(
+        self,
+        response: azure_resources.AzureCluster,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[azure_resources.AzureCluster, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_azure_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_cluster_with_metadata`
+        interceptor in new development instead of the `post_get_azure_cluster` interceptor.
+        When both interceptors are used, this `post_get_azure_cluster_with_metadata` interceptor runs after the
+        `post_get_azure_cluster` interceptor. The (possibly modified) response returned by
+        `post_get_azure_cluster` will be passed to
+        `post_get_azure_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_json_web_keys(
         self,
@@ -501,11 +741,36 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureJsonWebKeys:
         """Post-rpc interceptor for get_azure_json_web_keys
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_json_web_keys_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_json_web_keys` interceptor runs
+        before the `post_get_azure_json_web_keys_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_json_web_keys_with_metadata(
+        self,
+        response: azure_resources.AzureJsonWebKeys,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_resources.AzureJsonWebKeys, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_azure_json_web_keys
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_json_web_keys_with_metadata`
+        interceptor in new development instead of the `post_get_azure_json_web_keys` interceptor.
+        When both interceptors are used, this `post_get_azure_json_web_keys_with_metadata` interceptor runs after the
+        `post_get_azure_json_web_keys` interceptor. The (possibly modified) response returned by
+        `post_get_azure_json_web_keys` will be passed to
+        `post_get_azure_json_web_keys_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_node_pool(
         self,
@@ -526,11 +791,34 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureNodePool:
         """Post-rpc interceptor for get_azure_node_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_node_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_node_pool` interceptor runs
+        before the `post_get_azure_node_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_node_pool_with_metadata(
+        self,
+        response: azure_resources.AzureNodePool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[azure_resources.AzureNodePool, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_azure_node_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_node_pool_with_metadata`
+        interceptor in new development instead of the `post_get_azure_node_pool` interceptor.
+        When both interceptors are used, this `post_get_azure_node_pool_with_metadata` interceptor runs after the
+        `post_get_azure_node_pool` interceptor. The (possibly modified) response returned by
+        `post_get_azure_node_pool` will be passed to
+        `post_get_azure_node_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_open_id_config(
         self,
@@ -552,11 +840,36 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureOpenIdConfig:
         """Post-rpc interceptor for get_azure_open_id_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_open_id_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_open_id_config` interceptor runs
+        before the `post_get_azure_open_id_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_open_id_config_with_metadata(
+        self,
+        response: azure_resources.AzureOpenIdConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_resources.AzureOpenIdConfig, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_azure_open_id_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_open_id_config_with_metadata`
+        interceptor in new development instead of the `post_get_azure_open_id_config` interceptor.
+        When both interceptors are used, this `post_get_azure_open_id_config_with_metadata` interceptor runs after the
+        `post_get_azure_open_id_config` interceptor. The (possibly modified) response returned by
+        `post_get_azure_open_id_config` will be passed to
+        `post_get_azure_open_id_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_azure_server_config(
         self,
@@ -578,11 +891,36 @@ class AzureClustersRestInterceptor:
     ) -> azure_resources.AzureServerConfig:
         """Post-rpc interceptor for get_azure_server_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_azure_server_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_azure_server_config` interceptor runs
+        before the `post_get_azure_server_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_azure_server_config_with_metadata(
+        self,
+        response: azure_resources.AzureServerConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_resources.AzureServerConfig, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_azure_server_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_get_azure_server_config_with_metadata`
+        interceptor in new development instead of the `post_get_azure_server_config` interceptor.
+        When both interceptors are used, this `post_get_azure_server_config_with_metadata` interceptor runs after the
+        `post_get_azure_server_config` interceptor. The (possibly modified) response returned by
+        `post_get_azure_server_config` will be passed to
+        `post_get_azure_server_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_azure_clients(
         self,
@@ -603,11 +941,36 @@ class AzureClustersRestInterceptor:
     ) -> azure_service.ListAzureClientsResponse:
         """Post-rpc interceptor for list_azure_clients
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_azure_clients_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_azure_clients` interceptor runs
+        before the `post_list_azure_clients_with_metadata` interceptor.
         """
         return response
+
+    def post_list_azure_clients_with_metadata(
+        self,
+        response: azure_service.ListAzureClientsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_service.ListAzureClientsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_azure_clients
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_list_azure_clients_with_metadata`
+        interceptor in new development instead of the `post_list_azure_clients` interceptor.
+        When both interceptors are used, this `post_list_azure_clients_with_metadata` interceptor runs after the
+        `post_list_azure_clients` interceptor. The (possibly modified) response returned by
+        `post_list_azure_clients` will be passed to
+        `post_list_azure_clients_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_azure_clusters(
         self,
@@ -628,11 +991,36 @@ class AzureClustersRestInterceptor:
     ) -> azure_service.ListAzureClustersResponse:
         """Post-rpc interceptor for list_azure_clusters
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_azure_clusters_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_azure_clusters` interceptor runs
+        before the `post_list_azure_clusters_with_metadata` interceptor.
         """
         return response
+
+    def post_list_azure_clusters_with_metadata(
+        self,
+        response: azure_service.ListAzureClustersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_service.ListAzureClustersResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_azure_clusters
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_list_azure_clusters_with_metadata`
+        interceptor in new development instead of the `post_list_azure_clusters` interceptor.
+        When both interceptors are used, this `post_list_azure_clusters_with_metadata` interceptor runs after the
+        `post_list_azure_clusters` interceptor. The (possibly modified) response returned by
+        `post_list_azure_clusters` will be passed to
+        `post_list_azure_clusters_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_azure_node_pools(
         self,
@@ -653,11 +1041,37 @@ class AzureClustersRestInterceptor:
     ) -> azure_service.ListAzureNodePoolsResponse:
         """Post-rpc interceptor for list_azure_node_pools
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_azure_node_pools_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_azure_node_pools` interceptor runs
+        before the `post_list_azure_node_pools_with_metadata` interceptor.
         """
         return response
+
+    def post_list_azure_node_pools_with_metadata(
+        self,
+        response: azure_service.ListAzureNodePoolsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        azure_service.ListAzureNodePoolsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_azure_node_pools
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_list_azure_node_pools_with_metadata`
+        interceptor in new development instead of the `post_list_azure_node_pools` interceptor.
+        When both interceptors are used, this `post_list_azure_node_pools_with_metadata` interceptor runs after the
+        `post_list_azure_node_pools` interceptor. The (possibly modified) response returned by
+        `post_list_azure_node_pools` will be passed to
+        `post_list_azure_node_pools_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_azure_cluster(
         self,
@@ -678,11 +1092,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_azure_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_azure_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_azure_cluster` interceptor runs
+        before the `post_update_azure_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_update_azure_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_azure_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_update_azure_cluster_with_metadata`
+        interceptor in new development instead of the `post_update_azure_cluster` interceptor.
+        When both interceptors are used, this `post_update_azure_cluster_with_metadata` interceptor runs after the
+        `post_update_azure_cluster` interceptor. The (possibly modified) response returned by
+        `post_update_azure_cluster` will be passed to
+        `post_update_azure_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_azure_node_pool(
         self,
@@ -704,11 +1141,34 @@ class AzureClustersRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_azure_node_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_azure_node_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AzureClusters server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_azure_node_pool` interceptor runs
+        before the `post_update_azure_node_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_update_azure_node_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_azure_node_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AzureClusters server but before it is returned to user code.
+
+        We recommend only using this `post_update_azure_node_pool_with_metadata`
+        interceptor in new development instead of the `post_update_azure_node_pool` interceptor.
+        When both interceptors are used, this `post_update_azure_node_pool_with_metadata` interceptor runs after the
+        `post_update_azure_node_pool` interceptor. The (possibly modified) response returned by
+        `post_update_azure_node_pool` will be passed to
+        `post_update_azure_node_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_operation(
         self,
@@ -1080,6 +1540,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_azure_client(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_azure_client_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1230,6 +1694,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_azure_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_azure_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1380,6 +1848,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_azure_node_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_azure_node_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1524,6 +1996,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_azure_client(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_azure_client_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1668,6 +2144,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_azure_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_azure_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1812,6 +2292,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_azure_node_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_azure_node_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1961,6 +2445,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_generate_azure_access_token(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_generate_azure_access_token_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2116,6 +2604,13 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_generate_azure_cluster_agent_token(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_generate_azure_cluster_agent_token_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2279,6 +2774,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_client(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_client_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2422,6 +2921,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2570,6 +3073,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_json_web_keys(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_json_web_keys_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2715,6 +3222,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_node_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_node_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2864,6 +3375,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_open_id_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_open_id_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3013,6 +3528,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_azure_server_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_azure_server_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3160,6 +3679,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_azure_clients(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_azure_clients_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3307,6 +3830,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_azure_clusters(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_azure_clusters_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3454,6 +3981,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_azure_node_pools(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_azure_node_pools_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3606,6 +4137,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_azure_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_azure_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3756,6 +4291,10 @@ class AzureClustersRestTransport(_BaseAzureClustersRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_azure_node_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_azure_node_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

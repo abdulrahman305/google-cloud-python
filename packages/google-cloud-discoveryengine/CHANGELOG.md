@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.13.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.10...google-cloud-discoveryengine-v0.13.11) (2025-07-26)
+
+
+### Features
+
+* add SessionService ([1a37e18](https://github.com/googleapis/google-cloud-python/commit/1a37e183ba189d92b83b180e26816e2498b9fe06))
+
+## [0.13.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.9...google-cloud-discoveryengine-v0.13.10) (2025-07-23)
+
+
+### Features
+
+* [google-cloud-discoveryengine] add AssistantService ([#14133](https://github.com/googleapis/google-cloud-python/issues/14133)) ([55b9528](https://github.com/googleapis/google-cloud-python/commit/55b9528e22bbb52403d02b6316dc1b38a897755f))
+
+## [0.13.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.8...google-cloud-discoveryengine-v0.13.9) (2025-06-05)
+
+
+### Features
+
+* add CMEK config service ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add ConnectorRunErrorContext to error log ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add custom search operators for Workspace search ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add HealthcareFhirConfig to FHIR data store ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add identity mapping service ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add more indexing state for site search engine ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add more options for layout parser config ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* add user license config service ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* enable claim level score for grounding ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* support ACL data store and document ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* support media recommendation engine ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+* support structured content for chunk ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([4b5d19b](https://github.com/googleapis/google-cloud-python/commit/4b5d19b1b6e52de1a54630b38b226f0cb301cb05))
+
+## [0.13.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.7...google-cloud-discoveryengine-v0.13.8) (2025-03-27)
+
+
+### Features
+
+* add time_zone in user info ([4e8f5f3](https://github.com/googleapis/google-cloud-python/commit/4e8f5f33cc5e309dafde4495f8f69df4202f8933))
+* move serving config update API to GA ([4e8f5f3](https://github.com/googleapis/google-cloud-python/commit/4e8f5f33cc5e309dafde4495f8f69df4202f8933))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([4e8f5f3](https://github.com/googleapis/google-cloud-python/commit/4e8f5f33cc5e309dafde4495f8f69df4202f8933))
+
+## [0.13.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.6...google-cloud-discoveryengine-v0.13.7) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+
+## [0.13.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.5...google-cloud-discoveryengine-v0.13.6) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [0.13.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-discoveryengine-v0.13.4...google-cloud-discoveryengine-v0.13.5) (2024-12-12)
 
 

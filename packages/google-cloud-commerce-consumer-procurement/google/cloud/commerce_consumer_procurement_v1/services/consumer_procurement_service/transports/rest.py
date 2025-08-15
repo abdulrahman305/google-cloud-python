@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -55,6 +56,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ConsumerProcurementServiceRestInterceptor:
@@ -137,11 +141,34 @@ class ConsumerProcurementServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for cancel_order
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_cancel_order_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ConsumerProcurementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_cancel_order` interceptor runs
+        before the `post_cancel_order_with_metadata` interceptor.
         """
         return response
+
+    def post_cancel_order_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for cancel_order
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ConsumerProcurementService server but before it is returned to user code.
+
+        We recommend only using this `post_cancel_order_with_metadata`
+        interceptor in new development instead of the `post_cancel_order` interceptor.
+        When both interceptors are used, this `post_cancel_order_with_metadata` interceptor runs after the
+        `post_cancel_order` interceptor. The (possibly modified) response returned by
+        `post_cancel_order` will be passed to
+        `post_cancel_order_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_order(
         self,
@@ -160,11 +187,32 @@ class ConsumerProcurementServiceRestInterceptor:
     def post_get_order(self, response: order.Order) -> order.Order:
         """Post-rpc interceptor for get_order
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_order_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ConsumerProcurementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_order` interceptor runs
+        before the `post_get_order_with_metadata` interceptor.
         """
         return response
+
+    def post_get_order_with_metadata(
+        self, response: order.Order, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[order.Order, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_order
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ConsumerProcurementService server but before it is returned to user code.
+
+        We recommend only using this `post_get_order_with_metadata`
+        interceptor in new development instead of the `post_get_order` interceptor.
+        When both interceptors are used, this `post_get_order_with_metadata` interceptor runs after the
+        `post_get_order` interceptor. The (possibly modified) response returned by
+        `post_get_order` will be passed to
+        `post_get_order_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_orders(
         self,
@@ -185,11 +233,36 @@ class ConsumerProcurementServiceRestInterceptor:
     ) -> procurement_service.ListOrdersResponse:
         """Post-rpc interceptor for list_orders
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_orders_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ConsumerProcurementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_orders` interceptor runs
+        before the `post_list_orders_with_metadata` interceptor.
         """
         return response
+
+    def post_list_orders_with_metadata(
+        self,
+        response: procurement_service.ListOrdersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        procurement_service.ListOrdersResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_orders
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ConsumerProcurementService server but before it is returned to user code.
+
+        We recommend only using this `post_list_orders_with_metadata`
+        interceptor in new development instead of the `post_list_orders` interceptor.
+        When both interceptors are used, this `post_list_orders_with_metadata` interceptor runs after the
+        `post_list_orders` interceptor. The (possibly modified) response returned by
+        `post_list_orders` will be passed to
+        `post_list_orders_with_metadata`.
+        """
+        return response, metadata
 
     def pre_modify_order(
         self,
@@ -210,11 +283,34 @@ class ConsumerProcurementServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for modify_order
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_modify_order_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ConsumerProcurementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_modify_order` interceptor runs
+        before the `post_modify_order_with_metadata` interceptor.
         """
         return response
+
+    def post_modify_order_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for modify_order
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ConsumerProcurementService server but before it is returned to user code.
+
+        We recommend only using this `post_modify_order_with_metadata`
+        interceptor in new development instead of the `post_modify_order` interceptor.
+        When both interceptors are used, this `post_modify_order_with_metadata` interceptor runs after the
+        `post_modify_order` interceptor. The (possibly modified) response returned by
+        `post_modify_order` will be passed to
+        `post_modify_order_with_metadata`.
+        """
+        return response, metadata
 
     def pre_place_order(
         self,
@@ -235,11 +331,34 @@ class ConsumerProcurementServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for place_order
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_place_order_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ConsumerProcurementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_place_order` interceptor runs
+        before the `post_place_order_with_metadata` interceptor.
         """
         return response
+
+    def post_place_order_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for place_order
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ConsumerProcurementService server but before it is returned to user code.
+
+        We recommend only using this `post_place_order_with_metadata`
+        interceptor in new development instead of the `post_place_order` interceptor.
+        When both interceptors are used, this `post_place_order_with_metadata` interceptor runs after the
+        `post_place_order` interceptor. The (possibly modified) response returned by
+        `post_place_order` will be passed to
+        `post_place_order_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -525,6 +644,10 @@ class ConsumerProcurementServiceRestTransport(
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_cancel_order(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_cancel_order_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -685,6 +808,10 @@ class ConsumerProcurementServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_order(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_order_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -831,6 +958,10 @@ class ConsumerProcurementServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_orders(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_orders_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -984,6 +1115,10 @@ class ConsumerProcurementServiceRestTransport(
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_modify_order(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_modify_order_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1135,6 +1270,10 @@ class ConsumerProcurementServiceRestTransport(
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_place_order(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_place_order_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

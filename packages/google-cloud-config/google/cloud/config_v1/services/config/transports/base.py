@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.config_v1 import gapic_version as package_version
@@ -35,6 +36,9 @@ from google.cloud.config_v1.types import config
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ConfigTransport(abc.ABC):
@@ -245,6 +249,26 @@ class ConfigTransport(abc.ABC):
             ),
             self.get_terraform_version: gapic_v1.method.wrap_method(
                 self.get_terraform_version,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_resource_changes: gapic_v1.method.wrap_method(
+                self.list_resource_changes,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_resource_change: gapic_v1.method.wrap_method(
+                self.get_resource_change,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_resource_drifts: gapic_v1.method.wrap_method(
+                self.list_resource_drifts,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_resource_drift: gapic_v1.method.wrap_method(
+                self.get_resource_drift,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -518,6 +542,48 @@ class ConfigTransport(abc.ABC):
     ) -> Callable[
         [config.GetTerraformVersionRequest],
         Union[config.TerraformVersion, Awaitable[config.TerraformVersion]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_resource_changes(
+        self,
+    ) -> Callable[
+        [config.ListResourceChangesRequest],
+        Union[
+            config.ListResourceChangesResponse,
+            Awaitable[config.ListResourceChangesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_resource_change(
+        self,
+    ) -> Callable[
+        [config.GetResourceChangeRequest],
+        Union[config.ResourceChange, Awaitable[config.ResourceChange]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_resource_drifts(
+        self,
+    ) -> Callable[
+        [config.ListResourceDriftsRequest],
+        Union[
+            config.ListResourceDriftsResponse,
+            Awaitable[config.ListResourceDriftsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_resource_drift(
+        self,
+    ) -> Callable[
+        [config.GetResourceDriftRequest],
+        Union[config.ResourceDrift, Awaitable[config.ResourceDrift]],
     ]:
         raise NotImplementedError()
 

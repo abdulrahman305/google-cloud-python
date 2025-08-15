@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1091,6 +1091,8 @@ class MountOption(proto.Message):
             Protocol to mount with.
         instructions (str):
             Instructions for mounting
+        ip_address (str):
+            Output only. IP Address.
     """
 
     export: str = proto.Field(
@@ -1109,6 +1111,10 @@ class MountOption(proto.Message):
     instructions: str = proto.Field(
         proto.STRING,
         number=4,
+    )
+    ip_address: str = proto.Field(
+        proto.STRING,
+        number=5,
     )
 
 
@@ -1211,7 +1217,7 @@ class TieringPolicy(proto.Message):
         cooling_threshold_days (int):
             Optional. Time in days to mark the volume's
             data block as cold and make it eligible for
-            tiering, can be range from 7-183. Default is 31.
+            tiering, can be range from 2-183. Default is 31.
 
             This field is a member of `oneof`_ ``_cooling_threshold_days``.
     """
@@ -1252,9 +1258,8 @@ class HybridReplicationParameters(proto.Message):
 
     Attributes:
         replication (str):
-            Required. Desired Identifier (name) of the replication which
-            will be created for this volume. Format:
-            ``projects/{project_id}/locations/{location}/volumes/{volume_id}/replications/{replication_id}``
+            Required. Desired name for the replication of
+            this volume.
         peer_volume_name (str):
             Required. Name of the user's local source
             volume to be peered with the destination volume.

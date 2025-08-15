@@ -1,5 +1,50 @@
 # Changelog
 
+## [3.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.4.0...google-cloud-documentai-v3.5.0) (2025-04-29)
+
+
+### Features
+
+* **v1beta3:** [google-cloud-documentai] Added config options to enable table annotation and image extraction ([#13847](https://github.com/googleapis/google-cloud-python/issues/13847)) ([cd64ac0](https://github.com/googleapis/google-cloud-python/commit/cd64ac0e4653abd812e190343499e7fb95473fe9))
+* **v1beta3:** Add image block and blob asset in Document proto ([3c829a0](https://github.com/googleapis/google-cloud-python/commit/3c829a0e14848fd084ceb1fcdaf5c5336e261df8))
+* **v1beta3:** Added config options to enable image annotation ([3c829a0](https://github.com/googleapis/google-cloud-python/commit/3c829a0e14848fd084ceb1fcdaf5c5336e261df8))
+
+## [3.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.3.0...google-cloud-documentai-v3.4.0) (2025-04-23)
+
+
+### Features
+
+* [google-cloud-documentai] Added a field for enabling returning images and bounding boxes from layout parser processor ([#13822](https://github.com/googleapis/google-cloud-python/issues/13822)) ([77e38cd](https://github.com/googleapis/google-cloud-python/commit/77e38cd3499f8ea66e5aa9703a56bd8be9b9836d))
+
+## [3.3.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.2.1...google-cloud-documentai-v3.3.0) (2025-03-19)
+
+
+### Features
+
+* [google-cloud-documentai] Added config options to enable LLM ([ee05aca](https://github.com/googleapis/google-cloud-python/commit/ee05aca642a1e86e8ae05e19a4f2f84fdbbab7d8))
+* Added config options to enable LLM layout parsing ([#13680](https://github.com/googleapis/google-cloud-python/issues/13680)) ([ee05aca](https://github.com/googleapis/google-cloud-python/commit/ee05aca642a1e86e8ae05e19a4f2f84fdbbab7d8))
+
+## [3.2.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.2.0...google-cloud-documentai-v3.2.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.1.0...google-cloud-documentai-v3.2.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b0e1f43](https://github.com/googleapis/google-cloud-python/commit/b0e1f4303b6ceff89b022986f9d87eda736e7235))
+* Add support for reading selective GAPIC generation methods from service YAML ([b0e1f43](https://github.com/googleapis/google-cloud-python/commit/b0e1f4303b6ceff89b022986f9d87eda736e7235))
+
+
+### Documentation
+
+* mark fields as unused ([b0e1f43](https://github.com/googleapis/google-cloud-python/commit/b0e1f4303b6ceff89b022986f9d87eda736e7235))
+
 ## [3.1.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-documentai-v3.0.1...google-cloud-documentai-v3.1.0) (2024-12-12)
 
 

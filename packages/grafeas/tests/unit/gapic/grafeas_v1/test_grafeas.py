@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ from grafeas.grafeas_v1.types import (
     package,
     provenance,
     sbom,
+    secret,
     severity,
     slsa_provenance,
     slsa_provenance_zero_two,
@@ -86,6 +87,13 @@ from grafeas.grafeas_v1.types import (
     vex,
     vulnerability,
 )
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -9204,10 +9212,13 @@ def test_get_occurrence_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_get_occurrence"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_get_occurrence_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_get_occurrence"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.GetOccurrenceRequest.pb(grafeas.GetOccurrenceRequest())
         transcode.return_value = {
             "method": "post",
@@ -9229,6 +9240,7 @@ def test_get_occurrence_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Occurrence()
+        post_with_metadata.return_value = grafeas.Occurrence(), metadata
 
         client.get_occurrence(
             request,
@@ -9240,6 +9252,7 @@ def test_get_occurrence_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_occurrences_rest_bad_request(request_type=grafeas.ListOccurrencesRequest):
@@ -9320,10 +9333,13 @@ def test_list_occurrences_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_list_occurrences"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_list_occurrences_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_list_occurrences"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.ListOccurrencesRequest.pb(grafeas.ListOccurrencesRequest())
         transcode.return_value = {
             "method": "post",
@@ -9347,6 +9363,7 @@ def test_list_occurrences_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.ListOccurrencesResponse()
+        post_with_metadata.return_value = grafeas.ListOccurrencesResponse(), metadata
 
         client.list_occurrences(
             request,
@@ -9358,6 +9375,7 @@ def test_list_occurrences_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_occurrence_rest_bad_request(
@@ -9550,7 +9568,24 @@ def test_create_occurrence_rest_call_success(request_type):
                     "fix_available": True,
                     "package_type": "package_type_value",
                     "effective_severity": 1,
-                    "file_location": [{"file_path": "file_path_value"}],
+                    "file_location": [
+                        {
+                            "file_path": "file_path_value",
+                            "layer_details": {
+                                "index": 536,
+                                "diff_id": "diff_id_value",
+                                "chain_id": "chain_id_value",
+                                "command": "command_value",
+                                "base_images": [
+                                    {
+                                        "name": "name_value",
+                                        "repository": "repository_value",
+                                        "layer_count": 1189,
+                                    }
+                                ],
+                            },
+                        }
+                    ],
                 }
             ],
             "short_description": "short_description_value",
@@ -9873,6 +9908,11 @@ def test_create_occurrence_rest_call_success(request_type):
             },
             "payload_type": "payload_type_value",
             "signatures": {},
+        },
+        "secret": {
+            "kind": 1,
+            "locations": [{"file_location": {}}],
+            "statuses": [{"status": 1, "update_time": {}, "message": "message_value"}],
         },
         "envelope": {},
     }
@@ -9992,10 +10032,13 @@ def test_create_occurrence_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_create_occurrence"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_create_occurrence_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_create_occurrence"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.CreateOccurrenceRequest.pb(
             grafeas.CreateOccurrenceRequest()
         )
@@ -10019,6 +10062,7 @@ def test_create_occurrence_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Occurrence()
+        post_with_metadata.return_value = grafeas.Occurrence(), metadata
 
         client.create_occurrence(
             request,
@@ -10030,6 +10074,7 @@ def test_create_occurrence_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_batch_create_occurrences_rest_bad_request(
@@ -10109,10 +10154,13 @@ def test_batch_create_occurrences_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_batch_create_occurrences"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_batch_create_occurrences_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_batch_create_occurrences"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.BatchCreateOccurrencesRequest.pb(
             grafeas.BatchCreateOccurrencesRequest()
         )
@@ -10138,6 +10186,10 @@ def test_batch_create_occurrences_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.BatchCreateOccurrencesResponse()
+        post_with_metadata.return_value = (
+            grafeas.BatchCreateOccurrencesResponse(),
+            metadata,
+        )
 
         client.batch_create_occurrences(
             request,
@@ -10149,6 +10201,7 @@ def test_batch_create_occurrences_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_occurrence_rest_bad_request(
@@ -10234,7 +10287,24 @@ def test_update_occurrence_rest_call_success(request_type):
                     "fix_available": True,
                     "package_type": "package_type_value",
                     "effective_severity": 1,
-                    "file_location": [{"file_path": "file_path_value"}],
+                    "file_location": [
+                        {
+                            "file_path": "file_path_value",
+                            "layer_details": {
+                                "index": 536,
+                                "diff_id": "diff_id_value",
+                                "chain_id": "chain_id_value",
+                                "command": "command_value",
+                                "base_images": [
+                                    {
+                                        "name": "name_value",
+                                        "repository": "repository_value",
+                                        "layer_count": 1189,
+                                    }
+                                ],
+                            },
+                        }
+                    ],
                 }
             ],
             "short_description": "short_description_value",
@@ -10558,6 +10628,11 @@ def test_update_occurrence_rest_call_success(request_type):
             "payload_type": "payload_type_value",
             "signatures": {},
         },
+        "secret": {
+            "kind": 1,
+            "locations": [{"file_location": {}}],
+            "statuses": [{"status": 1, "update_time": {}, "message": "message_value"}],
+        },
         "envelope": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
@@ -10676,10 +10751,13 @@ def test_update_occurrence_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_update_occurrence"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_update_occurrence_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_update_occurrence"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.UpdateOccurrenceRequest.pb(
             grafeas.UpdateOccurrenceRequest()
         )
@@ -10703,6 +10781,7 @@ def test_update_occurrence_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Occurrence()
+        post_with_metadata.return_value = grafeas.Occurrence(), metadata
 
         client.update_occurrence(
             request,
@@ -10714,6 +10793,7 @@ def test_update_occurrence_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_occurrence_note_rest_bad_request(
@@ -10804,10 +10884,13 @@ def test_get_occurrence_note_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_get_occurrence_note"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_get_occurrence_note_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_get_occurrence_note"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.GetOccurrenceNoteRequest.pb(
             grafeas.GetOccurrenceNoteRequest()
         )
@@ -10831,6 +10914,7 @@ def test_get_occurrence_note_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Note()
+        post_with_metadata.return_value = grafeas.Note(), metadata
 
         client.get_occurrence_note(
             request,
@@ -10842,6 +10926,7 @@ def test_get_occurrence_note_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_note_rest_bad_request(request_type=grafeas.GetNoteRequest):
@@ -10930,10 +11015,13 @@ def test_get_note_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_get_note"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_get_note_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_get_note"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.GetNoteRequest.pb(grafeas.GetNoteRequest())
         transcode.return_value = {
             "method": "post",
@@ -10955,6 +11043,7 @@ def test_get_note_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Note()
+        post_with_metadata.return_value = grafeas.Note(), metadata
 
         client.get_note(
             request,
@@ -10966,6 +11055,7 @@ def test_get_note_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_notes_rest_bad_request(request_type=grafeas.ListNotesRequest):
@@ -11046,10 +11136,13 @@ def test_list_notes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_list_notes"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_list_notes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_list_notes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.ListNotesRequest.pb(grafeas.ListNotesRequest())
         transcode.return_value = {
             "method": "post",
@@ -11071,6 +11164,7 @@ def test_list_notes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.ListNotesResponse()
+        post_with_metadata.return_value = grafeas.ListNotesResponse(), metadata
 
         client.list_notes(
             request,
@@ -11082,6 +11176,7 @@ def test_list_notes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_note_rest_bad_request(request_type=grafeas.DeleteNoteRequest):
@@ -11416,6 +11511,7 @@ def test_create_note_rest_call_success(request_type):
             },
         },
         "sbom_reference": {"format_": "format__value", "version": "version_value"},
+        "secret": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -11533,10 +11629,13 @@ def test_create_note_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_create_note"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_create_note_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_create_note"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.CreateNoteRequest.pb(grafeas.CreateNoteRequest())
         transcode.return_value = {
             "method": "post",
@@ -11558,6 +11657,7 @@ def test_create_note_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Note()
+        post_with_metadata.return_value = grafeas.Note(), metadata
 
         client.create_note(
             request,
@@ -11569,6 +11669,7 @@ def test_create_note_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_batch_create_notes_rest_bad_request(
@@ -11648,10 +11749,13 @@ def test_batch_create_notes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_batch_create_notes"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_batch_create_notes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_batch_create_notes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.BatchCreateNotesRequest.pb(
             grafeas.BatchCreateNotesRequest()
         )
@@ -11677,6 +11781,7 @@ def test_batch_create_notes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.BatchCreateNotesResponse()
+        post_with_metadata.return_value = grafeas.BatchCreateNotesResponse(), metadata
 
         client.batch_create_notes(
             request,
@@ -11688,6 +11793,7 @@ def test_batch_create_notes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_note_rest_bad_request(request_type=grafeas.UpdateNoteRequest):
@@ -11919,6 +12025,7 @@ def test_update_note_rest_call_success(request_type):
             },
         },
         "sbom_reference": {"format_": "format__value", "version": "version_value"},
+        "secret": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -12036,10 +12143,13 @@ def test_update_note_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_update_note"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_update_note_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_update_note"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.UpdateNoteRequest.pb(grafeas.UpdateNoteRequest())
         transcode.return_value = {
             "method": "post",
@@ -12061,6 +12171,7 @@ def test_update_note_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.Note()
+        post_with_metadata.return_value = grafeas.Note(), metadata
 
         client.update_note(
             request,
@@ -12072,6 +12183,7 @@ def test_update_note_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_note_occurrences_rest_bad_request(
@@ -12154,10 +12266,13 @@ def test_list_note_occurrences_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GrafeasRestInterceptor, "post_list_note_occurrences"
     ) as post, mock.patch.object(
+        transports.GrafeasRestInterceptor, "post_list_note_occurrences_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GrafeasRestInterceptor, "pre_list_note_occurrences"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = grafeas.ListNoteOccurrencesRequest.pb(
             grafeas.ListNoteOccurrencesRequest()
         )
@@ -12183,6 +12298,10 @@ def test_list_note_occurrences_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = grafeas.ListNoteOccurrencesResponse()
+        post_with_metadata.return_value = (
+            grafeas.ListNoteOccurrencesResponse(),
+            metadata,
+        )
 
         client.list_note_occurrences(
             request,
@@ -12194,6 +12313,7 @@ def test_list_note_occurrences_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():

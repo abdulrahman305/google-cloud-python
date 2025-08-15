@@ -1,5 +1,113 @@
 # Changelog
 
+## [0.5.24](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.23...google-cloud-network-services-v0.5.24) (2025-07-10)
+
+
+### Features
+
+* Add isolation support to prevent cross-region overflow by adding a new field "isolation_config" to message "ServiceLbPolicy" ([9117f23](https://github.com/googleapis/google-cloud-python/commit/9117f237322c25916e4245012a19a9d12790097a))
+
+## [0.5.23](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.22...google-cloud-network-services-v0.5.23) (2025-07-02)
+
+
+### Features
+
+* Add support for WasmPlugin resource in NetworkServices API ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+
+
+### Documentation
+
+* A comment for enum `LoadBalancingScheme` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `authority` in message `.google.cloud.networkservices.v1.ExtensionChain` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `extensions` in message `.google.cloud.networkservices.v1.ExtensionChain` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `forwarding_rules` in message `.google.cloud.networkservices.v1.LbRouteExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `forwarding_rules` in message `.google.cloud.networkservices.v1.LbTrafficExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `load_balancing_scheme` in message `.google.cloud.networkservices.v1.LbRouteExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `load_balancing_scheme` in message `.google.cloud.networkservices.v1.LbTrafficExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `metadata` in message `.google.cloud.networkservices.v1.LbRouteExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `metadata` in message `.google.cloud.networkservices.v1.LbTrafficExtension` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `order_by` in message `.google.cloud.networkservices.v1.ListLbRouteExtensionsRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `order_by` in message `.google.cloud.networkservices.v1.ListLbTrafficExtensionsRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `parent` in message `.google.cloud.networkservices.v1.ListLbRouteExtensionsRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `parent` in message `.google.cloud.networkservices.v1.ListLbTrafficExtensionsRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.CreateLbRouteExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.CreateLbTrafficExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.DeleteLbRouteExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.DeleteLbTrafficExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.UpdateLbRouteExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `request_id` in message `.google.cloud.networkservices.v1.UpdateLbTrafficExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `service` in message `.google.cloud.networkservices.v1.ExtensionChain` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `supported_events` in message `.google.cloud.networkservices.v1.ExtensionChain` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `timeout` in message `.google.cloud.networkservices.v1.ExtensionChain` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `update_mask` in message `.google.cloud.networkservices.v1.UpdateLbRouteExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+* A comment for field `update_mask` in message `.google.cloud.networkservices.v1.UpdateLbTrafficExtensionRequest` is changed ([decb2ac](https://github.com/googleapis/google-cloud-python/commit/decb2acc4665fede9168755751f0c3fa4c4d7db9))
+
+## [0.5.22](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.21...google-cloud-network-services-v0.5.22) (2025-06-11)
+
+
+### Features
+
+* update NetworkServices protos ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+
+
+### Documentation
+
+* A comment for field `address` in message `.google.cloud.networkservices.v1.TcpRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `fault_injection_policy` in message `.google.cloud.networkservices.v1.GrpcRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `matches` in message `.google.cloud.networkservices.v1.TlsRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `metadata_label_match_criteria` in message `.google.cloud.networkservices.v1.EndpointMatcher` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.DeleteServiceBindingRequest` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.EndpointPolicy` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.Gateway` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.GetServiceBindingRequest` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.GrpcRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.HttpRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.Mesh` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.ServiceBinding` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.TcpRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `name` in message `.google.cloud.networkservices.v1.TlsRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `parent` in message `.google.cloud.networkservices.v1.CreateServiceBindingRequest` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `parent` in message `.google.cloud.networkservices.v1.ListServiceBindingsRequest` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `ports` in message `.google.cloud.networkservices.v1.Gateway` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `scope` in message `.google.cloud.networkservices.v1.Gateway` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `service` in message `.google.cloud.networkservices.v1.ServiceBinding` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `sni_host` in message `.google.cloud.networkservices.v1.TlsRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for field `weight` in message `.google.cloud.networkservices.v1.TlsRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for message `GrpcRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for message `HttpRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for message `ServiceBinding` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+* A comment for message `TlsRoute` is changed ([fdaca0f](https://github.com/googleapis/google-cloud-python/commit/fdaca0f23a614e607dc7a6eb93e2f86247423a94))
+
+## [0.5.21](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.20...google-cloud-network-services-v0.5.21) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([868b006](https://github.com/googleapis/google-cloud-python/commit/868b0069baf1a4bf6705986e0b6885419b35cdcc))
+
+## [0.5.20](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.19...google-cloud-network-services-v0.5.20) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.5.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.18...google-cloud-network-services-v0.5.19) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [0.5.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.17...google-cloud-network-services-v0.5.18) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
 ## [0.5.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-services-v0.5.16...google-cloud-network-services-v0.5.17) (2024-12-12)
 
 

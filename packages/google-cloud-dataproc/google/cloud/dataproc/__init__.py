@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -193,6 +193,7 @@ from google.cloud.dataproc_v1.types.sessions import (
     TerminateSessionRequest,
 )
 from google.cloud.dataproc_v1.types.shared import (
+    AuthenticationConfig,
     AutotuningConfig,
     Component,
     EnvironmentConfig,
@@ -365,6 +366,7 @@ __all__ = (
     "Session",
     "SparkConnectConfig",
     "TerminateSessionRequest",
+    "AuthenticationConfig",
     "AutotuningConfig",
     "EnvironmentConfig",
     "ExecutionConfig",

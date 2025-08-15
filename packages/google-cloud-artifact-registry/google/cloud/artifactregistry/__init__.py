@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,8 @@ from google.cloud.artifactregistry_v1.types.file import (
     UpdateFileRequest,
 )
 from google.cloud.artifactregistry_v1.types.generic import GenericArtifact
+from google.cloud.artifactregistry_v1.types.go import GoModule
+from google.cloud.artifactregistry_v1.types.kfp_artifact import KfpArtifact
 from google.cloud.artifactregistry_v1.types.package import (
     DeletePackageRequest,
     GetPackageRequest,
@@ -179,6 +181,8 @@ __all__ = (
     "ListFilesResponse",
     "UpdateFileRequest",
     "GenericArtifact",
+    "GoModule",
+    "KfpArtifact",
     "DeletePackageRequest",
     "GetPackageRequest",
     "ListPackagesRequest",

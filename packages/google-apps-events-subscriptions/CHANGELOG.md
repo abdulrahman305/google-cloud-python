@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.2.2](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.2.1...google-apps-events-subscriptions-v0.2.2) (2025-06-12)
+
+
+### Features
+
+* add google.apps.events_subscriptions_v1beta ([f4c0d3d](https://github.com/googleapis/google-cloud-python/commit/f4c0d3d60194735d7d07b67673099ef0431f8728))
+
+## [0.2.1](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.2.0...google-apps-events-subscriptions-v0.2.1) (2025-06-03)
+
+
+### Features
+
+* Enable client libraries generation of v1beta for Workspace Events API ([fca56e3](https://github.com/googleapis/google-cloud-python/commit/fca56e31288650fb0645ed5d83110ea4fb97f4ba))
+
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.1.7...google-apps-events-subscriptions-v0.2.0) (2025-05-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* An existing oauth_scope https://www.googleapis.com/auth/chat.bot is removed from SubscriptionsService
+
+### Bug Fixes
+
+* An existing oauth_scope https://www.googleapis.com/auth/chat.bot is removed from SubscriptionsService ([51d848a](https://github.com/googleapis/google-cloud-python/commit/51d848a096c6341c7f76701ee6895f313c25e4be))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.1.6...google-apps-events-subscriptions-v0.1.7) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.1.5...google-apps-events-subscriptions-v0.1.6) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-apps-events-subscriptions-v0.1.4...google-apps-events-subscriptions-v0.1.5) (2024-12-12)
 
 

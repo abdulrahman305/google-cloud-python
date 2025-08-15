@@ -1,6 +1,55 @@
 # Changelog
 
 
+## [0.10.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.18...google-cloud-run-v0.10.19) (2025-07-16)
+
+
+### Features
+
+* add new field `term_signal` to `.google.cloud.run.v2.TaskAttemptResult` ([078e0e2](https://github.com/googleapis/google-cloud-python/commit/078e0e2ccb5f59a9c78c89d63b7e57c9d7dca9c2))
+* support GPU zonal redundancy setting for Cloud Run jobs ([078e0e2](https://github.com/googleapis/google-cloud-python/commit/078e0e2ccb5f59a9c78c89d63b7e57c9d7dca9c2))
+
+## [0.10.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.17...google-cloud-run-v0.10.18) (2025-05-15)
+
+
+### Features
+
+* support GPU zonal redundancy setting in Cloud Run services ([2f33995](https://github.com/googleapis/google-cloud-python/commit/2f33995c8f454fe9a6798aa2477bd1b0a817d1da))
+* support node selector in Cloud Run jobs for GPU setting ([2f33995](https://github.com/googleapis/google-cloud-python/commit/2f33995c8f454fe9a6798aa2477bd1b0a817d1da))
+
+## [0.10.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.16...google-cloud-run-v0.10.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.10.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.15...google-cloud-run-v0.10.16) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [0.10.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.14...google-cloud-run-v0.10.15) (2025-02-12)
+
+
+### Features
+
+* add Base Image URI to Container ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* add BuildConfig to Services for configuring Run functions ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* add BuildInfo to Revision for displaying BuildConfig used for a specific revision deployment ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* add creator field to Execution ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* add project_descriptor to BuildspackBuild ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* Add REST Interceptors which support reading metadata ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+* Add support for reading selective GAPIC generation methods from service YAML ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+
+
+### Documentation
+
+* some typos were fixed and formatting changed ([8a3376a](https://github.com/googleapis/google-cloud-python/commit/8a3376a779ec82b552c30d76e6ba65f9ba15d6ca))
+
 ## [0.10.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-run-v0.10.13...google-cloud-run-v0.10.14) (2024-12-12)
 
 

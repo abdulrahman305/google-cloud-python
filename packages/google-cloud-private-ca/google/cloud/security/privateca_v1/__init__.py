@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ from .services.certificate_authority_service import (
     CertificateAuthorityServiceClient,
 )
 from .types.resources import (
+    AttributeType,
+    AttributeTypeAndValue,
     CaPool,
     Certificate,
     CertificateAuthority,
@@ -35,6 +37,7 @@ from .types.resources import (
     KeyUsage,
     ObjectId,
     PublicKey,
+    RelativeDistinguishedName,
     RevocationReason,
     Subject,
     SubjectAltNames,
@@ -86,6 +89,8 @@ from .types.service import (
 __all__ = (
     "CertificateAuthorityServiceAsyncClient",
     "ActivateCertificateAuthorityRequest",
+    "AttributeType",
+    "AttributeTypeAndValue",
     "CaPool",
     "Certificate",
     "CertificateAuthority",
@@ -128,6 +133,7 @@ __all__ = (
     "ObjectId",
     "OperationMetadata",
     "PublicKey",
+    "RelativeDistinguishedName",
     "RevocationReason",
     "RevokeCertificateRequest",
     "Subject",

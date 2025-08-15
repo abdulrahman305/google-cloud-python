@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class DlpServiceRestInterceptor:
@@ -487,11 +491,32 @@ class DlpServiceRestInterceptor:
     def post_activate_job_trigger(self, response: dlp.DlpJob) -> dlp.DlpJob:
         """Post-rpc interceptor for activate_job_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_activate_job_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_activate_job_trigger` interceptor runs
+        before the `post_activate_job_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_activate_job_trigger_with_metadata(
+        self, response: dlp.DlpJob, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[dlp.DlpJob, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for activate_job_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_activate_job_trigger_with_metadata`
+        interceptor in new development instead of the `post_activate_job_trigger` interceptor.
+        When both interceptors are used, this `post_activate_job_trigger_with_metadata` interceptor runs after the
+        `post_activate_job_trigger` interceptor. The (possibly modified) response returned by
+        `post_activate_job_trigger` will be passed to
+        `post_activate_job_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_dlp_job(
         self,
@@ -520,11 +545,34 @@ class DlpServiceRestInterceptor:
     def post_create_connection(self, response: dlp.Connection) -> dlp.Connection:
         """Post-rpc interceptor for create_connection
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_connection_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_connection` interceptor runs
+        before the `post_create_connection_with_metadata` interceptor.
         """
         return response
+
+    def post_create_connection_with_metadata(
+        self,
+        response: dlp.Connection,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.Connection, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_connection
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_connection_with_metadata`
+        interceptor in new development instead of the `post_create_connection` interceptor.
+        When both interceptors are used, this `post_create_connection_with_metadata` interceptor runs after the
+        `post_create_connection` interceptor. The (possibly modified) response returned by
+        `post_create_connection` will be passed to
+        `post_create_connection_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_deidentify_template(
         self,
@@ -545,11 +593,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DeidentifyTemplate:
         """Post-rpc interceptor for create_deidentify_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_deidentify_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_deidentify_template` interceptor runs
+        before the `post_create_deidentify_template_with_metadata` interceptor.
         """
         return response
+
+    def post_create_deidentify_template_with_metadata(
+        self,
+        response: dlp.DeidentifyTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DeidentifyTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_deidentify_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_deidentify_template_with_metadata`
+        interceptor in new development instead of the `post_create_deidentify_template` interceptor.
+        When both interceptors are used, this `post_create_deidentify_template_with_metadata` interceptor runs after the
+        `post_create_deidentify_template` interceptor. The (possibly modified) response returned by
+        `post_create_deidentify_template` will be passed to
+        `post_create_deidentify_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_discovery_config(
         self,
@@ -570,11 +641,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DiscoveryConfig:
         """Post-rpc interceptor for create_discovery_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_discovery_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_discovery_config` interceptor runs
+        before the `post_create_discovery_config_with_metadata` interceptor.
         """
         return response
+
+    def post_create_discovery_config_with_metadata(
+        self,
+        response: dlp.DiscoveryConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DiscoveryConfig, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_discovery_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_discovery_config_with_metadata`
+        interceptor in new development instead of the `post_create_discovery_config` interceptor.
+        When both interceptors are used, this `post_create_discovery_config_with_metadata` interceptor runs after the
+        `post_create_discovery_config` interceptor. The (possibly modified) response returned by
+        `post_create_discovery_config` will be passed to
+        `post_create_discovery_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_dlp_job(
         self,
@@ -591,11 +685,32 @@ class DlpServiceRestInterceptor:
     def post_create_dlp_job(self, response: dlp.DlpJob) -> dlp.DlpJob:
         """Post-rpc interceptor for create_dlp_job
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_dlp_job_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_dlp_job` interceptor runs
+        before the `post_create_dlp_job_with_metadata` interceptor.
         """
         return response
+
+    def post_create_dlp_job_with_metadata(
+        self, response: dlp.DlpJob, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[dlp.DlpJob, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_dlp_job
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_dlp_job_with_metadata`
+        interceptor in new development instead of the `post_create_dlp_job` interceptor.
+        When both interceptors are used, this `post_create_dlp_job_with_metadata` interceptor runs after the
+        `post_create_dlp_job` interceptor. The (possibly modified) response returned by
+        `post_create_dlp_job` will be passed to
+        `post_create_dlp_job_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_inspect_template(
         self,
@@ -616,11 +731,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.InspectTemplate:
         """Post-rpc interceptor for create_inspect_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_inspect_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_inspect_template` interceptor runs
+        before the `post_create_inspect_template_with_metadata` interceptor.
         """
         return response
+
+    def post_create_inspect_template_with_metadata(
+        self,
+        response: dlp.InspectTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.InspectTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_inspect_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_inspect_template_with_metadata`
+        interceptor in new development instead of the `post_create_inspect_template` interceptor.
+        When both interceptors are used, this `post_create_inspect_template_with_metadata` interceptor runs after the
+        `post_create_inspect_template` interceptor. The (possibly modified) response returned by
+        `post_create_inspect_template` will be passed to
+        `post_create_inspect_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_job_trigger(
         self,
@@ -637,11 +775,34 @@ class DlpServiceRestInterceptor:
     def post_create_job_trigger(self, response: dlp.JobTrigger) -> dlp.JobTrigger:
         """Post-rpc interceptor for create_job_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_job_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_job_trigger` interceptor runs
+        before the `post_create_job_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_create_job_trigger_with_metadata(
+        self,
+        response: dlp.JobTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.JobTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_job_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_job_trigger_with_metadata`
+        interceptor in new development instead of the `post_create_job_trigger` interceptor.
+        When both interceptors are used, this `post_create_job_trigger_with_metadata` interceptor runs after the
+        `post_create_job_trigger` interceptor. The (possibly modified) response returned by
+        `post_create_job_trigger` will be passed to
+        `post_create_job_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_stored_info_type(
         self,
@@ -662,11 +823,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.StoredInfoType:
         """Post-rpc interceptor for create_stored_info_type
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_stored_info_type_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_stored_info_type` interceptor runs
+        before the `post_create_stored_info_type_with_metadata` interceptor.
         """
         return response
+
+    def post_create_stored_info_type_with_metadata(
+        self,
+        response: dlp.StoredInfoType,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.StoredInfoType, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_stored_info_type
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_create_stored_info_type_with_metadata`
+        interceptor in new development instead of the `post_create_stored_info_type` interceptor.
+        When both interceptors are used, this `post_create_stored_info_type_with_metadata` interceptor runs after the
+        `post_create_stored_info_type` interceptor. The (possibly modified) response returned by
+        `post_create_stored_info_type` will be passed to
+        `post_create_stored_info_type_with_metadata`.
+        """
+        return response, metadata
 
     def pre_deidentify_content(
         self,
@@ -685,11 +869,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DeidentifyContentResponse:
         """Post-rpc interceptor for deidentify_content
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_deidentify_content_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_deidentify_content` interceptor runs
+        before the `post_deidentify_content_with_metadata` interceptor.
         """
         return response
+
+    def post_deidentify_content_with_metadata(
+        self,
+        response: dlp.DeidentifyContentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DeidentifyContentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for deidentify_content
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_deidentify_content_with_metadata`
+        interceptor in new development instead of the `post_deidentify_content` interceptor.
+        When both interceptors are used, this `post_deidentify_content_with_metadata` interceptor runs after the
+        `post_deidentify_content` interceptor. The (possibly modified) response returned by
+        `post_deidentify_content` will be passed to
+        `post_deidentify_content_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_connection(
         self,
@@ -842,11 +1049,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ColumnDataProfile:
         """Post-rpc interceptor for get_column_data_profile
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_column_data_profile_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_column_data_profile` interceptor runs
+        before the `post_get_column_data_profile_with_metadata` interceptor.
         """
         return response
+
+    def post_get_column_data_profile_with_metadata(
+        self,
+        response: dlp.ColumnDataProfile,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ColumnDataProfile, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_column_data_profile
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_column_data_profile_with_metadata`
+        interceptor in new development instead of the `post_get_column_data_profile` interceptor.
+        When both interceptors are used, this `post_get_column_data_profile_with_metadata` interceptor runs after the
+        `post_get_column_data_profile` interceptor. The (possibly modified) response returned by
+        `post_get_column_data_profile` will be passed to
+        `post_get_column_data_profile_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_connection(
         self,
@@ -863,11 +1093,34 @@ class DlpServiceRestInterceptor:
     def post_get_connection(self, response: dlp.Connection) -> dlp.Connection:
         """Post-rpc interceptor for get_connection
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_connection_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_connection` interceptor runs
+        before the `post_get_connection_with_metadata` interceptor.
         """
         return response
+
+    def post_get_connection_with_metadata(
+        self,
+        response: dlp.Connection,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.Connection, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_connection
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_connection_with_metadata`
+        interceptor in new development instead of the `post_get_connection` interceptor.
+        When both interceptors are used, this `post_get_connection_with_metadata` interceptor runs after the
+        `post_get_connection` interceptor. The (possibly modified) response returned by
+        `post_get_connection` will be passed to
+        `post_get_connection_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_deidentify_template(
         self,
@@ -888,11 +1141,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DeidentifyTemplate:
         """Post-rpc interceptor for get_deidentify_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_deidentify_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_deidentify_template` interceptor runs
+        before the `post_get_deidentify_template_with_metadata` interceptor.
         """
         return response
+
+    def post_get_deidentify_template_with_metadata(
+        self,
+        response: dlp.DeidentifyTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DeidentifyTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_deidentify_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_deidentify_template_with_metadata`
+        interceptor in new development instead of the `post_get_deidentify_template` interceptor.
+        When both interceptors are used, this `post_get_deidentify_template_with_metadata` interceptor runs after the
+        `post_get_deidentify_template` interceptor. The (possibly modified) response returned by
+        `post_get_deidentify_template` will be passed to
+        `post_get_deidentify_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_discovery_config(
         self,
@@ -911,11 +1187,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DiscoveryConfig:
         """Post-rpc interceptor for get_discovery_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_discovery_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_discovery_config` interceptor runs
+        before the `post_get_discovery_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_discovery_config_with_metadata(
+        self,
+        response: dlp.DiscoveryConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DiscoveryConfig, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_discovery_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_discovery_config_with_metadata`
+        interceptor in new development instead of the `post_get_discovery_config` interceptor.
+        When both interceptors are used, this `post_get_discovery_config_with_metadata` interceptor runs after the
+        `post_get_discovery_config` interceptor. The (possibly modified) response returned by
+        `post_get_discovery_config` will be passed to
+        `post_get_discovery_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_dlp_job(
         self,
@@ -932,11 +1231,32 @@ class DlpServiceRestInterceptor:
     def post_get_dlp_job(self, response: dlp.DlpJob) -> dlp.DlpJob:
         """Post-rpc interceptor for get_dlp_job
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_dlp_job_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_dlp_job` interceptor runs
+        before the `post_get_dlp_job_with_metadata` interceptor.
         """
         return response
+
+    def post_get_dlp_job_with_metadata(
+        self, response: dlp.DlpJob, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[dlp.DlpJob, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_dlp_job
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_dlp_job_with_metadata`
+        interceptor in new development instead of the `post_get_dlp_job` interceptor.
+        When both interceptors are used, this `post_get_dlp_job_with_metadata` interceptor runs after the
+        `post_get_dlp_job` interceptor. The (possibly modified) response returned by
+        `post_get_dlp_job` will be passed to
+        `post_get_dlp_job_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_file_store_data_profile(
         self,
@@ -957,11 +1277,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.FileStoreDataProfile:
         """Post-rpc interceptor for get_file_store_data_profile
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_file_store_data_profile_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_file_store_data_profile` interceptor runs
+        before the `post_get_file_store_data_profile_with_metadata` interceptor.
         """
         return response
+
+    def post_get_file_store_data_profile_with_metadata(
+        self,
+        response: dlp.FileStoreDataProfile,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.FileStoreDataProfile, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_file_store_data_profile
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_file_store_data_profile_with_metadata`
+        interceptor in new development instead of the `post_get_file_store_data_profile` interceptor.
+        When both interceptors are used, this `post_get_file_store_data_profile_with_metadata` interceptor runs after the
+        `post_get_file_store_data_profile` interceptor. The (possibly modified) response returned by
+        `post_get_file_store_data_profile` will be passed to
+        `post_get_file_store_data_profile_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_inspect_template(
         self,
@@ -980,11 +1323,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.InspectTemplate:
         """Post-rpc interceptor for get_inspect_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_inspect_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_inspect_template` interceptor runs
+        before the `post_get_inspect_template_with_metadata` interceptor.
         """
         return response
+
+    def post_get_inspect_template_with_metadata(
+        self,
+        response: dlp.InspectTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.InspectTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_inspect_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_inspect_template_with_metadata`
+        interceptor in new development instead of the `post_get_inspect_template` interceptor.
+        When both interceptors are used, this `post_get_inspect_template_with_metadata` interceptor runs after the
+        `post_get_inspect_template` interceptor. The (possibly modified) response returned by
+        `post_get_inspect_template` will be passed to
+        `post_get_inspect_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_job_trigger(
         self,
@@ -1001,11 +1367,34 @@ class DlpServiceRestInterceptor:
     def post_get_job_trigger(self, response: dlp.JobTrigger) -> dlp.JobTrigger:
         """Post-rpc interceptor for get_job_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_job_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_job_trigger` interceptor runs
+        before the `post_get_job_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_get_job_trigger_with_metadata(
+        self,
+        response: dlp.JobTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.JobTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_job_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_job_trigger_with_metadata`
+        interceptor in new development instead of the `post_get_job_trigger` interceptor.
+        When both interceptors are used, this `post_get_job_trigger_with_metadata` interceptor runs after the
+        `post_get_job_trigger` interceptor. The (possibly modified) response returned by
+        `post_get_job_trigger` will be passed to
+        `post_get_job_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_project_data_profile(
         self,
@@ -1026,11 +1415,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ProjectDataProfile:
         """Post-rpc interceptor for get_project_data_profile
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_project_data_profile_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_project_data_profile` interceptor runs
+        before the `post_get_project_data_profile_with_metadata` interceptor.
         """
         return response
+
+    def post_get_project_data_profile_with_metadata(
+        self,
+        response: dlp.ProjectDataProfile,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ProjectDataProfile, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_project_data_profile
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_project_data_profile_with_metadata`
+        interceptor in new development instead of the `post_get_project_data_profile` interceptor.
+        When both interceptors are used, this `post_get_project_data_profile_with_metadata` interceptor runs after the
+        `post_get_project_data_profile` interceptor. The (possibly modified) response returned by
+        `post_get_project_data_profile` will be passed to
+        `post_get_project_data_profile_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_stored_info_type(
         self,
@@ -1049,11 +1461,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.StoredInfoType:
         """Post-rpc interceptor for get_stored_info_type
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_stored_info_type_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_stored_info_type` interceptor runs
+        before the `post_get_stored_info_type_with_metadata` interceptor.
         """
         return response
+
+    def post_get_stored_info_type_with_metadata(
+        self,
+        response: dlp.StoredInfoType,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.StoredInfoType, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_stored_info_type
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_stored_info_type_with_metadata`
+        interceptor in new development instead of the `post_get_stored_info_type` interceptor.
+        When both interceptors are used, this `post_get_stored_info_type_with_metadata` interceptor runs after the
+        `post_get_stored_info_type` interceptor. The (possibly modified) response returned by
+        `post_get_stored_info_type` will be passed to
+        `post_get_stored_info_type_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_table_data_profile(
         self,
@@ -1072,11 +1507,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.TableDataProfile:
         """Post-rpc interceptor for get_table_data_profile
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_table_data_profile_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_table_data_profile` interceptor runs
+        before the `post_get_table_data_profile_with_metadata` interceptor.
         """
         return response
+
+    def post_get_table_data_profile_with_metadata(
+        self,
+        response: dlp.TableDataProfile,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.TableDataProfile, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_table_data_profile
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_get_table_data_profile_with_metadata`
+        interceptor in new development instead of the `post_get_table_data_profile` interceptor.
+        When both interceptors are used, this `post_get_table_data_profile_with_metadata` interceptor runs after the
+        `post_get_table_data_profile` interceptor. The (possibly modified) response returned by
+        `post_get_table_data_profile` will be passed to
+        `post_get_table_data_profile_with_metadata`.
+        """
+        return response, metadata
 
     def pre_hybrid_inspect_dlp_job(
         self,
@@ -1095,11 +1553,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.HybridInspectResponse:
         """Post-rpc interceptor for hybrid_inspect_dlp_job
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_hybrid_inspect_dlp_job_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_hybrid_inspect_dlp_job` interceptor runs
+        before the `post_hybrid_inspect_dlp_job_with_metadata` interceptor.
         """
         return response
+
+    def post_hybrid_inspect_dlp_job_with_metadata(
+        self,
+        response: dlp.HybridInspectResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.HybridInspectResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for hybrid_inspect_dlp_job
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_hybrid_inspect_dlp_job_with_metadata`
+        interceptor in new development instead of the `post_hybrid_inspect_dlp_job` interceptor.
+        When both interceptors are used, this `post_hybrid_inspect_dlp_job_with_metadata` interceptor runs after the
+        `post_hybrid_inspect_dlp_job` interceptor. The (possibly modified) response returned by
+        `post_hybrid_inspect_dlp_job` will be passed to
+        `post_hybrid_inspect_dlp_job_with_metadata`.
+        """
+        return response, metadata
 
     def pre_hybrid_inspect_job_trigger(
         self,
@@ -1120,11 +1601,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.HybridInspectResponse:
         """Post-rpc interceptor for hybrid_inspect_job_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_hybrid_inspect_job_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_hybrid_inspect_job_trigger` interceptor runs
+        before the `post_hybrid_inspect_job_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_hybrid_inspect_job_trigger_with_metadata(
+        self,
+        response: dlp.HybridInspectResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.HybridInspectResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for hybrid_inspect_job_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_hybrid_inspect_job_trigger_with_metadata`
+        interceptor in new development instead of the `post_hybrid_inspect_job_trigger` interceptor.
+        When both interceptors are used, this `post_hybrid_inspect_job_trigger_with_metadata` interceptor runs after the
+        `post_hybrid_inspect_job_trigger` interceptor. The (possibly modified) response returned by
+        `post_hybrid_inspect_job_trigger` will be passed to
+        `post_hybrid_inspect_job_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_inspect_content(
         self,
@@ -1143,11 +1647,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.InspectContentResponse:
         """Post-rpc interceptor for inspect_content
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_inspect_content_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_inspect_content` interceptor runs
+        before the `post_inspect_content_with_metadata` interceptor.
         """
         return response
+
+    def post_inspect_content_with_metadata(
+        self,
+        response: dlp.InspectContentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.InspectContentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for inspect_content
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_inspect_content_with_metadata`
+        interceptor in new development instead of the `post_inspect_content` interceptor.
+        When both interceptors are used, this `post_inspect_content_with_metadata` interceptor runs after the
+        `post_inspect_content` interceptor. The (possibly modified) response returned by
+        `post_inspect_content` will be passed to
+        `post_inspect_content_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_column_data_profiles(
         self,
@@ -1168,11 +1695,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListColumnDataProfilesResponse:
         """Post-rpc interceptor for list_column_data_profiles
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_column_data_profiles_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_column_data_profiles` interceptor runs
+        before the `post_list_column_data_profiles_with_metadata` interceptor.
         """
         return response
+
+    def post_list_column_data_profiles_with_metadata(
+        self,
+        response: dlp.ListColumnDataProfilesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListColumnDataProfilesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_column_data_profiles
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_column_data_profiles_with_metadata`
+        interceptor in new development instead of the `post_list_column_data_profiles` interceptor.
+        When both interceptors are used, this `post_list_column_data_profiles_with_metadata` interceptor runs after the
+        `post_list_column_data_profiles` interceptor. The (possibly modified) response returned by
+        `post_list_column_data_profiles` will be passed to
+        `post_list_column_data_profiles_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_connections(
         self,
@@ -1191,11 +1743,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListConnectionsResponse:
         """Post-rpc interceptor for list_connections
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_connections_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_connections` interceptor runs
+        before the `post_list_connections_with_metadata` interceptor.
         """
         return response
+
+    def post_list_connections_with_metadata(
+        self,
+        response: dlp.ListConnectionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ListConnectionsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_connections
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_connections_with_metadata`
+        interceptor in new development instead of the `post_list_connections` interceptor.
+        When both interceptors are used, this `post_list_connections_with_metadata` interceptor runs after the
+        `post_list_connections` interceptor. The (possibly modified) response returned by
+        `post_list_connections` will be passed to
+        `post_list_connections_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_deidentify_templates(
         self,
@@ -1216,11 +1791,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListDeidentifyTemplatesResponse:
         """Post-rpc interceptor for list_deidentify_templates
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_deidentify_templates_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_deidentify_templates` interceptor runs
+        before the `post_list_deidentify_templates_with_metadata` interceptor.
         """
         return response
+
+    def post_list_deidentify_templates_with_metadata(
+        self,
+        response: dlp.ListDeidentifyTemplatesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListDeidentifyTemplatesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_deidentify_templates
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_deidentify_templates_with_metadata`
+        interceptor in new development instead of the `post_list_deidentify_templates` interceptor.
+        When both interceptors are used, this `post_list_deidentify_templates_with_metadata` interceptor runs after the
+        `post_list_deidentify_templates` interceptor. The (possibly modified) response returned by
+        `post_list_deidentify_templates` will be passed to
+        `post_list_deidentify_templates_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_discovery_configs(
         self,
@@ -1241,11 +1841,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListDiscoveryConfigsResponse:
         """Post-rpc interceptor for list_discovery_configs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_discovery_configs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_discovery_configs` interceptor runs
+        before the `post_list_discovery_configs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_discovery_configs_with_metadata(
+        self,
+        response: dlp.ListDiscoveryConfigsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListDiscoveryConfigsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_discovery_configs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_discovery_configs_with_metadata`
+        interceptor in new development instead of the `post_list_discovery_configs` interceptor.
+        When both interceptors are used, this `post_list_discovery_configs_with_metadata` interceptor runs after the
+        `post_list_discovery_configs` interceptor. The (possibly modified) response returned by
+        `post_list_discovery_configs` will be passed to
+        `post_list_discovery_configs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_dlp_jobs(
         self,
@@ -1264,11 +1889,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListDlpJobsResponse:
         """Post-rpc interceptor for list_dlp_jobs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_dlp_jobs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_dlp_jobs` interceptor runs
+        before the `post_list_dlp_jobs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_dlp_jobs_with_metadata(
+        self,
+        response: dlp.ListDlpJobsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ListDlpJobsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_dlp_jobs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_dlp_jobs_with_metadata`
+        interceptor in new development instead of the `post_list_dlp_jobs` interceptor.
+        When both interceptors are used, this `post_list_dlp_jobs_with_metadata` interceptor runs after the
+        `post_list_dlp_jobs` interceptor. The (possibly modified) response returned by
+        `post_list_dlp_jobs` will be passed to
+        `post_list_dlp_jobs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_file_store_data_profiles(
         self,
@@ -1289,11 +1937,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListFileStoreDataProfilesResponse:
         """Post-rpc interceptor for list_file_store_data_profiles
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_file_store_data_profiles_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_file_store_data_profiles` interceptor runs
+        before the `post_list_file_store_data_profiles_with_metadata` interceptor.
         """
         return response
+
+    def post_list_file_store_data_profiles_with_metadata(
+        self,
+        response: dlp.ListFileStoreDataProfilesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListFileStoreDataProfilesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_file_store_data_profiles
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_file_store_data_profiles_with_metadata`
+        interceptor in new development instead of the `post_list_file_store_data_profiles` interceptor.
+        When both interceptors are used, this `post_list_file_store_data_profiles_with_metadata` interceptor runs after the
+        `post_list_file_store_data_profiles` interceptor. The (possibly modified) response returned by
+        `post_list_file_store_data_profiles` will be passed to
+        `post_list_file_store_data_profiles_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_info_types(
         self,
@@ -1312,11 +1985,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListInfoTypesResponse:
         """Post-rpc interceptor for list_info_types
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_info_types_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_info_types` interceptor runs
+        before the `post_list_info_types_with_metadata` interceptor.
         """
         return response
+
+    def post_list_info_types_with_metadata(
+        self,
+        response: dlp.ListInfoTypesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ListInfoTypesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_info_types
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_info_types_with_metadata`
+        interceptor in new development instead of the `post_list_info_types` interceptor.
+        When both interceptors are used, this `post_list_info_types_with_metadata` interceptor runs after the
+        `post_list_info_types` interceptor. The (possibly modified) response returned by
+        `post_list_info_types` will be passed to
+        `post_list_info_types_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_inspect_templates(
         self,
@@ -1337,11 +2033,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListInspectTemplatesResponse:
         """Post-rpc interceptor for list_inspect_templates
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_inspect_templates_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_inspect_templates` interceptor runs
+        before the `post_list_inspect_templates_with_metadata` interceptor.
         """
         return response
+
+    def post_list_inspect_templates_with_metadata(
+        self,
+        response: dlp.ListInspectTemplatesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListInspectTemplatesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_inspect_templates
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_inspect_templates_with_metadata`
+        interceptor in new development instead of the `post_list_inspect_templates` interceptor.
+        When both interceptors are used, this `post_list_inspect_templates_with_metadata` interceptor runs after the
+        `post_list_inspect_templates` interceptor. The (possibly modified) response returned by
+        `post_list_inspect_templates` will be passed to
+        `post_list_inspect_templates_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_job_triggers(
         self,
@@ -1360,11 +2081,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListJobTriggersResponse:
         """Post-rpc interceptor for list_job_triggers
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_job_triggers_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_job_triggers` interceptor runs
+        before the `post_list_job_triggers_with_metadata` interceptor.
         """
         return response
+
+    def post_list_job_triggers_with_metadata(
+        self,
+        response: dlp.ListJobTriggersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ListJobTriggersResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_job_triggers
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_job_triggers_with_metadata`
+        interceptor in new development instead of the `post_list_job_triggers` interceptor.
+        When both interceptors are used, this `post_list_job_triggers_with_metadata` interceptor runs after the
+        `post_list_job_triggers` interceptor. The (possibly modified) response returned by
+        `post_list_job_triggers` will be passed to
+        `post_list_job_triggers_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_project_data_profiles(
         self,
@@ -1385,11 +2129,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListProjectDataProfilesResponse:
         """Post-rpc interceptor for list_project_data_profiles
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_project_data_profiles_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_project_data_profiles` interceptor runs
+        before the `post_list_project_data_profiles_with_metadata` interceptor.
         """
         return response
+
+    def post_list_project_data_profiles_with_metadata(
+        self,
+        response: dlp.ListProjectDataProfilesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListProjectDataProfilesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_project_data_profiles
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_project_data_profiles_with_metadata`
+        interceptor in new development instead of the `post_list_project_data_profiles` interceptor.
+        When both interceptors are used, this `post_list_project_data_profiles_with_metadata` interceptor runs after the
+        `post_list_project_data_profiles` interceptor. The (possibly modified) response returned by
+        `post_list_project_data_profiles` will be passed to
+        `post_list_project_data_profiles_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_stored_info_types(
         self,
@@ -1408,11 +2177,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListStoredInfoTypesResponse:
         """Post-rpc interceptor for list_stored_info_types
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_stored_info_types_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_stored_info_types` interceptor runs
+        before the `post_list_stored_info_types_with_metadata` interceptor.
         """
         return response
+
+    def post_list_stored_info_types_with_metadata(
+        self,
+        response: dlp.ListStoredInfoTypesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListStoredInfoTypesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_stored_info_types
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_stored_info_types_with_metadata`
+        interceptor in new development instead of the `post_list_stored_info_types` interceptor.
+        When both interceptors are used, this `post_list_stored_info_types_with_metadata` interceptor runs after the
+        `post_list_stored_info_types` interceptor. The (possibly modified) response returned by
+        `post_list_stored_info_types` will be passed to
+        `post_list_stored_info_types_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_table_data_profiles(
         self,
@@ -1433,11 +2227,36 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ListTableDataProfilesResponse:
         """Post-rpc interceptor for list_table_data_profiles
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_table_data_profiles_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_table_data_profiles` interceptor runs
+        before the `post_list_table_data_profiles_with_metadata` interceptor.
         """
         return response
+
+    def post_list_table_data_profiles_with_metadata(
+        self,
+        response: dlp.ListTableDataProfilesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        dlp.ListTableDataProfilesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_table_data_profiles
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_list_table_data_profiles_with_metadata`
+        interceptor in new development instead of the `post_list_table_data_profiles` interceptor.
+        When both interceptors are used, this `post_list_table_data_profiles_with_metadata` interceptor runs after the
+        `post_list_table_data_profiles` interceptor. The (possibly modified) response returned by
+        `post_list_table_data_profiles` will be passed to
+        `post_list_table_data_profiles_with_metadata`.
+        """
+        return response, metadata
 
     def pre_redact_image(
         self,
@@ -1456,11 +2275,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.RedactImageResponse:
         """Post-rpc interceptor for redact_image
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_redact_image_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_redact_image` interceptor runs
+        before the `post_redact_image_with_metadata` interceptor.
         """
         return response
+
+    def post_redact_image_with_metadata(
+        self,
+        response: dlp.RedactImageResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.RedactImageResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for redact_image
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_redact_image_with_metadata`
+        interceptor in new development instead of the `post_redact_image` interceptor.
+        When both interceptors are used, this `post_redact_image_with_metadata` interceptor runs after the
+        `post_redact_image` interceptor. The (possibly modified) response returned by
+        `post_redact_image` will be passed to
+        `post_redact_image_with_metadata`.
+        """
+        return response, metadata
 
     def pre_reidentify_content(
         self,
@@ -1479,11 +2321,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.ReidentifyContentResponse:
         """Post-rpc interceptor for reidentify_content
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_reidentify_content_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_reidentify_content` interceptor runs
+        before the `post_reidentify_content_with_metadata` interceptor.
         """
         return response
+
+    def post_reidentify_content_with_metadata(
+        self,
+        response: dlp.ReidentifyContentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.ReidentifyContentResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for reidentify_content
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_reidentify_content_with_metadata`
+        interceptor in new development instead of the `post_reidentify_content` interceptor.
+        When both interceptors are used, this `post_reidentify_content_with_metadata` interceptor runs after the
+        `post_reidentify_content` interceptor. The (possibly modified) response returned by
+        `post_reidentify_content` will be passed to
+        `post_reidentify_content_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_connections(
         self,
@@ -1502,11 +2367,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.SearchConnectionsResponse:
         """Post-rpc interceptor for search_connections
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_connections_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_connections` interceptor runs
+        before the `post_search_connections_with_metadata` interceptor.
         """
         return response
+
+    def post_search_connections_with_metadata(
+        self,
+        response: dlp.SearchConnectionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.SearchConnectionsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for search_connections
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_search_connections_with_metadata`
+        interceptor in new development instead of the `post_search_connections` interceptor.
+        When both interceptors are used, this `post_search_connections_with_metadata` interceptor runs after the
+        `post_search_connections` interceptor. The (possibly modified) response returned by
+        `post_search_connections` will be passed to
+        `post_search_connections_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_connection(
         self,
@@ -1523,11 +2411,34 @@ class DlpServiceRestInterceptor:
     def post_update_connection(self, response: dlp.Connection) -> dlp.Connection:
         """Post-rpc interceptor for update_connection
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_connection_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_connection` interceptor runs
+        before the `post_update_connection_with_metadata` interceptor.
         """
         return response
+
+    def post_update_connection_with_metadata(
+        self,
+        response: dlp.Connection,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.Connection, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_connection
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_connection_with_metadata`
+        interceptor in new development instead of the `post_update_connection` interceptor.
+        When both interceptors are used, this `post_update_connection_with_metadata` interceptor runs after the
+        `post_update_connection` interceptor. The (possibly modified) response returned by
+        `post_update_connection` will be passed to
+        `post_update_connection_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_deidentify_template(
         self,
@@ -1548,11 +2459,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DeidentifyTemplate:
         """Post-rpc interceptor for update_deidentify_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_deidentify_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_deidentify_template` interceptor runs
+        before the `post_update_deidentify_template_with_metadata` interceptor.
         """
         return response
+
+    def post_update_deidentify_template_with_metadata(
+        self,
+        response: dlp.DeidentifyTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DeidentifyTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_deidentify_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_deidentify_template_with_metadata`
+        interceptor in new development instead of the `post_update_deidentify_template` interceptor.
+        When both interceptors are used, this `post_update_deidentify_template_with_metadata` interceptor runs after the
+        `post_update_deidentify_template` interceptor. The (possibly modified) response returned by
+        `post_update_deidentify_template` will be passed to
+        `post_update_deidentify_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_discovery_config(
         self,
@@ -1573,11 +2507,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.DiscoveryConfig:
         """Post-rpc interceptor for update_discovery_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_discovery_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_discovery_config` interceptor runs
+        before the `post_update_discovery_config_with_metadata` interceptor.
         """
         return response
+
+    def post_update_discovery_config_with_metadata(
+        self,
+        response: dlp.DiscoveryConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.DiscoveryConfig, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_discovery_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_discovery_config_with_metadata`
+        interceptor in new development instead of the `post_update_discovery_config` interceptor.
+        When both interceptors are used, this `post_update_discovery_config_with_metadata` interceptor runs after the
+        `post_update_discovery_config` interceptor. The (possibly modified) response returned by
+        `post_update_discovery_config` will be passed to
+        `post_update_discovery_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_inspect_template(
         self,
@@ -1598,11 +2555,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.InspectTemplate:
         """Post-rpc interceptor for update_inspect_template
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_inspect_template_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_inspect_template` interceptor runs
+        before the `post_update_inspect_template_with_metadata` interceptor.
         """
         return response
+
+    def post_update_inspect_template_with_metadata(
+        self,
+        response: dlp.InspectTemplate,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.InspectTemplate, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_inspect_template
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_inspect_template_with_metadata`
+        interceptor in new development instead of the `post_update_inspect_template` interceptor.
+        When both interceptors are used, this `post_update_inspect_template_with_metadata` interceptor runs after the
+        `post_update_inspect_template` interceptor. The (possibly modified) response returned by
+        `post_update_inspect_template` will be passed to
+        `post_update_inspect_template_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_job_trigger(
         self,
@@ -1619,11 +2599,34 @@ class DlpServiceRestInterceptor:
     def post_update_job_trigger(self, response: dlp.JobTrigger) -> dlp.JobTrigger:
         """Post-rpc interceptor for update_job_trigger
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_job_trigger_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_job_trigger` interceptor runs
+        before the `post_update_job_trigger_with_metadata` interceptor.
         """
         return response
+
+    def post_update_job_trigger_with_metadata(
+        self,
+        response: dlp.JobTrigger,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.JobTrigger, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_job_trigger
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_job_trigger_with_metadata`
+        interceptor in new development instead of the `post_update_job_trigger` interceptor.
+        When both interceptors are used, this `post_update_job_trigger_with_metadata` interceptor runs after the
+        `post_update_job_trigger` interceptor. The (possibly modified) response returned by
+        `post_update_job_trigger` will be passed to
+        `post_update_job_trigger_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_stored_info_type(
         self,
@@ -1644,11 +2647,34 @@ class DlpServiceRestInterceptor:
     ) -> dlp.StoredInfoType:
         """Post-rpc interceptor for update_stored_info_type
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_stored_info_type_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the DlpService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_stored_info_type` interceptor runs
+        before the `post_update_stored_info_type_with_metadata` interceptor.
         """
         return response
+
+    def post_update_stored_info_type_with_metadata(
+        self,
+        response: dlp.StoredInfoType,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[dlp.StoredInfoType, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_stored_info_type
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the DlpService server but before it is returned to user code.
+
+        We recommend only using this `post_update_stored_info_type_with_metadata`
+        interceptor in new development instead of the `post_update_stored_info_type` interceptor.
+        When both interceptors are used, this `post_update_stored_info_type_with_metadata` interceptor runs after the
+        `post_update_stored_info_type` interceptor. The (possibly modified) response returned by
+        `post_update_stored_info_type` will be passed to
+        `post_update_stored_info_type_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -1870,6 +2896,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_activate_job_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_activate_job_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2064,9 +3094,9 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
 
             Returns:
                 ~.dlp.Connection:
-                    A data connection to allow DLP to
-                profile data in locations that require
-                additional configuration.
+                    A data connection to allow the DLP
+                API to profile data in locations that
+                require additional configuration.
 
             """
 
@@ -2140,6 +3170,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_connection(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_connection_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2295,6 +3329,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_deidentify_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_deidentify_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2451,6 +3489,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_discovery_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_discovery_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2609,6 +3651,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_dlp_job(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_dlp_job_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2765,6 +3811,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_inspect_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_inspect_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2917,6 +3967,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_job_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_job_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3069,6 +4123,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_stored_info_type(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_stored_info_type_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3219,6 +4277,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_deidentify_content(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_deidentify_content_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4467,6 +5529,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_column_data_profile(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_column_data_profile_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4541,9 +5607,9 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
 
             Returns:
                 ~.dlp.Connection:
-                    A data connection to allow DLP to
-                profile data in locations that require
-                additional configuration.
+                    A data connection to allow the DLP
+                API to profile data in locations that
+                require additional configuration.
 
             """
 
@@ -4614,6 +5680,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_connection(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_connection_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4762,6 +5832,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_deidentify_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_deidentify_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4912,6 +5986,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_discovery_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_discovery_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4973,7 +6051,8 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
 
             Args:
                 request (~.dlp.GetDlpJobRequest):
-                    The request object. The request message for [DlpJobs.GetDlpJob][].
+                    The request object. The request message for
+                [GetDlpJob][google.privacy.dlp.v2.DlpService.GetDlpJob].
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
@@ -5056,6 +6135,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_dlp_job(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_dlp_job_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5204,6 +6287,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_file_store_data_profile(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_file_store_data_profile_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5354,6 +6441,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_inspect_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_inspect_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5502,6 +6593,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_job_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_job_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5648,6 +6743,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_project_data_profile(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_project_data_profile_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5794,6 +6893,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_stored_info_type(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_stored_info_type_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5936,6 +7039,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_table_data_profile(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_table_data_profile_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6087,6 +7194,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_hybrid_inspect_dlp_job(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_hybrid_inspect_dlp_job_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6239,6 +7350,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_hybrid_inspect_job_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_hybrid_inspect_job_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6390,6 +7505,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_inspect_content(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_inspect_content_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6536,6 +7655,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_column_data_profiles(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_column_data_profiles_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6680,6 +7803,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_connections(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_connections_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6825,6 +7952,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_deidentify_templates(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_deidentify_templates_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6972,6 +8103,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_discovery_configs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_discovery_configs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7121,6 +8256,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_dlp_jobs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_dlp_jobs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7269,6 +8408,13 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_file_store_data_profiles(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_file_store_data_profiles_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7417,6 +8563,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_info_types(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_info_types_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7562,6 +8712,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_inspect_templates(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_inspect_templates_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7706,6 +8860,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_job_triggers(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_job_triggers_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7853,6 +9011,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_project_data_profiles(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_project_data_profiles_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8000,6 +9162,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_stored_info_types(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_stored_info_types_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8146,6 +9312,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_table_data_profiles(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_table_data_profiles_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8300,6 +9470,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_redact_image(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_redact_image_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8448,6 +9622,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_reidentify_content(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_reidentify_content_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8593,6 +9771,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_connections(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_connections_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8668,9 +9850,9 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
 
             Returns:
                 ~.dlp.Connection:
-                    A data connection to allow DLP to
-                profile data in locations that require
-                additional configuration.
+                    A data connection to allow the DLP
+                API to profile data in locations that
+                require additional configuration.
 
             """
 
@@ -8744,6 +9926,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_connection(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_connection_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8899,6 +10085,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_deidentify_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_deidentify_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9055,6 +10245,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_discovery_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_discovery_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9211,6 +10405,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_inspect_template(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_inspect_template_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9363,6 +10561,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_job_trigger(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_job_trigger_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9515,6 +10717,10 @@ class DlpServiceRestTransport(_BaseDlpServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_stored_info_type(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_stored_info_type_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

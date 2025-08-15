@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gdchardwaremanagement-v0.1.11...google-cloud-gdchardwaremanagement-v0.1.12) (2025-04-23)
+
+
+### Features
+
+* accept status updates in the SignalZoneState method ([a66badc](https://github.com/googleapis/google-cloud-python/commit/a66badc3fd01734c6e2c4192b92cc4a0b998e8f8))
+* add deployment type and installation dates to orders ([a66badc](https://github.com/googleapis/google-cloud-python/commit/a66badc3fd01734c6e2c4192b92cc4a0b998e8f8))
+* expose the allowed hardware count for each SKU ([a66badc](https://github.com/googleapis/google-cloud-python/commit/a66badc3fd01734c6e2c4192b92cc4a0b998e8f8))
+
+
+### Documentation
+
+* make billing_id an output-only field ([a66badc](https://github.com/googleapis/google-cloud-python/commit/a66badc3fd01734c6e2c4192b92cc4a0b998e8f8))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gdchardwaremanagement-v0.1.10...google-cloud-gdchardwaremanagement-v0.1.11) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gdchardwaremanagement-v0.1.9...google-cloud-gdchardwaremanagement-v0.1.10) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gdchardwaremanagement-v0.1.8...google-cloud-gdchardwaremanagement-v0.1.9) (2024-12-12)
 
 

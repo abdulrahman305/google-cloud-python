@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.compute_v1 import gapic_version as package_version
 from google.cloud.compute_v1.services import region_operations
@@ -31,6 +32,9 @@ from google.cloud.compute_v1.types import compute
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class RoutersTransport(abc.ABC):
@@ -143,6 +147,11 @@ class RoutersTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.delete_route_policy: gapic_v1.method.wrap_method(
+                self.delete_route_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.get: gapic_v1.method.wrap_method(
                 self.get,
                 default_timeout=None,
@@ -155,6 +164,11 @@ class RoutersTransport(abc.ABC):
             ),
             self.get_nat_mapping_info: gapic_v1.method.wrap_method(
                 self.get_nat_mapping_info,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_route_policy: gapic_v1.method.wrap_method(
+                self.get_route_policy,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -173,8 +187,23 @@ class RoutersTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.list_bgp_routes: gapic_v1.method.wrap_method(
+                self.list_bgp_routes,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_route_policies: gapic_v1.method.wrap_method(
+                self.list_route_policies,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.patch: gapic_v1.method.wrap_method(
                 self.patch,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.patch_route_policy: gapic_v1.method.wrap_method(
+                self.patch_route_policy,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -185,6 +214,11 @@ class RoutersTransport(abc.ABC):
             ),
             self.update: gapic_v1.method.wrap_method(
                 self.update,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_route_policy: gapic_v1.method.wrap_method(
+                self.update_route_policy,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -213,6 +247,15 @@ class RoutersTransport(abc.ABC):
         self,
     ) -> Callable[
         [compute.DeleteRouterRequest],
+        Union[compute.Operation, Awaitable[compute.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_route_policy(
+        self,
+    ) -> Callable[
+        [compute.DeleteRoutePolicyRouterRequest],
         Union[compute.Operation, Awaitable[compute.Operation]],
     ]:
         raise NotImplementedError()
@@ -247,6 +290,18 @@ class RoutersTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def get_route_policy(
+        self,
+    ) -> Callable[
+        [compute.GetRoutePolicyRouterRequest],
+        Union[
+            compute.RoutersGetRoutePolicyResponse,
+            Awaitable[compute.RoutersGetRoutePolicyResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def get_router_status(
         self,
     ) -> Callable[
@@ -274,10 +329,40 @@ class RoutersTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def list_bgp_routes(
+        self,
+    ) -> Callable[
+        [compute.ListBgpRoutesRoutersRequest],
+        Union[compute.RoutersListBgpRoutes, Awaitable[compute.RoutersListBgpRoutes]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_route_policies(
+        self,
+    ) -> Callable[
+        [compute.ListRoutePoliciesRoutersRequest],
+        Union[
+            compute.RoutersListRoutePolicies,
+            Awaitable[compute.RoutersListRoutePolicies],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def patch(
         self,
     ) -> Callable[
         [compute.PatchRouterRequest],
+        Union[compute.Operation, Awaitable[compute.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def patch_route_policy(
+        self,
+    ) -> Callable[
+        [compute.PatchRoutePolicyRouterRequest],
         Union[compute.Operation, Awaitable[compute.Operation]],
     ]:
         raise NotImplementedError()
@@ -298,6 +383,15 @@ class RoutersTransport(abc.ABC):
         self,
     ) -> Callable[
         [compute.UpdateRouterRequest],
+        Union[compute.Operation, Awaitable[compute.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_route_policy(
+        self,
+    ) -> Callable[
+        [compute.UpdateRoutePolicyRouterRequest],
         Union[compute.Operation, Awaitable[compute.Operation]],
     ]:
         raise NotImplementedError()

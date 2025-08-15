@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ from .types.data_store_connection import (
     DataStoreConnection,
     DataStoreConnectionSignals,
     DataStoreType,
+    DocumentProcessingMode,
 )
 from .types.deployment import (
     Deployment,
@@ -247,6 +248,7 @@ from .types.playbook import (
     DeletePlaybookVersionRequest,
     GetPlaybookRequest,
     GetPlaybookVersionRequest,
+    Handler,
     ListPlaybooksRequest,
     ListPlaybooksResponse,
     ListPlaybookVersionsRequest,
@@ -342,14 +344,22 @@ from .types.test_case import (
 )
 from .types.tool import (
     CreateToolRequest,
+    CreateToolVersionRequest,
     DeleteToolRequest,
+    DeleteToolVersionRequest,
     ExportToolsMetadata,
     ExportToolsRequest,
     ExportToolsResponse,
     GetToolRequest,
+    GetToolVersionRequest,
     ListToolsRequest,
     ListToolsResponse,
+    ListToolVersionsRequest,
+    ListToolVersionsResponse,
+    RestoreToolVersionRequest,
+    RestoreToolVersionResponse,
     Tool,
+    ToolVersion,
     UpdateToolRequest,
 )
 from .types.tool_call import ToolCall, ToolCallResult
@@ -456,6 +466,7 @@ __all__ = (
     "CreateSessionEntityTypeRequest",
     "CreateTestCaseRequest",
     "CreateToolRequest",
+    "CreateToolVersionRequest",
     "CreateTransitionRouteGroupRequest",
     "CreateVersionOperationMetadata",
     "CreateVersionRequest",
@@ -478,6 +489,7 @@ __all__ = (
     "DeleteSecuritySettingsRequest",
     "DeleteSessionEntityTypeRequest",
     "DeleteToolRequest",
+    "DeleteToolVersionRequest",
     "DeleteTransitionRouteGroupRequest",
     "DeleteVersionRequest",
     "DeleteWebhookRequest",
@@ -488,6 +500,7 @@ __all__ = (
     "DeploymentsClient",
     "DetectIntentRequest",
     "DetectIntentResponse",
+    "DocumentProcessingMode",
     "DtmfInput",
     "EntityType",
     "EntityTypesClient",
@@ -552,9 +565,11 @@ __all__ = (
     "GetTestCaseRequest",
     "GetTestCaseResultRequest",
     "GetToolRequest",
+    "GetToolVersionRequest",
     "GetTransitionRouteGroupRequest",
     "GetVersionRequest",
     "GetWebhookRequest",
+    "Handler",
     "ImportEntityTypesMetadata",
     "ImportEntityTypesRequest",
     "ImportEntityTypesResponse",
@@ -615,6 +630,8 @@ __all__ = (
     "ListTestCaseResultsResponse",
     "ListTestCasesRequest",
     "ListTestCasesResponse",
+    "ListToolVersionsRequest",
+    "ListToolVersionsResponse",
     "ListToolsRequest",
     "ListToolsResponse",
     "ListTransitionRouteGroupsRequest",
@@ -651,6 +668,8 @@ __all__ = (
     "ResourceName",
     "ResponseMessage",
     "RestoreAgentRequest",
+    "RestoreToolVersionRequest",
+    "RestoreToolVersionResponse",
     "RolloutConfig",
     "RolloutState",
     "RunContinuousTestMetadata",
@@ -693,6 +712,7 @@ __all__ = (
     "ToolCall",
     "ToolCallResult",
     "ToolUse",
+    "ToolVersion",
     "ToolsClient",
     "TrainFlowRequest",
     "TransitionCoverage",

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ class retailCallTransformer(cst.CSTTransformer):
         'batch_update_generative_question_configs': ('requests', 'parent', ),
         'collect_user_event': ('parent', 'user_event', 'prebuilt_rule', 'uri', 'ets', 'raw_json', ),
         'complete_query': ('catalog', 'query', 'visitor_id', 'language_codes', 'device_type', 'dataset', 'max_suggestions', 'enable_attribute_suggestions', 'entity', ),
+        'conversational_search': ('placement', 'branch', 'visitor_id', 'query', 'page_categories', 'conversation_id', 'search_params', 'user_info', 'conversational_filtering_spec', 'user_labels', 'safety_settings', ),
         'create_control': ('parent', 'control', 'control_id', ),
         'create_merchant_center_account_link': ('parent', 'merchant_center_account_link', ),
         'create_model': ('parent', 'model', 'dry_run', ),
@@ -97,7 +98,7 @@ class retailCallTransformer(cst.CSTTransformer):
         'remove_local_inventories': ('product', 'place_ids', 'remove_time', 'allow_missing', ),
         'replace_catalog_attribute': ('attributes_config', 'catalog_attribute', 'update_mask', ),
         'resume_model': ('name', ),
-        'search': ('placement', 'visitor_id', 'branch', 'query', 'user_info', 'page_size', 'page_token', 'offset', 'filter', 'canonical_filter', 'order_by', 'facet_specs', 'dynamic_facet_spec', 'boost_spec', 'query_expansion_spec', 'relevance_threshold', 'variant_rollup_keys', 'page_categories', 'search_mode', 'personalization_spec', 'labels', 'spell_correction_spec', 'entity', 'conversational_search_spec', 'tile_navigation_spec', ),
+        'search': ('placement', 'visitor_id', 'branch', 'query', 'user_info', 'page_size', 'page_token', 'offset', 'filter', 'canonical_filter', 'order_by', 'facet_specs', 'dynamic_facet_spec', 'boost_spec', 'query_expansion_spec', 'relevance_threshold', 'variant_rollup_keys', 'experiment_id', 'page_categories', 'search_mode', 'personalization_spec', 'labels', 'spell_correction_spec', 'entity', 'conversational_search_spec', 'tile_navigation_spec', 'language_code', 'region_code', 'place_id', 'user_attributes', ),
         'set_default_branch': ('catalog', 'branch_id', 'note', 'force', ),
         'set_inventory': ('inventory', 'set_mask', 'set_time', 'allow_missing', ),
         'tune_model': ('name', ),

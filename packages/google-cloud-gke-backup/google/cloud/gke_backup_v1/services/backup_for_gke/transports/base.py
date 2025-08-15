@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,20 +27,28 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.gke_backup_v1 import gapic_version as package_version
 from google.cloud.gke_backup_v1.types import (
     backup,
+    backup_channel,
     backup_plan,
+    backup_plan_binding,
     gkebackup,
     restore,
+    restore_channel,
     restore_plan,
+    restore_plan_binding,
     volume,
 )
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class BackupForGKETransport(abc.ABC):
@@ -182,6 +190,77 @@ class BackupForGKETransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.create_backup_channel: gapic_v1.method.wrap_method(
+                self.create_backup_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_backup_channels: gapic_v1.method.wrap_method(
+                self.list_backup_channels,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_backup_channel: gapic_v1.method.wrap_method(
+                self.get_backup_channel,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_backup_channel: gapic_v1.method.wrap_method(
+                self.update_backup_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.delete_backup_channel: gapic_v1.method.wrap_method(
+                self.delete_backup_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_backup_plan_bindings: gapic_v1.method.wrap_method(
+                self.list_backup_plan_bindings,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_backup_plan_binding: gapic_v1.method.wrap_method(
+                self.get_backup_plan_binding,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
             self.create_backup: gapic_v1.method.wrap_method(
                 self.create_backup,
                 default_timeout=120.0,
@@ -293,6 +372,77 @@ class BackupForGKETransport(abc.ABC):
             ),
             self.delete_restore_plan: gapic_v1.method.wrap_method(
                 self.delete_restore_plan,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.create_restore_channel: gapic_v1.method.wrap_method(
+                self.create_restore_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_restore_channels: gapic_v1.method.wrap_method(
+                self.list_restore_channels,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_restore_channel: gapic_v1.method.wrap_method(
+                self.get_restore_channel,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_restore_channel: gapic_v1.method.wrap_method(
+                self.update_restore_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.delete_restore_channel: gapic_v1.method.wrap_method(
+                self.delete_restore_channel,
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_restore_plan_bindings: gapic_v1.method.wrap_method(
+                self.list_restore_plan_bindings,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_restore_plan_binding: gapic_v1.method.wrap_method(
+                self.get_restore_plan_binding,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
                 default_timeout=60.0,
                 client_info=client_info,
             ),
@@ -491,6 +641,78 @@ class BackupForGKETransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def create_backup_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.CreateBackupChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_backup_channels(
+        self,
+    ) -> Callable[
+        [gkebackup.ListBackupChannelsRequest],
+        Union[
+            gkebackup.ListBackupChannelsResponse,
+            Awaitable[gkebackup.ListBackupChannelsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_backup_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.GetBackupChannelRequest],
+        Union[backup_channel.BackupChannel, Awaitable[backup_channel.BackupChannel]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_backup_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.UpdateBackupChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_backup_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.DeleteBackupChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_backup_plan_bindings(
+        self,
+    ) -> Callable[
+        [gkebackup.ListBackupPlanBindingsRequest],
+        Union[
+            gkebackup.ListBackupPlanBindingsResponse,
+            Awaitable[gkebackup.ListBackupPlanBindingsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_backup_plan_binding(
+        self,
+    ) -> Callable[
+        [gkebackup.GetBackupPlanBindingRequest],
+        Union[
+            backup_plan_binding.BackupPlanBinding,
+            Awaitable[backup_plan_binding.BackupPlanBinding],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def create_backup(
         self,
     ) -> Callable[
@@ -600,6 +822,80 @@ class BackupForGKETransport(abc.ABC):
     ) -> Callable[
         [gkebackup.DeleteRestorePlanRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_restore_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.CreateRestoreChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_restore_channels(
+        self,
+    ) -> Callable[
+        [gkebackup.ListRestoreChannelsRequest],
+        Union[
+            gkebackup.ListRestoreChannelsResponse,
+            Awaitable[gkebackup.ListRestoreChannelsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_restore_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.GetRestoreChannelRequest],
+        Union[
+            restore_channel.RestoreChannel, Awaitable[restore_channel.RestoreChannel]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_restore_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.UpdateRestoreChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_restore_channel(
+        self,
+    ) -> Callable[
+        [gkebackup.DeleteRestoreChannelRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_restore_plan_bindings(
+        self,
+    ) -> Callable[
+        [gkebackup.ListRestorePlanBindingsRequest],
+        Union[
+            gkebackup.ListRestorePlanBindingsResponse,
+            Awaitable[gkebackup.ListRestorePlanBindingsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_restore_plan_binding(
+        self,
+    ) -> Callable[
+        [gkebackup.GetRestorePlanBindingRequest],
+        Union[
+            restore_plan_binding.RestorePlanBinding,
+            Awaitable[restore_plan_binding.RestorePlanBinding],
+        ],
     ]:
         raise NotImplementedError()
 

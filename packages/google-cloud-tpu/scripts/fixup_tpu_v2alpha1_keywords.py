@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,7 +52,10 @@ class tpuCallTransformer(cst.CSTTransformer):
         'list_accelerator_types': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_nodes': ('parent', 'page_size', 'page_token', ),
         'list_queued_resources': ('parent', 'page_size', 'page_token', ),
+        'list_reservations': ('parent', 'page_size', 'page_token', ),
         'list_runtime_versions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'perform_maintenance': ('name', ),
+        'perform_maintenance_queued_resource': ('name', 'node_names', ),
         'reset_queued_resource': ('name', ),
         'simulate_maintenance_event': ('name', 'worker_ids', ),
         'start_node': ('name', ),

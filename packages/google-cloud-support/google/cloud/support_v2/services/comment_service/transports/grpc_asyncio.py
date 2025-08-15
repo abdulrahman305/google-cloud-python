@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -337,8 +337,7 @@ class CommentServiceGrpcAsyncIOTransport(CommentServiceTransport):
     ]:
         r"""Return a callable for the list comments method over gRPC.
 
-        Retrieve all Comments associated with the Case
-        object.
+        List all the comments associated with a case.
 
         Returns:
             Callable[[~.ListCommentsRequest],
@@ -366,9 +365,9 @@ class CommentServiceGrpcAsyncIOTransport(CommentServiceTransport):
     ]:
         r"""Return a callable for the create comment method over gRPC.
 
-        Add a new comment to the specified Case.
-        The comment object must have the following fields set:
-        body.
+        Add a new comment to a case.
+
+        The comment must have the following fields set: ``body``.
 
         Returns:
             Callable[[~.CreateCommentRequest],

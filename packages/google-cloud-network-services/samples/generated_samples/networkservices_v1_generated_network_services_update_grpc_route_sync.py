@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ def sample_update_grpc_route():
 
     # Initialize request argument(s)
     grpc_route = network_services_v1.GrpcRoute()
-    grpc_route.name = "name_value"
     grpc_route.hostnames = ['hostnames_value1', 'hostnames_value2']
 
     request = network_services_v1.UpdateGrpcRouteRequest(

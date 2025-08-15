@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import os
+import re
 
 # try/except added for compatibility with python < 3.8
 try:
@@ -76,6 +77,13 @@ from google.cloud.redis_v1beta1.services.cloud_redis import (
     transports,
 )
 from google.cloud.redis_v1beta1.types import cloud_redis
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -310,6 +318,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         CloudRedisClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = CloudRedisClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = CloudRedisClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -8007,10 +8058,13 @@ def test_list_instances_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_list_instances"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_list_instances_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_list_instances"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.ListInstancesRequest.pb(
             cloud_redis.ListInstancesRequest()
         )
@@ -8036,6 +8090,7 @@ def test_list_instances_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_redis.ListInstancesResponse()
+        post_with_metadata.return_value = cloud_redis.ListInstancesResponse(), metadata
 
         client.list_instances(
             request,
@@ -8047,6 +8102,7 @@ def test_list_instances_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_instance_rest_bad_request(request_type=cloud_redis.GetInstanceRequest):
@@ -8179,10 +8235,13 @@ def test_get_instance_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_get_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_get_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_get_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.GetInstanceRequest.pb(cloud_redis.GetInstanceRequest())
         transcode.return_value = {
             "method": "post",
@@ -8204,6 +8263,7 @@ def test_get_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_redis.Instance()
+        post_with_metadata.return_value = cloud_redis.Instance(), metadata
 
         client.get_instance(
             request,
@@ -8215,6 +8275,7 @@ def test_get_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_instance_auth_string_rest_bad_request(
@@ -8299,10 +8360,14 @@ def test_get_instance_auth_string_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_get_instance_auth_string"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor,
+        "post_get_instance_auth_string_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_get_instance_auth_string"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.GetInstanceAuthStringRequest.pb(
             cloud_redis.GetInstanceAuthStringRequest()
         )
@@ -8328,6 +8393,7 @@ def test_get_instance_auth_string_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_redis.InstanceAuthString()
+        post_with_metadata.return_value = cloud_redis.InstanceAuthString(), metadata
 
         client.get_instance_auth_string(
             request,
@@ -8339,6 +8405,7 @@ def test_get_instance_auth_string_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_instance_rest_bad_request(
@@ -8553,10 +8620,13 @@ def test_create_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_create_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_create_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_create_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.CreateInstanceRequest.pb(
             cloud_redis.CreateInstanceRequest()
         )
@@ -8580,6 +8650,7 @@ def test_create_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_instance(
             request,
@@ -8591,6 +8662,7 @@ def test_create_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_instance_rest_bad_request(
@@ -8809,10 +8881,13 @@ def test_update_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_update_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_update_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_update_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.UpdateInstanceRequest.pb(
             cloud_redis.UpdateInstanceRequest()
         )
@@ -8836,6 +8911,7 @@ def test_update_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_instance(
             request,
@@ -8847,6 +8923,7 @@ def test_update_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_upgrade_instance_rest_bad_request(
@@ -8927,10 +9004,13 @@ def test_upgrade_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_upgrade_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_upgrade_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_upgrade_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.UpgradeInstanceRequest.pb(
             cloud_redis.UpgradeInstanceRequest()
         )
@@ -8954,6 +9034,7 @@ def test_upgrade_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.upgrade_instance(
             request,
@@ -8965,6 +9046,7 @@ def test_upgrade_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_import_instance_rest_bad_request(
@@ -9045,10 +9127,13 @@ def test_import_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_import_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_import_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_import_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.ImportInstanceRequest.pb(
             cloud_redis.ImportInstanceRequest()
         )
@@ -9072,6 +9157,7 @@ def test_import_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.import_instance(
             request,
@@ -9083,6 +9169,7 @@ def test_import_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_export_instance_rest_bad_request(
@@ -9163,10 +9250,13 @@ def test_export_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_export_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_export_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_export_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.ExportInstanceRequest.pb(
             cloud_redis.ExportInstanceRequest()
         )
@@ -9190,6 +9280,7 @@ def test_export_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.export_instance(
             request,
@@ -9201,6 +9292,7 @@ def test_export_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_failover_instance_rest_bad_request(
@@ -9281,10 +9373,13 @@ def test_failover_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_failover_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_failover_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_failover_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.FailoverInstanceRequest.pb(
             cloud_redis.FailoverInstanceRequest()
         )
@@ -9308,6 +9403,7 @@ def test_failover_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.failover_instance(
             request,
@@ -9319,6 +9415,7 @@ def test_failover_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_instance_rest_bad_request(
@@ -9399,10 +9496,13 @@ def test_delete_instance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_delete_instance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor, "post_delete_instance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_delete_instance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.DeleteInstanceRequest.pb(
             cloud_redis.DeleteInstanceRequest()
         )
@@ -9426,6 +9526,7 @@ def test_delete_instance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_instance(
             request,
@@ -9437,6 +9538,7 @@ def test_delete_instance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_reschedule_maintenance_rest_bad_request(
@@ -9517,10 +9619,14 @@ def test_reschedule_maintenance_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.CloudRedisRestInterceptor, "post_reschedule_maintenance"
     ) as post, mock.patch.object(
+        transports.CloudRedisRestInterceptor,
+        "post_reschedule_maintenance_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.CloudRedisRestInterceptor, "pre_reschedule_maintenance"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_redis.RescheduleMaintenanceRequest.pb(
             cloud_redis.RescheduleMaintenanceRequest()
         )
@@ -9544,6 +9650,7 @@ def test_reschedule_maintenance_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.reschedule_maintenance(
             request,
@@ -9555,6 +9662,7 @@ def test_reschedule_maintenance_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():

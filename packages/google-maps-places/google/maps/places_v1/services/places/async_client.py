@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.maps.places_v1 import gapic_version as package_version
 
@@ -44,10 +45,13 @@ except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.AsyncRetry, object, None]  # type: ignore
 
 from google.geo.type.types import viewport
+from google.type import datetime_pb2  # type: ignore
 from google.type import latlng_pb2  # type: ignore
 from google.type import localized_text_pb2  # type: ignore
+from google.type import postal_address_pb2  # type: ignore
 
 from google.maps.places_v1.types import (
+    address_descriptor,
     contextual_content,
     ev_charging,
     fuel_options,
@@ -75,9 +79,9 @@ _LOGGER = std_logging.getLogger(__name__)
 
 class PlacesAsyncClient:
     """Service definition for the Places API. Note: every request (except
-    for Autocomplete requests) requires a field mask set outside of the
-    request proto (``all/*``, is not assumed). The field mask can be set
-    via the HTTP header ``X-Goog-FieldMask``. See:
+    for Autocomplete and GetPhotoMedia requests) requires a field mask
+    set outside of the request proto (``all/*``, is not assumed). The
+    field mask can be set via the HTTP header ``X-Goog-FieldMask``. See:
     https://developers.google.com/maps/documentation/places/web-service/choose-fields
     """
 
@@ -310,35 +314,6 @@ class PlacesAsyncClient:
     ) -> places_service.SearchNearbyResponse:
         r"""Search for places near locations.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            async def sample_search_nearby():
-                # Create a client
-                client = places_v1.PlacesAsyncClient()
-
-                # Initialize request argument(s)
-                location_restriction = places_v1.LocationRestriction()
-                location_restriction.circle.radius = 0.648
-
-                request = places_v1.SearchNearbyRequest(
-                    location_restriction=location_restriction,
-                )
-
-                # Make the request
-                response = await client.search_nearby(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Optional[Union[google.maps.places_v1.types.SearchNearbyRequest, dict]]):
                 The request object. Request proto for Search Nearby.
@@ -389,32 +364,6 @@ class PlacesAsyncClient:
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> places_service.SearchTextResponse:
         r"""Text query based place search.
-
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            async def sample_search_text():
-                # Create a client
-                client = places_v1.PlacesAsyncClient()
-
-                # Initialize request argument(s)
-                request = places_v1.SearchTextRequest(
-                    text_query="text_query_value",
-                )
-
-                # Make the request
-                response = await client.search_text(request=request)
-
-                # Handle the response
-                print(response)
 
         Args:
             request (Optional[Union[google.maps.places_v1.types.SearchTextRequest, dict]]):
@@ -468,32 +417,6 @@ class PlacesAsyncClient:
     ) -> places_service.PhotoMedia:
         r"""Get a photo media with a photo reference string.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            async def sample_get_photo_media():
-                # Create a client
-                client = places_v1.PlacesAsyncClient()
-
-                # Initialize request argument(s)
-                request = places_v1.GetPhotoMediaRequest(
-                    name="name_value",
-                )
-
-                # Make the request
-                response = await client.get_photo_media(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Optional[Union[google.maps.places_v1.types.GetPhotoMediaRequest, dict]]):
                 The request object. Request for fetching a photo of a
@@ -527,7 +450,10 @@ class PlacesAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -582,32 +508,6 @@ class PlacesAsyncClient:
         r"""Get the details of a place based on its resource name, which is
         a string in the ``places/{place_id}`` format.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            async def sample_get_place():
-                # Create a client
-                client = places_v1.PlacesAsyncClient()
-
-                # Initialize request argument(s)
-                request = places_v1.GetPlaceRequest(
-                    name="name_value",
-                )
-
-                # Make the request
-                response = await client.get_place(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Optional[Union[google.maps.places_v1.types.GetPlaceRequest, dict]]):
                 The request object. Request for fetching a Place based on its resource name,
@@ -636,7 +536,10 @@ class PlacesAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -688,32 +591,6 @@ class PlacesAsyncClient:
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> places_service.AutocompletePlacesResponse:
         r"""Returns predictions for the given input.
-
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            async def sample_autocomplete_places():
-                # Create a client
-                client = places_v1.PlacesAsyncClient()
-
-                # Initialize request argument(s)
-                request = places_v1.AutocompletePlacesRequest(
-                    input="input_value",
-                )
-
-                # Make the request
-                response = await client.autocomplete_places(request=request)
-
-                # Handle the response
-                print(response)
 
         Args:
             request (Optional[Union[google.maps.places_v1.types.AutocompletePlacesRequest, dict]]):
@@ -768,6 +645,9 @@ class PlacesAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("PlacesAsyncClient",)

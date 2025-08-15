@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ __protobuf__ = proto.module(
         "DeleteStoragePoolRequest",
         "SwitchActiveReplicaZoneRequest",
         "StoragePool",
+        "ValidateDirectoryServiceRequest",
     },
 )
 
@@ -281,6 +282,21 @@ class StoragePool(proto.Message):
         zone (str):
             Optional. Specifies the active zone for
             regional storagePool.
+        satisfies_pzs (bool):
+            Output only. Reserved for future use
+        satisfies_pzi (bool):
+            Output only. Reserved for future use
+        custom_performance_enabled (bool):
+            Optional. True if using Independent Scaling
+            of capacity and performance (Hyperdisk) By
+            default set to false
+        total_throughput_mibps (int):
+            Optional. Custom Performance Total Throughput
+            of the pool (in MiB/s)
+        total_iops (int):
+            Optional. Custom Performance Total IOPS of the pool If not
+            provided, it will be calculated based on the
+            total_throughput_mibps
     """
 
     class State(proto.Enum):
@@ -398,6 +414,49 @@ class StoragePool(proto.Message):
     zone: str = proto.Field(
         proto.STRING,
         number=21,
+    )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=23,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=24,
+    )
+    custom_performance_enabled: bool = proto.Field(
+        proto.BOOL,
+        number=25,
+    )
+    total_throughput_mibps: int = proto.Field(
+        proto.INT64,
+        number=26,
+    )
+    total_iops: int = proto.Field(
+        proto.INT64,
+        number=27,
+    )
+
+
+class ValidateDirectoryServiceRequest(proto.Message):
+    r"""ValidateDirectoryServiceRequest validates the directory
+    service policy attached to the storage pool.
+
+    Attributes:
+        name (str):
+            Required. Name of the storage pool
+        directory_service_type (google.cloud.netapp_v1.types.DirectoryServiceType):
+            Type of directory service policy attached to
+            the storage pool.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    directory_service_type: common.DirectoryServiceType = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum=common.DirectoryServiceType,
     )
 
 

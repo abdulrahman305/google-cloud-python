@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -54,6 +56,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class SecretManagerServiceRestInterceptor:
@@ -212,11 +217,36 @@ class SecretManagerServiceRestInterceptor:
     ) -> service.AccessSecretVersionResponse:
         """Post-rpc interceptor for access_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_access_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_access_secret_version` interceptor runs
+        before the `post_access_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_access_secret_version_with_metadata(
+        self,
+        response: service.AccessSecretVersionResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.AccessSecretVersionResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for access_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_access_secret_version_with_metadata`
+        interceptor in new development instead of the `post_access_secret_version` interceptor.
+        When both interceptors are used, this `post_access_secret_version_with_metadata` interceptor runs after the
+        `post_access_secret_version` interceptor. The (possibly modified) response returned by
+        `post_access_secret_version` will be passed to
+        `post_access_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_add_secret_version(
         self,
@@ -237,11 +267,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> resources.SecretVersion:
         """Post-rpc interceptor for add_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_add_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_add_secret_version` interceptor runs
+        before the `post_add_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_add_secret_version_with_metadata(
+        self,
+        response: resources.SecretVersion,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SecretVersion, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for add_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_add_secret_version_with_metadata`
+        interceptor in new development instead of the `post_add_secret_version` interceptor.
+        When both interceptors are used, this `post_add_secret_version_with_metadata` interceptor runs after the
+        `post_add_secret_version` interceptor. The (possibly modified) response returned by
+        `post_add_secret_version` will be passed to
+        `post_add_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_secret(
         self,
@@ -258,11 +311,34 @@ class SecretManagerServiceRestInterceptor:
     def post_create_secret(self, response: resources.Secret) -> resources.Secret:
         """Post-rpc interceptor for create_secret
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_secret` interceptor runs
+        before the `post_create_secret_with_metadata` interceptor.
         """
         return response
+
+    def post_create_secret_with_metadata(
+        self,
+        response: resources.Secret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Secret, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_create_secret_with_metadata`
+        interceptor in new development instead of the `post_create_secret` interceptor.
+        When both interceptors are used, this `post_create_secret_with_metadata` interceptor runs after the
+        `post_create_secret` interceptor. The (possibly modified) response returned by
+        `post_create_secret` will be passed to
+        `post_create_secret_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_secret(
         self,
@@ -295,11 +371,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> resources.SecretVersion:
         """Post-rpc interceptor for destroy_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_destroy_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_destroy_secret_version` interceptor runs
+        before the `post_destroy_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_destroy_secret_version_with_metadata(
+        self,
+        response: resources.SecretVersion,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SecretVersion, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for destroy_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_destroy_secret_version_with_metadata`
+        interceptor in new development instead of the `post_destroy_secret_version` interceptor.
+        When both interceptors are used, this `post_destroy_secret_version_with_metadata` interceptor runs after the
+        `post_destroy_secret_version` interceptor. The (possibly modified) response returned by
+        `post_destroy_secret_version` will be passed to
+        `post_destroy_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_disable_secret_version(
         self,
@@ -320,11 +419,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> resources.SecretVersion:
         """Post-rpc interceptor for disable_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_disable_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_disable_secret_version` interceptor runs
+        before the `post_disable_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_disable_secret_version_with_metadata(
+        self,
+        response: resources.SecretVersion,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SecretVersion, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for disable_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_disable_secret_version_with_metadata`
+        interceptor in new development instead of the `post_disable_secret_version` interceptor.
+        When both interceptors are used, this `post_disable_secret_version_with_metadata` interceptor runs after the
+        `post_disable_secret_version` interceptor. The (possibly modified) response returned by
+        `post_disable_secret_version` will be passed to
+        `post_disable_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_enable_secret_version(
         self,
@@ -345,11 +467,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> resources.SecretVersion:
         """Post-rpc interceptor for enable_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_enable_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_enable_secret_version` interceptor runs
+        before the `post_enable_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_enable_secret_version_with_metadata(
+        self,
+        response: resources.SecretVersion,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SecretVersion, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for enable_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_enable_secret_version_with_metadata`
+        interceptor in new development instead of the `post_enable_secret_version` interceptor.
+        When both interceptors are used, this `post_enable_secret_version_with_metadata` interceptor runs after the
+        `post_enable_secret_version` interceptor. The (possibly modified) response returned by
+        `post_enable_secret_version` will be passed to
+        `post_enable_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iam_policy(
         self,
@@ -368,11 +513,34 @@ class SecretManagerServiceRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_secret(
         self,
@@ -389,11 +557,34 @@ class SecretManagerServiceRestInterceptor:
     def post_get_secret(self, response: resources.Secret) -> resources.Secret:
         """Post-rpc interceptor for get_secret
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_secret` interceptor runs
+        before the `post_get_secret_with_metadata` interceptor.
         """
         return response
+
+    def post_get_secret_with_metadata(
+        self,
+        response: resources.Secret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Secret, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_get_secret_with_metadata`
+        interceptor in new development instead of the `post_get_secret` interceptor.
+        When both interceptors are used, this `post_get_secret_with_metadata` interceptor runs after the
+        `post_get_secret` interceptor. The (possibly modified) response returned by
+        `post_get_secret` will be passed to
+        `post_get_secret_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_secret_version(
         self,
@@ -414,11 +605,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> resources.SecretVersion:
         """Post-rpc interceptor for get_secret_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_secret_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_secret_version` interceptor runs
+        before the `post_get_secret_version_with_metadata` interceptor.
         """
         return response
+
+    def post_get_secret_version_with_metadata(
+        self,
+        response: resources.SecretVersion,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SecretVersion, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_secret_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_get_secret_version_with_metadata`
+        interceptor in new development instead of the `post_get_secret_version` interceptor.
+        When both interceptors are used, this `post_get_secret_version_with_metadata` interceptor runs after the
+        `post_get_secret_version` interceptor. The (possibly modified) response returned by
+        `post_get_secret_version` will be passed to
+        `post_get_secret_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_secrets(
         self,
@@ -437,11 +651,34 @@ class SecretManagerServiceRestInterceptor:
     ) -> service.ListSecretsResponse:
         """Post-rpc interceptor for list_secrets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_secrets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_secrets` interceptor runs
+        before the `post_list_secrets_with_metadata` interceptor.
         """
         return response
+
+    def post_list_secrets_with_metadata(
+        self,
+        response: service.ListSecretsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListSecretsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_secrets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_list_secrets_with_metadata`
+        interceptor in new development instead of the `post_list_secrets` interceptor.
+        When both interceptors are used, this `post_list_secrets_with_metadata` interceptor runs after the
+        `post_list_secrets` interceptor. The (possibly modified) response returned by
+        `post_list_secrets` will be passed to
+        `post_list_secrets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_secret_versions(
         self,
@@ -462,11 +699,36 @@ class SecretManagerServiceRestInterceptor:
     ) -> service.ListSecretVersionsResponse:
         """Post-rpc interceptor for list_secret_versions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_secret_versions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_secret_versions` interceptor runs
+        before the `post_list_secret_versions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_secret_versions_with_metadata(
+        self,
+        response: service.ListSecretVersionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListSecretVersionsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_secret_versions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_list_secret_versions_with_metadata`
+        interceptor in new development instead of the `post_list_secret_versions` interceptor.
+        When both interceptors are used, this `post_list_secret_versions_with_metadata` interceptor runs after the
+        `post_list_secret_versions` interceptor. The (possibly modified) response returned by
+        `post_list_secret_versions` will be passed to
+        `post_list_secret_versions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -485,11 +747,34 @@ class SecretManagerServiceRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -511,11 +796,37 @@ class SecretManagerServiceRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecretManagerService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_secret(
         self,
@@ -531,6 +842,79 @@ class SecretManagerServiceRestInterceptor:
 
     def post_update_secret(self, response: resources.Secret) -> resources.Secret:
         """Post-rpc interceptor for update_secret
+
+        DEPRECATED. Please use the `post_update_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the SecretManagerService server but before
+        it is returned to user code. This `post_update_secret` interceptor runs
+        before the `post_update_secret_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_secret_with_metadata(
+        self,
+        response: resources.Secret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Secret, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecretManagerService server but before it is returned to user code.
+
+        We recommend only using this `post_update_secret_with_metadata`
+        interceptor in new development instead of the `post_update_secret` interceptor.
+        When both interceptors are used, this `post_update_secret_with_metadata` interceptor runs after the
+        `post_update_secret` interceptor. The (possibly modified) response returned by
+        `post_update_secret` will be passed to
+        `post_update_secret_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_location(
+        self,
+        request: locations_pb2.GetLocationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.GetLocationRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_location
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the SecretManagerService server.
+        """
+        return request, metadata
+
+    def post_get_location(
+        self, response: locations_pb2.Location
+    ) -> locations_pb2.Location:
+        """Post-rpc interceptor for get_location
+
+        Override in a subclass to manipulate the response
+        after it is returned by the SecretManagerService server but before
+        it is returned to user code.
+        """
+        return response
+
+    def pre_list_locations(
+        self,
+        request: locations_pb2.ListLocationsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        locations_pb2.ListLocationsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_locations
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the SecretManagerService server.
+        """
+        return request, metadata
+
+    def post_list_locations(
+        self, response: locations_pb2.ListLocationsResponse
+    ) -> locations_pb2.ListLocationsResponse:
+        """Post-rpc interceptor for list_locations
 
         Override in a subclass to manipulate the response
         after it is returned by the SecretManagerService server but before
@@ -756,6 +1140,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_access_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_access_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -912,6 +1300,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_add_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1067,6 +1459,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1329,6 +1725,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_destroy_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_destroy_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1483,6 +1883,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_disable_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_disable_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1637,6 +2041,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_enable_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_enable_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1853,6 +2261,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2002,6 +2414,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2150,6 +2566,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_secret_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_secret_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2294,6 +2714,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_secrets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_secrets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2442,6 +2866,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_secret_versions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_secret_versions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2666,6 +3094,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2817,6 +3249,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2972,6 +3408,10 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3117,6 +3557,288 @@ class SecretManagerServiceRestTransport(_BaseSecretManagerServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateSecret(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_location(self):
+        return self._GetLocation(self._session, self._host, self._interceptor)  # type: ignore
+
+    class _GetLocation(
+        _BaseSecretManagerServiceRestTransport._BaseGetLocation,
+        SecretManagerServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("SecretManagerServiceRestTransport.GetLocation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: locations_pb2.GetLocationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> locations_pb2.Location:
+            r"""Call the get location method over HTTP.
+
+            Args:
+                request (locations_pb2.GetLocationRequest):
+                    The request object for GetLocation method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                locations_pb2.Location: Response from GetLocation method.
+            """
+
+            http_options = (
+                _BaseSecretManagerServiceRestTransport._BaseGetLocation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_location(request, metadata)
+            transcoded_request = _BaseSecretManagerServiceRestTransport._BaseGetLocation._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseSecretManagerServiceRestTransport._BaseGetLocation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.secrets_v1beta1.SecretManagerServiceClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.secrets.v1beta1.SecretManagerService",
+                        "rpcName": "GetLocation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = SecretManagerServiceRestTransport._GetLocation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            content = response.content.decode("utf-8")
+            resp = locations_pb2.Location()
+            resp = json_format.Parse(content, resp)
+            resp = self._interceptor.post_get_location(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.secrets_v1beta1.SecretManagerServiceAsyncClient.GetLocation",
+                    extra={
+                        "serviceName": "google.cloud.secrets.v1beta1.SecretManagerService",
+                        "rpcName": "GetLocation",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
+            return resp
+
+    @property
+    def list_locations(self):
+        return self._ListLocations(self._session, self._host, self._interceptor)  # type: ignore
+
+    class _ListLocations(
+        _BaseSecretManagerServiceRestTransport._BaseListLocations,
+        SecretManagerServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("SecretManagerServiceRestTransport.ListLocations")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: locations_pb2.ListLocationsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> locations_pb2.ListLocationsResponse:
+            r"""Call the list locations method over HTTP.
+
+            Args:
+                request (locations_pb2.ListLocationsRequest):
+                    The request object for ListLocations method.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                locations_pb2.ListLocationsResponse: Response from ListLocations method.
+            """
+
+            http_options = (
+                _BaseSecretManagerServiceRestTransport._BaseListLocations._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_locations(request, metadata)
+            transcoded_request = _BaseSecretManagerServiceRestTransport._BaseListLocations._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseSecretManagerServiceRestTransport._BaseListLocations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.secrets_v1beta1.SecretManagerServiceClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.secrets.v1beta1.SecretManagerService",
+                        "rpcName": "ListLocations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = SecretManagerServiceRestTransport._ListLocations._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            content = response.content.decode("utf-8")
+            resp = locations_pb2.ListLocationsResponse()
+            resp = json_format.Parse(content, resp)
+            resp = self._interceptor.post_list_locations(resp)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.secrets_v1beta1.SecretManagerServiceAsyncClient.ListLocations",
+                    extra={
+                        "serviceName": "google.cloud.secrets.v1beta1.SecretManagerService",
+                        "rpcName": "ListLocations",
+                        "httpResponse": http_response,
+                        "metadata": http_response["headers"],
+                    },
+                )
+            return resp
 
     @property
     def kind(self) -> str:

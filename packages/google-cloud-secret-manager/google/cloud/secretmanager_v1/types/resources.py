@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ class Secret(proto.Message):
             TTL expires.
         customer_managed_encryption (google.cloud.secretmanager_v1.types.CustomerManagedEncryption):
             Optional. The customer-managed encryption configuration of
-            the Regionalised Secrets. If no configuration is provided,
+            the regionalized secrets. If no configuration is provided,
             Google-managed default encryption is used.
 
             Updates to the
@@ -155,6 +155,18 @@ class Secret(proto.Message):
             added afterwards. They do not apply retroactively to
             existing
             [SecretVersions][google.cloud.secretmanager.v1.SecretVersion].
+        tags (MutableMapping[str, str]):
+            Optional. Input only. Immutable. Mapping of
+            Tag keys/values directly bound to this resource.
+            For example:
+
+              "123/environment": "production",
+              "123/costCenter": "marketing"
+
+            Tags are used to organize and group resources.
+
+            Tags can be used to control policy evaluation
+            for the resource.
     """
 
     name: str = proto.Field(
@@ -222,6 +234,11 @@ class Secret(proto.Message):
         number=15,
         message="CustomerManagedEncryption",
     )
+    tags: MutableMapping[str, str] = proto.MapField(
+        proto.STRING,
+        proto.STRING,
+        number=16,
+    )
 
 
 class SecretVersion(proto.Message):
@@ -268,16 +285,15 @@ class SecretVersion(proto.Message):
             Optional. Output only. Scheduled destroy time for secret
             version. This is a part of the Delayed secret version
             destroy feature. For a Secret with a valid version destroy
-            TTL, when a secert version is destroyed, the version is
-            moved to disabled state and it is scheduled for destruction.
-            The version is destroyed only after the
-            ``scheduled_destroy_time``.
+            TTL, when a secert version is destroyed, version is moved to
+            disabled state and it is scheduled for destruction Version
+            is destroyed only after the scheduled_destroy_time.
         customer_managed_encryption (google.cloud.secretmanager_v1.types.CustomerManagedEncryptionStatus):
             Output only. The customer-managed encryption status of the
             [SecretVersion][google.cloud.secretmanager.v1.SecretVersion].
             Only populated if customer-managed encryption is used and
             [Secret][google.cloud.secretmanager.v1.Secret] is a
-            Regionalised Secret.
+            regionalized secret.
     """
 
     class State(proto.Enum):
@@ -409,7 +425,8 @@ class Replication(proto.Message):
     class UserManaged(proto.Message):
         r"""A replication policy that replicates the
         [Secret][google.cloud.secretmanager.v1.Secret] payload into the
-        locations specified in [Secret.replication.user_managed.replicas][]
+        locations specified in
+        [Replication.UserManaged.replicas][google.cloud.secretmanager.v1.Replication.UserManaged.replicas]
 
         Attributes:
             replicas (MutableSequence[google.cloud.secretmanager_v1.types.Replication.UserManaged.Replica]):
@@ -646,7 +663,7 @@ class Topic(proto.Message):
 
     Attributes:
         name (str):
-            Required. The resource name of the Pub/Sub topic that will
+            Identifier. The resource name of the Pub/Sub topic that will
             be published to, in the following format:
             ``projects/*/topics/*``. For publication to succeed, the
             Secret Manager service agent must have the

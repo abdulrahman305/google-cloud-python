@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,7 +90,15 @@ class RestorePlan(proto.Message):
             operation.
         state_reason (str):
             Output only. Human-readable description of why RestorePlan
-            is in the current ``state``
+            is in the current ``state``. This field is only meant for
+            human readability and should not be used programmatically as
+            this field is not guaranteed to be consistent.
+        restore_channel (str):
+            Output only. The fully qualified name of the RestoreChannel
+            to be used to create a RestorePlan. This field is set only
+            if the ``backup_plan`` is in a different project than the
+            RestorePlan. Format:
+            ``projects/*/locations/*/restoreChannels/*``
     """
 
     class State(proto.Enum):
@@ -168,6 +176,10 @@ class RestorePlan(proto.Message):
     state_reason: str = proto.Field(
         proto.STRING,
         number=12,
+    )
+    restore_channel: str = proto.Field(
+        proto.STRING,
+        number=13,
     )
 
 

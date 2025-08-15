@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -62,6 +63,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ArtifactRegistryRestInterceptor:
@@ -300,11 +304,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_repository
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_repository_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_repository` interceptor runs
+        before the `post_create_repository_with_metadata` interceptor.
         """
         return response
+
+    def post_create_repository_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_repository
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_create_repository_with_metadata`
+        interceptor in new development instead of the `post_create_repository` interceptor.
+        When both interceptors are used, this `post_create_repository_with_metadata` interceptor runs after the
+        `post_create_repository` interceptor. The (possibly modified) response returned by
+        `post_create_repository` will be passed to
+        `post_create_repository_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_tag(
         self,
@@ -321,11 +348,32 @@ class ArtifactRegistryRestInterceptor:
     def post_create_tag(self, response: gda_tag.Tag) -> gda_tag.Tag:
         """Post-rpc interceptor for create_tag
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_tag_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_tag` interceptor runs
+        before the `post_create_tag_with_metadata` interceptor.
         """
         return response
+
+    def post_create_tag_with_metadata(
+        self, response: gda_tag.Tag, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[gda_tag.Tag, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_tag
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_create_tag_with_metadata`
+        interceptor in new development instead of the `post_create_tag` interceptor.
+        When both interceptors are used, this `post_create_tag_with_metadata` interceptor runs after the
+        `post_create_tag` interceptor. The (possibly modified) response returned by
+        `post_create_tag` will be passed to
+        `post_create_tag_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_package(
         self,
@@ -344,11 +392,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_package
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_package_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_package` interceptor runs
+        before the `post_delete_package_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_package_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_package
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_delete_package_with_metadata`
+        interceptor in new development instead of the `post_delete_package` interceptor.
+        When both interceptors are used, this `post_delete_package_with_metadata` interceptor runs after the
+        `post_delete_package` interceptor. The (possibly modified) response returned by
+        `post_delete_package` will be passed to
+        `post_delete_package_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_repository(
         self,
@@ -369,11 +440,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_repository
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_repository_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_repository` interceptor runs
+        before the `post_delete_repository_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_repository_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_repository
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_delete_repository_with_metadata`
+        interceptor in new development instead of the `post_delete_repository` interceptor.
+        When both interceptors are used, this `post_delete_repository_with_metadata` interceptor runs after the
+        `post_delete_repository` interceptor. The (possibly modified) response returned by
+        `post_delete_repository` will be passed to
+        `post_delete_repository_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_tag(
         self,
@@ -404,11 +498,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_version` interceptor runs
+        before the `post_delete_version_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_version_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_delete_version_with_metadata`
+        interceptor in new development instead of the `post_delete_version` interceptor.
+        When both interceptors are used, this `post_delete_version_with_metadata` interceptor runs after the
+        `post_delete_version` interceptor. The (possibly modified) response returned by
+        `post_delete_version` will be passed to
+        `post_delete_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_file(
         self,
@@ -425,11 +542,32 @@ class ArtifactRegistryRestInterceptor:
     def post_get_file(self, response: file.File) -> file.File:
         """Post-rpc interceptor for get_file
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_file_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_file` interceptor runs
+        before the `post_get_file_with_metadata` interceptor.
         """
         return response
+
+    def post_get_file_with_metadata(
+        self, response: file.File, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[file.File, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_file
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_file_with_metadata`
+        interceptor in new development instead of the `post_get_file` interceptor.
+        When both interceptors are used, this `post_get_file_with_metadata` interceptor runs after the
+        `post_get_file` interceptor. The (possibly modified) response returned by
+        `post_get_file` will be passed to
+        `post_get_file_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iam_policy(
         self,
@@ -448,11 +586,34 @@ class ArtifactRegistryRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_package(
         self,
@@ -469,11 +630,34 @@ class ArtifactRegistryRestInterceptor:
     def post_get_package(self, response: package.Package) -> package.Package:
         """Post-rpc interceptor for get_package
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_package_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_package` interceptor runs
+        before the `post_get_package_with_metadata` interceptor.
         """
         return response
+
+    def post_get_package_with_metadata(
+        self,
+        response: package.Package,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[package.Package, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_package
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_package_with_metadata`
+        interceptor in new development instead of the `post_get_package` interceptor.
+        When both interceptors are used, this `post_get_package_with_metadata` interceptor runs after the
+        `post_get_package` interceptor. The (possibly modified) response returned by
+        `post_get_package` will be passed to
+        `post_get_package_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_project_settings(
         self,
@@ -494,11 +678,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> settings.ProjectSettings:
         """Post-rpc interceptor for get_project_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_project_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_project_settings` interceptor runs
+        before the `post_get_project_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_project_settings_with_metadata(
+        self,
+        response: settings.ProjectSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[settings.ProjectSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_project_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_project_settings_with_metadata`
+        interceptor in new development instead of the `post_get_project_settings` interceptor.
+        When both interceptors are used, this `post_get_project_settings_with_metadata` interceptor runs after the
+        `post_get_project_settings` interceptor. The (possibly modified) response returned by
+        `post_get_project_settings` will be passed to
+        `post_get_project_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_repository(
         self,
@@ -519,11 +726,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> repository.Repository:
         """Post-rpc interceptor for get_repository
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_repository_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_repository` interceptor runs
+        before the `post_get_repository_with_metadata` interceptor.
         """
         return response
+
+    def post_get_repository_with_metadata(
+        self,
+        response: repository.Repository,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[repository.Repository, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_repository
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_repository_with_metadata`
+        interceptor in new development instead of the `post_get_repository` interceptor.
+        When both interceptors are used, this `post_get_repository_with_metadata` interceptor runs after the
+        `post_get_repository` interceptor. The (possibly modified) response returned by
+        `post_get_repository` will be passed to
+        `post_get_repository_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_tag(
         self,
@@ -540,11 +770,32 @@ class ArtifactRegistryRestInterceptor:
     def post_get_tag(self, response: tag.Tag) -> tag.Tag:
         """Post-rpc interceptor for get_tag
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_tag_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_tag` interceptor runs
+        before the `post_get_tag_with_metadata` interceptor.
         """
         return response
+
+    def post_get_tag_with_metadata(
+        self, response: tag.Tag, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[tag.Tag, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_tag
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_tag_with_metadata`
+        interceptor in new development instead of the `post_get_tag` interceptor.
+        When both interceptors are used, this `post_get_tag_with_metadata` interceptor runs after the
+        `post_get_tag` interceptor. The (possibly modified) response returned by
+        `post_get_tag` will be passed to
+        `post_get_tag_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_version(
         self,
@@ -561,11 +812,34 @@ class ArtifactRegistryRestInterceptor:
     def post_get_version(self, response: version.Version) -> version.Version:
         """Post-rpc interceptor for get_version
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_version_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_version` interceptor runs
+        before the `post_get_version_with_metadata` interceptor.
         """
         return response
+
+    def post_get_version_with_metadata(
+        self,
+        response: version.Version,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[version.Version, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_version
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_get_version_with_metadata`
+        interceptor in new development instead of the `post_get_version` interceptor.
+        When both interceptors are used, this `post_get_version_with_metadata` interceptor runs after the
+        `post_get_version` interceptor. The (possibly modified) response returned by
+        `post_get_version` will be passed to
+        `post_get_version_with_metadata`.
+        """
+        return response, metadata
 
     def pre_import_apt_artifacts(
         self,
@@ -586,11 +860,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for import_apt_artifacts
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_import_apt_artifacts_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_import_apt_artifacts` interceptor runs
+        before the `post_import_apt_artifacts_with_metadata` interceptor.
         """
         return response
+
+    def post_import_apt_artifacts_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for import_apt_artifacts
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_import_apt_artifacts_with_metadata`
+        interceptor in new development instead of the `post_import_apt_artifacts` interceptor.
+        When both interceptors are used, this `post_import_apt_artifacts_with_metadata` interceptor runs after the
+        `post_import_apt_artifacts` interceptor. The (possibly modified) response returned by
+        `post_import_apt_artifacts` will be passed to
+        `post_import_apt_artifacts_with_metadata`.
+        """
+        return response, metadata
 
     def pre_import_yum_artifacts(
         self,
@@ -611,11 +908,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for import_yum_artifacts
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_import_yum_artifacts_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_import_yum_artifacts` interceptor runs
+        before the `post_import_yum_artifacts_with_metadata` interceptor.
         """
         return response
+
+    def post_import_yum_artifacts_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for import_yum_artifacts
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_import_yum_artifacts_with_metadata`
+        interceptor in new development instead of the `post_import_yum_artifacts` interceptor.
+        When both interceptors are used, this `post_import_yum_artifacts_with_metadata` interceptor runs after the
+        `post_import_yum_artifacts` interceptor. The (possibly modified) response returned by
+        `post_import_yum_artifacts` will be passed to
+        `post_import_yum_artifacts_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_files(
         self,
@@ -634,11 +954,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> file.ListFilesResponse:
         """Post-rpc interceptor for list_files
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_files_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_files` interceptor runs
+        before the `post_list_files_with_metadata` interceptor.
         """
         return response
+
+    def post_list_files_with_metadata(
+        self,
+        response: file.ListFilesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[file.ListFilesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_files
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_list_files_with_metadata`
+        interceptor in new development instead of the `post_list_files` interceptor.
+        When both interceptors are used, this `post_list_files_with_metadata` interceptor runs after the
+        `post_list_files` interceptor. The (possibly modified) response returned by
+        `post_list_files` will be passed to
+        `post_list_files_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_packages(
         self,
@@ -657,11 +1000,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> package.ListPackagesResponse:
         """Post-rpc interceptor for list_packages
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_packages_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_packages` interceptor runs
+        before the `post_list_packages_with_metadata` interceptor.
         """
         return response
+
+    def post_list_packages_with_metadata(
+        self,
+        response: package.ListPackagesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[package.ListPackagesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_packages
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_list_packages_with_metadata`
+        interceptor in new development instead of the `post_list_packages` interceptor.
+        When both interceptors are used, this `post_list_packages_with_metadata` interceptor runs after the
+        `post_list_packages` interceptor. The (possibly modified) response returned by
+        `post_list_packages` will be passed to
+        `post_list_packages_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_repositories(
         self,
@@ -682,11 +1048,36 @@ class ArtifactRegistryRestInterceptor:
     ) -> repository.ListRepositoriesResponse:
         """Post-rpc interceptor for list_repositories
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_repositories_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_repositories` interceptor runs
+        before the `post_list_repositories_with_metadata` interceptor.
         """
         return response
+
+    def post_list_repositories_with_metadata(
+        self,
+        response: repository.ListRepositoriesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        repository.ListRepositoriesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_repositories
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_list_repositories_with_metadata`
+        interceptor in new development instead of the `post_list_repositories` interceptor.
+        When both interceptors are used, this `post_list_repositories_with_metadata` interceptor runs after the
+        `post_list_repositories` interceptor. The (possibly modified) response returned by
+        `post_list_repositories` will be passed to
+        `post_list_repositories_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_tags(
         self,
@@ -703,11 +1094,34 @@ class ArtifactRegistryRestInterceptor:
     def post_list_tags(self, response: tag.ListTagsResponse) -> tag.ListTagsResponse:
         """Post-rpc interceptor for list_tags
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_tags_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_tags` interceptor runs
+        before the `post_list_tags_with_metadata` interceptor.
         """
         return response
+
+    def post_list_tags_with_metadata(
+        self,
+        response: tag.ListTagsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[tag.ListTagsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_tags
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_list_tags_with_metadata`
+        interceptor in new development instead of the `post_list_tags` interceptor.
+        When both interceptors are used, this `post_list_tags_with_metadata` interceptor runs after the
+        `post_list_tags` interceptor. The (possibly modified) response returned by
+        `post_list_tags` will be passed to
+        `post_list_tags_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_versions(
         self,
@@ -726,11 +1140,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> version.ListVersionsResponse:
         """Post-rpc interceptor for list_versions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_versions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_versions` interceptor runs
+        before the `post_list_versions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_versions_with_metadata(
+        self,
+        response: version.ListVersionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[version.ListVersionsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_versions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_list_versions_with_metadata`
+        interceptor in new development instead of the `post_list_versions` interceptor.
+        When both interceptors are used, this `post_list_versions_with_metadata` interceptor runs after the
+        `post_list_versions` interceptor. The (possibly modified) response returned by
+        `post_list_versions` will be passed to
+        `post_list_versions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -749,11 +1186,34 @@ class ArtifactRegistryRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -775,11 +1235,37 @@ class ArtifactRegistryRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_project_settings(
         self,
@@ -800,11 +1286,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> settings.ProjectSettings:
         """Post-rpc interceptor for update_project_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_project_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_project_settings` interceptor runs
+        before the `post_update_project_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_project_settings_with_metadata(
+        self,
+        response: settings.ProjectSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[settings.ProjectSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_project_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_update_project_settings_with_metadata`
+        interceptor in new development instead of the `post_update_project_settings` interceptor.
+        When both interceptors are used, this `post_update_project_settings_with_metadata` interceptor runs after the
+        `post_update_project_settings` interceptor. The (possibly modified) response returned by
+        `post_update_project_settings` will be passed to
+        `post_update_project_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_repository(
         self,
@@ -825,11 +1334,34 @@ class ArtifactRegistryRestInterceptor:
     ) -> gda_repository.Repository:
         """Post-rpc interceptor for update_repository
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_repository_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_repository` interceptor runs
+        before the `post_update_repository_with_metadata` interceptor.
         """
         return response
+
+    def post_update_repository_with_metadata(
+        self,
+        response: gda_repository.Repository,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gda_repository.Repository, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_repository
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_update_repository_with_metadata`
+        interceptor in new development instead of the `post_update_repository` interceptor.
+        When both interceptors are used, this `post_update_repository_with_metadata` interceptor runs after the
+        `post_update_repository` interceptor. The (possibly modified) response returned by
+        `post_update_repository` will be passed to
+        `post_update_repository_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_tag(
         self,
@@ -846,11 +1378,32 @@ class ArtifactRegistryRestInterceptor:
     def post_update_tag(self, response: gda_tag.Tag) -> gda_tag.Tag:
         """Post-rpc interceptor for update_tag
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_tag_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ArtifactRegistry server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_tag` interceptor runs
+        before the `post_update_tag_with_metadata` interceptor.
         """
         return response
+
+    def post_update_tag_with_metadata(
+        self, response: gda_tag.Tag, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[gda_tag.Tag, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_tag
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ArtifactRegistry server but before it is returned to user code.
+
+        We recommend only using this `post_update_tag_with_metadata`
+        interceptor in new development instead of the `post_update_tag` interceptor.
+        When both interceptors are used, this `post_update_tag_with_metadata` interceptor runs after the
+        `post_update_tag` interceptor. The (possibly modified) response returned by
+        `post_update_tag` will be passed to
+        `post_update_tag_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -1164,6 +1717,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_repository(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_repository_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1313,6 +1870,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_tag(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_tag_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1454,6 +2015,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_package(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_package_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1598,6 +2163,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_repository(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_repository_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1845,6 +2414,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1992,6 +2565,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_file(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_file_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2207,6 +2784,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2349,6 +2930,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_package(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_package_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2495,6 +3080,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_project_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_project_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2637,6 +3226,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_repository(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_repository_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2784,6 +3377,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_tag(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_tag_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2929,6 +3526,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_version(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_version_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3080,6 +3681,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_import_apt_artifacts(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_import_apt_artifacts_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3231,6 +3836,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_import_yum_artifacts(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_import_yum_artifacts_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3371,6 +3980,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_files(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_files_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3511,6 +4124,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_packages(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_packages_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3656,6 +4273,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_repositories(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_repositories_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3800,6 +4421,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_tags(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_tags_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3940,6 +4565,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_versions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_versions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4161,6 +4790,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4310,6 +4943,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4463,6 +5100,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_project_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_project_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4614,6 +5255,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_repository(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_repository_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4764,6 +5409,10 @@ class ArtifactRegistryRestTransport(_BaseArtifactRegistryRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_tag(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_tag_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

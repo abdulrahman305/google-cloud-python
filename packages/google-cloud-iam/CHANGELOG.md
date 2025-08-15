@@ -4,6 +4,50 @@
 
 [1]: https://pypi.org/project/google-cloud-iam/#history
 
+## [2.19.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.19.0...google-cloud-iam-v2.19.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [2.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.18.3...google-cloud-iam-v2.19.0) (2025-04-12)
+
+
+### Features
+
+* add google.cloud.iam_v3 and google.cloud.iam_v3beta ([4a08645](https://github.com/googleapis/google-cloud-python/commit/4a086457f94bcf0e291b3613f83e763d9c89897a))
+
+## [2.18.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.18.2...google-cloud-iam-v2.18.3) (2025-03-19)
+
+
+### Documentation
+
+* Update suggested source of IAM samples ([#13666](https://github.com/googleapis/google-cloud-python/issues/13666)) ([9b5ba99](https://github.com/googleapis/google-cloud-python/commit/9b5ba99b6e8a0d4af6a8c3a9333e8a27a8a4a6c4))
+
+## [2.18.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.18.1...google-cloud-iam-v2.18.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.18.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.18.0...google-cloud-iam-v2.18.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [2.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.17.0...google-cloud-iam-v2.18.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iam-v2.16.1...google-cloud-iam-v2.17.0) (2024-12-12)
 
 

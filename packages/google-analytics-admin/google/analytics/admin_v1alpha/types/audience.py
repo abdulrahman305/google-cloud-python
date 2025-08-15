@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -680,7 +680,7 @@ class AudienceEventTrigger(proto.Message):
 
 
 class Audience(proto.Message):
-    r"""A resource message representing a GA4 Audience.
+    r"""A resource message representing an Audience.
 
     Attributes:
         name (str):

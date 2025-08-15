@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class CloudFilestoreManagerRestInterceptor:
@@ -166,6 +170,14 @@ class CloudFilestoreManagerRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_promote_replica(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_promote_replica(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_restore_instance(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -232,11 +244,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup` interceptor runs
+        before the `post_create_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_with_metadata`
+        interceptor in new development instead of the `post_create_backup` interceptor.
+        When both interceptors are used, this `post_create_backup_with_metadata` interceptor runs after the
+        `post_create_backup` interceptor. The (possibly modified) response returned by
+        `post_create_backup` will be passed to
+        `post_create_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_instance(
         self,
@@ -258,11 +293,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_instance` interceptor runs
+        before the `post_create_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_create_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_create_instance_with_metadata`
+        interceptor in new development instead of the `post_create_instance` interceptor.
+        When both interceptors are used, this `post_create_instance_with_metadata` interceptor runs after the
+        `post_create_instance` interceptor. The (possibly modified) response returned by
+        `post_create_instance` will be passed to
+        `post_create_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_snapshot(
         self,
@@ -284,11 +342,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_snapshot` interceptor runs
+        before the `post_create_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_create_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_create_snapshot_with_metadata`
+        interceptor in new development instead of the `post_create_snapshot` interceptor.
+        When both interceptors are used, this `post_create_snapshot_with_metadata` interceptor runs after the
+        `post_create_snapshot` interceptor. The (possibly modified) response returned by
+        `post_create_snapshot` will be passed to
+        `post_create_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup(
         self,
@@ -310,11 +391,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup` interceptor runs
+        before the `post_delete_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_with_metadata`
+        interceptor in new development instead of the `post_delete_backup` interceptor.
+        When both interceptors are used, this `post_delete_backup_with_metadata` interceptor runs after the
+        `post_delete_backup` interceptor. The (possibly modified) response returned by
+        `post_delete_backup` will be passed to
+        `post_delete_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_instance(
         self,
@@ -336,11 +440,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_instance` interceptor runs
+        before the `post_delete_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_delete_instance_with_metadata`
+        interceptor in new development instead of the `post_delete_instance` interceptor.
+        When both interceptors are used, this `post_delete_instance_with_metadata` interceptor runs after the
+        `post_delete_instance` interceptor. The (possibly modified) response returned by
+        `post_delete_instance` will be passed to
+        `post_delete_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_snapshot(
         self,
@@ -362,11 +489,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_snapshot` interceptor runs
+        before the `post_delete_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_delete_snapshot_with_metadata`
+        interceptor in new development instead of the `post_delete_snapshot` interceptor.
+        When both interceptors are used, this `post_delete_snapshot_with_metadata` interceptor runs after the
+        `post_delete_snapshot` interceptor. The (possibly modified) response returned by
+        `post_delete_snapshot` will be passed to
+        `post_delete_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup(
         self,
@@ -388,11 +538,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.Backup:
         """Post-rpc interceptor for get_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup` interceptor runs
+        before the `post_get_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_with_metadata(
+        self,
+        response: cloud_filestore_service.Backup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[cloud_filestore_service.Backup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_with_metadata`
+        interceptor in new development instead of the `post_get_backup` interceptor.
+        When both interceptors are used, this `post_get_backup_with_metadata` interceptor runs after the
+        `post_get_backup` interceptor. The (possibly modified) response returned by
+        `post_get_backup` will be passed to
+        `post_get_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_instance(
         self,
@@ -414,11 +587,36 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.Instance:
         """Post-rpc interceptor for get_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_instance` interceptor runs
+        before the `post_get_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_get_instance_with_metadata(
+        self,
+        response: cloud_filestore_service.Instance,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.Instance, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_get_instance_with_metadata`
+        interceptor in new development instead of the `post_get_instance` interceptor.
+        When both interceptors are used, this `post_get_instance_with_metadata` interceptor runs after the
+        `post_get_instance` interceptor. The (possibly modified) response returned by
+        `post_get_instance` will be passed to
+        `post_get_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_snapshot(
         self,
@@ -440,11 +638,36 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.Snapshot:
         """Post-rpc interceptor for get_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_snapshot` interceptor runs
+        before the `post_get_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_get_snapshot_with_metadata(
+        self,
+        response: cloud_filestore_service.Snapshot,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.Snapshot, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_get_snapshot_with_metadata`
+        interceptor in new development instead of the `post_get_snapshot` interceptor.
+        When both interceptors are used, this `post_get_snapshot_with_metadata` interceptor runs after the
+        `post_get_snapshot` interceptor. The (possibly modified) response returned by
+        `post_get_snapshot` will be passed to
+        `post_get_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backups(
         self,
@@ -466,11 +689,37 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.ListBackupsResponse:
         """Post-rpc interceptor for list_backups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backups` interceptor runs
+        before the `post_list_backups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backups_with_metadata(
+        self,
+        response: cloud_filestore_service.ListBackupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.ListBackupsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_backups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_list_backups_with_metadata`
+        interceptor in new development instead of the `post_list_backups` interceptor.
+        When both interceptors are used, this `post_list_backups_with_metadata` interceptor runs after the
+        `post_list_backups` interceptor. The (possibly modified) response returned by
+        `post_list_backups` will be passed to
+        `post_list_backups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_instances(
         self,
@@ -492,11 +741,37 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.ListInstancesResponse:
         """Post-rpc interceptor for list_instances
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_instances_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_instances` interceptor runs
+        before the `post_list_instances_with_metadata` interceptor.
         """
         return response
+
+    def post_list_instances_with_metadata(
+        self,
+        response: cloud_filestore_service.ListInstancesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.ListInstancesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_instances
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_list_instances_with_metadata`
+        interceptor in new development instead of the `post_list_instances` interceptor.
+        When both interceptors are used, this `post_list_instances_with_metadata` interceptor runs after the
+        `post_list_instances` interceptor. The (possibly modified) response returned by
+        `post_list_instances` will be passed to
+        `post_list_instances_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_snapshots(
         self,
@@ -518,11 +793,86 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> cloud_filestore_service.ListSnapshotsResponse:
         """Post-rpc interceptor for list_snapshots
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_snapshots_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_snapshots` interceptor runs
+        before the `post_list_snapshots_with_metadata` interceptor.
         """
         return response
+
+    def post_list_snapshots_with_metadata(
+        self,
+        response: cloud_filestore_service.ListSnapshotsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.ListSnapshotsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_snapshots
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_list_snapshots_with_metadata`
+        interceptor in new development instead of the `post_list_snapshots` interceptor.
+        When both interceptors are used, this `post_list_snapshots_with_metadata` interceptor runs after the
+        `post_list_snapshots` interceptor. The (possibly modified) response returned by
+        `post_list_snapshots` will be passed to
+        `post_list_snapshots_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_promote_replica(
+        self,
+        request: cloud_filestore_service.PromoteReplicaRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        cloud_filestore_service.PromoteReplicaRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for promote_replica
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the CloudFilestoreManager server.
+        """
+        return request, metadata
+
+    def post_promote_replica(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for promote_replica
+
+        DEPRECATED. Please use the `post_promote_replica_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the CloudFilestoreManager server but before
+        it is returned to user code. This `post_promote_replica` interceptor runs
+        before the `post_promote_replica_with_metadata` interceptor.
+        """
+        return response
+
+    def post_promote_replica_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for promote_replica
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_promote_replica_with_metadata`
+        interceptor in new development instead of the `post_promote_replica` interceptor.
+        When both interceptors are used, this `post_promote_replica_with_metadata` interceptor runs after the
+        `post_promote_replica` interceptor. The (possibly modified) response returned by
+        `post_promote_replica` will be passed to
+        `post_promote_replica_with_metadata`.
+        """
+        return response, metadata
 
     def pre_restore_instance(
         self,
@@ -544,11 +894,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for restore_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_restore_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_restore_instance` interceptor runs
+        before the `post_restore_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_restore_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for restore_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_restore_instance_with_metadata`
+        interceptor in new development instead of the `post_restore_instance` interceptor.
+        When both interceptors are used, this `post_restore_instance_with_metadata` interceptor runs after the
+        `post_restore_instance` interceptor. The (possibly modified) response returned by
+        `post_restore_instance` will be passed to
+        `post_restore_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_revert_instance(
         self,
@@ -570,11 +943,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for revert_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_revert_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_revert_instance` interceptor runs
+        before the `post_revert_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_revert_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for revert_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_revert_instance_with_metadata`
+        interceptor in new development instead of the `post_revert_instance` interceptor.
+        When both interceptors are used, this `post_revert_instance_with_metadata` interceptor runs after the
+        `post_revert_instance` interceptor. The (possibly modified) response returned by
+        `post_revert_instance` will be passed to
+        `post_revert_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup(
         self,
@@ -596,11 +992,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup` interceptor runs
+        before the `post_update_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_with_metadata`
+        interceptor in new development instead of the `post_update_backup` interceptor.
+        When both interceptors are used, this `post_update_backup_with_metadata` interceptor runs after the
+        `post_update_backup` interceptor. The (possibly modified) response returned by
+        `post_update_backup` will be passed to
+        `post_update_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_instance(
         self,
@@ -622,11 +1041,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_instance` interceptor runs
+        before the `post_update_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_update_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_update_instance_with_metadata`
+        interceptor in new development instead of the `post_update_instance` interceptor.
+        When both interceptors are used, this `post_update_instance_with_metadata` interceptor runs after the
+        `post_update_instance` interceptor. The (possibly modified) response returned by
+        `post_update_instance` will be passed to
+        `post_update_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_snapshot(
         self,
@@ -648,11 +1090,34 @@ class CloudFilestoreManagerRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the CloudFilestoreManager server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_snapshot` interceptor runs
+        before the `post_update_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_update_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the CloudFilestoreManager server but before it is returned to user code.
+
+        We recommend only using this `post_update_snapshot_with_metadata`
+        interceptor in new development instead of the `post_update_snapshot` interceptor.
+        When both interceptors are used, this `post_update_snapshot_with_metadata` interceptor runs after the
+        `post_update_snapshot` interceptor. The (possibly modified) response returned by
+        `post_update_snapshot` will be passed to
+        `post_update_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -1088,6 +1553,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1237,6 +1706,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1386,6 +1859,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1528,6 +2005,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1671,6 +2152,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1814,6 +2299,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1956,6 +2445,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2098,6 +2591,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2242,6 +2739,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2387,6 +2888,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2532,6 +3037,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_instances(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_instances_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2677,6 +3186,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_snapshots(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_snapshots_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2696,6 +3209,159 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
                     extra={
                         "serviceName": "google.cloud.filestore.v1.CloudFilestoreManager",
                         "rpcName": "ListSnapshots",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _PromoteReplica(
+        _BaseCloudFilestoreManagerRestTransport._BasePromoteReplica,
+        CloudFilestoreManagerRestStub,
+    ):
+        def __hash__(self):
+            return hash("CloudFilestoreManagerRestTransport.PromoteReplica")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: cloud_filestore_service.PromoteReplicaRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the promote replica method over HTTP.
+
+            Args:
+                request (~.cloud_filestore_service.PromoteReplicaRequest):
+                    The request object. PromoteReplicaRequest promotes a
+                Filestore standby instance (replica).
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseCloudFilestoreManagerRestTransport._BasePromoteReplica._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_promote_replica(request, metadata)
+            transcoded_request = _BaseCloudFilestoreManagerRestTransport._BasePromoteReplica._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseCloudFilestoreManagerRestTransport._BasePromoteReplica._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseCloudFilestoreManagerRestTransport._BasePromoteReplica._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.filestore_v1.CloudFilestoreManagerClient.PromoteReplica",
+                    extra={
+                        "serviceName": "google.cloud.filestore.v1.CloudFilestoreManager",
+                        "rpcName": "PromoteReplica",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = CloudFilestoreManagerRestTransport._PromoteReplica._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_promote_replica(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_promote_replica_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.filestore_v1.CloudFilestoreManagerClient.promote_replica",
+                    extra={
+                        "serviceName": "google.cloud.filestore.v1.CloudFilestoreManager",
+                        "rpcName": "PromoteReplica",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2833,6 +3499,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_restore_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_restore_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2983,6 +3653,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_revert_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_revert_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3132,6 +3806,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3281,6 +3959,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3431,6 +4113,10 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3576,6 +4262,16 @@ class CloudFilestoreManagerRestTransport(_BaseCloudFilestoreManagerRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListSnapshots(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def promote_replica(
+        self,
+    ) -> Callable[
+        [cloud_filestore_service.PromoteReplicaRequest], operations_pb2.Operation
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._PromoteReplica(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def restore_instance(

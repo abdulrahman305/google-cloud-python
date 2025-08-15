@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -321,7 +321,7 @@ class _BaseLicenseManagementServiceRestTransport(LicenseManagementServiceTranspo
             http_options: List[Dict[str, str]] = [
                 {
                     "method": "patch",
-                    "uri": "/v1/{license_pool.name=billingAccounts/*/orders/*/licensePool/*}",
+                    "uri": "/v1/{license_pool.name=billingAccounts/*/orders/*/licensePool}",
                     "body": "license_pool",
                 },
             ]

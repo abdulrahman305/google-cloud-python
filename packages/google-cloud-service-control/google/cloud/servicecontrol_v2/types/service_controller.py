@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,16 +105,16 @@ class ResourceInfo(proto.Message):
             For Google Cloud APIs, the resource container must be one of
             the following formats: -
             ``projects/<project-id or project-number>`` -
-            ``folders/<folder-id>`` -
-            ``organizations/<organization-id>`` For the policy
-            enforcement on the container level (VPCSC and Location
-            Policy check), this field takes precedence on the container
-            extracted from name when presents.
+            ``folders/<folder-number>`` -
+            ``organizations/<organization-number>`` Required for the
+            policy enforcement on the container level (e.g. VPCSC,
+            Location Policy check, Org Policy check).
         location (str):
-            Optional. The location of the resource. The
-            value must be a valid zone, region or
-            multiregion. For example: "europe-west4" or
-            "northamerica-northeast1-a".
+            Optional. The location of the resource, it
+            must be a valid zone, region or multiregion, for
+            example: "europe-west4",
+            "northamerica-northeast1-a". Required for
+            location policy check.
     """
 
     name: str = proto.Field(

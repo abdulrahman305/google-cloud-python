@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class OrgPolicy(proto.Message):
 
     Attributes:
         name (str):
-            The resource name of the org policy. Example:
+            Identifier. The resource name of the org policy. Example:
             "organizations/{organization_id}/policies/{constraint_name}".
     """
 

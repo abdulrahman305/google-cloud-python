@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,6 +59,15 @@ from .catalog import (
     UpdateEntryGroupRequest,
     UpdateEntryRequest,
     UpdateEntryTypeRequest,
+)
+from .cmek import (
+    CreateEncryptionConfigRequest,
+    DeleteEncryptionConfigRequest,
+    EncryptionConfig,
+    GetEncryptionConfigRequest,
+    ListEncryptionConfigsRequest,
+    ListEncryptionConfigsResponse,
+    UpdateEncryptionConfigRequest,
 )
 from .content import (
     CreateContentRequest,
@@ -121,9 +130,11 @@ from .datascans import (
     UpdateDataScanRequest,
 )
 from .logs import (
+    BusinessGlossaryEvent,
     DataQualityScanRuleResult,
     DataScanEvent,
     DiscoveryEvent,
+    EntryLinkEvent,
     GovernanceEvent,
     JobEvent,
     SessionEvent,
@@ -245,6 +256,13 @@ __all__ = (
     "UpdateEntryTypeRequest",
     "EntryView",
     "TransferStatus",
+    "CreateEncryptionConfigRequest",
+    "DeleteEncryptionConfigRequest",
+    "EncryptionConfig",
+    "GetEncryptionConfigRequest",
+    "ListEncryptionConfigsRequest",
+    "ListEncryptionConfigsResponse",
+    "UpdateEncryptionConfigRequest",
     "CreateContentRequest",
     "DeleteContentRequest",
     "GetContentRequest",
@@ -299,9 +317,11 @@ __all__ = (
     "RunDataScanResponse",
     "UpdateDataScanRequest",
     "DataScanType",
+    "BusinessGlossaryEvent",
     "DataQualityScanRuleResult",
     "DataScanEvent",
     "DiscoveryEvent",
+    "EntryLinkEvent",
     "GovernanceEvent",
     "JobEvent",
     "SessionEvent",

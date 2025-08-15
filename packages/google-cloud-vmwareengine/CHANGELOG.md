@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.8.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vmwareengine-v1.8.2...google-cloud-vmwareengine-v1.8.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [1.8.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vmwareengine-v1.8.1...google-cloud-vmwareengine-v1.8.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+
+## [1.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vmwareengine-v1.8.0...google-cloud-vmwareengine-v1.8.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([0c5f868](https://github.com/googleapis/google-cloud-python/commit/0c5f86820c42e5cd857c1a0eef25f5e6a65b2ad8))
+
+## [1.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vmwareengine-v1.7.0...google-cloud-vmwareengine-v1.8.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [1.7.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-vmwareengine-v1.6.1...google-cloud-vmwareengine-v1.7.0) (2024-12-12)
 
 

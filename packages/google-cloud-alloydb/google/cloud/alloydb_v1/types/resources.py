@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,12 @@ from typing import MutableMapping, MutableSequence
 from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.protobuf import wrappers_pb2  # type: ignore
+from google.type import date_pb2  # type: ignore
 from google.type import dayofweek_pb2  # type: ignore
 from google.type import timeofday_pb2  # type: ignore
 import proto  # type: ignore
+
+from google.cloud.alloydb_v1.types import csql_resources
 
 __protobuf__ = proto.module(
     package="google.cloud.alloydb.v1",
@@ -388,9 +391,8 @@ class AutomatedBackupPolicy(proto.Message):
             Optional. The encryption config can be
             specified to encrypt the backups with a
             customer-managed encryption key (CMEK). When
-            this field is not specified, the backup will
-            then use default encryption scheme to protect
-            the user data.
+            this field is not specified, the backup will use
+            the cluster's encryption config.
         location (str):
             The location where the backup will be stored.
             Currently, the only supported option is to store
@@ -533,8 +535,8 @@ class ContinuousBackupConfig(proto.Message):
             The encryption config can be specified to
             encrypt the backups with a customer-managed
             encryption key (CMEK). When this field is not
-            specified, the backup will then use default
-            encryption scheme to protect the user data.
+            specified, the backup will use the cluster's
+            encryption config.
     """
 
     enabled: bool = proto.Field(
@@ -568,11 +570,20 @@ class ContinuousBackupInfo(proto.Message):
             ContinuousBackup is not enabled.
         schedule (MutableSequence[google.type.dayofweek_pb2.DayOfWeek]):
             Output only. Days of the week on which a
-            continuous backup is taken. Output only field.
-            Ignored if passed into the request.
+            continuous backup is taken.
         earliest_restorable_time (google.protobuf.timestamp_pb2.Timestamp):
-            Output only. The earliest restorable time
-            that can be restored to. Output only field.
+            Output only. The earliest restorable time that can be
+            restored to. If continuous backups and recovery was recently
+            enabled, the earliest restorable time is the creation time
+            of the earliest eligible backup within this cluster's
+            continuous backup recovery window. After a cluster has had
+            continuous backups enabled for the duration of its recovery
+            window, the earliest restorable time becomes "now minus the
+            recovery window". For example, assuming a point in time
+            recovery is attempted at 04/16/2025 3:23:00PM with a 14d
+            recovery window, the earliest restorable time would be
+            04/02/2025 3:23:00PM. This field is only visible if the
+            CLUSTER_VIEW_CONTINUOUS_BACKUP cluster view is provided.
     """
 
     encryption_info: "EncryptionInfo" = proto.Field(
@@ -655,6 +666,9 @@ class MaintenanceUpdatePolicy(proto.Message):
         maintenance_windows (MutableSequence[google.cloud.alloydb_v1.types.MaintenanceUpdatePolicy.MaintenanceWindow]):
             Preferred windows to perform maintenance.
             Currently limited to 1.
+        deny_maintenance_periods (MutableSequence[google.cloud.alloydb_v1.types.MaintenanceUpdatePolicy.DenyMaintenancePeriod]):
+            Periods to deny maintenance. Currently
+            limited to 1.
     """
 
     class MaintenanceWindow(proto.Message):
@@ -682,10 +696,57 @@ class MaintenanceUpdatePolicy(proto.Message):
             message=timeofday_pb2.TimeOfDay,
         )
 
+    class DenyMaintenancePeriod(proto.Message):
+        r"""DenyMaintenancePeriod definition. Excepting emergencies, maintenance
+        will not be scheduled to start within this deny period. The
+        start_date must be less than the end_date.
+
+        Attributes:
+            start_date (google.type.date_pb2.Date):
+                Deny period start date. This can be:
+
+                -  A full date, with non-zero year, month and day values OR
+                -  A month and day value, with a zero year for recurring
+            end_date (google.type.date_pb2.Date):
+                Deny period end date. This can be:
+
+                -  A full date, with non-zero year, month and day values OR
+                -  A month and day value, with a zero year for recurring
+            time (google.type.timeofday_pb2.TimeOfDay):
+                Time in UTC when the deny period starts on start_date and
+                ends on end_date. This can be:
+
+                -  Full time OR
+                -  All zeros for 00:00:00 UTC
+        """
+
+        start_date: date_pb2.Date = proto.Field(
+            proto.MESSAGE,
+            number=1,
+            message=date_pb2.Date,
+        )
+        end_date: date_pb2.Date = proto.Field(
+            proto.MESSAGE,
+            number=2,
+            message=date_pb2.Date,
+        )
+        time: timeofday_pb2.TimeOfDay = proto.Field(
+            proto.MESSAGE,
+            number=3,
+            message=timeofday_pb2.TimeOfDay,
+        )
+
     maintenance_windows: MutableSequence[MaintenanceWindow] = proto.RepeatedField(
         proto.MESSAGE,
         number=1,
         message=MaintenanceWindow,
+    )
+    deny_maintenance_periods: MutableSequence[
+        DenyMaintenancePeriod
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message=DenyMaintenancePeriod,
     )
 
 
@@ -731,6 +792,11 @@ class Cluster(proto.Message):
         migration_source (google.cloud.alloydb_v1.types.MigrationSource):
             Output only. Cluster created via DMS
             migration.
+
+            This field is a member of `oneof`_ ``source``.
+        cloudsql_backup_run_source (google.cloud.alloydb_v1.types.CloudSQLBackupRunSource):
+            Output only. Cluster created from CloudSQL
+            snapshot.
 
             This field is a member of `oneof`_ ``source``.
         name (str):
@@ -1003,11 +1069,19 @@ class Cluster(proto.Message):
                 Optional. Create an instance that allows
                 connections from Private Service Connect
                 endpoints to the instance.
+            service_owned_project_number (int):
+                Output only. The project number that needs to
+                be allowlisted on the network attachment to
+                enable outbound connectivity.
         """
 
         psc_enabled: bool = proto.Field(
             proto.BOOL,
             number=1,
+        )
+        service_owned_project_number: int = proto.Field(
+            proto.INT64,
+            number=3,
         )
 
     class TrialMetadata(proto.Message):
@@ -1058,6 +1132,12 @@ class Cluster(proto.Message):
         number=16,
         oneof="source",
         message="MigrationSource",
+    )
+    cloudsql_backup_run_source: csql_resources.CloudSQLBackupRunSource = proto.Field(
+        proto.MESSAGE,
+        number=42,
+        oneof="source",
+        message=csql_resources.CloudSQLBackupRunSource,
     )
     name: str = proto.Field(
         proto.STRING,
@@ -1270,14 +1350,14 @@ class Instance(proto.Message):
             instance, instance is created in a random zone
             with available capacity.
         database_flags (MutableMapping[str, str]):
-            Database flags. Set at instance level.
-
-            -  They are copied from primary instance on read instance
-               creation.
-            -  Read instances can set new or override existing flags
-               that are relevant for reads, e.g. for enabling columnar
-               cache on a read instance. Flags set on read instance may
-               or may not be present on primary.
+            Database flags. Set at the instance level. They are copied
+            from the primary instance on secondary instance creation.
+            Flags that have restrictions default to the value at primary
+            instance on read instances during creation. Read instances
+            can set new flags or override existing flags that are
+            relevant for reads, for example, for enabling columnar cache
+            on a read instance. Flags set on read instance might or
+            might not be present on the primary instance.
 
             This is a list of "key": "value" pairs. "key": The name of
             the flag. These flags are passed at instance setup time, so
@@ -1295,6 +1375,8 @@ class Instance(proto.Message):
             PRIMARY instance.
         query_insights_config (google.cloud.alloydb_v1.types.Instance.QueryInsightsInstanceConfig):
             Configuration for query insights.
+        observability_config (google.cloud.alloydb_v1.types.Instance.ObservabilityInstanceConfig):
+            Configuration for observability.
         read_pool_config (google.cloud.alloydb_v1.types.Instance.ReadPoolConfig):
             Read pool instance configuration. This is required if the
             value of instanceType is READ_POOL.
@@ -1336,6 +1418,15 @@ class Instance(proto.Message):
         outbound_public_ip_addresses (MutableSequence[str]):
             Output only. All outbound public IP addresses
             configured for the instance.
+        activation_policy (google.cloud.alloydb_v1.types.Instance.ActivationPolicy):
+            Optional. Specifies whether an instance needs to spin up.
+            Once the instance is active, the activation policy can be
+            updated to the ``NEVER`` to stop the instance. Likewise, the
+            activation policy can be updated to ``ALWAYS`` to start the
+            instance. There are restrictions around when an instance
+            can/cannot be activated (for example, a read pool instance
+            should be stopped before stopping primary etc.). Please
+            refer to the API documentation for more details.
     """
 
     class State(proto.Enum):
@@ -1427,38 +1518,61 @@ class Instance(proto.Message):
         ZONAL = 1
         REGIONAL = 2
 
+    class ActivationPolicy(proto.Enum):
+        r"""Specifies whether an instance needs to spin up.
+
+        Values:
+            ACTIVATION_POLICY_UNSPECIFIED (0):
+                The policy is not specified.
+            ALWAYS (1):
+                The instance is running.
+            NEVER (2):
+                The instance is not running.
+        """
+        ACTIVATION_POLICY_UNSPECIFIED = 0
+        ALWAYS = 1
+        NEVER = 2
+
     class MachineConfig(proto.Message):
         r"""MachineConfig describes the configuration of a machine.
 
         Attributes:
             cpu_count (int):
                 The number of CPU's in the VM instance.
+            machine_type (str):
+                Machine type of the VM instance. E.g. "n2-highmem-4",
+                "n2-highmem-8", "c4a-highmem-4-lssd". cpu_count must match
+                the number of vCPUs in the machine type.
         """
 
         cpu_count: int = proto.Field(
             proto.INT32,
             number=1,
         )
+        machine_type: str = proto.Field(
+            proto.STRING,
+            number=4,
+        )
 
     class Node(proto.Message):
         r"""Details of a single node in the instance.
-        Nodes in an AlloyDB instance are ephemereal, they can change
+        Nodes in an AlloyDB instance are ephemeral, they can change
         during update, failover, autohealing and resize operations.
 
         Attributes:
             zone_id (str):
-                The Compute Engine zone of the VM e.g.
-                "us-central1-b".
+                Output only. The Compute Engine zone of the
+                VM e.g. "us-central1-b".
             id (str):
-                The identifier of the VM e.g.
+                Output only. The identifier of the VM e.g.
                 "test-read-0601-407e52be-ms3l".
             ip (str):
-                The private IP address of the VM e.g.
-                "10.57.0.34".
+                Output only. The private IP address of the VM
+                e.g. "10.57.0.34".
             state (str):
-                Determined by state of the compute VM and
-                postgres-service health. Compute VM state can
-                have values listed in
+                Output only. Determined by state of the
+                compute VM and postgres-service health. Compute
+                VM state can have values listed in
                 https://cloud.google.com/compute/docs/instances/instance-life-cycle
                 and postgres-service health can have values:
                 HEALTHY and UNHEALTHY.
@@ -1531,6 +1645,104 @@ class Instance(proto.Message):
             optional=True,
         )
 
+    class ObservabilityInstanceConfig(proto.Message):
+        r"""Observability Instance specific configuration.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            enabled (bool):
+                Observability feature status for an instance.
+                This flag is turned "off" by default.
+
+                This field is a member of `oneof`_ ``_enabled``.
+            preserve_comments (bool):
+                Preserve comments in query string for an
+                instance. This flag is turned "off" by default.
+
+                This field is a member of `oneof`_ ``_preserve_comments``.
+            track_wait_events (bool):
+                Track wait events during query execution for
+                an instance. This flag is turned "on" by default
+                but tracking is enabled only after observability
+                enabled flag is also turned on.
+
+                This field is a member of `oneof`_ ``_track_wait_events``.
+            track_wait_event_types (bool):
+                Output only. Track wait event types during
+                query execution for an instance. This flag is
+                turned "on" by default but tracking is enabled
+                only after observability enabled flag is also
+                turned on. This is read-only flag and only
+                modifiable by internal API.
+
+                This field is a member of `oneof`_ ``_track_wait_event_types``.
+            max_query_string_length (int):
+                Query string length. The default value is
+                10k.
+
+                This field is a member of `oneof`_ ``_max_query_string_length``.
+            record_application_tags (bool):
+                Record application tags for an instance.
+                This flag is turned "off" by default.
+
+                This field is a member of `oneof`_ ``_record_application_tags``.
+            query_plans_per_minute (int):
+                Number of query execution plans captured by
+                Insights per minute for all queries combined.
+                The default value is 200. Any integer between 0
+                to 200 is considered valid.
+
+                This field is a member of `oneof`_ ``_query_plans_per_minute``.
+            track_active_queries (bool):
+                Track actively running queries on the
+                instance. If not set, this flag is "off" by
+                default.
+
+                This field is a member of `oneof`_ ``_track_active_queries``.
+        """
+
+        enabled: bool = proto.Field(
+            proto.BOOL,
+            number=1,
+            optional=True,
+        )
+        preserve_comments: bool = proto.Field(
+            proto.BOOL,
+            number=2,
+            optional=True,
+        )
+        track_wait_events: bool = proto.Field(
+            proto.BOOL,
+            number=3,
+            optional=True,
+        )
+        track_wait_event_types: bool = proto.Field(
+            proto.BOOL,
+            number=4,
+            optional=True,
+        )
+        max_query_string_length: int = proto.Field(
+            proto.INT32,
+            number=5,
+            optional=True,
+        )
+        record_application_tags: bool = proto.Field(
+            proto.BOOL,
+            number=6,
+            optional=True,
+        )
+        query_plans_per_minute: int = proto.Field(
+            proto.INT32,
+            number=7,
+            optional=True,
+        )
+        track_active_queries: bool = proto.Field(
+            proto.BOOL,
+            number=8,
+            optional=True,
+        )
+
     class ReadPoolConfig(proto.Message):
         r"""Configuration for a read pool instance.
 
@@ -1568,6 +1780,92 @@ class Instance(proto.Message):
             message="SslConfig",
         )
 
+    class PscInterfaceConfig(proto.Message):
+        r"""Configuration for setting up a PSC interface to enable
+        outbound connectivity.
+
+        Attributes:
+            network_attachment_resource (str):
+                The network attachment resource created in the consumer
+                network to which the PSC interface will be linked. This is
+                of the format:
+                "projects/${CONSUMER_PROJECT}/regions/${REGION}/networkAttachments/${NETWORK_ATTACHMENT_NAME}".
+                The network attachment must be in the same region as the
+                instance.
+        """
+
+        network_attachment_resource: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+
+    class PscAutoConnectionConfig(proto.Message):
+        r"""Configuration for setting up PSC service automation. Consumer
+        projects in the configs will be allowlisted automatically for
+        the instance.
+
+        Attributes:
+            consumer_project (str):
+                The consumer project to which the PSC service
+                automation endpoint will be created.
+            consumer_network (str):
+                The consumer network for the PSC service
+                automation, example:
+                "projects/vpc-host-project/global/networks/default".
+                The consumer network might be hosted a different
+                project than the consumer project.
+            ip_address (str):
+                Output only. The IP address of the PSC
+                service automation endpoint.
+            status (str):
+                Output only. The status of the PSC service automation
+                connection. Possible values: "STATE_UNSPECIFIED" - An
+                invalid state as the default case. "ACTIVE" - The connection
+                has been created successfully. "FAILED" - The connection is
+                not functional since some resources on the connection fail
+                to be created. "CREATING" - The connection is being created.
+                "DELETING" - The connection is being deleted.
+                "CREATE_REPAIRING" - The connection is being repaired to
+                complete creation. "DELETE_REPAIRING" - The connection is
+                being repaired to complete deletion.
+            consumer_network_status (str):
+                Output only. The status of the service connection policy.
+                Possible values: "STATE_UNSPECIFIED" - Default state, when
+                Connection Map is created initially. "VALID" - Set when
+                policy and map configuration is valid, and their matching
+                can lead to allowing creation of PSC Connections subject to
+                other constraints like connections limit.
+                "CONNECTION_POLICY_MISSING" - No Service Connection Policy
+                found for this network and Service Class
+                "POLICY_LIMIT_REACHED" - Service Connection Policy limit
+                reached for this network and Service Class
+                "CONSUMER_INSTANCE_PROJECT_NOT_ALLOWLISTED" - The consumer
+                instance project is not in
+                AllowedGoogleProducersResourceHierarchyLevels of the
+                matching ServiceConnectionPolicy.
+        """
+
+        consumer_project: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        consumer_network: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        ip_address: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        status: str = proto.Field(
+            proto.STRING,
+            number=4,
+        )
+        consumer_network_status: str = proto.Field(
+            proto.STRING,
+            number=5,
+        )
+
     class PscInstanceConfig(proto.Message):
         r"""PscInstanceConfig contains PSC related configuration at an
         instance level.
@@ -1586,6 +1884,15 @@ class Instance(proto.Message):
                 Output only. The DNS name of the instance for
                 PSC connectivity. Name convention:
                 <uid>.<uid>.<region>.alloydb-psc.goog
+            psc_interface_configs (MutableSequence[google.cloud.alloydb_v1.types.Instance.PscInterfaceConfig]):
+                Optional. Configurations for setting up PSC
+                interfaces attached to the instance which are
+                used for outbound connectivity. Only primary
+                instances can have PSC interface attached.
+                Currently we only support 0 or 1 PSC interface.
+            psc_auto_connections (MutableSequence[google.cloud.alloydb_v1.types.Instance.PscAutoConnectionConfig]):
+                Optional. Configurations for setting up PSC
+                service automation.
         """
 
         service_attachment_link: str = proto.Field(
@@ -1599,6 +1906,20 @@ class Instance(proto.Message):
         psc_dns_name: str = proto.Field(
             proto.STRING,
             number=7,
+        )
+        psc_interface_configs: MutableSequence[
+            "Instance.PscInterfaceConfig"
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=8,
+            message="Instance.PscInterfaceConfig",
+        )
+        psc_auto_connections: MutableSequence[
+            "Instance.PscAutoConnectionConfig"
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=9,
+            message="Instance.PscAutoConnectionConfig",
         )
 
     class InstanceNetworkConfig(proto.Message):
@@ -1615,6 +1936,23 @@ class Instance(proto.Message):
                 Optional. Enabling an outbound public IP
                 address to support a database server sending
                 requests out into the internet.
+            network (str):
+                Output only. The resource link for the VPC network in which
+                instance resources are created and from which they are
+                accessible via Private IP. This will be the same value as
+                the parent cluster's network. It is specified in the form:
+                //
+                ``projects/{project_number}/global/networks/{network_id}``.
+            allocated_ip_range_override (str):
+                Optional. Name of the allocated IP range for the private IP
+                AlloyDB instance, for example:
+                "google-managed-services-default". If set, the instance IPs
+                will be created from this allocated range and will override
+                the IP range used by the parent cluster. The range name must
+                comply with `RFC
+                1035 <http://datatracker.ietf.org/doc/html/rfc1035>`__.
+                Specifically, the name must be 1-63 characters long and
+                match the regular expression `a-z <[-a-z0-9]*[a-z0-9]>`__?.
         """
 
         class AuthorizedNetwork(proto.Message):
@@ -1646,6 +1984,14 @@ class Instance(proto.Message):
         enable_outbound_public_ip: bool = proto.Field(
             proto.BOOL,
             number=3,
+        )
+        network: str = proto.Field(
+            proto.STRING,
+            number=4,
+        )
+        allocated_ip_range_override: str = proto.Field(
+            proto.STRING,
+            number=5,
         )
 
     name: str = proto.Field(
@@ -1724,6 +2070,11 @@ class Instance(proto.Message):
         number=21,
         message=QueryInsightsInstanceConfig,
     )
+    observability_config: ObservabilityInstanceConfig = proto.Field(
+        proto.MESSAGE,
+        number=26,
+        message=ObservabilityInstanceConfig,
+    )
     read_pool_config: ReadPoolConfig = proto.Field(
         proto.MESSAGE,
         number=14,
@@ -1772,6 +2123,11 @@ class Instance(proto.Message):
     outbound_public_ip_addresses: MutableSequence[str] = proto.RepeatedField(
         proto.STRING,
         number=34,
+    )
+    activation_policy: ActivationPolicy = proto.Field(
+        proto.ENUM,
+        number=35,
+        enum=ActivationPolicy,
     )
 
 
@@ -1844,8 +2200,15 @@ class Backup(proto.Message):
             Output only. Create time stamp
         update_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. Update time stamp
+
+            Users should not infer any meaning from this
+            field. Its value is generally unrelated to the
+            timing of the backup creation operation.
         delete_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. Delete time stamp
+        create_completion_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Timestamp when the resource
+            finished being created.
         labels (MutableMapping[str, str]):
             Labels as key value pairs
         state (google.cloud.alloydb_v1.types.Backup.State):
@@ -2022,6 +2385,11 @@ class Backup(proto.Message):
         number=15,
         message=timestamp_pb2.Timestamp,
     )
+    create_completion_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=26,
+        message=timestamp_pb2.Timestamp,
+    )
     labels: MutableMapping[str, str] = proto.MapField(
         proto.STRING,
         proto.STRING,
@@ -2125,6 +2493,14 @@ class SupportedDatabaseFlag(proto.Message):
             Restriction on INTEGER type value.
 
             This field is a member of `oneof`_ ``restrictions``.
+        recommended_string_value (str):
+            The recommended value for a STRING flag.
+
+            This field is a member of `oneof`_ ``recommended_value``.
+        recommended_integer_value (google.protobuf.wrappers_pb2.Int64Value):
+            The recommended value for an INTEGER flag.
+
+            This field is a member of `oneof`_ ``recommended_value``.
         name (str):
             The name of the flag resource, following Google Cloud
             conventions, e.g.:
@@ -2150,6 +2526,8 @@ class SupportedDatabaseFlag(proto.Message):
             that requires database restart is set, the
             backend will automatically restart the database
             (making sure to satisfy any availability SLO's).
+        scope (google.cloud.alloydb_v1.types.SupportedDatabaseFlag.Scope):
+            The scope of the flag.
     """
 
     class ValueType(proto.Enum):
@@ -2176,6 +2554,22 @@ class SupportedDatabaseFlag(proto.Message):
         INTEGER = 2
         FLOAT = 3
         NONE = 4
+
+    class Scope(proto.Enum):
+        r"""The scope of the flag.
+
+        Values:
+            SCOPE_UNSPECIFIED (0):
+                The scope of the flag is not specified.
+                Default is DATABASE.
+            DATABASE (1):
+                The flag is a database flag.
+            CONNECTION_POOL (2):
+                The flag is a connection pool flag.
+        """
+        SCOPE_UNSPECIFIED = 0
+        DATABASE = 1
+        CONNECTION_POOL = 2
 
     class StringRestrictions(proto.Message):
         r"""Restrictions on STRING type values
@@ -2227,6 +2621,17 @@ class SupportedDatabaseFlag(proto.Message):
         oneof="restrictions",
         message=IntegerRestrictions,
     )
+    recommended_string_value: str = proto.Field(
+        proto.STRING,
+        number=10,
+        oneof="recommended_value",
+    )
+    recommended_integer_value: wrappers_pb2.Int64Value = proto.Field(
+        proto.MESSAGE,
+        number=11,
+        oneof="recommended_value",
+        message=wrappers_pb2.Int64Value,
+    )
     name: str = proto.Field(
         proto.STRING,
         number=1,
@@ -2252,6 +2657,11 @@ class SupportedDatabaseFlag(proto.Message):
     requires_db_restart: bool = proto.Field(
         proto.BOOL,
         number=6,
+    )
+    scope: Scope = proto.Field(
+        proto.ENUM,
+        number=9,
+        enum=Scope,
     )
 
 

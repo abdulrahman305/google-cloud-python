@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -244,13 +244,16 @@ class Instance(proto.Message):
             MODE_UNSPECIFIED (0):
                 Mode is not specified.
             STANDALONE (1):
-                Instance is in standalone mode.
+                Deprecated: Use CLUSTER_DISABLED instead.
             CLUSTER (2):
                 Instance is in cluster mode.
+            CLUSTER_DISABLED (4):
+                Cluster mode is disabled for the instance.
         """
         MODE_UNSPECIFIED = 0
         STANDALONE = 1
         CLUSTER = 2
+        CLUSTER_DISABLED = 4
 
     class StateInfo(proto.Message):
         r"""Additional information about the state of the instance.

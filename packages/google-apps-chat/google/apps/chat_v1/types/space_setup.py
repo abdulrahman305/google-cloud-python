@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ class SetUpSpaceRequest(proto.Message):
             the space. Omit the calling user, as they are added
             automatically.
 
-            The set currently allows up to 20 memberships (in addition
+            The set currently allows up to 49 memberships (in addition
             to the caller).
 
             For human membership, the ``Membership.member`` field must

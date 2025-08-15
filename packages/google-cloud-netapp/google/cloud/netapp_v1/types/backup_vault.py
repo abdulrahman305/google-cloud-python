@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,26 @@ class BackupVault(proto.Message):
         labels (MutableMapping[str, str]):
             Resource labels to represent user provided
             metadata.
+        backup_vault_type (google.cloud.netapp_v1.types.BackupVault.BackupVaultType):
+            Optional. Type of backup vault to be created. Default is
+            IN_REGION.
+        source_region (str):
+            Output only. Region in which the backup vault is created.
+            Format: ``projects/{project_id}/locations/{location}``
+        backup_region (str):
+            Optional. Region where the backups are stored. Format:
+            ``projects/{project_id}/locations/{location}``
+        source_backup_vault (str):
+            Output only. Name of the Backup vault created in source
+            region. Format:
+            ``projects/{project_id}/locations/{location}/backupVaults/{backup_vault_id}``
+        destination_backup_vault (str):
+            Output only. Name of the Backup vault created in backup
+            region. Format:
+            ``projects/{project_id}/locations/{location}/backupVaults/{backup_vault_id}``
+        backup_retention_policy (google.cloud.netapp_v1.types.BackupVault.BackupRetentionPolicy):
+            Optional. Backup retention policy defining
+            the retenton of backups.
     """
 
     class State(proto.Enum):
@@ -77,6 +97,71 @@ class BackupVault(proto.Message):
         ERROR = 4
         UPDATING = 5
 
+    class BackupVaultType(proto.Enum):
+        r"""Backup Vault Type.
+
+        Values:
+            BACKUP_VAULT_TYPE_UNSPECIFIED (0):
+                BackupVault type not set.
+            IN_REGION (1):
+                BackupVault type is IN_REGION.
+            CROSS_REGION (2):
+                BackupVault type is CROSS_REGION.
+        """
+        BACKUP_VAULT_TYPE_UNSPECIFIED = 0
+        IN_REGION = 1
+        CROSS_REGION = 2
+
+    class BackupRetentionPolicy(proto.Message):
+        r"""Retention policy for backups in the backup vault
+
+        Attributes:
+            backup_minimum_enforced_retention_days (int):
+                Required. Minimum retention duration in days
+                for backups in the backup vault.
+            daily_backup_immutable (bool):
+                Optional. Indicates if the daily backups are immutable.
+                Atleast one of daily_backup_immutable,
+                weekly_backup_immutable, monthly_backup_immutable and
+                manual_backup_immutable must be true.
+            weekly_backup_immutable (bool):
+                Optional. Indicates if the weekly backups are immutable.
+                Atleast one of daily_backup_immutable,
+                weekly_backup_immutable, monthly_backup_immutable and
+                manual_backup_immutable must be true.
+            monthly_backup_immutable (bool):
+                Optional. Indicates if the monthly backups are immutable.
+                Atleast one of daily_backup_immutable,
+                weekly_backup_immutable, monthly_backup_immutable and
+                manual_backup_immutable must be true.
+            manual_backup_immutable (bool):
+                Optional. Indicates if the manual backups are immutable.
+                Atleast one of daily_backup_immutable,
+                weekly_backup_immutable, monthly_backup_immutable and
+                manual_backup_immutable must be true.
+        """
+
+        backup_minimum_enforced_retention_days: int = proto.Field(
+            proto.INT32,
+            number=1,
+        )
+        daily_backup_immutable: bool = proto.Field(
+            proto.BOOL,
+            number=2,
+        )
+        weekly_backup_immutable: bool = proto.Field(
+            proto.BOOL,
+            number=3,
+        )
+        monthly_backup_immutable: bool = proto.Field(
+            proto.BOOL,
+            number=4,
+        )
+        manual_backup_immutable: bool = proto.Field(
+            proto.BOOL,
+            number=5,
+        )
+
     name: str = proto.Field(
         proto.STRING,
         number=1,
@@ -99,6 +184,32 @@ class BackupVault(proto.Message):
         proto.STRING,
         proto.STRING,
         number=5,
+    )
+    backup_vault_type: BackupVaultType = proto.Field(
+        proto.ENUM,
+        number=6,
+        enum=BackupVaultType,
+    )
+    source_region: str = proto.Field(
+        proto.STRING,
+        number=7,
+    )
+    backup_region: str = proto.Field(
+        proto.STRING,
+        number=8,
+    )
+    source_backup_vault: str = proto.Field(
+        proto.STRING,
+        number=9,
+    )
+    destination_backup_vault: str = proto.Field(
+        proto.STRING,
+        number=10,
+    )
+    backup_retention_policy: BackupRetentionPolicy = proto.Field(
+        proto.MESSAGE,
+        number=11,
+        message=BackupRetentionPolicy,
     )
 
 

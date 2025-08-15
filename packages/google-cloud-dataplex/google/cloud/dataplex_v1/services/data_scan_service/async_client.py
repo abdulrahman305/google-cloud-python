@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.dataplex_v1 import gapic_version as package_version
 
@@ -417,19 +418,31 @@ class DataScanServiceAsyncClient:
 
                    For example:
 
-                   -  Data Quality: generates queries based on the rules
+                   -  Data quality: generates queries based on the rules
                       and runs against the data to get data quality
-                      check results.
-                   -  Data Profile: analyzes the data in table(s) and
+                      check results. For more information, see [Auto
+                      data quality
+                      overview](\ https://cloud.google.com/dataplex/docs/auto-data-quality-overview).
+                   -  Data profile: analyzes the data in tables and
                       generates insights about the structure, content
                       and relationships (such as null percent,
-                      cardinality, min/max/mean, etc).
+                      cardinality, min/max/mean, etc). For more
+                      information, see [About data
+                      profiling](\ https://cloud.google.com/dataplex/docs/data-profiling-overview).
+                   -  Data discovery: scans data in Cloud Storage
+                      buckets to extract and then catalog metadata. For
+                      more information, see [Discover and catalog Cloud
+                      Storage
+                      data](\ https://cloud.google.com/bigquery/docs/automatic-discovery).
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, data_scan, data_scan_id])
+        flattened_params = [parent, data_scan, data_scan_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -563,19 +576,31 @@ class DataScanServiceAsyncClient:
 
                    For example:
 
-                   -  Data Quality: generates queries based on the rules
+                   -  Data quality: generates queries based on the rules
                       and runs against the data to get data quality
-                      check results.
-                   -  Data Profile: analyzes the data in table(s) and
+                      check results. For more information, see [Auto
+                      data quality
+                      overview](\ https://cloud.google.com/dataplex/docs/auto-data-quality-overview).
+                   -  Data profile: analyzes the data in tables and
                       generates insights about the structure, content
                       and relationships (such as null percent,
-                      cardinality, min/max/mean, etc).
+                      cardinality, min/max/mean, etc). For more
+                      information, see [About data
+                      profiling](\ https://cloud.google.com/dataplex/docs/data-profiling-overview).
+                   -  Data discovery: scans data in Cloud Storage
+                      buckets to extract and then catalog metadata. For
+                      more information, see [Discover and catalog Cloud
+                      Storage
+                      data](\ https://cloud.google.com/bigquery/docs/automatic-discovery).
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([data_scan, update_mask])
+        flattened_params = [data_scan, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -711,7 +736,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -827,19 +855,31 @@ class DataScanServiceAsyncClient:
 
                    For example:
 
-                   -  Data Quality: generates queries based on the rules
+                   -  Data quality: generates queries based on the rules
                       and runs against the data to get data quality
-                      check results.
-                   -  Data Profile: analyzes the data in table(s) and
+                      check results. For more information, see [Auto
+                      data quality
+                      overview](\ https://cloud.google.com/dataplex/docs/auto-data-quality-overview).
+                   -  Data profile: analyzes the data in tables and
                       generates insights about the structure, content
                       and relationships (such as null percent,
-                      cardinality, min/max/mean, etc).
+                      cardinality, min/max/mean, etc). For more
+                      information, see [About data
+                      profiling](\ https://cloud.google.com/dataplex/docs/data-profiling-overview).
+                   -  Data discovery: scans data in Cloud Storage
+                      buckets to extract and then catalog metadata. For
+                      more information, see [Discover and catalog Cloud
+                      Storage
+                      data](\ https://cloud.google.com/bigquery/docs/automatic-discovery).
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -952,7 +992,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1073,7 +1116,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1183,7 +1229,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1297,7 +1346,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1427,7 +1479,10 @@ class DataScanServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1811,6 +1866,9 @@ class DataScanServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("DataScanServiceAsyncClient",)

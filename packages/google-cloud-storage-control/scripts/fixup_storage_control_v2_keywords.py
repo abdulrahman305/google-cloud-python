@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,16 +39,29 @@ def partition(
 class storage_controlCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'create_anywhere_cache': ('parent', 'anywhere_cache', 'request_id', ),
         'create_folder': ('parent', 'folder', 'folder_id', 'recursive', 'request_id', ),
         'create_managed_folder': ('parent', 'managed_folder', 'managed_folder_id', 'request_id', ),
         'delete_folder': ('name', 'if_metageneration_match', 'if_metageneration_not_match', 'request_id', ),
         'delete_managed_folder': ('name', 'if_metageneration_match', 'if_metageneration_not_match', 'allow_non_empty', 'request_id', ),
+        'disable_anywhere_cache': ('name', 'request_id', ),
+        'get_anywhere_cache': ('name', 'request_id', ),
         'get_folder': ('name', 'if_metageneration_match', 'if_metageneration_not_match', 'request_id', ),
+        'get_folder_intelligence_config': ('name', ),
         'get_managed_folder': ('name', 'if_metageneration_match', 'if_metageneration_not_match', 'request_id', ),
+        'get_organization_intelligence_config': ('name', ),
+        'get_project_intelligence_config': ('name', ),
         'get_storage_layout': ('name', 'prefix', 'request_id', ),
+        'list_anywhere_caches': ('parent', 'page_size', 'page_token', 'request_id', ),
         'list_folders': ('parent', 'page_size', 'page_token', 'prefix', 'delimiter', 'lexicographic_start', 'lexicographic_end', 'request_id', ),
         'list_managed_folders': ('parent', 'page_size', 'page_token', 'prefix', 'request_id', ),
+        'pause_anywhere_cache': ('name', 'request_id', ),
         'rename_folder': ('name', 'destination_folder_id', 'if_metageneration_match', 'if_metageneration_not_match', 'request_id', ),
+        'resume_anywhere_cache': ('name', 'request_id', ),
+        'update_anywhere_cache': ('anywhere_cache', 'update_mask', 'request_id', ),
+        'update_folder_intelligence_config': ('intelligence_config', 'update_mask', 'request_id', ),
+        'update_organization_intelligence_config': ('intelligence_config', 'update_mask', 'request_id', ),
+        'update_project_intelligence_config': ('intelligence_config', 'update_mask', 'request_id', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

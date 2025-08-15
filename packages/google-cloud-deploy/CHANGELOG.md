@@ -1,5 +1,64 @@
 # Changelog
 
+## [2.7.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.7.0...google-cloud-deploy-v2.7.1) (2025-05-08)
+
+
+### Bug Fixes
+
+* correct pattern of unused resource definition, Revision ([fe6f95f](https://github.com/googleapis/google-cloud-python/commit/fe6f95fbab89079a49bd7d48bd50d9a93ef2a963))
+
+
+### Documentation
+
+* Comments updated for fields in several different resources ([fe6f95f](https://github.com/googleapis/google-cloud-python/commit/fe6f95fbab89079a49bd7d48bd50d9a93ef2a963))
+
+## [2.7.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.6.3...google-cloud-deploy-v2.7.0) (2025-04-12)
+
+
+### Features
+
+* Add resource definition for Revision ([831dd1d](https://github.com/googleapis/google-cloud-python/commit/831dd1d815e29c54f0ba9428e799bf805970c574))
+
+
+### Documentation
+
+* Typos fixes and small improvements ([831dd1d](https://github.com/googleapis/google-cloud-python/commit/831dd1d815e29c54f0ba9428e799bf805970c574))
+
+## [2.6.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.6.2...google-cloud-deploy-v2.6.3) (2025-03-21)
+
+
+### Documentation
+
+* [google-cloud-deploy] fix typo in comments ([#13694](https://github.com/googleapis/google-cloud-python/issues/13694)) ([00baa06](https://github.com/googleapis/google-cloud-python/commit/00baa069072a021b874b08917466ac6178d9f41d))
+
+## [2.6.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.6.1...google-cloud-deploy-v2.6.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.6.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.6.0...google-cloud-deploy-v2.6.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [2.6.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.5.0...google-cloud-deploy-v2.6.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
+
+### Documentation
+
+* Minor documentation improvements ([3e64234](https://github.com/googleapis/google-cloud-python/commit/3e64234e201bbbaaceb39e8b0da0258c3d5be3b2))
+
 ## [2.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-deploy-v2.4.1...google-cloud-deploy-v2.5.0) (2024-12-12)
 
 

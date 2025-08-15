@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -55,6 +56,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class SubscriptionsServiceRestInterceptor:
@@ -146,11 +150,34 @@ class SubscriptionsServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_subscription
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_subscription_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_subscription` interceptor runs
+        before the `post_create_subscription_with_metadata` interceptor.
         """
         return response
+
+    def post_create_subscription_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_subscription
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_create_subscription_with_metadata`
+        interceptor in new development instead of the `post_create_subscription` interceptor.
+        When both interceptors are used, this `post_create_subscription_with_metadata` interceptor runs after the
+        `post_create_subscription` interceptor. The (possibly modified) response returned by
+        `post_create_subscription` will be passed to
+        `post_create_subscription_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_subscription(
         self,
@@ -172,11 +199,34 @@ class SubscriptionsServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_subscription
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_subscription_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_subscription` interceptor runs
+        before the `post_delete_subscription_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_subscription_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_subscription
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_subscription_with_metadata`
+        interceptor in new development instead of the `post_delete_subscription` interceptor.
+        When both interceptors are used, this `post_delete_subscription_with_metadata` interceptor runs after the
+        `post_delete_subscription` interceptor. The (possibly modified) response returned by
+        `post_delete_subscription` will be passed to
+        `post_delete_subscription_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_subscription(
         self,
@@ -198,11 +248,36 @@ class SubscriptionsServiceRestInterceptor:
     ) -> subscription_resource.Subscription:
         """Post-rpc interceptor for get_subscription
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_subscription_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_subscription` interceptor runs
+        before the `post_get_subscription_with_metadata` interceptor.
         """
         return response
+
+    def post_get_subscription_with_metadata(
+        self,
+        response: subscription_resource.Subscription,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        subscription_resource.Subscription, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_subscription
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_get_subscription_with_metadata`
+        interceptor in new development instead of the `post_get_subscription` interceptor.
+        When both interceptors are used, this `post_get_subscription_with_metadata` interceptor runs after the
+        `post_get_subscription` interceptor. The (possibly modified) response returned by
+        `post_get_subscription` will be passed to
+        `post_get_subscription_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_subscriptions(
         self,
@@ -224,11 +299,37 @@ class SubscriptionsServiceRestInterceptor:
     ) -> subscriptions_service.ListSubscriptionsResponse:
         """Post-rpc interceptor for list_subscriptions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_subscriptions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_subscriptions` interceptor runs
+        before the `post_list_subscriptions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_subscriptions_with_metadata(
+        self,
+        response: subscriptions_service.ListSubscriptionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        subscriptions_service.ListSubscriptionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_subscriptions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_list_subscriptions_with_metadata`
+        interceptor in new development instead of the `post_list_subscriptions` interceptor.
+        When both interceptors are used, this `post_list_subscriptions_with_metadata` interceptor runs after the
+        `post_list_subscriptions` interceptor. The (possibly modified) response returned by
+        `post_list_subscriptions` will be passed to
+        `post_list_subscriptions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_reactivate_subscription(
         self,
@@ -250,11 +351,34 @@ class SubscriptionsServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for reactivate_subscription
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_reactivate_subscription_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_reactivate_subscription` interceptor runs
+        before the `post_reactivate_subscription_with_metadata` interceptor.
         """
         return response
+
+    def post_reactivate_subscription_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for reactivate_subscription
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_reactivate_subscription_with_metadata`
+        interceptor in new development instead of the `post_reactivate_subscription` interceptor.
+        When both interceptors are used, this `post_reactivate_subscription_with_metadata` interceptor runs after the
+        `post_reactivate_subscription` interceptor. The (possibly modified) response returned by
+        `post_reactivate_subscription` will be passed to
+        `post_reactivate_subscription_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_subscription(
         self,
@@ -276,11 +400,34 @@ class SubscriptionsServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_subscription
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_subscription_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SubscriptionsService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_subscription` interceptor runs
+        before the `post_update_subscription_with_metadata` interceptor.
         """
         return response
+
+    def post_update_subscription_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_subscription
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SubscriptionsService server but before it is returned to user code.
+
+        We recommend only using this `post_update_subscription_with_metadata`
+        interceptor in new development instead of the `post_update_subscription` interceptor.
+        When both interceptors are used, this `post_update_subscription_with_metadata` interceptor runs after the
+        `post_update_subscription` interceptor. The (possibly modified) response returned by
+        `post_update_subscription` will be passed to
+        `post_update_subscription_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -560,6 +707,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_subscription(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_subscription_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -707,6 +858,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_subscription(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_subscription_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -855,6 +1010,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_subscription(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_subscription_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1005,6 +1164,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_subscriptions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_subscriptions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1162,6 +1325,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_reactivate_subscription(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_reactivate_subscription_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1315,6 +1482,10 @@ class SubscriptionsServiceRestTransport(_BaseSubscriptionsServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_subscription(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_subscription_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

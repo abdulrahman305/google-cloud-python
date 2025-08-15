@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -56,6 +57,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AlloyDBAdminRestInterceptor:
@@ -165,6 +169,14 @@ class AlloyDBAdminRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_export_cluster(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_export_cluster(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_failover_instance(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -218,6 +230,14 @@ class AlloyDBAdminRestInterceptor:
                 return request, metadata
 
             def post_get_user(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_import_cluster(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_import_cluster(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -341,6 +361,14 @@ class AlloyDBAdminRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_upgrade_cluster(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_upgrade_cluster(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
         transport = AlloyDBAdminRestTransport(interceptor=MyCustomAlloyDBAdminInterceptor())
         client = AlloyDBAdminClient(transport=transport)
 
@@ -366,11 +394,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for batch_create_instances
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_create_instances_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_create_instances` interceptor runs
+        before the `post_batch_create_instances_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_create_instances_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for batch_create_instances
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_batch_create_instances_with_metadata`
+        interceptor in new development instead of the `post_batch_create_instances` interceptor.
+        When both interceptors are used, this `post_batch_create_instances_with_metadata` interceptor runs after the
+        `post_batch_create_instances` interceptor. The (possibly modified) response returned by
+        `post_batch_create_instances` will be passed to
+        `post_batch_create_instances_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_backup(
         self,
@@ -389,11 +440,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup` interceptor runs
+        before the `post_create_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_with_metadata`
+        interceptor in new development instead of the `post_create_backup` interceptor.
+        When both interceptors are used, this `post_create_backup_with_metadata` interceptor runs after the
+        `post_create_backup` interceptor. The (possibly modified) response returned by
+        `post_create_backup` will be passed to
+        `post_create_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_cluster(
         self,
@@ -412,11 +486,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_cluster` interceptor runs
+        before the `post_create_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_create_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_cluster_with_metadata`
+        interceptor in new development instead of the `post_create_cluster` interceptor.
+        When both interceptors are used, this `post_create_cluster_with_metadata` interceptor runs after the
+        `post_create_cluster` interceptor. The (possibly modified) response returned by
+        `post_create_cluster` will be passed to
+        `post_create_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_instance(
         self,
@@ -435,11 +532,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_instance` interceptor runs
+        before the `post_create_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_create_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_instance_with_metadata`
+        interceptor in new development instead of the `post_create_instance` interceptor.
+        When both interceptors are used, this `post_create_instance_with_metadata` interceptor runs after the
+        `post_create_instance` interceptor. The (possibly modified) response returned by
+        `post_create_instance` will be passed to
+        `post_create_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_secondary_cluster(
         self,
@@ -460,11 +580,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_secondary_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_secondary_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_secondary_cluster` interceptor runs
+        before the `post_create_secondary_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_create_secondary_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_secondary_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_secondary_cluster_with_metadata`
+        interceptor in new development instead of the `post_create_secondary_cluster` interceptor.
+        When both interceptors are used, this `post_create_secondary_cluster_with_metadata` interceptor runs after the
+        `post_create_secondary_cluster` interceptor. The (possibly modified) response returned by
+        `post_create_secondary_cluster` will be passed to
+        `post_create_secondary_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_secondary_instance(
         self,
@@ -485,11 +628,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_secondary_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_secondary_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_secondary_instance` interceptor runs
+        before the `post_create_secondary_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_create_secondary_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_secondary_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_secondary_instance_with_metadata`
+        interceptor in new development instead of the `post_create_secondary_instance` interceptor.
+        When both interceptors are used, this `post_create_secondary_instance_with_metadata` interceptor runs after the
+        `post_create_secondary_instance` interceptor. The (possibly modified) response returned by
+        `post_create_secondary_instance` will be passed to
+        `post_create_secondary_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_user(
         self,
@@ -506,11 +672,34 @@ class AlloyDBAdminRestInterceptor:
     def post_create_user(self, response: resources.User) -> resources.User:
         """Post-rpc interceptor for create_user
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_user_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_user` interceptor runs
+        before the `post_create_user_with_metadata` interceptor.
         """
         return response
+
+    def post_create_user_with_metadata(
+        self,
+        response: resources.User,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.User, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_user
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_create_user_with_metadata`
+        interceptor in new development instead of the `post_create_user` interceptor.
+        When both interceptors are used, this `post_create_user_with_metadata` interceptor runs after the
+        `post_create_user` interceptor. The (possibly modified) response returned by
+        `post_create_user` will be passed to
+        `post_create_user_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup(
         self,
@@ -529,11 +718,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup` interceptor runs
+        before the `post_delete_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_with_metadata`
+        interceptor in new development instead of the `post_delete_backup` interceptor.
+        When both interceptors are used, this `post_delete_backup_with_metadata` interceptor runs after the
+        `post_delete_backup` interceptor. The (possibly modified) response returned by
+        `post_delete_backup` will be passed to
+        `post_delete_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_cluster(
         self,
@@ -552,11 +764,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_cluster` interceptor runs
+        before the `post_delete_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_delete_cluster_with_metadata`
+        interceptor in new development instead of the `post_delete_cluster` interceptor.
+        When both interceptors are used, this `post_delete_cluster_with_metadata` interceptor runs after the
+        `post_delete_cluster` interceptor. The (possibly modified) response returned by
+        `post_delete_cluster` will be passed to
+        `post_delete_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_instance(
         self,
@@ -575,11 +810,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_instance` interceptor runs
+        before the `post_delete_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_delete_instance_with_metadata`
+        interceptor in new development instead of the `post_delete_instance` interceptor.
+        When both interceptors are used, this `post_delete_instance_with_metadata` interceptor runs after the
+        `post_delete_instance` interceptor. The (possibly modified) response returned by
+        `post_delete_instance` will be passed to
+        `post_delete_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_user(
         self,
@@ -610,11 +868,80 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ExecuteSqlResponse:
         """Post-rpc interceptor for execute_sql
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_execute_sql_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_execute_sql` interceptor runs
+        before the `post_execute_sql_with_metadata` interceptor.
         """
         return response
+
+    def post_execute_sql_with_metadata(
+        self,
+        response: service.ExecuteSqlResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ExecuteSqlResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for execute_sql
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_execute_sql_with_metadata`
+        interceptor in new development instead of the `post_execute_sql` interceptor.
+        When both interceptors are used, this `post_execute_sql_with_metadata` interceptor runs after the
+        `post_execute_sql` interceptor. The (possibly modified) response returned by
+        `post_execute_sql` will be passed to
+        `post_execute_sql_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_export_cluster(
+        self,
+        request: service.ExportClusterRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ExportClusterRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for export_cluster
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AlloyDBAdmin server.
+        """
+        return request, metadata
+
+    def post_export_cluster(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for export_cluster
+
+        DEPRECATED. Please use the `post_export_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AlloyDBAdmin server but before
+        it is returned to user code. This `post_export_cluster` interceptor runs
+        before the `post_export_cluster_with_metadata` interceptor.
+        """
+        return response
+
+    def post_export_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for export_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_export_cluster_with_metadata`
+        interceptor in new development instead of the `post_export_cluster` interceptor.
+        When both interceptors are used, this `post_export_cluster_with_metadata` interceptor runs after the
+        `post_export_cluster` interceptor. The (possibly modified) response returned by
+        `post_export_cluster` will be passed to
+        `post_export_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_failover_instance(
         self,
@@ -635,11 +962,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for failover_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_failover_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_failover_instance` interceptor runs
+        before the `post_failover_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_failover_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for failover_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_failover_instance_with_metadata`
+        interceptor in new development instead of the `post_failover_instance` interceptor.
+        When both interceptors are used, this `post_failover_instance_with_metadata` interceptor runs after the
+        `post_failover_instance` interceptor. The (possibly modified) response returned by
+        `post_failover_instance` will be passed to
+        `post_failover_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_generate_client_certificate(
         self,
@@ -661,11 +1011,37 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.GenerateClientCertificateResponse:
         """Post-rpc interceptor for generate_client_certificate
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_generate_client_certificate_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_generate_client_certificate` interceptor runs
+        before the `post_generate_client_certificate_with_metadata` interceptor.
         """
         return response
+
+    def post_generate_client_certificate_with_metadata(
+        self,
+        response: service.GenerateClientCertificateResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.GenerateClientCertificateResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for generate_client_certificate
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_generate_client_certificate_with_metadata`
+        interceptor in new development instead of the `post_generate_client_certificate` interceptor.
+        When both interceptors are used, this `post_generate_client_certificate_with_metadata` interceptor runs after the
+        `post_generate_client_certificate` interceptor. The (possibly modified) response returned by
+        `post_generate_client_certificate` will be passed to
+        `post_generate_client_certificate_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup(
         self,
@@ -682,11 +1058,34 @@ class AlloyDBAdminRestInterceptor:
     def post_get_backup(self, response: resources.Backup) -> resources.Backup:
         """Post-rpc interceptor for get_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup` interceptor runs
+        before the `post_get_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_with_metadata(
+        self,
+        response: resources.Backup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Backup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_with_metadata`
+        interceptor in new development instead of the `post_get_backup` interceptor.
+        When both interceptors are used, this `post_get_backup_with_metadata` interceptor runs after the
+        `post_get_backup` interceptor. The (possibly modified) response returned by
+        `post_get_backup` will be passed to
+        `post_get_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_cluster(
         self,
@@ -703,11 +1102,34 @@ class AlloyDBAdminRestInterceptor:
     def post_get_cluster(self, response: resources.Cluster) -> resources.Cluster:
         """Post-rpc interceptor for get_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_cluster` interceptor runs
+        before the `post_get_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_get_cluster_with_metadata(
+        self,
+        response: resources.Cluster,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Cluster, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_get_cluster_with_metadata`
+        interceptor in new development instead of the `post_get_cluster` interceptor.
+        When both interceptors are used, this `post_get_cluster_with_metadata` interceptor runs after the
+        `post_get_cluster` interceptor. The (possibly modified) response returned by
+        `post_get_cluster` will be passed to
+        `post_get_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_connection_info(
         self,
@@ -728,11 +1150,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> resources.ConnectionInfo:
         """Post-rpc interceptor for get_connection_info
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_connection_info_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_connection_info` interceptor runs
+        before the `post_get_connection_info_with_metadata` interceptor.
         """
         return response
+
+    def post_get_connection_info_with_metadata(
+        self,
+        response: resources.ConnectionInfo,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConnectionInfo, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_connection_info
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_get_connection_info_with_metadata`
+        interceptor in new development instead of the `post_get_connection_info` interceptor.
+        When both interceptors are used, this `post_get_connection_info_with_metadata` interceptor runs after the
+        `post_get_connection_info` interceptor. The (possibly modified) response returned by
+        `post_get_connection_info` will be passed to
+        `post_get_connection_info_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_instance(
         self,
@@ -749,11 +1194,34 @@ class AlloyDBAdminRestInterceptor:
     def post_get_instance(self, response: resources.Instance) -> resources.Instance:
         """Post-rpc interceptor for get_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_instance` interceptor runs
+        before the `post_get_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_get_instance_with_metadata(
+        self,
+        response: resources.Instance,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Instance, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_get_instance_with_metadata`
+        interceptor in new development instead of the `post_get_instance` interceptor.
+        When both interceptors are used, this `post_get_instance_with_metadata` interceptor runs after the
+        `post_get_instance` interceptor. The (possibly modified) response returned by
+        `post_get_instance` will be passed to
+        `post_get_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_user(
         self,
@@ -770,11 +1238,80 @@ class AlloyDBAdminRestInterceptor:
     def post_get_user(self, response: resources.User) -> resources.User:
         """Post-rpc interceptor for get_user
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_user_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_user` interceptor runs
+        before the `post_get_user_with_metadata` interceptor.
         """
         return response
+
+    def post_get_user_with_metadata(
+        self,
+        response: resources.User,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.User, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_user
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_get_user_with_metadata`
+        interceptor in new development instead of the `post_get_user` interceptor.
+        When both interceptors are used, this `post_get_user_with_metadata` interceptor runs after the
+        `post_get_user` interceptor. The (possibly modified) response returned by
+        `post_get_user` will be passed to
+        `post_get_user_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_import_cluster(
+        self,
+        request: service.ImportClusterRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ImportClusterRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for import_cluster
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AlloyDBAdmin server.
+        """
+        return request, metadata
+
+    def post_import_cluster(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for import_cluster
+
+        DEPRECATED. Please use the `post_import_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AlloyDBAdmin server but before
+        it is returned to user code. This `post_import_cluster` interceptor runs
+        before the `post_import_cluster_with_metadata` interceptor.
+        """
+        return response
+
+    def post_import_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for import_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_import_cluster_with_metadata`
+        interceptor in new development instead of the `post_import_cluster` interceptor.
+        When both interceptors are used, this `post_import_cluster_with_metadata` interceptor runs after the
+        `post_import_cluster` interceptor. The (possibly modified) response returned by
+        `post_import_cluster` will be passed to
+        `post_import_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_inject_fault(
         self,
@@ -793,11 +1330,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for inject_fault
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_inject_fault_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_inject_fault` interceptor runs
+        before the `post_inject_fault_with_metadata` interceptor.
         """
         return response
+
+    def post_inject_fault_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for inject_fault
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_inject_fault_with_metadata`
+        interceptor in new development instead of the `post_inject_fault` interceptor.
+        When both interceptors are used, this `post_inject_fault_with_metadata` interceptor runs after the
+        `post_inject_fault` interceptor. The (possibly modified) response returned by
+        `post_inject_fault` will be passed to
+        `post_inject_fault_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backups(
         self,
@@ -816,11 +1376,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListBackupsResponse:
         """Post-rpc interceptor for list_backups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backups` interceptor runs
+        before the `post_list_backups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backups_with_metadata(
+        self,
+        response: service.ListBackupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListBackupsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_backups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_backups_with_metadata`
+        interceptor in new development instead of the `post_list_backups` interceptor.
+        When both interceptors are used, this `post_list_backups_with_metadata` interceptor runs after the
+        `post_list_backups` interceptor. The (possibly modified) response returned by
+        `post_list_backups` will be passed to
+        `post_list_backups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_clusters(
         self,
@@ -839,11 +1422,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListClustersResponse:
         """Post-rpc interceptor for list_clusters
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_clusters_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_clusters` interceptor runs
+        before the `post_list_clusters_with_metadata` interceptor.
         """
         return response
+
+    def post_list_clusters_with_metadata(
+        self,
+        response: service.ListClustersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListClustersResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_clusters
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_clusters_with_metadata`
+        interceptor in new development instead of the `post_list_clusters` interceptor.
+        When both interceptors are used, this `post_list_clusters_with_metadata` interceptor runs after the
+        `post_list_clusters` interceptor. The (possibly modified) response returned by
+        `post_list_clusters` will be passed to
+        `post_list_clusters_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_databases(
         self,
@@ -862,11 +1468,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListDatabasesResponse:
         """Post-rpc interceptor for list_databases
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_databases_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_databases` interceptor runs
+        before the `post_list_databases_with_metadata` interceptor.
         """
         return response
+
+    def post_list_databases_with_metadata(
+        self,
+        response: service.ListDatabasesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListDatabasesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_databases
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_databases_with_metadata`
+        interceptor in new development instead of the `post_list_databases` interceptor.
+        When both interceptors are used, this `post_list_databases_with_metadata` interceptor runs after the
+        `post_list_databases` interceptor. The (possibly modified) response returned by
+        `post_list_databases` will be passed to
+        `post_list_databases_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_instances(
         self,
@@ -885,11 +1514,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListInstancesResponse:
         """Post-rpc interceptor for list_instances
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_instances_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_instances` interceptor runs
+        before the `post_list_instances_with_metadata` interceptor.
         """
         return response
+
+    def post_list_instances_with_metadata(
+        self,
+        response: service.ListInstancesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListInstancesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_instances
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_instances_with_metadata`
+        interceptor in new development instead of the `post_list_instances` interceptor.
+        When both interceptors are used, this `post_list_instances_with_metadata` interceptor runs after the
+        `post_list_instances` interceptor. The (possibly modified) response returned by
+        `post_list_instances` will be passed to
+        `post_list_instances_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_supported_database_flags(
         self,
@@ -911,11 +1563,37 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListSupportedDatabaseFlagsResponse:
         """Post-rpc interceptor for list_supported_database_flags
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_supported_database_flags_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_supported_database_flags` interceptor runs
+        before the `post_list_supported_database_flags_with_metadata` interceptor.
         """
         return response
+
+    def post_list_supported_database_flags_with_metadata(
+        self,
+        response: service.ListSupportedDatabaseFlagsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListSupportedDatabaseFlagsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_supported_database_flags
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_supported_database_flags_with_metadata`
+        interceptor in new development instead of the `post_list_supported_database_flags` interceptor.
+        When both interceptors are used, this `post_list_supported_database_flags_with_metadata` interceptor runs after the
+        `post_list_supported_database_flags` interceptor. The (possibly modified) response returned by
+        `post_list_supported_database_flags` will be passed to
+        `post_list_supported_database_flags_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_users(
         self,
@@ -934,11 +1612,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> service.ListUsersResponse:
         """Post-rpc interceptor for list_users
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_users_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_users` interceptor runs
+        before the `post_list_users_with_metadata` interceptor.
         """
         return response
+
+    def post_list_users_with_metadata(
+        self,
+        response: service.ListUsersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListUsersResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_users
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_list_users_with_metadata`
+        interceptor in new development instead of the `post_list_users` interceptor.
+        When both interceptors are used, this `post_list_users_with_metadata` interceptor runs after the
+        `post_list_users` interceptor. The (possibly modified) response returned by
+        `post_list_users` will be passed to
+        `post_list_users_with_metadata`.
+        """
+        return response, metadata
 
     def pre_promote_cluster(
         self,
@@ -957,11 +1658,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for promote_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_promote_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_promote_cluster` interceptor runs
+        before the `post_promote_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_promote_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for promote_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_promote_cluster_with_metadata`
+        interceptor in new development instead of the `post_promote_cluster` interceptor.
+        When both interceptors are used, this `post_promote_cluster_with_metadata` interceptor runs after the
+        `post_promote_cluster` interceptor. The (possibly modified) response returned by
+        `post_promote_cluster` will be passed to
+        `post_promote_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_restart_instance(
         self,
@@ -980,11 +1704,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for restart_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_restart_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_restart_instance` interceptor runs
+        before the `post_restart_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_restart_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for restart_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_restart_instance_with_metadata`
+        interceptor in new development instead of the `post_restart_instance` interceptor.
+        When both interceptors are used, this `post_restart_instance_with_metadata` interceptor runs after the
+        `post_restart_instance` interceptor. The (possibly modified) response returned by
+        `post_restart_instance` will be passed to
+        `post_restart_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_restore_cluster(
         self,
@@ -1003,11 +1750,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for restore_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_restore_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_restore_cluster` interceptor runs
+        before the `post_restore_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_restore_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for restore_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_restore_cluster_with_metadata`
+        interceptor in new development instead of the `post_restore_cluster` interceptor.
+        When both interceptors are used, this `post_restore_cluster_with_metadata` interceptor runs after the
+        `post_restore_cluster` interceptor. The (possibly modified) response returned by
+        `post_restore_cluster` will be passed to
+        `post_restore_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_switchover_cluster(
         self,
@@ -1028,11 +1798,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for switchover_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_switchover_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_switchover_cluster` interceptor runs
+        before the `post_switchover_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_switchover_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for switchover_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_switchover_cluster_with_metadata`
+        interceptor in new development instead of the `post_switchover_cluster` interceptor.
+        When both interceptors are used, this `post_switchover_cluster_with_metadata` interceptor runs after the
+        `post_switchover_cluster` interceptor. The (possibly modified) response returned by
+        `post_switchover_cluster` will be passed to
+        `post_switchover_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup(
         self,
@@ -1051,11 +1844,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup` interceptor runs
+        before the `post_update_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_with_metadata`
+        interceptor in new development instead of the `post_update_backup` interceptor.
+        When both interceptors are used, this `post_update_backup_with_metadata` interceptor runs after the
+        `post_update_backup` interceptor. The (possibly modified) response returned by
+        `post_update_backup` will be passed to
+        `post_update_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_cluster(
         self,
@@ -1074,11 +1890,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_cluster
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_cluster` interceptor runs
+        before the `post_update_cluster_with_metadata` interceptor.
         """
         return response
+
+    def post_update_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_update_cluster_with_metadata`
+        interceptor in new development instead of the `post_update_cluster` interceptor.
+        When both interceptors are used, this `post_update_cluster_with_metadata` interceptor runs after the
+        `post_update_cluster` interceptor. The (possibly modified) response returned by
+        `post_update_cluster` will be passed to
+        `post_update_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_instance(
         self,
@@ -1097,11 +1936,34 @@ class AlloyDBAdminRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_instance
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_instance_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_instance` interceptor runs
+        before the `post_update_instance_with_metadata` interceptor.
         """
         return response
+
+    def post_update_instance_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_instance
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_update_instance_with_metadata`
+        interceptor in new development instead of the `post_update_instance` interceptor.
+        When both interceptors are used, this `post_update_instance_with_metadata` interceptor runs after the
+        `post_update_instance` interceptor. The (possibly modified) response returned by
+        `post_update_instance` will be passed to
+        `post_update_instance_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_user(
         self,
@@ -1118,11 +1980,80 @@ class AlloyDBAdminRestInterceptor:
     def post_update_user(self, response: resources.User) -> resources.User:
         """Post-rpc interceptor for update_user
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_user_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AlloyDBAdmin server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_user` interceptor runs
+        before the `post_update_user_with_metadata` interceptor.
         """
         return response
+
+    def post_update_user_with_metadata(
+        self,
+        response: resources.User,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.User, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_user
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_update_user_with_metadata`
+        interceptor in new development instead of the `post_update_user` interceptor.
+        When both interceptors are used, this `post_update_user_with_metadata` interceptor runs after the
+        `post_update_user` interceptor. The (possibly modified) response returned by
+        `post_update_user` will be passed to
+        `post_update_user_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_upgrade_cluster(
+        self,
+        request: service.UpgradeClusterRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.UpgradeClusterRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for upgrade_cluster
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AlloyDBAdmin server.
+        """
+        return request, metadata
+
+    def post_upgrade_cluster(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for upgrade_cluster
+
+        DEPRECATED. Please use the `post_upgrade_cluster_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AlloyDBAdmin server but before
+        it is returned to user code. This `post_upgrade_cluster` interceptor runs
+        before the `post_upgrade_cluster_with_metadata` interceptor.
+        """
+        return response
+
+    def post_upgrade_cluster_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for upgrade_cluster
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AlloyDBAdmin server but before it is returned to user code.
+
+        We recommend only using this `post_upgrade_cluster_with_metadata`
+        interceptor in new development instead of the `post_upgrade_cluster` interceptor.
+        When both interceptors are used, this `post_upgrade_cluster_with_metadata` interceptor runs after the
+        `post_upgrade_cluster` interceptor. The (possibly modified) response returned by
+        `post_upgrade_cluster` will be passed to
+        `post_upgrade_cluster_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -1538,6 +2469,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_create_instances(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_create_instances_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1689,6 +2624,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1836,6 +2775,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1983,6 +2926,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2132,6 +3079,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_secondary_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_secondary_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2283,6 +3234,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_secondary_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_secondary_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2435,6 +3390,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_user(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_user_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2578,6 +3537,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2719,6 +3682,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2860,6 +3827,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3122,6 +4093,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_execute_sql(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_execute_sql_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3139,6 +4114,157 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
                     extra={
                         "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
                         "rpcName": "ExecuteSql",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ExportCluster(
+        _BaseAlloyDBAdminRestTransport._BaseExportCluster, AlloyDBAdminRestStub
+    ):
+        def __hash__(self):
+            return hash("AlloyDBAdminRestTransport.ExportCluster")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.ExportClusterRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the export cluster method over HTTP.
+
+            Args:
+                request (~.service.ExportClusterRequest):
+                    The request object. Export cluster request.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseAlloyDBAdminRestTransport._BaseExportCluster._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_export_cluster(request, metadata)
+            transcoded_request = _BaseAlloyDBAdminRestTransport._BaseExportCluster._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAlloyDBAdminRestTransport._BaseExportCluster._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAlloyDBAdminRestTransport._BaseExportCluster._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.alloydb_v1.AlloyDBAdminClient.ExportCluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "ExportCluster",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AlloyDBAdminRestTransport._ExportCluster._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_export_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_export_cluster_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.alloydb_v1.AlloyDBAdminClient.export_cluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "ExportCluster",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3272,6 +4398,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_failover_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_failover_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3428,6 +4558,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_generate_client_certificate(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_generate_client_certificate_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3574,6 +4708,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3724,6 +4862,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3869,6 +5011,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_connection_info(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_connection_info_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4017,6 +5163,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4159,6 +5309,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_user(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_user_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4176,6 +5330,157 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
                     extra={
                         "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
                         "rpcName": "GetUser",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ImportCluster(
+        _BaseAlloyDBAdminRestTransport._BaseImportCluster, AlloyDBAdminRestStub
+    ):
+        def __hash__(self):
+            return hash("AlloyDBAdminRestTransport.ImportCluster")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.ImportClusterRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the import cluster method over HTTP.
+
+            Args:
+                request (~.service.ImportClusterRequest):
+                    The request object. Import cluster request.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseAlloyDBAdminRestTransport._BaseImportCluster._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_import_cluster(request, metadata)
+            transcoded_request = _BaseAlloyDBAdminRestTransport._BaseImportCluster._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAlloyDBAdminRestTransport._BaseImportCluster._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAlloyDBAdminRestTransport._BaseImportCluster._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.alloydb_v1.AlloyDBAdminClient.ImportCluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "ImportCluster",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AlloyDBAdminRestTransport._ImportCluster._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_import_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_import_cluster_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.alloydb_v1.AlloyDBAdminClient.import_cluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "ImportCluster",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -4313,6 +5618,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_inject_fault(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_inject_fault_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4460,6 +5769,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4605,6 +5918,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_clusters(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_clusters_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4748,6 +6065,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_databases(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_databases_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4891,6 +6212,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_instances(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_instances_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5040,6 +6365,13 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_supported_database_flags(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_supported_database_flags_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5186,6 +6518,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_users(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_users_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5333,6 +6669,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_promote_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_promote_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5482,6 +6822,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_restart_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_restart_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5546,9 +6890,8 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
 
             Args:
                 request (~.service.RestoreClusterRequest):
-                    The request object. Message for restoring a Cluster from
-                a backup or another cluster at a given
-                point in time.
+                    The request object. Message for restoring a Cluster from a backup or another
+                cluster at a given point in time. NEXT_ID: 11
                 retry (google.api_core.retry.Retry): Designation of what errors, if any,
                     should be retried.
                 timeout (float): The timeout for this request.
@@ -5631,6 +6974,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_restore_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_restore_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5781,6 +7128,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_switchover_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_switchover_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5932,6 +7283,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6079,6 +7434,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_cluster_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6226,6 +7585,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_instance(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_instance_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6378,6 +7741,10 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_user(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_user_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6395,6 +7762,157 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
                     extra={
                         "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
                         "rpcName": "UpdateUser",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpgradeCluster(
+        _BaseAlloyDBAdminRestTransport._BaseUpgradeCluster, AlloyDBAdminRestStub
+    ):
+        def __hash__(self):
+            return hash("AlloyDBAdminRestTransport.UpgradeCluster")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.UpgradeClusterRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the upgrade cluster method over HTTP.
+
+            Args:
+                request (~.service.UpgradeClusterRequest):
+                    The request object. Upgrades a cluster.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseAlloyDBAdminRestTransport._BaseUpgradeCluster._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_upgrade_cluster(request, metadata)
+            transcoded_request = _BaseAlloyDBAdminRestTransport._BaseUpgradeCluster._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAlloyDBAdminRestTransport._BaseUpgradeCluster._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAlloyDBAdminRestTransport._BaseUpgradeCluster._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.alloydb_v1.AlloyDBAdminClient.UpgradeCluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "UpgradeCluster",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AlloyDBAdminRestTransport._UpgradeCluster._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_upgrade_cluster(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_upgrade_cluster_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.alloydb_v1.AlloyDBAdminClient.upgrade_cluster",
+                    extra={
+                        "serviceName": "google.cloud.alloydb.v1.AlloyDBAdmin",
+                        "rpcName": "UpgradeCluster",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -6494,6 +8012,14 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
         return self._ExecuteSql(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def export_cluster(
+        self,
+    ) -> Callable[[service.ExportClusterRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ExportCluster(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def failover_instance(
         self,
     ) -> Callable[[service.FailoverInstanceRequest], operations_pb2.Operation]:
@@ -6545,6 +8071,14 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetUser(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def import_cluster(
+        self,
+    ) -> Callable[[service.ImportClusterRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ImportCluster(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def inject_fault(
@@ -6666,6 +8200,14 @@ class AlloyDBAdminRestTransport(_BaseAlloyDBAdminRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateUser(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def upgrade_cluster(
+        self,
+    ) -> Callable[[service.UpgradeClusterRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpgradeCluster(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_location(self):

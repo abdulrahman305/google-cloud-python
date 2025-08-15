@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.video.transcoder_v1 import gapic_version as package_version
@@ -31,6 +32,9 @@ from google.cloud.video.transcoder_v1.types import resources, services
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class TranscoderServiceTransport(abc.ABC):
@@ -136,11 +140,29 @@ class TranscoderServiceTransport(abc.ABC):
             ),
             self.list_jobs: gapic_v1.method.wrap_method(
                 self.list_jobs,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
                 default_timeout=60.0,
                 client_info=client_info,
             ),
             self.get_job: gapic_v1.method.wrap_method(
                 self.get_job,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
                 default_timeout=60.0,
                 client_info=client_info,
             ),
@@ -156,11 +178,29 @@ class TranscoderServiceTransport(abc.ABC):
             ),
             self.list_job_templates: gapic_v1.method.wrap_method(
                 self.list_job_templates,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
                 default_timeout=60.0,
                 client_info=client_info,
             ),
             self.get_job_template: gapic_v1.method.wrap_method(
                 self.get_job_template,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
                 default_timeout=60.0,
                 client_info=client_info,
             ),

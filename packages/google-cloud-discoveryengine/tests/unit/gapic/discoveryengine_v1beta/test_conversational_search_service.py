@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ from google.cloud.location import locations_pb2
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import field_mask_pb2  # type: ignore
+from google.protobuf import struct_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.cloud.discoveryengine_v1beta.services.conversational_search_service import (
@@ -71,6 +72,13 @@ from google.cloud.discoveryengine_v1beta.types import answer
 from google.cloud.discoveryengine_v1beta.types import conversation
 from google.cloud.discoveryengine_v1beta.types import session
 from google.cloud.discoveryengine_v1beta.types import session as gcd_session
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -353,6 +361,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ConversationalSearchServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = ConversationalSearchServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = ConversationalSearchServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -4053,8 +4104,10 @@ def test_create_session(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = gcd_session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=gcd_session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
         response = client.create_session(request)
 
@@ -4067,8 +4120,10 @@ def test_create_session(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 def test_create_session_non_empty_request_with_auto_populated_field():
@@ -4196,8 +4251,10 @@ async def test_create_session_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gcd_session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=gcd_session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         response = await client.create_session(request)
@@ -4211,8 +4268,10 @@ async def test_create_session_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.asyncio
@@ -4703,8 +4762,10 @@ def test_update_session(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = gcd_session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=gcd_session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
         response = client.update_session(request)
 
@@ -4717,8 +4778,10 @@ def test_update_session(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 def test_update_session_non_empty_request_with_auto_populated_field():
@@ -4842,8 +4905,10 @@ async def test_update_session_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gcd_session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=gcd_session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         response = await client.update_session(request)
@@ -4857,8 +4922,10 @@ async def test_update_session_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.asyncio
@@ -5037,8 +5104,10 @@ def test_get_session(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
         response = client.get_session(request)
 
@@ -5051,8 +5120,10 @@ def test_get_session(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 def test_get_session_non_empty_request_with_auto_populated_field():
@@ -5180,8 +5251,10 @@ async def test_get_session_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         response = await client.get_session(request)
@@ -5195,8 +5268,10 @@ async def test_get_session_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.asyncio
@@ -8006,6 +8081,8 @@ def test_get_session_rest_required_fields(
     unset_fields = transport_class(
         credentials=ga_credentials.AnonymousCredentials()
     ).get_session._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("include_answer_details",))
     jsonified_request.update(unset_fields)
 
     # verify required fields with non-default values are left alone
@@ -8060,7 +8137,7 @@ def test_get_session_rest_unset_required_fields():
     )
 
     unset_fields = transport.get_session._get_unset_required_fields({})
-    assert set(unset_fields) == (set(()) & set(("name",)))
+    assert set(unset_fields) == (set(("includeAnswerDetails",)) & set(("name",)))
 
 
 def test_get_session_rest_flattened():
@@ -9044,8 +9121,10 @@ async def test_create_session_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gcd_session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=gcd_session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         await client.create_session(request=None)
@@ -9096,8 +9175,10 @@ async def test_update_session_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gcd_session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=gcd_session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         await client.update_session(request=None)
@@ -9125,8 +9206,10 @@ async def test_get_session_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             session.Session(
                 name="name_value",
+                display_name="display_name_value",
                 state=session.Session.State.IN_PROGRESS,
                 user_pseudo_id="user_pseudo_id_value",
+                is_pinned=True,
             )
         )
         await client.get_session(request=None)
@@ -9265,10 +9348,14 @@ def test_converse_conversation_rest_interceptors(null_interceptor):
         "post_converse_conversation",
     ) as post, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor,
+        "post_converse_conversation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
         "pre_converse_conversation",
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.ConverseConversationRequest.pb(
             conversational_search_service.ConverseConversationRequest()
         )
@@ -9296,6 +9383,10 @@ def test_converse_conversation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = conversational_search_service.ConverseConversationResponse()
+        post_with_metadata.return_value = (
+            conversational_search_service.ConverseConversationResponse(),
+            metadata,
+        )
 
         client.converse_conversation(
             request,
@@ -9307,6 +9398,7 @@ def test_converse_conversation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_conversation_rest_bad_request(
@@ -9531,10 +9623,14 @@ def test_create_conversation_rest_interceptors(null_interceptor):
         transports.ConversationalSearchServiceRestInterceptor,
         "post_create_conversation",
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_create_conversation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_create_conversation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.CreateConversationRequest.pb(
             conversational_search_service.CreateConversationRequest()
         )
@@ -9560,6 +9656,7 @@ def test_create_conversation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_conversation.Conversation()
+        post_with_metadata.return_value = gcd_conversation.Conversation(), metadata
 
         client.create_conversation(
             request,
@@ -9571,6 +9668,7 @@ def test_create_conversation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_conversation_rest_bad_request(
@@ -9916,10 +10014,14 @@ def test_update_conversation_rest_interceptors(null_interceptor):
         transports.ConversationalSearchServiceRestInterceptor,
         "post_update_conversation",
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_update_conversation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_update_conversation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.UpdateConversationRequest.pb(
             conversational_search_service.UpdateConversationRequest()
         )
@@ -9945,6 +10047,7 @@ def test_update_conversation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_conversation.Conversation()
+        post_with_metadata.return_value = gcd_conversation.Conversation(), metadata
 
         client.update_conversation(
             request,
@@ -9956,6 +10059,7 @@ def test_update_conversation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_conversation_rest_bad_request(
@@ -10048,10 +10152,14 @@ def test_get_conversation_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_get_conversation"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_get_conversation_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_get_conversation"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.GetConversationRequest.pb(
             conversational_search_service.GetConversationRequest()
         )
@@ -10075,6 +10183,7 @@ def test_get_conversation_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = conversation.Conversation()
+        post_with_metadata.return_value = conversation.Conversation(), metadata
 
         client.get_conversation(
             request,
@@ -10086,6 +10195,7 @@ def test_get_conversation_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_conversations_rest_bad_request(
@@ -10172,10 +10282,14 @@ def test_list_conversations_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_list_conversations"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_list_conversations_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_list_conversations"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.ListConversationsRequest.pb(
             conversational_search_service.ListConversationsRequest()
         )
@@ -10201,6 +10315,10 @@ def test_list_conversations_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = conversational_search_service.ListConversationsResponse()
+        post_with_metadata.return_value = (
+            conversational_search_service.ListConversationsResponse(),
+            metadata,
+        )
 
         client.list_conversations(
             request,
@@ -10212,6 +10330,7 @@ def test_list_conversations_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_answer_query_rest_bad_request(
@@ -10302,10 +10421,14 @@ def test_answer_query_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_answer_query"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_answer_query_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_answer_query"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.AnswerQueryRequest.pb(
             conversational_search_service.AnswerQueryRequest()
         )
@@ -10331,6 +10454,10 @@ def test_answer_query_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = conversational_search_service.AnswerQueryResponse()
+        post_with_metadata.return_value = (
+            conversational_search_service.AnswerQueryResponse(),
+            metadata,
+        )
 
         client.answer_query(
             request,
@@ -10342,6 +10469,7 @@ def test_answer_query_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_answer_rest_bad_request(
@@ -10442,10 +10570,14 @@ def test_get_answer_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_get_answer"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_get_answer_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_get_answer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.GetAnswerRequest.pb(
             conversational_search_service.GetAnswerRequest()
         )
@@ -10469,6 +10601,7 @@ def test_get_answer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = answer.Answer()
+        post_with_metadata.return_value = answer.Answer(), metadata
 
         client.get_answer(
             request,
@@ -10480,6 +10613,7 @@ def test_get_answer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_session_rest_bad_request(
@@ -10523,16 +10657,109 @@ def test_create_session_rest_call_success(request_type):
     request_init = {"parent": "projects/sample1/locations/sample2/dataStores/sample3"}
     request_init["session"] = {
         "name": "name_value",
+        "display_name": "display_name_value",
         "state": 1,
         "user_pseudo_id": "user_pseudo_id_value",
         "turns": [
             {
                 "query": {"text": "text_value", "query_id": "query_id_value"},
                 "answer": "answer_value",
+                "detailed_answer": {
+                    "name": "name_value",
+                    "state": 1,
+                    "answer_text": "answer_text_value",
+                    "citations": [
+                        {
+                            "start_index": 1189,
+                            "end_index": 942,
+                            "sources": [{"reference_id": "reference_id_value"}],
+                        }
+                    ],
+                    "references": [
+                        {
+                            "unstructured_document_info": {
+                                "document": "document_value",
+                                "uri": "uri_value",
+                                "title": "title_value",
+                                "chunk_contents": [
+                                    {
+                                        "content": "content_value",
+                                        "page_identifier": "page_identifier_value",
+                                        "relevance_score": 0.1584,
+                                    }
+                                ],
+                                "struct_data": {"fields": {}},
+                            },
+                            "chunk_info": {
+                                "chunk": "chunk_value",
+                                "content": "content_value",
+                                "relevance_score": 0.1584,
+                                "document_metadata": {
+                                    "document": "document_value",
+                                    "uri": "uri_value",
+                                    "title": "title_value",
+                                    "page_identifier": "page_identifier_value",
+                                    "struct_data": {},
+                                },
+                            },
+                            "structured_document_info": {
+                                "document": "document_value",
+                                "struct_data": {},
+                            },
+                        }
+                    ],
+                    "related_questions": [
+                        "related_questions_value1",
+                        "related_questions_value2",
+                    ],
+                    "steps": [
+                        {
+                            "state": 1,
+                            "description": "description_value",
+                            "thought": "thought_value",
+                            "actions": [
+                                {
+                                    "search_action": {"query": "query_value"},
+                                    "observation": {
+                                        "search_results": [
+                                            {
+                                                "document": "document_value",
+                                                "uri": "uri_value",
+                                                "title": "title_value",
+                                                "snippet_info": [
+                                                    {
+                                                        "snippet": "snippet_value",
+                                                        "snippet_status": "snippet_status_value",
+                                                    }
+                                                ],
+                                                "chunk_info": [
+                                                    {
+                                                        "chunk": "chunk_value",
+                                                        "content": "content_value",
+                                                        "relevance_score": 0.1584,
+                                                    }
+                                                ],
+                                                "struct_data": {},
+                                            }
+                                        ]
+                                    },
+                                }
+                            ],
+                        }
+                    ],
+                    "query_understanding_info": {
+                        "query_classification_info": [{"type_": 1, "positive": True}]
+                    },
+                    "answer_skipped_reasons": [1],
+                    "create_time": {"seconds": 751, "nanos": 543},
+                    "complete_time": {},
+                },
+                "query_config": {},
             }
         ],
-        "start_time": {"seconds": 751, "nanos": 543},
+        "start_time": {},
         "end_time": {},
+        "is_pinned": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -10610,8 +10837,10 @@ def test_create_session_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = gcd_session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=gcd_session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -10629,8 +10858,10 @@ def test_create_session_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -10650,10 +10881,14 @@ def test_create_session_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_create_session"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_create_session_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_create_session"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.CreateSessionRequest.pb(
             conversational_search_service.CreateSessionRequest()
         )
@@ -10677,6 +10912,7 @@ def test_create_session_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_session.Session()
+        post_with_metadata.return_value = gcd_session.Session(), metadata
 
         client.create_session(
             request,
@@ -10688,6 +10924,7 @@ def test_create_session_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_session_rest_bad_request(
@@ -10852,16 +11089,109 @@ def test_update_session_rest_call_success(request_type):
     }
     request_init["session"] = {
         "name": "projects/sample1/locations/sample2/dataStores/sample3/sessions/sample4",
+        "display_name": "display_name_value",
         "state": 1,
         "user_pseudo_id": "user_pseudo_id_value",
         "turns": [
             {
                 "query": {"text": "text_value", "query_id": "query_id_value"},
                 "answer": "answer_value",
+                "detailed_answer": {
+                    "name": "name_value",
+                    "state": 1,
+                    "answer_text": "answer_text_value",
+                    "citations": [
+                        {
+                            "start_index": 1189,
+                            "end_index": 942,
+                            "sources": [{"reference_id": "reference_id_value"}],
+                        }
+                    ],
+                    "references": [
+                        {
+                            "unstructured_document_info": {
+                                "document": "document_value",
+                                "uri": "uri_value",
+                                "title": "title_value",
+                                "chunk_contents": [
+                                    {
+                                        "content": "content_value",
+                                        "page_identifier": "page_identifier_value",
+                                        "relevance_score": 0.1584,
+                                    }
+                                ],
+                                "struct_data": {"fields": {}},
+                            },
+                            "chunk_info": {
+                                "chunk": "chunk_value",
+                                "content": "content_value",
+                                "relevance_score": 0.1584,
+                                "document_metadata": {
+                                    "document": "document_value",
+                                    "uri": "uri_value",
+                                    "title": "title_value",
+                                    "page_identifier": "page_identifier_value",
+                                    "struct_data": {},
+                                },
+                            },
+                            "structured_document_info": {
+                                "document": "document_value",
+                                "struct_data": {},
+                            },
+                        }
+                    ],
+                    "related_questions": [
+                        "related_questions_value1",
+                        "related_questions_value2",
+                    ],
+                    "steps": [
+                        {
+                            "state": 1,
+                            "description": "description_value",
+                            "thought": "thought_value",
+                            "actions": [
+                                {
+                                    "search_action": {"query": "query_value"},
+                                    "observation": {
+                                        "search_results": [
+                                            {
+                                                "document": "document_value",
+                                                "uri": "uri_value",
+                                                "title": "title_value",
+                                                "snippet_info": [
+                                                    {
+                                                        "snippet": "snippet_value",
+                                                        "snippet_status": "snippet_status_value",
+                                                    }
+                                                ],
+                                                "chunk_info": [
+                                                    {
+                                                        "chunk": "chunk_value",
+                                                        "content": "content_value",
+                                                        "relevance_score": 0.1584,
+                                                    }
+                                                ],
+                                                "struct_data": {},
+                                            }
+                                        ]
+                                    },
+                                }
+                            ],
+                        }
+                    ],
+                    "query_understanding_info": {
+                        "query_classification_info": [{"type_": 1, "positive": True}]
+                    },
+                    "answer_skipped_reasons": [1],
+                    "create_time": {"seconds": 751, "nanos": 543},
+                    "complete_time": {},
+                },
+                "query_config": {},
             }
         ],
-        "start_time": {"seconds": 751, "nanos": 543},
+        "start_time": {},
         "end_time": {},
+        "is_pinned": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -10939,8 +11269,10 @@ def test_update_session_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = gcd_session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=gcd_session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -10958,8 +11290,10 @@ def test_update_session_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, gcd_session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == gcd_session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -10979,10 +11313,14 @@ def test_update_session_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_update_session"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_update_session_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_update_session"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.UpdateSessionRequest.pb(
             conversational_search_service.UpdateSessionRequest()
         )
@@ -11006,6 +11344,7 @@ def test_update_session_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_session.Session()
+        post_with_metadata.return_value = gcd_session.Session(), metadata
 
         client.update_session(
             request,
@@ -11017,6 +11356,7 @@ def test_update_session_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_session_rest_bad_request(
@@ -11069,8 +11409,10 @@ def test_get_session_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = session.Session(
             name="name_value",
+            display_name="display_name_value",
             state=session.Session.State.IN_PROGRESS,
             user_pseudo_id="user_pseudo_id_value",
+            is_pinned=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -11088,8 +11430,10 @@ def test_get_session_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, session.Session)
     assert response.name == "name_value"
+    assert response.display_name == "display_name_value"
     assert response.state == session.Session.State.IN_PROGRESS
     assert response.user_pseudo_id == "user_pseudo_id_value"
+    assert response.is_pinned is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -11109,10 +11453,14 @@ def test_get_session_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_get_session"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_get_session_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_get_session"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.GetSessionRequest.pb(
             conversational_search_service.GetSessionRequest()
         )
@@ -11136,6 +11484,7 @@ def test_get_session_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.Session()
+        post_with_metadata.return_value = session.Session(), metadata
 
         client.get_session(
             request,
@@ -11147,6 +11496,7 @@ def test_get_session_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_sessions_rest_bad_request(
@@ -11233,10 +11583,14 @@ def test_list_sessions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "post_list_sessions"
     ) as post, mock.patch.object(
+        transports.ConversationalSearchServiceRestInterceptor,
+        "post_list_sessions_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ConversationalSearchServiceRestInterceptor, "pre_list_sessions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = conversational_search_service.ListSessionsRequest.pb(
             conversational_search_service.ListSessionsRequest()
         )
@@ -11262,6 +11616,10 @@ def test_list_sessions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = conversational_search_service.ListSessionsResponse()
+        post_with_metadata.return_value = (
+            conversational_search_service.ListSessionsResponse(),
+            metadata,
+        )
 
         client.list_sessions(
             request,
@@ -11273,6 +11631,7 @@ def test_list_sessions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_cancel_operation_rest_bad_request(

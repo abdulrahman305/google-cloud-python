@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ from .parallelstore import (
     SourceGcsBucket,
     SourceParallelstore,
     TransferCounters,
+    TransferErrorLogEntry,
+    TransferErrorSummary,
+    TransferMetadataOptions,
     TransferOperationMetadata,
     TransferType,
     UpdateInstanceRequest,
@@ -59,6 +62,9 @@ __all__ = (
     "SourceGcsBucket",
     "SourceParallelstore",
     "TransferCounters",
+    "TransferErrorLogEntry",
+    "TransferErrorSummary",
+    "TransferMetadataOptions",
     "TransferOperationMetadata",
     "UpdateInstanceRequest",
     "DeploymentType",

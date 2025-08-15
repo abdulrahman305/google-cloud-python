@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -61,6 +62,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class RegistrationServiceRestInterceptor:
@@ -236,11 +240,34 @@ class RegistrationServiceRestInterceptor:
     ) -> gcs_endpoint.Endpoint:
         """Post-rpc interceptor for create_endpoint
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_endpoint_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_endpoint` interceptor runs
+        before the `post_create_endpoint_with_metadata` interceptor.
         """
         return response
+
+    def post_create_endpoint_with_metadata(
+        self,
+        response: gcs_endpoint.Endpoint,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_endpoint.Endpoint, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_endpoint
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_create_endpoint_with_metadata`
+        interceptor in new development instead of the `post_create_endpoint` interceptor.
+        When both interceptors are used, this `post_create_endpoint_with_metadata` interceptor runs after the
+        `post_create_endpoint` interceptor. The (possibly modified) response returned by
+        `post_create_endpoint` will be passed to
+        `post_create_endpoint_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_namespace(
         self,
@@ -262,11 +289,34 @@ class RegistrationServiceRestInterceptor:
     ) -> gcs_namespace.Namespace:
         """Post-rpc interceptor for create_namespace
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_namespace_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_namespace` interceptor runs
+        before the `post_create_namespace_with_metadata` interceptor.
         """
         return response
+
+    def post_create_namespace_with_metadata(
+        self,
+        response: gcs_namespace.Namespace,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_namespace.Namespace, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_namespace
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_create_namespace_with_metadata`
+        interceptor in new development instead of the `post_create_namespace` interceptor.
+        When both interceptors are used, this `post_create_namespace_with_metadata` interceptor runs after the
+        `post_create_namespace` interceptor. The (possibly modified) response returned by
+        `post_create_namespace` will be passed to
+        `post_create_namespace_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_service(
         self,
@@ -286,11 +336,34 @@ class RegistrationServiceRestInterceptor:
     def post_create_service(self, response: gcs_service.Service) -> gcs_service.Service:
         """Post-rpc interceptor for create_service
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_service_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_service` interceptor runs
+        before the `post_create_service_with_metadata` interceptor.
         """
         return response
+
+    def post_create_service_with_metadata(
+        self,
+        response: gcs_service.Service,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_service.Service, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_service
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_create_service_with_metadata`
+        interceptor in new development instead of the `post_create_service` interceptor.
+        When both interceptors are used, this `post_create_service_with_metadata` interceptor runs after the
+        `post_create_service` interceptor. The (possibly modified) response returned by
+        `post_create_service` will be passed to
+        `post_create_service_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_endpoint(
         self,
@@ -354,11 +427,34 @@ class RegistrationServiceRestInterceptor:
     def post_get_endpoint(self, response: endpoint.Endpoint) -> endpoint.Endpoint:
         """Post-rpc interceptor for get_endpoint
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_endpoint_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_endpoint` interceptor runs
+        before the `post_get_endpoint_with_metadata` interceptor.
         """
         return response
+
+    def post_get_endpoint_with_metadata(
+        self,
+        response: endpoint.Endpoint,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[endpoint.Endpoint, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_endpoint
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_get_endpoint_with_metadata`
+        interceptor in new development instead of the `post_get_endpoint` interceptor.
+        When both interceptors are used, this `post_get_endpoint_with_metadata` interceptor runs after the
+        `post_get_endpoint` interceptor. The (possibly modified) response returned by
+        `post_get_endpoint` will be passed to
+        `post_get_endpoint_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iam_policy(
         self,
@@ -377,11 +473,34 @@ class RegistrationServiceRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_namespace(
         self,
@@ -401,11 +520,34 @@ class RegistrationServiceRestInterceptor:
     def post_get_namespace(self, response: namespace.Namespace) -> namespace.Namespace:
         """Post-rpc interceptor for get_namespace
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_namespace_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_namespace` interceptor runs
+        before the `post_get_namespace_with_metadata` interceptor.
         """
         return response
+
+    def post_get_namespace_with_metadata(
+        self,
+        response: namespace.Namespace,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[namespace.Namespace, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_namespace
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_get_namespace_with_metadata`
+        interceptor in new development instead of the `post_get_namespace` interceptor.
+        When both interceptors are used, this `post_get_namespace_with_metadata` interceptor runs after the
+        `post_get_namespace` interceptor. The (possibly modified) response returned by
+        `post_get_namespace` will be passed to
+        `post_get_namespace_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_service(
         self,
@@ -424,11 +566,34 @@ class RegistrationServiceRestInterceptor:
     def post_get_service(self, response: service.Service) -> service.Service:
         """Post-rpc interceptor for get_service
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_service_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_service` interceptor runs
+        before the `post_get_service_with_metadata` interceptor.
         """
         return response
+
+    def post_get_service_with_metadata(
+        self,
+        response: service.Service,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.Service, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_service
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_get_service_with_metadata`
+        interceptor in new development instead of the `post_get_service` interceptor.
+        When both interceptors are used, this `post_get_service_with_metadata` interceptor runs after the
+        `post_get_service` interceptor. The (possibly modified) response returned by
+        `post_get_service` will be passed to
+        `post_get_service_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_endpoints(
         self,
@@ -450,11 +615,37 @@ class RegistrationServiceRestInterceptor:
     ) -> registration_service.ListEndpointsResponse:
         """Post-rpc interceptor for list_endpoints
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_endpoints_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_endpoints` interceptor runs
+        before the `post_list_endpoints_with_metadata` interceptor.
         """
         return response
+
+    def post_list_endpoints_with_metadata(
+        self,
+        response: registration_service.ListEndpointsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        registration_service.ListEndpointsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_endpoints
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_list_endpoints_with_metadata`
+        interceptor in new development instead of the `post_list_endpoints` interceptor.
+        When both interceptors are used, this `post_list_endpoints_with_metadata` interceptor runs after the
+        `post_list_endpoints` interceptor. The (possibly modified) response returned by
+        `post_list_endpoints` will be passed to
+        `post_list_endpoints_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_namespaces(
         self,
@@ -476,11 +667,37 @@ class RegistrationServiceRestInterceptor:
     ) -> registration_service.ListNamespacesResponse:
         """Post-rpc interceptor for list_namespaces
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_namespaces_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_namespaces` interceptor runs
+        before the `post_list_namespaces_with_metadata` interceptor.
         """
         return response
+
+    def post_list_namespaces_with_metadata(
+        self,
+        response: registration_service.ListNamespacesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        registration_service.ListNamespacesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_namespaces
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_list_namespaces_with_metadata`
+        interceptor in new development instead of the `post_list_namespaces` interceptor.
+        When both interceptors are used, this `post_list_namespaces_with_metadata` interceptor runs after the
+        `post_list_namespaces` interceptor. The (possibly modified) response returned by
+        `post_list_namespaces` will be passed to
+        `post_list_namespaces_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_services(
         self,
@@ -502,11 +719,37 @@ class RegistrationServiceRestInterceptor:
     ) -> registration_service.ListServicesResponse:
         """Post-rpc interceptor for list_services
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_services_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_services` interceptor runs
+        before the `post_list_services_with_metadata` interceptor.
         """
         return response
+
+    def post_list_services_with_metadata(
+        self,
+        response: registration_service.ListServicesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        registration_service.ListServicesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_services
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_list_services_with_metadata`
+        interceptor in new development instead of the `post_list_services` interceptor.
+        When both interceptors are used, this `post_list_services_with_metadata` interceptor runs after the
+        `post_list_services` interceptor. The (possibly modified) response returned by
+        `post_list_services` will be passed to
+        `post_list_services_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -525,11 +768,34 @@ class RegistrationServiceRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -551,11 +817,37 @@ class RegistrationServiceRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_endpoint(
         self,
@@ -577,11 +869,34 @@ class RegistrationServiceRestInterceptor:
     ) -> gcs_endpoint.Endpoint:
         """Post-rpc interceptor for update_endpoint
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_endpoint_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_endpoint` interceptor runs
+        before the `post_update_endpoint_with_metadata` interceptor.
         """
         return response
+
+    def post_update_endpoint_with_metadata(
+        self,
+        response: gcs_endpoint.Endpoint,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_endpoint.Endpoint, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_endpoint
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_update_endpoint_with_metadata`
+        interceptor in new development instead of the `post_update_endpoint` interceptor.
+        When both interceptors are used, this `post_update_endpoint_with_metadata` interceptor runs after the
+        `post_update_endpoint` interceptor. The (possibly modified) response returned by
+        `post_update_endpoint` will be passed to
+        `post_update_endpoint_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_namespace(
         self,
@@ -603,11 +918,34 @@ class RegistrationServiceRestInterceptor:
     ) -> gcs_namespace.Namespace:
         """Post-rpc interceptor for update_namespace
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_namespace_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_namespace` interceptor runs
+        before the `post_update_namespace_with_metadata` interceptor.
         """
         return response
+
+    def post_update_namespace_with_metadata(
+        self,
+        response: gcs_namespace.Namespace,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_namespace.Namespace, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_namespace
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_update_namespace_with_metadata`
+        interceptor in new development instead of the `post_update_namespace` interceptor.
+        When both interceptors are used, this `post_update_namespace_with_metadata` interceptor runs after the
+        `post_update_namespace` interceptor. The (possibly modified) response returned by
+        `post_update_namespace` will be passed to
+        `post_update_namespace_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_service(
         self,
@@ -627,11 +965,34 @@ class RegistrationServiceRestInterceptor:
     def post_update_service(self, response: gcs_service.Service) -> gcs_service.Service:
         """Post-rpc interceptor for update_service
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_service_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_service` interceptor runs
+        before the `post_update_service_with_metadata` interceptor.
         """
         return response
+
+    def post_update_service_with_metadata(
+        self,
+        response: gcs_service.Service,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_service.Service, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_service
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_update_service_with_metadata`
+        interceptor in new development instead of the `post_update_service` interceptor.
+        When both interceptors are used, this `post_update_service_with_metadata` interceptor runs after the
+        `post_update_service` interceptor. The (possibly modified) response returned by
+        `post_update_service` will be passed to
+        `post_update_service_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -913,6 +1274,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_endpoint(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_endpoint_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1068,6 +1433,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_namespace(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_namespace_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1220,6 +1589,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_service(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_service_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1693,6 +2066,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_endpoint(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_endpoint_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1915,6 +2292,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2062,6 +2443,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_namespace(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_namespace_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2211,6 +2596,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_service(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_service_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2355,6 +2744,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_endpoints(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_endpoints_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2501,6 +2894,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_namespaces(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_namespaces_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2647,6 +3044,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_services(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_services_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2871,6 +3272,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3022,6 +3427,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3173,6 +3582,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_endpoint(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_endpoint_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3328,6 +3741,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_namespace(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_namespace_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3480,6 +3897,10 @@ class RegistrationServiceRestTransport(_BaseRegistrationServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_service(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_service_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

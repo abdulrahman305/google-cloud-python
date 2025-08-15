@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,16 +102,19 @@ from google.cloud.retail_v2.types.common import (
     ColorInfo,
     Condition,
     CustomAttribute,
+    DoubleList,
     FulfillmentInfo,
     Image,
     Interval,
     LocalInventory,
+    PinControlMetadata,
     PriceInfo,
     Rating,
     RecommendationsFilteringOption,
     Rule,
     SearchSolutionUseCase,
     SolutionType,
+    StringList,
     UserInfo,
 )
 from google.cloud.retail_v2.types.completion_service import (
@@ -298,13 +301,16 @@ __all__ = (
     "ColorInfo",
     "Condition",
     "CustomAttribute",
+    "DoubleList",
     "FulfillmentInfo",
     "Image",
     "Interval",
     "LocalInventory",
+    "PinControlMetadata",
     "PriceInfo",
     "Rating",
     "Rule",
+    "StringList",
     "UserInfo",
     "AttributeConfigLevel",
     "RecommendationsFilteringOption",

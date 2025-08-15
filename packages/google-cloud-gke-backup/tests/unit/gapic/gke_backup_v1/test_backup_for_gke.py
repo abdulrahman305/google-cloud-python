@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,16 +79,27 @@ from google.cloud.gke_backup_v1.services.backup_for_gke import (
     pagers,
     transports,
 )
+from google.cloud.gke_backup_v1.types import backup_plan_binding, common, gkebackup
+from google.cloud.gke_backup_v1.types import backup_channel as gcg_backup_channel
+from google.cloud.gke_backup_v1.types import restore_channel as gcg_restore_channel
 from google.cloud.gke_backup_v1.types import backup
 from google.cloud.gke_backup_v1.types import backup as gcg_backup
+from google.cloud.gke_backup_v1.types import backup_channel
 from google.cloud.gke_backup_v1.types import backup_plan
 from google.cloud.gke_backup_v1.types import backup_plan as gcg_backup_plan
-from google.cloud.gke_backup_v1.types import common, gkebackup
 from google.cloud.gke_backup_v1.types import restore
 from google.cloud.gke_backup_v1.types import restore as gcg_restore
+from google.cloud.gke_backup_v1.types import restore_channel
 from google.cloud.gke_backup_v1.types import restore_plan
 from google.cloud.gke_backup_v1.types import restore_plan as gcg_restore_plan
-from google.cloud.gke_backup_v1.types import volume
+from google.cloud.gke_backup_v1.types import restore_plan_binding, volume
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -331,6 +342,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         BackupForGKEClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = BackupForGKEClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = BackupForGKEClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -2017,6 +2071,7 @@ def test_get_backup_plan(request_type, transport: str = "grpc"):
             state_reason="state_reason_value",
             rpo_risk_level=1504,
             rpo_risk_reason="rpo_risk_reason_value",
+            backup_channel="backup_channel_value",
         )
         response = client.get_backup_plan(request)
 
@@ -2039,6 +2094,7 @@ def test_get_backup_plan(request_type, transport: str = "grpc"):
     assert response.state_reason == "state_reason_value"
     assert response.rpo_risk_level == 1504
     assert response.rpo_risk_reason == "rpo_risk_reason_value"
+    assert response.backup_channel == "backup_channel_value"
 
 
 def test_get_backup_plan_non_empty_request_with_auto_populated_field():
@@ -2175,6 +2231,7 @@ async def test_get_backup_plan_async(
                 state_reason="state_reason_value",
                 rpo_risk_level=1504,
                 rpo_risk_reason="rpo_risk_reason_value",
+                backup_channel="backup_channel_value",
             )
         )
         response = await client.get_backup_plan(request)
@@ -2198,6 +2255,7 @@ async def test_get_backup_plan_async(
     assert response.state_reason == "state_reason_value"
     assert response.rpo_risk_level == 1504
     assert response.rpo_risk_reason == "rpo_risk_reason_value"
+    assert response.backup_channel == "backup_channel_value"
 
 
 @pytest.mark.asyncio
@@ -3049,6 +3107,2907 @@ async def test_delete_backup_plan_flattened_error_async():
 @pytest.mark.parametrize(
     "request_type",
     [
+        gkebackup.CreateBackupChannelRequest,
+        dict,
+    ],
+)
+def test_create_backup_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.CreateBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_create_backup_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.CreateBackupChannelRequest(
+        parent="parent_value",
+        backup_channel_id="backup_channel_id_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.create_backup_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.CreateBackupChannelRequest(
+            parent="parent_value",
+            backup_channel_id="backup_channel_id_value",
+        )
+
+
+def test_create_backup_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.create_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.create_backup_channel
+        ] = mock_rpc
+        request = {}
+        client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.create_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.create_backup_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.create_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.create_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.CreateBackupChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.CreateBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_async_from_dict():
+    await test_create_backup_channel_async(request_type=dict)
+
+
+def test_create_backup_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.CreateBackupChannelRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.CreateBackupChannelRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_create_backup_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.create_backup_channel(
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+        arg = args[0].backup_channel
+        mock_val = gcg_backup_channel.BackupChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].backup_channel_id
+        mock_val = "backup_channel_id_value"
+        assert arg == mock_val
+
+
+def test_create_backup_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.create_backup_channel(
+            gkebackup.CreateBackupChannelRequest(),
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.create_backup_channel(
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+        arg = args[0].backup_channel
+        mock_val = gcg_backup_channel.BackupChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].backup_channel_id
+        mock_val = "backup_channel_id_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_create_backup_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.create_backup_channel(
+            gkebackup.CreateBackupChannelRequest(),
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListBackupChannelsRequest,
+        dict,
+    ],
+)
+def test_list_backup_channels(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupChannelsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+        response = client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListBackupChannelsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupChannelsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+def test_list_backup_channels_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.ListBackupChannelsRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+        filter="filter_value",
+        order_by="order_by_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_backup_channels(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.ListBackupChannelsRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+            filter="filter_value",
+            order_by="order_by_value",
+        )
+
+
+def test_list_backup_channels_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_backup_channels in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_backup_channels
+        ] = mock_rpc
+        request = {}
+        client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_backup_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_backup_channels
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_backup_channels
+        ] = mock_rpc
+
+        request = {}
+        await client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.list_backup_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.ListBackupChannelsRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupChannelsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        response = await client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListBackupChannelsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupChannelsAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_async_from_dict():
+    await test_list_backup_channels_async(request_type=dict)
+
+
+def test_list_backup_channels_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListBackupChannelsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListBackupChannelsResponse()
+        client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListBackupChannelsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupChannelsResponse()
+        )
+        await client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_backup_channels_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupChannelsResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_backup_channels(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_backup_channels_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_backup_channels(
+            gkebackup.ListBackupChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupChannelsResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupChannelsResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_backup_channels(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_backup_channels(
+            gkebackup.ListBackupChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_backup_channels_pager(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_backup_channels(request={}, retry=retry, timeout=timeout)
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, backup_channel.BackupChannel) for i in results)
+
+
+def test_list_backup_channels_pages(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_backup_channels(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_async_pager():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_backup_channels(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(isinstance(i, backup_channel.BackupChannel) for i in responses)
+
+
+@pytest.mark.asyncio
+async def test_list_backup_channels_async_pages():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_backup_channels(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetBackupChannelRequest,
+        dict,
+    ],
+)
+def test_get_backup_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_channel.BackupChannel(
+            name="name_value",
+            destination_project="destination_project_value",
+            uid="uid_value",
+            description="description_value",
+            etag="etag_value",
+            destination_project_id="destination_project_id_value",
+        )
+        response = client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_channel.BackupChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+def test_get_backup_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.GetBackupChannelRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_backup_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.GetBackupChannelRequest(
+            name="name_value",
+        )
+
+
+def test_get_backup_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_backup_channel in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_backup_channel
+        ] = mock_rpc
+        request = {}
+        client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_backup_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.get_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.GetBackupChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_channel.BackupChannel(
+                name="name_value",
+                destination_project="destination_project_value",
+                uid="uid_value",
+                description="description_value",
+                etag="etag_value",
+                destination_project_id="destination_project_id_value",
+            )
+        )
+        response = await client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_channel.BackupChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_async_from_dict():
+    await test_get_backup_channel_async(request_type=dict)
+
+
+def test_get_backup_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetBackupChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        call.return_value = backup_channel.BackupChannel()
+        client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetBackupChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_channel.BackupChannel()
+        )
+        await client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_backup_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_channel.BackupChannel()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_backup_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_backup_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_backup_channel(
+            gkebackup.GetBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_channel.BackupChannel()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_channel.BackupChannel()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_backup_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_backup_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_backup_channel(
+            gkebackup.GetBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.UpdateBackupChannelRequest,
+        dict,
+    ],
+)
+def test_update_backup_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.UpdateBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_update_backup_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.UpdateBackupChannelRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.update_backup_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.UpdateBackupChannelRequest()
+
+
+def test_update_backup_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_backup_channel
+        ] = mock_rpc
+        request = {}
+        client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.update_backup_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.update_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.update_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.UpdateBackupChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.UpdateBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_async_from_dict():
+    await test_update_backup_channel_async(request_type=dict)
+
+
+def test_update_backup_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.UpdateBackupChannelRequest()
+
+    request.backup_channel.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "backup_channel.name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.UpdateBackupChannelRequest()
+
+    request.backup_channel.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "backup_channel.name=name_value",
+    ) in kw["metadata"]
+
+
+def test_update_backup_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.update_backup_channel(
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].backup_channel
+        mock_val = gcg_backup_channel.BackupChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
+        assert arg == mock_val
+
+
+def test_update_backup_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_backup_channel(
+            gkebackup.UpdateBackupChannelRequest(),
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.update_backup_channel(
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].backup_channel
+        mock_val = gcg_backup_channel.BackupChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_update_backup_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.update_backup_channel(
+            gkebackup.UpdateBackupChannelRequest(),
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.DeleteBackupChannelRequest,
+        dict,
+    ],
+)
+def test_delete_backup_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.DeleteBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_delete_backup_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.DeleteBackupChannelRequest(
+        name="name_value",
+        etag="etag_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.delete_backup_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.DeleteBackupChannelRequest(
+            name="name_value",
+            etag="etag_value",
+        )
+
+
+def test_delete_backup_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_backup_channel
+        ] = mock_rpc
+        request = {}
+        client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.delete_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.delete_backup_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.delete_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.delete_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.DeleteBackupChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.DeleteBackupChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_async_from_dict():
+    await test_delete_backup_channel_async(request_type=dict)
+
+
+def test_delete_backup_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.DeleteBackupChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.DeleteBackupChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_delete_backup_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.delete_backup_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_delete_backup_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_backup_channel(
+            gkebackup.DeleteBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.delete_backup_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_delete_backup_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.delete_backup_channel(
+            gkebackup.DeleteBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListBackupPlanBindingsRequest,
+        dict,
+    ],
+)
+def test_list_backup_plan_bindings(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupPlanBindingsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+        response = client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListBackupPlanBindingsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupPlanBindingsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+def test_list_backup_plan_bindings_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.ListBackupPlanBindingsRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+        filter="filter_value",
+        order_by="order_by_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_backup_plan_bindings(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.ListBackupPlanBindingsRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+            filter="filter_value",
+            order_by="order_by_value",
+        )
+
+
+def test_list_backup_plan_bindings_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_backup_plan_bindings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_backup_plan_bindings
+        ] = mock_rpc
+        request = {}
+        client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_backup_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_backup_plan_bindings
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_backup_plan_bindings
+        ] = mock_rpc
+
+        request = {}
+        await client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.list_backup_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_async(
+    transport: str = "grpc_asyncio",
+    request_type=gkebackup.ListBackupPlanBindingsRequest,
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupPlanBindingsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        response = await client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListBackupPlanBindingsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupPlanBindingsAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_async_from_dict():
+    await test_list_backup_plan_bindings_async(request_type=dict)
+
+
+def test_list_backup_plan_bindings_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListBackupPlanBindingsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListBackupPlanBindingsResponse()
+        client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListBackupPlanBindingsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupPlanBindingsResponse()
+        )
+        await client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_backup_plan_bindings_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupPlanBindingsResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_backup_plan_bindings(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_backup_plan_bindings_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_backup_plan_bindings(
+            gkebackup.ListBackupPlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListBackupPlanBindingsResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupPlanBindingsResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_backup_plan_bindings(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_backup_plan_bindings(
+            gkebackup.ListBackupPlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_backup_plan_bindings_pager(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_backup_plan_bindings(
+            request={}, retry=retry, timeout=timeout
+        )
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(
+            isinstance(i, backup_plan_binding.BackupPlanBinding) for i in results
+        )
+
+
+def test_list_backup_plan_bindings_pages(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_backup_plan_bindings(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_async_pager():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_backup_plan_bindings(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(
+            isinstance(i, backup_plan_binding.BackupPlanBinding) for i in responses
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_async_pages():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_backup_plan_bindings(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetBackupPlanBindingRequest,
+        dict,
+    ],
+)
+def test_get_backup_plan_binding(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_plan_binding.BackupPlanBinding(
+            name="name_value",
+            uid="uid_value",
+            backup_plan="backup_plan_value",
+            cluster="cluster_value",
+            etag="etag_value",
+        )
+        response = client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetBackupPlanBindingRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_plan_binding.BackupPlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.backup_plan == "backup_plan_value"
+    assert response.cluster == "cluster_value"
+    assert response.etag == "etag_value"
+
+
+def test_get_backup_plan_binding_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.GetBackupPlanBindingRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_backup_plan_binding(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.GetBackupPlanBindingRequest(
+            name="name_value",
+        )
+
+
+def test_get_backup_plan_binding_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_backup_plan_binding
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_backup_plan_binding
+        ] = mock_rpc
+        request = {}
+        client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_backup_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_backup_plan_binding
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_backup_plan_binding
+        ] = mock_rpc
+
+        request = {}
+        await client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.get_backup_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.GetBackupPlanBindingRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_plan_binding.BackupPlanBinding(
+                name="name_value",
+                uid="uid_value",
+                backup_plan="backup_plan_value",
+                cluster="cluster_value",
+                etag="etag_value",
+            )
+        )
+        response = await client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetBackupPlanBindingRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_plan_binding.BackupPlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.backup_plan == "backup_plan_value"
+    assert response.cluster == "cluster_value"
+    assert response.etag == "etag_value"
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_async_from_dict():
+    await test_get_backup_plan_binding_async(request_type=dict)
+
+
+def test_get_backup_plan_binding_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetBackupPlanBindingRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        call.return_value = backup_plan_binding.BackupPlanBinding()
+        client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetBackupPlanBindingRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_plan_binding.BackupPlanBinding()
+        )
+        await client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_backup_plan_binding_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_plan_binding.BackupPlanBinding()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_backup_plan_binding(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_backup_plan_binding_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_backup_plan_binding(
+            gkebackup.GetBackupPlanBindingRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = backup_plan_binding.BackupPlanBinding()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_plan_binding.BackupPlanBinding()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_backup_plan_binding(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_backup_plan_binding(
+            gkebackup.GetBackupPlanBindingRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
         gkebackup.CreateBackupRequest,
         dict,
     ],
@@ -3417,6 +6376,7 @@ def test_list_backups(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = gkebackup.ListBackupsResponse(
             next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
         )
         response = client.list_backups(request)
 
@@ -3429,6 +6389,7 @@ def test_list_backups(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListBackupsPager)
     assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
 
 
 def test_list_backups_non_empty_request_with_auto_populated_field():
@@ -3561,6 +6522,7 @@ async def test_list_backups_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gkebackup.ListBackupsResponse(
                 next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
             )
         )
         response = await client.list_backups(request)
@@ -3574,6 +6536,7 @@ async def test_list_backups_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListBackupsAsyncPager)
     assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
 
 
 @pytest.mark.asyncio
@@ -3956,6 +6919,8 @@ def test_get_backup(request_type, transport: str = "grpc"):
             pod_count=971,
             config_backup_size_bytes=2539,
             permissive_mode=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
             all_namespaces=True,
         )
         response = client.get_backup(request)
@@ -3985,6 +6950,8 @@ def test_get_backup(request_type, transport: str = "grpc"):
     assert response.pod_count == 971
     assert response.config_backup_size_bytes == 2539
     assert response.permissive_mode is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_backup_non_empty_request_with_auto_populated_field():
@@ -4125,6 +7092,8 @@ async def test_get_backup_async(
                 pod_count=971,
                 config_backup_size_bytes=2539,
                 permissive_mode=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_backup(request)
@@ -4154,6 +7123,8 @@ async def test_get_backup_async(
     assert response.pod_count == 971
     assert response.config_backup_size_bytes == 2539
     assert response.permissive_mode is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -5543,6 +8514,8 @@ def test_get_volume_backup(request_type, transport: str = "grpc"):
             state=volume.VolumeBackup.State.CREATING,
             state_message="state_message_value",
             etag="etag_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_volume_backup(request)
 
@@ -5565,6 +8538,8 @@ def test_get_volume_backup(request_type, transport: str = "grpc"):
     assert response.state == volume.VolumeBackup.State.CREATING
     assert response.state_message == "state_message_value"
     assert response.etag == "etag_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_volume_backup_non_empty_request_with_auto_populated_field():
@@ -5705,6 +8680,8 @@ async def test_get_volume_backup_async(
                 state=volume.VolumeBackup.State.CREATING,
                 state_message="state_message_value",
                 etag="etag_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_volume_backup(request)
@@ -5728,6 +8705,8 @@ async def test_get_volume_backup_async(
     assert response.state == volume.VolumeBackup.State.CREATING
     assert response.state_message == "state_message_value"
     assert response.etag == "etag_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -6831,6 +9810,7 @@ def test_get_restore_plan(request_type, transport: str = "grpc"):
             etag="etag_value",
             state=restore_plan.RestorePlan.State.CLUSTER_PENDING,
             state_reason="state_reason_value",
+            restore_channel="restore_channel_value",
         )
         response = client.get_restore_plan(request)
 
@@ -6850,6 +9830,7 @@ def test_get_restore_plan(request_type, transport: str = "grpc"):
     assert response.etag == "etag_value"
     assert response.state == restore_plan.RestorePlan.State.CLUSTER_PENDING
     assert response.state_reason == "state_reason_value"
+    assert response.restore_channel == "restore_channel_value"
 
 
 def test_get_restore_plan_non_empty_request_with_auto_populated_field():
@@ -6985,6 +9966,7 @@ async def test_get_restore_plan_async(
                 etag="etag_value",
                 state=restore_plan.RestorePlan.State.CLUSTER_PENDING,
                 state_reason="state_reason_value",
+                restore_channel="restore_channel_value",
             )
         )
         response = await client.get_restore_plan(request)
@@ -7005,6 +9987,7 @@ async def test_get_restore_plan_async(
     assert response.etag == "etag_value"
     assert response.state == restore_plan.RestorePlan.State.CLUSTER_PENDING
     assert response.state_reason == "state_reason_value"
+    assert response.restore_channel == "restore_channel_value"
 
 
 @pytest.mark.asyncio
@@ -7849,6 +10832,2908 @@ async def test_delete_restore_plan_flattened_error_async():
     with pytest.raises(ValueError):
         await client.delete_restore_plan(
             gkebackup.DeleteRestorePlanRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.CreateRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_create_restore_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.CreateRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_create_restore_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.CreateRestoreChannelRequest(
+        parent="parent_value",
+        restore_channel_id="restore_channel_id_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.create_restore_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.CreateRestoreChannelRequest(
+            parent="parent_value",
+            restore_channel_id="restore_channel_id_value",
+        )
+
+
+def test_create_restore_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.create_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.create_restore_channel
+        ] = mock_rpc
+        request = {}
+        client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.create_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.create_restore_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.create_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.create_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.CreateRestoreChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.CreateRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_async_from_dict():
+    await test_create_restore_channel_async(request_type=dict)
+
+
+def test_create_restore_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.CreateRestoreChannelRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.CreateRestoreChannelRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_create_restore_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.create_restore_channel(
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+        arg = args[0].restore_channel
+        mock_val = gcg_restore_channel.RestoreChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].restore_channel_id
+        mock_val = "restore_channel_id_value"
+        assert arg == mock_val
+
+
+def test_create_restore_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.create_restore_channel(
+            gkebackup.CreateRestoreChannelRequest(),
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.create_restore_channel(
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+        arg = args[0].restore_channel
+        mock_val = gcg_restore_channel.RestoreChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].restore_channel_id
+        mock_val = "restore_channel_id_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_create_restore_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.create_restore_channel(
+            gkebackup.CreateRestoreChannelRequest(),
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListRestoreChannelsRequest,
+        dict,
+    ],
+)
+def test_list_restore_channels(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestoreChannelsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+        response = client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListRestoreChannelsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestoreChannelsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+def test_list_restore_channels_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.ListRestoreChannelsRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+        filter="filter_value",
+        order_by="order_by_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_restore_channels(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.ListRestoreChannelsRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+            filter="filter_value",
+            order_by="order_by_value",
+        )
+
+
+def test_list_restore_channels_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_restore_channels
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_restore_channels
+        ] = mock_rpc
+        request = {}
+        client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_restore_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_restore_channels
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_restore_channels
+        ] = mock_rpc
+
+        request = {}
+        await client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.list_restore_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.ListRestoreChannelsRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestoreChannelsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        response = await client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListRestoreChannelsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestoreChannelsAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_async_from_dict():
+    await test_list_restore_channels_async(request_type=dict)
+
+
+def test_list_restore_channels_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListRestoreChannelsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListRestoreChannelsResponse()
+        client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListRestoreChannelsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestoreChannelsResponse()
+        )
+        await client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_restore_channels_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestoreChannelsResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_restore_channels(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_restore_channels_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_restore_channels(
+            gkebackup.ListRestoreChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestoreChannelsResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestoreChannelsResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_restore_channels(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_restore_channels(
+            gkebackup.ListRestoreChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_restore_channels_pager(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_restore_channels(request={}, retry=retry, timeout=timeout)
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, restore_channel.RestoreChannel) for i in results)
+
+
+def test_list_restore_channels_pages(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_restore_channels(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_async_pager():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_restore_channels(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(isinstance(i, restore_channel.RestoreChannel) for i in responses)
+
+
+@pytest.mark.asyncio
+async def test_list_restore_channels_async_pages():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_restore_channels(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_get_restore_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_channel.RestoreChannel(
+            name="name_value",
+            destination_project="destination_project_value",
+            uid="uid_value",
+            description="description_value",
+            etag="etag_value",
+            destination_project_id="destination_project_id_value",
+        )
+        response = client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_channel.RestoreChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+def test_get_restore_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.GetRestoreChannelRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_restore_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.GetRestoreChannelRequest(
+            name="name_value",
+        )
+
+
+def test_get_restore_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_restore_channel in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_restore_channel
+        ] = mock_rpc
+        request = {}
+        client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_restore_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.get_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.GetRestoreChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_channel.RestoreChannel(
+                name="name_value",
+                destination_project="destination_project_value",
+                uid="uid_value",
+                description="description_value",
+                etag="etag_value",
+                destination_project_id="destination_project_id_value",
+            )
+        )
+        response = await client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_channel.RestoreChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_async_from_dict():
+    await test_get_restore_channel_async(request_type=dict)
+
+
+def test_get_restore_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetRestoreChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        call.return_value = restore_channel.RestoreChannel()
+        client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetRestoreChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_channel.RestoreChannel()
+        )
+        await client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_restore_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_channel.RestoreChannel()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_restore_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_restore_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_restore_channel(
+            gkebackup.GetRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_channel.RestoreChannel()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_channel.RestoreChannel()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_restore_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_restore_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_restore_channel(
+            gkebackup.GetRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.UpdateRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_update_restore_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.UpdateRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_update_restore_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.UpdateRestoreChannelRequest()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.update_restore_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.UpdateRestoreChannelRequest()
+
+
+def test_update_restore_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_restore_channel
+        ] = mock_rpc
+        request = {}
+        client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.update_restore_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.update_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.update_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.UpdateRestoreChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.UpdateRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_async_from_dict():
+    await test_update_restore_channel_async(request_type=dict)
+
+
+def test_update_restore_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.UpdateRestoreChannelRequest()
+
+    request.restore_channel.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "restore_channel.name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.UpdateRestoreChannelRequest()
+
+    request.restore_channel.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "restore_channel.name=name_value",
+    ) in kw["metadata"]
+
+
+def test_update_restore_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.update_restore_channel(
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].restore_channel
+        mock_val = gcg_restore_channel.RestoreChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
+        assert arg == mock_val
+
+
+def test_update_restore_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_restore_channel(
+            gkebackup.UpdateRestoreChannelRequest(),
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.update_restore_channel(
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].restore_channel
+        mock_val = gcg_restore_channel.RestoreChannel(name="name_value")
+        assert arg == mock_val
+        arg = args[0].update_mask
+        mock_val = field_mask_pb2.FieldMask(paths=["paths_value"])
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_update_restore_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.update_restore_channel(
+            gkebackup.UpdateRestoreChannelRequest(),
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.DeleteRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_delete_restore_channel(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/spam")
+        response = client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.DeleteRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+def test_delete_restore_channel_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.DeleteRestoreChannelRequest(
+        name="name_value",
+        etag="etag_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.delete_restore_channel(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.DeleteRestoreChannelRequest(
+            name="name_value",
+            etag="etag_value",
+        )
+
+
+def test_delete_restore_channel_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_restore_channel
+        ] = mock_rpc
+        request = {}
+        client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.delete_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.delete_restore_channel
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.delete_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        await client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods call wrapper_fn to build a cached
+        # client._transport.operations_client instance on first rpc call.
+        # Subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        await client.delete_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.DeleteRestoreChannelRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        response = await client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.DeleteRestoreChannelRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, future.Future)
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_async_from_dict():
+    await test_delete_restore_channel_async(request_type=dict)
+
+
+def test_delete_restore_channel_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.DeleteRestoreChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.DeleteRestoreChannelRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/op")
+        )
+        await client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_delete_restore_channel_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.delete_restore_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_delete_restore_channel_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_restore_channel(
+            gkebackup.DeleteRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = operations_pb2.Operation(name="operations/op")
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.delete_restore_channel(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_delete_restore_channel_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.delete_restore_channel(
+            gkebackup.DeleteRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListRestorePlanBindingsRequest,
+        dict,
+    ],
+)
+def test_list_restore_plan_bindings(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestorePlanBindingsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+        response = client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListRestorePlanBindingsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestorePlanBindingsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+def test_list_restore_plan_bindings_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.ListRestorePlanBindingsRequest(
+        parent="parent_value",
+        page_token="page_token_value",
+        filter="filter_value",
+        order_by="order_by_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.list_restore_plan_bindings(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.ListRestorePlanBindingsRequest(
+            parent="parent_value",
+            page_token="page_token_value",
+            filter="filter_value",
+            order_by="order_by_value",
+        )
+
+
+def test_list_restore_plan_bindings_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_restore_plan_bindings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_restore_plan_bindings
+        ] = mock_rpc
+        request = {}
+        client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_restore_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.list_restore_plan_bindings
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.list_restore_plan_bindings
+        ] = mock_rpc
+
+        request = {}
+        await client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.list_restore_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_async(
+    transport: str = "grpc_asyncio",
+    request_type=gkebackup.ListRestorePlanBindingsRequest,
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestorePlanBindingsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        response = await client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.ListRestorePlanBindingsRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestorePlanBindingsAsyncPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_async_from_dict():
+    await test_list_restore_plan_bindings_async(request_type=dict)
+
+
+def test_list_restore_plan_bindings_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListRestorePlanBindingsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListRestorePlanBindingsResponse()
+        client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.ListRestorePlanBindingsRequest()
+
+    request.parent = "parent_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestorePlanBindingsResponse()
+        )
+        await client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "parent=parent_value",
+    ) in kw["metadata"]
+
+
+def test_list_restore_plan_bindings_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestorePlanBindingsResponse()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.list_restore_plan_bindings(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+def test_list_restore_plan_bindings_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_restore_plan_bindings(
+            gkebackup.ListRestorePlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = gkebackup.ListRestorePlanBindingsResponse()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestorePlanBindingsResponse()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.list_restore_plan_bindings(
+            parent="parent_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].parent
+        mock_val = "parent_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.list_restore_plan_bindings(
+            gkebackup.ListRestorePlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_restore_plan_bindings_pager(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+
+        expected_metadata = ()
+        retry = retries.Retry()
+        timeout = 5
+        expected_metadata = tuple(expected_metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", ""),)),
+        )
+        pager = client.list_restore_plan_bindings(
+            request={}, retry=retry, timeout=timeout
+        )
+
+        assert pager._metadata == expected_metadata
+        assert pager._retry == retry
+        assert pager._timeout == timeout
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(
+            isinstance(i, restore_plan_binding.RestorePlanBinding) for i in results
+        )
+
+
+def test_list_restore_plan_bindings_pages(transport_name: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport_name,
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = list(client.list_restore_plan_bindings(request={}).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_async_pager():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        async_pager = await client.list_restore_plan_bindings(
+            request={},
+        )
+        assert async_pager.next_page_token == "abc"
+        responses = []
+        async for response in async_pager:  # pragma: no branch
+            responses.append(response)
+
+        assert len(responses) == 6
+        assert all(
+            isinstance(i, restore_plan_binding.RestorePlanBinding) for i in responses
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_async_pages():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings),
+        "__call__",
+        new_callable=mock.AsyncMock,
+    ) as call:
+        # Set the response to a series of pages.
+        call.side_effect = (
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+            ),
+            RuntimeError,
+        )
+        pages = []
+        # Workaround issue in python 3.9 related to code coverage by adding `# pragma: no branch`
+        # See https://github.com/googleapis/gapic-generator-python/pull/1174#issuecomment-1025132372
+        async for page_ in (  # pragma: no branch
+            await client.list_restore_plan_bindings(request={})
+        ).pages:
+            pages.append(page_)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetRestorePlanBindingRequest,
+        dict,
+    ],
+)
+def test_get_restore_plan_binding(request_type, transport: str = "grpc"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_plan_binding.RestorePlanBinding(
+            name="name_value",
+            uid="uid_value",
+            restore_plan="restore_plan_value",
+            etag="etag_value",
+            backup_plan="backup_plan_value",
+        )
+        response = client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetRestorePlanBindingRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_plan_binding.RestorePlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.restore_plan == "restore_plan_value"
+    assert response.etag == "etag_value"
+    assert response.backup_plan == "backup_plan_value"
+
+
+def test_get_restore_plan_binding_non_empty_request_with_auto_populated_field():
+    # This test is a coverage failsafe to make sure that UUID4 fields are
+    # automatically populated, according to AIP-4235, with non-empty requests.
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Populate all string fields in the request which are not UUID4
+    # since we want to check that UUID4 are populated automatically
+    # if they meet the requirements of AIP 4235.
+    request = gkebackup.GetRestorePlanBindingRequest(
+        name="name_value",
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        call.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client.get_restore_plan_binding(request=request)
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == gkebackup.GetRestorePlanBindingRequest(
+            name="name_value",
+        )
+
+
+def test_get_restore_plan_binding_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_restore_plan_binding
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_restore_plan_binding
+        ] = mock_rpc
+        request = {}
+        client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_restore_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = BackupForGKEAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.get_restore_plan_binding
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.get_restore_plan_binding
+        ] = mock_rpc
+
+        request = {}
+        await client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.get_restore_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_async(
+    transport: str = "grpc_asyncio", request_type=gkebackup.GetRestorePlanBindingRequest
+):
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_plan_binding.RestorePlanBinding(
+                name="name_value",
+                uid="uid_value",
+                restore_plan="restore_plan_value",
+                etag="etag_value",
+                backup_plan="backup_plan_value",
+            )
+        )
+        response = await client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        request = gkebackup.GetRestorePlanBindingRequest()
+        assert args[0] == request
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_plan_binding.RestorePlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.restore_plan == "restore_plan_value"
+    assert response.etag == "etag_value"
+    assert response.backup_plan == "backup_plan_value"
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_async_from_dict():
+    await test_get_restore_plan_binding_async(request_type=dict)
+
+
+def test_get_restore_plan_binding_field_headers():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetRestorePlanBindingRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        call.return_value = restore_plan_binding.RestorePlanBinding()
+        client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_field_headers_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Any value that is part of the HTTP/1.1 URI should be sent as
+    # a field header. Set these to a non-empty value.
+    request = gkebackup.GetRestorePlanBindingRequest()
+
+    request.name = "name_value"
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_plan_binding.RestorePlanBinding()
+        )
+        await client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert args[0] == request
+
+    # Establish that the field header was sent.
+    _, _, kw = call.mock_calls[0]
+    assert (
+        "x-goog-request-params",
+        "name=name_value",
+    ) in kw["metadata"]
+
+
+def test_get_restore_plan_binding_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_plan_binding.RestorePlanBinding()
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        client.get_restore_plan_binding(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+def test_get_restore_plan_binding_flattened_error():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_restore_plan_binding(
+            gkebackup.GetRestorePlanBindingRequest(),
+            name="name_value",
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_flattened_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = restore_plan_binding.RestorePlanBinding()
+
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_plan_binding.RestorePlanBinding()
+        )
+        # Call the method with a truthy value for each flattened field,
+        # using the keyword arguments to the method.
+        response = await client.get_restore_plan_binding(
+            name="name_value",
+        )
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        arg = args[0].name
+        mock_val = "name_value"
+        assert arg == mock_val
+
+
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_flattened_error_async():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        await client.get_restore_plan_binding(
+            gkebackup.GetRestorePlanBindingRequest(),
             name="name_value",
         )
 
@@ -12035,6 +17920,1492 @@ def test_delete_backup_plan_rest_flattened_error(transport: str = "rest"):
         )
 
 
+def test_create_backup_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.create_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.create_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        client.create_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.create_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_create_backup_channel_rest_required_fields(
+    request_type=gkebackup.CreateBackupChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).create_backup_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).create_backup_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("backup_channel_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.create_backup_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_create_backup_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.create_backup_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("backupChannelId",))
+        & set(
+            (
+                "parent",
+                "backupChannel",
+            )
+        )
+    )
+
+
+def test_create_backup_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.create_backup_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*}/backupChannels"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_create_backup_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.create_backup_channel(
+            gkebackup.CreateBackupChannelRequest(),
+            parent="parent_value",
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            backup_channel_id="backup_channel_id_value",
+        )
+
+
+def test_list_backup_channels_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_backup_channels in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_backup_channels
+        ] = mock_rpc
+
+        request = {}
+        client.list_backup_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_backup_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_backup_channels_rest_required_fields(
+    request_type=gkebackup.ListBackupChannelsRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_backup_channels._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_backup_channels._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = gkebackup.ListBackupChannelsResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = gkebackup.ListBackupChannelsResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.list_backup_channels(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_backup_channels_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_backup_channels._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+def test_list_backup_channels_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListBackupChannelsResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListBackupChannelsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.list_backup_channels(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*}/backupChannels"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_list_backup_channels_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_backup_channels(
+            gkebackup.ListBackupChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_backup_channels_rest_pager(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupChannelsResponse(
+                backup_channels=[
+                    backup_channel.BackupChannel(),
+                    backup_channel.BackupChannel(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            gkebackup.ListBackupChannelsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        pager = client.list_backup_channels(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, backup_channel.BackupChannel) for i in results)
+
+        pages = list(client.list_backup_channels(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_get_backup_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_backup_channel in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        client.get_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_backup_channel_rest_required_fields(
+    request_type=gkebackup.GetBackupChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_backup_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_backup_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = backup_channel.BackupChannel()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = backup_channel.BackupChannel.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.get_backup_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_backup_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_backup_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+def test_get_backup_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = backup_channel.BackupChannel()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = backup_channel.BackupChannel.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.get_backup_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/backupChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_backup_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_backup_channel(
+            gkebackup.GetBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+def test_update_backup_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        client.update_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_backup_channel_rest_required_fields(
+    request_type=gkebackup.UpdateBackupChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_backup_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_backup_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("update_mask",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "patch",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update_backup_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_backup_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update_backup_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (set(("updateMask",)) & set(("backupChannel",)))
+
+
+def test_update_backup_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "backup_channel": {
+                "name": "projects/sample1/locations/sample2/backupChannels/sample3"
+            }
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_backup_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{backup_channel.name=projects/*/locations/*/backupChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_backup_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_backup_channel(
+            gkebackup.UpdateBackupChannelRequest(),
+            backup_channel=gcg_backup_channel.BackupChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+def test_delete_backup_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_backup_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_backup_channel
+        ] = mock_rpc
+
+        request = {}
+        client.delete_backup_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.delete_backup_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_delete_backup_channel_rest_required_fields(
+    request_type=gkebackup.DeleteBackupChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_backup_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_backup_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "etag",
+            "force",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "delete",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.delete_backup_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_delete_backup_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.delete_backup_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "etag",
+                "force",
+            )
+        )
+        & set(("name",))
+    )
+
+
+def test_delete_backup_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.delete_backup_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/backupChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_delete_backup_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_backup_channel(
+            gkebackup.DeleteBackupChannelRequest(),
+            name="name_value",
+        )
+
+
+def test_list_backup_plan_bindings_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_backup_plan_bindings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_backup_plan_bindings
+        ] = mock_rpc
+
+        request = {}
+        client.list_backup_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_backup_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_backup_plan_bindings_rest_required_fields(
+    request_type=gkebackup.ListBackupPlanBindingsRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_backup_plan_bindings._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_backup_plan_bindings._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = gkebackup.ListBackupPlanBindingsResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = gkebackup.ListBackupPlanBindingsResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.list_backup_plan_bindings(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_backup_plan_bindings_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_backup_plan_bindings._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+def test_list_backup_plan_bindings_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListBackupPlanBindingsResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "parent": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListBackupPlanBindingsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.list_backup_plan_bindings(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*/backupChannels/*}/backupPlanBindings"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_list_backup_plan_bindings_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_backup_plan_bindings(
+            gkebackup.ListBackupPlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_backup_plan_bindings_rest_pager(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListBackupPlanBindingsResponse(
+                backup_plan_bindings=[
+                    backup_plan_binding.BackupPlanBinding(),
+                    backup_plan_binding.BackupPlanBinding(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            gkebackup.ListBackupPlanBindingsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {
+            "parent": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+
+        pager = client.list_backup_plan_bindings(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(
+            isinstance(i, backup_plan_binding.BackupPlanBinding) for i in results
+        )
+
+        pages = list(client.list_backup_plan_bindings(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_get_backup_plan_binding_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_backup_plan_binding
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_backup_plan_binding
+        ] = mock_rpc
+
+        request = {}
+        client.get_backup_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_backup_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_backup_plan_binding_rest_required_fields(
+    request_type=gkebackup.GetBackupPlanBindingRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_backup_plan_binding._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_backup_plan_binding._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = backup_plan_binding.BackupPlanBinding()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = backup_plan_binding.BackupPlanBinding.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.get_backup_plan_binding(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_backup_plan_binding_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_backup_plan_binding._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+def test_get_backup_plan_binding_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = backup_plan_binding.BackupPlanBinding()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/backupChannels/sample3/backupPlanBindings/sample4"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = backup_plan_binding.BackupPlanBinding.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.get_backup_plan_binding(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/backupChannels/*/backupPlanBindings/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_backup_plan_binding_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_backup_plan_binding(
+            gkebackup.GetBackupPlanBindingRequest(),
+            name="name_value",
+        )
+
+
 def test_create_backup_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -12287,6 +19658,7 @@ def test_list_backups_rest_required_fields(request_type=gkebackup.ListBackupsReq
             "order_by",
             "page_size",
             "page_token",
+            "return_partial_success",
         )
     )
     jsonified_request.update(unset_fields)
@@ -12350,6 +19722,7 @@ def test_list_backups_rest_unset_required_fields():
                 "orderBy",
                 "pageSize",
                 "pageToken",
+                "returnPartialSuccess",
             )
         )
         & set(("parent",))
@@ -14517,6 +21890,1480 @@ def test_delete_restore_plan_rest_flattened_error(transport: str = "rest"):
         )
 
 
+def test_create_restore_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.create_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.create_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        client.create_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.create_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_create_restore_channel_rest_required_fields(
+    request_type=gkebackup.CreateRestoreChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).create_restore_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).create_restore_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("restore_channel_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.create_restore_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_create_restore_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.create_restore_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("restoreChannelId",))
+        & set(
+            (
+                "parent",
+                "restoreChannel",
+            )
+        )
+    )
+
+
+def test_create_restore_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.create_restore_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*}/restoreChannels"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_create_restore_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.create_restore_channel(
+            gkebackup.CreateRestoreChannelRequest(),
+            parent="parent_value",
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            restore_channel_id="restore_channel_id_value",
+        )
+
+
+def test_list_restore_channels_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_restore_channels
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_restore_channels
+        ] = mock_rpc
+
+        request = {}
+        client.list_restore_channels(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_restore_channels(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_restore_channels_rest_required_fields(
+    request_type=gkebackup.ListRestoreChannelsRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_restore_channels._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_restore_channels._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = gkebackup.ListRestoreChannelsResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = gkebackup.ListRestoreChannelsResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.list_restore_channels(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_restore_channels_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_restore_channels._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+def test_list_restore_channels_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListRestoreChannelsResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListRestoreChannelsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.list_restore_channels(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*}/restoreChannels"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_list_restore_channels_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_restore_channels(
+            gkebackup.ListRestoreChannelsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_restore_channels_rest_pager(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestoreChannelsResponse(
+                restore_channels=[
+                    restore_channel.RestoreChannel(),
+                    restore_channel.RestoreChannel(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            gkebackup.ListRestoreChannelsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {"parent": "projects/sample1/locations/sample2"}
+
+        pager = client.list_restore_channels(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(isinstance(i, restore_channel.RestoreChannel) for i in results)
+
+        pages = list(client.list_restore_channels(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_get_restore_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_restore_channel in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        client.get_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_restore_channel_rest_required_fields(
+    request_type=gkebackup.GetRestoreChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_restore_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_restore_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = restore_channel.RestoreChannel()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = restore_channel.RestoreChannel.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.get_restore_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_restore_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_restore_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+def test_get_restore_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = restore_channel.RestoreChannel()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = restore_channel.RestoreChannel.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.get_restore_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/restoreChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_restore_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_restore_channel(
+            gkebackup.GetRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+def test_update_restore_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.update_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.update_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        client.update_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_restore_channel_rest_required_fields(
+    request_type=gkebackup.UpdateRestoreChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_restore_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update_restore_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("update_mask",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "patch",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update_restore_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_restore_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update_restore_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (set(("updateMask",)) & set(("restoreChannel",)))
+
+
+def test_update_restore_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "restore_channel": {
+                "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+            }
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_restore_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{restore_channel.name=projects/*/locations/*/restoreChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_restore_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_restore_channel(
+            gkebackup.UpdateRestoreChannelRequest(),
+            restore_channel=gcg_restore_channel.RestoreChannel(name="name_value"),
+            update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
+        )
+
+
+def test_delete_restore_channel_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.delete_restore_channel
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.delete_restore_channel
+        ] = mock_rpc
+
+        request = {}
+        client.delete_restore_channel(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.delete_restore_channel(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_delete_restore_channel_rest_required_fields(
+    request_type=gkebackup.DeleteRestoreChannelRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_restore_channel._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).delete_restore_channel._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("etag",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = operations_pb2.Operation(name="operations/spam")
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "delete",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.delete_restore_channel(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_delete_restore_channel_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.delete_restore_channel._get_unset_required_fields({})
+    assert set(unset_fields) == (set(("etag",)) & set(("name",)))
+
+
+def test_delete_restore_channel_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.delete_restore_channel(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/restoreChannels/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_delete_restore_channel_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.delete_restore_channel(
+            gkebackup.DeleteRestoreChannelRequest(),
+            name="name_value",
+        )
+
+
+def test_list_restore_plan_bindings_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.list_restore_plan_bindings
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.list_restore_plan_bindings
+        ] = mock_rpc
+
+        request = {}
+        client.list_restore_plan_bindings(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.list_restore_plan_bindings(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_list_restore_plan_bindings_rest_required_fields(
+    request_type=gkebackup.ListRestorePlanBindingsRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["parent"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_restore_plan_bindings._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["parent"] = "parent_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).list_restore_plan_bindings._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "filter",
+            "order_by",
+            "page_size",
+            "page_token",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "parent" in jsonified_request
+    assert jsonified_request["parent"] == "parent_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = gkebackup.ListRestorePlanBindingsResponse()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = gkebackup.ListRestorePlanBindingsResponse.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.list_restore_plan_bindings(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_list_restore_plan_bindings_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.list_restore_plan_bindings._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "filter",
+                "orderBy",
+                "pageSize",
+                "pageToken",
+            )
+        )
+        & set(("parent",))
+    )
+
+
+def test_list_restore_plan_bindings_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListRestorePlanBindingsResponse()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "parent": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            parent="parent_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListRestorePlanBindingsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.list_restore_plan_bindings(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{parent=projects/*/locations/*/restoreChannels/*}/restorePlanBindings"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_list_restore_plan_bindings_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.list_restore_plan_bindings(
+            gkebackup.ListRestorePlanBindingsRequest(),
+            parent="parent_value",
+        )
+
+
+def test_list_restore_plan_bindings_rest_pager(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # TODO(kbandes): remove this mock unless there's a good reason for it.
+        # with mock.patch.object(path_template, 'transcode') as transcode:
+        # Set the response as a series of pages
+        response = (
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="abc",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[],
+                next_page_token="def",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+                next_page_token="ghi",
+            ),
+            gkebackup.ListRestorePlanBindingsResponse(
+                restore_plan_bindings=[
+                    restore_plan_binding.RestorePlanBinding(),
+                    restore_plan_binding.RestorePlanBinding(),
+                ],
+            ),
+        )
+        # Two responses for two calls
+        response = response + response
+
+        # Wrap the values into proper Response objs
+        response = tuple(
+            gkebackup.ListRestorePlanBindingsResponse.to_json(x) for x in response
+        )
+        return_values = tuple(Response() for i in response)
+        for return_val, response_val in zip(return_values, response):
+            return_val._content = response_val.encode("UTF-8")
+            return_val.status_code = 200
+        req.side_effect = return_values
+
+        sample_request = {
+            "parent": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+
+        pager = client.list_restore_plan_bindings(request=sample_request)
+
+        results = list(pager)
+        assert len(results) == 6
+        assert all(
+            isinstance(i, restore_plan_binding.RestorePlanBinding) for i in results
+        )
+
+        pages = list(client.list_restore_plan_bindings(request=sample_request).pages)
+        for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
+            assert page_.raw_page.next_page_token == token
+
+
+def test_get_restore_plan_binding_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = BackupForGKEClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.get_restore_plan_binding
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.get_restore_plan_binding
+        ] = mock_rpc
+
+        request = {}
+        client.get_restore_plan_binding(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.get_restore_plan_binding(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_get_restore_plan_binding_rest_required_fields(
+    request_type=gkebackup.GetRestorePlanBindingRequest,
+):
+    transport_class = transports.BackupForGKERestTransport
+
+    request_init = {}
+    request_init["name"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_restore_plan_binding._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["name"] = "name_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).get_restore_plan_binding._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "name" in jsonified_request
+    assert jsonified_request["name"] == "name_value"
+
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = restore_plan_binding.RestorePlanBinding()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "get",
+                "query_params": pb_request,
+            }
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = restore_plan_binding.RestorePlanBinding.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.get_restore_plan_binding(request)
+
+            expected_params = [("$alt", "json;enum-encoding=int")]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_get_restore_plan_binding_rest_unset_required_fields():
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.get_restore_plan_binding._get_unset_required_fields({})
+    assert set(unset_fields) == (set(()) & set(("name",)))
+
+
+def test_get_restore_plan_binding_rest_flattened():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = restore_plan_binding.RestorePlanBinding()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "name": "projects/sample1/locations/sample2/restoreChannels/sample3/restorePlanBindings/sample4"
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            name="name_value",
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = restore_plan_binding.RestorePlanBinding.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.get_restore_plan_binding(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/v1/{name=projects/*/locations/*/restoreChannels/*/restorePlanBindings/*}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_get_restore_plan_binding_rest_flattened_error(transport: str = "rest"):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.get_restore_plan_binding(
+            gkebackup.GetRestorePlanBindingRequest(),
+            name="name_value",
+        )
+
+
 def test_create_restore_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -16398,6 +25245,167 @@ def test_delete_backup_plan_empty_call_grpc():
 
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
+def test_create_backup_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_backup_channels_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListBackupChannelsResponse()
+        client.list_backup_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_backup_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        call.return_value = backup_channel.BackupChannel()
+        client.get_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_backup_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_backup_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_backup_plan_bindings_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListBackupPlanBindingsResponse()
+        client.list_backup_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupPlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_backup_plan_binding_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        call.return_value = backup_plan_binding.BackupPlanBinding()
+        client.get_backup_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupPlanBindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
 def test_create_backup_empty_call_grpc():
     client = BackupForGKEClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -16656,6 +25664,167 @@ def test_delete_restore_plan_empty_call_grpc():
         call.assert_called()
         _, args, _ = call.mock_calls[0]
         request_msg = gkebackup.DeleteRestorePlanRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_create_restore_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.create_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_restore_channels_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListRestoreChannelsResponse()
+        client.list_restore_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestoreChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_restore_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        call.return_value = restore_channel.RestoreChannel()
+        client.get_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_restore_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.update_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_restore_channel_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        call.return_value = operations_pb2.Operation(name="operations/op")
+        client.delete_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_restore_plan_bindings_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        call.return_value = gkebackup.ListRestorePlanBindingsResponse()
+        client.list_restore_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestorePlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_restore_plan_binding_empty_call_grpc():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="grpc",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        call.return_value = restore_plan_binding.RestorePlanBinding()
+        client.get_restore_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestorePlanBindingRequest()
 
         assert args[0] == request_msg
 
@@ -16930,6 +26099,7 @@ async def test_get_backup_plan_empty_call_grpc_asyncio():
                 state_reason="state_reason_value",
                 rpo_risk_level=1504,
                 rpo_risk_reason="rpo_risk_reason_value",
+                backup_channel="backup_channel_value",
             )
         )
         await client.get_backup_plan(request=None)
@@ -16999,6 +26169,214 @@ async def test_delete_backup_plan_empty_call_grpc_asyncio():
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
 @pytest.mark.asyncio
+async def test_create_backup_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_backup_channels_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupChannelsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_backup_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_backup_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_channel.BackupChannel(
+                name="name_value",
+                destination_project="destination_project_value",
+                uid="uid_value",
+                description="description_value",
+                etag="etag_value",
+                destination_project_id="destination_project_id_value",
+            )
+        )
+        await client.get_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_backup_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_backup_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_backup_plan_bindings_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListBackupPlanBindingsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_backup_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupPlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_backup_plan_binding_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            backup_plan_binding.BackupPlanBinding(
+                name="name_value",
+                uid="uid_value",
+                backup_plan="backup_plan_value",
+                cluster="cluster_value",
+                etag="etag_value",
+            )
+        )
+        await client.get_backup_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupPlanBindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
 async def test_create_backup_empty_call_grpc_asyncio():
     client = BackupForGKEAsyncClient(
         credentials=async_anonymous_credentials(),
@@ -17036,6 +26414,7 @@ async def test_list_backups_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             gkebackup.ListBackupsResponse(
                 next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
             )
         )
         await client.list_backups(request=None)
@@ -17079,6 +26458,8 @@ async def test_get_backup_empty_call_grpc_asyncio():
                 pod_count=971,
                 config_backup_size_bytes=2539,
                 permissive_mode=True,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         await client.get_backup(request=None)
@@ -17195,6 +26576,8 @@ async def test_get_volume_backup_empty_call_grpc_asyncio():
                 state=volume.VolumeBackup.State.CREATING,
                 state_message="state_message_value",
                 etag="etag_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         await client.get_volume_backup(request=None)
@@ -17286,6 +26669,7 @@ async def test_get_restore_plan_empty_call_grpc_asyncio():
                 etag="etag_value",
                 state=restore_plan.RestorePlan.State.CLUSTER_PENDING,
                 state_reason="state_reason_value",
+                restore_channel="restore_channel_value",
             )
         )
         await client.get_restore_plan(request=None)
@@ -17348,6 +26732,214 @@ async def test_delete_restore_plan_empty_call_grpc_asyncio():
         call.assert_called()
         _, args, _ = call.mock_calls[0]
         request_msg = gkebackup.DeleteRestorePlanRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_create_restore_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.create_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_restore_channels_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestoreChannelsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_restore_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestoreChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_restore_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_channel.RestoreChannel(
+                name="name_value",
+                destination_project="destination_project_value",
+                uid="uid_value",
+                description="description_value",
+                etag="etag_value",
+                destination_project_id="destination_project_id_value",
+            )
+        )
+        await client.get_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_update_restore_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.update_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_delete_restore_channel_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            operations_pb2.Operation(name="operations/spam")
+        )
+        await client.delete_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_list_restore_plan_bindings_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            gkebackup.ListRestorePlanBindingsResponse(
+                next_page_token="next_page_token_value",
+                unreachable=["unreachable_value"],
+            )
+        )
+        await client.list_restore_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestorePlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+@pytest.mark.asyncio
+async def test_get_restore_plan_binding_empty_call_grpc_asyncio():
+    client = BackupForGKEAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport="grpc_asyncio",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
+            restore_plan_binding.RestorePlanBinding(
+                name="name_value",
+                uid="uid_value",
+                restore_plan="restore_plan_value",
+                etag="etag_value",
+                backup_plan="backup_plan_value",
+            )
+        )
+        await client.get_restore_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestorePlanBindingRequest()
 
         assert args[0] == request_msg
 
@@ -17696,6 +27288,8 @@ def test_create_backup_plan_rest_call_success(request_type):
         "state_reason": "state_reason_value",
         "rpo_risk_level": 1504,
         "rpo_risk_reason": "rpo_risk_reason_value",
+        "backup_channel": "backup_channel_value",
+        "last_successful_backup_time": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -17803,10 +27397,13 @@ def test_create_backup_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_create_backup_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_backup_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_create_backup_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.CreateBackupPlanRequest.pb(
             gkebackup.CreateBackupPlanRequest()
         )
@@ -17830,6 +27427,7 @@ def test_create_backup_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_backup_plan(
             request,
@@ -17841,6 +27439,7 @@ def test_create_backup_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_backup_plans_rest_bad_request(
@@ -17927,10 +27526,13 @@ def test_list_backup_plans_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_backup_plans"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_backup_plans_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_backup_plans"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListBackupPlansRequest.pb(
             gkebackup.ListBackupPlansRequest()
         )
@@ -17956,6 +27558,7 @@ def test_list_backup_plans_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListBackupPlansResponse()
+        post_with_metadata.return_value = gkebackup.ListBackupPlansResponse(), metadata
 
         client.list_backup_plans(
             request,
@@ -17967,6 +27570,7 @@ def test_list_backup_plans_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_backup_plan_rest_bad_request(request_type=gkebackup.GetBackupPlanRequest):
@@ -18023,6 +27627,7 @@ def test_get_backup_plan_rest_call_success(request_type):
             state_reason="state_reason_value",
             rpo_risk_level=1504,
             rpo_risk_reason="rpo_risk_reason_value",
+            backup_channel="backup_channel_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -18050,6 +27655,7 @@ def test_get_backup_plan_rest_call_success(request_type):
     assert response.state_reason == "state_reason_value"
     assert response.rpo_risk_level == 1504
     assert response.rpo_risk_reason == "rpo_risk_reason_value"
+    assert response.backup_channel == "backup_channel_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -18069,10 +27675,13 @@ def test_get_backup_plan_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_backup_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_backup_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_backup_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetBackupPlanRequest.pb(gkebackup.GetBackupPlanRequest())
         transcode.return_value = {
             "method": "post",
@@ -18094,6 +27703,7 @@ def test_get_backup_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = backup_plan.BackupPlan()
+        post_with_metadata.return_value = backup_plan.BackupPlan(), metadata
 
         client.get_backup_plan(
             request,
@@ -18105,6 +27715,7 @@ def test_get_backup_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_backup_plan_rest_bad_request(
@@ -18217,6 +27828,8 @@ def test_update_backup_plan_rest_call_success(request_type):
         "state_reason": "state_reason_value",
         "rpo_risk_level": 1504,
         "rpo_risk_reason": "rpo_risk_reason_value",
+        "backup_channel": "backup_channel_value",
+        "last_successful_backup_time": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -18324,10 +27937,13 @@ def test_update_backup_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_update_backup_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_backup_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_update_backup_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.UpdateBackupPlanRequest.pb(
             gkebackup.UpdateBackupPlanRequest()
         )
@@ -18351,6 +27967,7 @@ def test_update_backup_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_backup_plan(
             request,
@@ -18362,6 +27979,7 @@ def test_update_backup_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_backup_plan_rest_bad_request(
@@ -18442,10 +28060,13 @@ def test_delete_backup_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_delete_backup_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_backup_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_delete_backup_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.DeleteBackupPlanRequest.pb(
             gkebackup.DeleteBackupPlanRequest()
         )
@@ -18469,6 +28090,7 @@ def test_delete_backup_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_backup_plan(
             request,
@@ -18480,6 +28102,1101 @@ def test_delete_backup_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_create_backup_channel_rest_bad_request(
+    request_type=gkebackup.CreateBackupChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_backup_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.CreateBackupChannelRequest,
+        dict,
+    ],
+)
+def test_create_backup_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request_init["backup_channel"] = {
+        "name": "name_value",
+        "destination_project": "destination_project_value",
+        "uid": "uid_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "labels": {},
+        "description": "description_value",
+        "etag": "etag_value",
+        "destination_project_id": "destination_project_id_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = gkebackup.CreateBackupChannelRequest.meta.fields["backup_channel"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["backup_channel"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["backup_channel"][field])):
+                    del request_init["backup_channel"][field][i][subfield]
+            else:
+                del request_init["backup_channel"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_backup_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_backup_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_backup_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_create_backup_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_create_backup_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.CreateBackupChannelRequest.pb(
+            gkebackup.CreateBackupChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.CreateBackupChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.create_backup_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_list_backup_channels_rest_bad_request(
+    request_type=gkebackup.ListBackupChannelsRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_backup_channels(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListBackupChannelsRequest,
+        dict,
+    ],
+)
+def test_list_backup_channels_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListBackupChannelsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListBackupChannelsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_backup_channels(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupChannelsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_backup_channels_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_backup_channels"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_list_backup_channels_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_list_backup_channels"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.ListBackupChannelsRequest.pb(
+            gkebackup.ListBackupChannelsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = gkebackup.ListBackupChannelsResponse.to_json(
+            gkebackup.ListBackupChannelsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.ListBackupChannelsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = gkebackup.ListBackupChannelsResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListBackupChannelsResponse(),
+            metadata,
+        )
+
+        client.list_backup_channels(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_get_backup_channel_rest_bad_request(
+    request_type=gkebackup.GetBackupChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/backupChannels/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_backup_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetBackupChannelRequest,
+        dict,
+    ],
+)
+def test_get_backup_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/backupChannels/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = backup_channel.BackupChannel(
+            name="name_value",
+            destination_project="destination_project_value",
+            uid="uid_value",
+            description="description_value",
+            etag="etag_value",
+            destination_project_id="destination_project_id_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = backup_channel.BackupChannel.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_backup_channel(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_channel.BackupChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_backup_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_backup_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_backup_channel_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_get_backup_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.GetBackupChannelRequest.pb(
+            gkebackup.GetBackupChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = backup_channel.BackupChannel.to_json(
+            backup_channel.BackupChannel()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.GetBackupChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = backup_channel.BackupChannel()
+        post_with_metadata.return_value = backup_channel.BackupChannel(), metadata
+
+        client.get_backup_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_update_backup_channel_rest_bad_request(
+    request_type=gkebackup.UpdateBackupChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "backup_channel": {
+            "name": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_backup_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.UpdateBackupChannelRequest,
+        dict,
+    ],
+)
+def test_update_backup_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "backup_channel": {
+            "name": "projects/sample1/locations/sample2/backupChannels/sample3"
+        }
+    }
+    request_init["backup_channel"] = {
+        "name": "projects/sample1/locations/sample2/backupChannels/sample3",
+        "destination_project": "destination_project_value",
+        "uid": "uid_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "labels": {},
+        "description": "description_value",
+        "etag": "etag_value",
+        "destination_project_id": "destination_project_id_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = gkebackup.UpdateBackupChannelRequest.meta.fields["backup_channel"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["backup_channel"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["backup_channel"][field])):
+                    del request_init["backup_channel"][field][i][subfield]
+            else:
+                del request_init["backup_channel"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_backup_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_backup_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_backup_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_update_backup_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_update_backup_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.UpdateBackupChannelRequest.pb(
+            gkebackup.UpdateBackupChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.UpdateBackupChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.update_backup_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_delete_backup_channel_rest_bad_request(
+    request_type=gkebackup.DeleteBackupChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/backupChannels/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_backup_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.DeleteBackupChannelRequest,
+        dict,
+    ],
+)
+def test_delete_backup_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"name": "projects/sample1/locations/sample2/backupChannels/sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_backup_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_backup_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_backup_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_delete_backup_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_delete_backup_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.DeleteBackupChannelRequest.pb(
+            gkebackup.DeleteBackupChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.DeleteBackupChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.delete_backup_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_list_backup_plan_bindings_rest_bad_request(
+    request_type=gkebackup.ListBackupPlanBindingsRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/backupChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_backup_plan_bindings(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListBackupPlanBindingsRequest,
+        dict,
+    ],
+)
+def test_list_backup_plan_bindings_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/backupChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListBackupPlanBindingsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListBackupPlanBindingsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_backup_plan_bindings(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListBackupPlanBindingsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_backup_plan_bindings_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_backup_plan_bindings"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_list_backup_plan_bindings_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_list_backup_plan_bindings"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.ListBackupPlanBindingsRequest.pb(
+            gkebackup.ListBackupPlanBindingsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = gkebackup.ListBackupPlanBindingsResponse.to_json(
+            gkebackup.ListBackupPlanBindingsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.ListBackupPlanBindingsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = gkebackup.ListBackupPlanBindingsResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListBackupPlanBindingsResponse(),
+            metadata,
+        )
+
+        client.list_backup_plan_bindings(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_get_backup_plan_binding_rest_bad_request(
+    request_type=gkebackup.GetBackupPlanBindingRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/backupChannels/sample3/backupPlanBindings/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_backup_plan_binding(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetBackupPlanBindingRequest,
+        dict,
+    ],
+)
+def test_get_backup_plan_binding_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/backupChannels/sample3/backupPlanBindings/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = backup_plan_binding.BackupPlanBinding(
+            name="name_value",
+            uid="uid_value",
+            backup_plan="backup_plan_value",
+            cluster="cluster_value",
+            etag="etag_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = backup_plan_binding.BackupPlanBinding.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_backup_plan_binding(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, backup_plan_binding.BackupPlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.backup_plan == "backup_plan_value"
+    assert response.cluster == "cluster_value"
+    assert response.etag == "etag_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_backup_plan_binding_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_backup_plan_binding"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_get_backup_plan_binding_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_get_backup_plan_binding"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.GetBackupPlanBindingRequest.pb(
+            gkebackup.GetBackupPlanBindingRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = backup_plan_binding.BackupPlanBinding.to_json(
+            backup_plan_binding.BackupPlanBinding()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.GetBackupPlanBindingRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = backup_plan_binding.BackupPlanBinding()
+        post_with_metadata.return_value = (
+            backup_plan_binding.BackupPlanBinding(),
+            metadata,
+        )
+
+        client.get_backup_plan_binding(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_backup_rest_bad_request(request_type=gkebackup.CreateBackupRequest):
@@ -18558,6 +29275,8 @@ def test_create_backup_rest_call_success(request_type):
         "pod_count": 971,
         "config_backup_size_bytes": 2539,
         "permissive_mode": True,
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -18665,10 +29384,13 @@ def test_create_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_create_backup"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_create_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.CreateBackupRequest.pb(gkebackup.CreateBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -18690,6 +29412,7 @@ def test_create_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_backup(
             request,
@@ -18701,6 +29424,7 @@ def test_create_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_backups_rest_bad_request(request_type=gkebackup.ListBackupsRequest):
@@ -18747,6 +29471,7 @@ def test_list_backups_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = gkebackup.ListBackupsResponse(
             next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
         )
 
         # Wrap the value into a proper Response obj
@@ -18764,6 +29489,7 @@ def test_list_backups_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, pagers.ListBackupsPager)
     assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -18783,10 +29509,13 @@ def test_list_backups_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_backups"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_backups_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_backups"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListBackupsRequest.pb(gkebackup.ListBackupsRequest())
         transcode.return_value = {
             "method": "post",
@@ -18810,6 +29539,7 @@ def test_list_backups_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListBackupsResponse()
+        post_with_metadata.return_value = gkebackup.ListBackupsResponse(), metadata
 
         client.list_backups(
             request,
@@ -18821,6 +29551,7 @@ def test_list_backups_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_backup_rest_bad_request(request_type=gkebackup.GetBackupRequest):
@@ -18887,6 +29618,8 @@ def test_get_backup_rest_call_success(request_type):
             pod_count=971,
             config_backup_size_bytes=2539,
             permissive_mode=True,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
             all_namespaces=True,
         )
 
@@ -18921,6 +29654,8 @@ def test_get_backup_rest_call_success(request_type):
     assert response.pod_count == 971
     assert response.config_backup_size_bytes == 2539
     assert response.permissive_mode is True
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -18940,10 +29675,13 @@ def test_get_backup_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_backup"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetBackupRequest.pb(gkebackup.GetBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -18965,6 +29703,7 @@ def test_get_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = backup.Backup()
+        post_with_metadata.return_value = backup.Backup(), metadata
 
         client.get_backup(
             request,
@@ -18976,6 +29715,7 @@ def test_get_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_backup_rest_bad_request(request_type=gkebackup.UpdateBackupRequest):
@@ -19062,6 +29802,8 @@ def test_update_backup_rest_call_success(request_type):
         "pod_count": 971,
         "config_backup_size_bytes": 2539,
         "permissive_mode": True,
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -19169,10 +29911,13 @@ def test_update_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_update_backup"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_update_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.UpdateBackupRequest.pb(gkebackup.UpdateBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -19194,6 +29939,7 @@ def test_update_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_backup(
             request,
@@ -19205,6 +29951,7 @@ def test_update_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_backup_rest_bad_request(request_type=gkebackup.DeleteBackupRequest):
@@ -19287,10 +30034,13 @@ def test_delete_backup_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_delete_backup"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_delete_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.DeleteBackupRequest.pb(gkebackup.DeleteBackupRequest())
         transcode.return_value = {
             "method": "post",
@@ -19312,6 +30062,7 @@ def test_delete_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_backup(
             request,
@@ -19323,6 +30074,7 @@ def test_delete_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_volume_backups_rest_bad_request(
@@ -19411,10 +30163,13 @@ def test_list_volume_backups_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_volume_backups"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_volume_backups_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_volume_backups"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListVolumeBackupsRequest.pb(
             gkebackup.ListVolumeBackupsRequest()
         )
@@ -19440,6 +30195,10 @@ def test_list_volume_backups_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListVolumeBackupsResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListVolumeBackupsResponse(),
+            metadata,
+        )
 
         client.list_volume_backups(
             request,
@@ -19451,6 +30210,7 @@ def test_list_volume_backups_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_volume_backup_rest_bad_request(
@@ -19511,6 +30271,8 @@ def test_get_volume_backup_rest_call_success(request_type):
             state=volume.VolumeBackup.State.CREATING,
             state_message="state_message_value",
             etag="etag_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -19538,6 +30300,8 @@ def test_get_volume_backup_rest_call_success(request_type):
     assert response.state == volume.VolumeBackup.State.CREATING
     assert response.state_message == "state_message_value"
     assert response.etag == "etag_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -19557,10 +30321,13 @@ def test_get_volume_backup_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_volume_backup"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_volume_backup_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_volume_backup"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetVolumeBackupRequest.pb(
             gkebackup.GetVolumeBackupRequest()
         )
@@ -19584,6 +30351,7 @@ def test_get_volume_backup_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = volume.VolumeBackup()
+        post_with_metadata.return_value = volume.VolumeBackup(), metadata
 
         client.get_volume_backup(
             request,
@@ -19595,6 +30363,7 @@ def test_get_volume_backup_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_restore_plan_rest_bad_request(
@@ -19709,6 +30478,7 @@ def test_create_restore_plan_rest_call_success(request_type):
         "etag": "etag_value",
         "state": 1,
         "state_reason": "state_reason_value",
+        "restore_channel": "restore_channel_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -19816,10 +30586,13 @@ def test_create_restore_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_create_restore_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_restore_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_create_restore_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.CreateRestorePlanRequest.pb(
             gkebackup.CreateRestorePlanRequest()
         )
@@ -19843,6 +30616,7 @@ def test_create_restore_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_restore_plan(
             request,
@@ -19854,6 +30628,7 @@ def test_create_restore_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_restore_plans_rest_bad_request(
@@ -19940,10 +30715,13 @@ def test_list_restore_plans_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_restore_plans"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_restore_plans_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_restore_plans"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListRestorePlansRequest.pb(
             gkebackup.ListRestorePlansRequest()
         )
@@ -19969,6 +30747,7 @@ def test_list_restore_plans_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListRestorePlansResponse()
+        post_with_metadata.return_value = gkebackup.ListRestorePlansResponse(), metadata
 
         client.list_restore_plans(
             request,
@@ -19980,6 +30759,7 @@ def test_list_restore_plans_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_restore_plan_rest_bad_request(
@@ -20035,6 +30815,7 @@ def test_get_restore_plan_rest_call_success(request_type):
             etag="etag_value",
             state=restore_plan.RestorePlan.State.CLUSTER_PENDING,
             state_reason="state_reason_value",
+            restore_channel="restore_channel_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -20059,6 +30840,7 @@ def test_get_restore_plan_rest_call_success(request_type):
     assert response.etag == "etag_value"
     assert response.state == restore_plan.RestorePlan.State.CLUSTER_PENDING
     assert response.state_reason == "state_reason_value"
+    assert response.restore_channel == "restore_channel_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -20078,10 +30860,13 @@ def test_get_restore_plan_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_restore_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_restore_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_restore_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetRestorePlanRequest.pb(
             gkebackup.GetRestorePlanRequest()
         )
@@ -20105,6 +30890,7 @@ def test_get_restore_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = restore_plan.RestorePlan()
+        post_with_metadata.return_value = restore_plan.RestorePlan(), metadata
 
         client.get_restore_plan(
             request,
@@ -20116,6 +30902,7 @@ def test_get_restore_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_restore_plan_rest_bad_request(
@@ -20238,6 +31025,7 @@ def test_update_restore_plan_rest_call_success(request_type):
         "etag": "etag_value",
         "state": 1,
         "state_reason": "state_reason_value",
+        "restore_channel": "restore_channel_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -20345,10 +31133,13 @@ def test_update_restore_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_update_restore_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_restore_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_update_restore_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.UpdateRestorePlanRequest.pb(
             gkebackup.UpdateRestorePlanRequest()
         )
@@ -20372,6 +31163,7 @@ def test_update_restore_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_restore_plan(
             request,
@@ -20383,6 +31175,7 @@ def test_update_restore_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_restore_plan_rest_bad_request(
@@ -20463,10 +31256,13 @@ def test_delete_restore_plan_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_delete_restore_plan"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_restore_plan_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_delete_restore_plan"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.DeleteRestorePlanRequest.pb(
             gkebackup.DeleteRestorePlanRequest()
         )
@@ -20490,6 +31286,7 @@ def test_delete_restore_plan_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_restore_plan(
             request,
@@ -20501,6 +31298,1109 @@ def test_delete_restore_plan_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_create_restore_channel_rest_bad_request(
+    request_type=gkebackup.CreateRestoreChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.create_restore_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.CreateRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_create_restore_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request_init["restore_channel"] = {
+        "name": "name_value",
+        "destination_project": "destination_project_value",
+        "uid": "uid_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "labels": {},
+        "description": "description_value",
+        "etag": "etag_value",
+        "destination_project_id": "destination_project_id_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = gkebackup.CreateRestoreChannelRequest.meta.fields["restore_channel"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["restore_channel"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["restore_channel"][field])):
+                    del request_init["restore_channel"][field][i][subfield]
+            else:
+                del request_init["restore_channel"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.create_restore_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_create_restore_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_restore_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_create_restore_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_create_restore_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.CreateRestoreChannelRequest.pb(
+            gkebackup.CreateRestoreChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.CreateRestoreChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.create_restore_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_list_restore_channels_rest_bad_request(
+    request_type=gkebackup.ListRestoreChannelsRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_restore_channels(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListRestoreChannelsRequest,
+        dict,
+    ],
+)
+def test_list_restore_channels_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"parent": "projects/sample1/locations/sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListRestoreChannelsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListRestoreChannelsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_restore_channels(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestoreChannelsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_restore_channels_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_restore_channels"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_list_restore_channels_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_list_restore_channels"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.ListRestoreChannelsRequest.pb(
+            gkebackup.ListRestoreChannelsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = gkebackup.ListRestoreChannelsResponse.to_json(
+            gkebackup.ListRestoreChannelsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.ListRestoreChannelsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = gkebackup.ListRestoreChannelsResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListRestoreChannelsResponse(),
+            metadata,
+        )
+
+        client.list_restore_channels(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_get_restore_channel_rest_bad_request(
+    request_type=gkebackup.GetRestoreChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_restore_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_get_restore_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = restore_channel.RestoreChannel(
+            name="name_value",
+            destination_project="destination_project_value",
+            uid="uid_value",
+            description="description_value",
+            etag="etag_value",
+            destination_project_id="destination_project_id_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = restore_channel.RestoreChannel.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_restore_channel(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_channel.RestoreChannel)
+    assert response.name == "name_value"
+    assert response.destination_project == "destination_project_value"
+    assert response.uid == "uid_value"
+    assert response.description == "description_value"
+    assert response.etag == "etag_value"
+    assert response.destination_project_id == "destination_project_id_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_restore_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_restore_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_restore_channel_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_get_restore_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.GetRestoreChannelRequest.pb(
+            gkebackup.GetRestoreChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = restore_channel.RestoreChannel.to_json(
+            restore_channel.RestoreChannel()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.GetRestoreChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = restore_channel.RestoreChannel()
+        post_with_metadata.return_value = restore_channel.RestoreChannel(), metadata
+
+        client.get_restore_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_update_restore_channel_rest_bad_request(
+    request_type=gkebackup.UpdateRestoreChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "restore_channel": {
+            "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update_restore_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.UpdateRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_update_restore_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "restore_channel": {
+            "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+        }
+    }
+    request_init["restore_channel"] = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3",
+        "destination_project": "destination_project_value",
+        "uid": "uid_value",
+        "create_time": {"seconds": 751, "nanos": 543},
+        "update_time": {},
+        "labels": {},
+        "description": "description_value",
+        "etag": "etag_value",
+        "destination_project_id": "destination_project_id_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = gkebackup.UpdateRestoreChannelRequest.meta.fields["restore_channel"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["restore_channel"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["restore_channel"][field])):
+                    del request_init["restore_channel"][field][i][subfield]
+            else:
+                del request_init["restore_channel"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update_restore_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_restore_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_restore_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_update_restore_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_update_restore_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.UpdateRestoreChannelRequest.pb(
+            gkebackup.UpdateRestoreChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.UpdateRestoreChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.update_restore_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_delete_restore_channel_rest_bad_request(
+    request_type=gkebackup.DeleteRestoreChannelRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.delete_restore_channel(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.DeleteRestoreChannelRequest,
+        dict,
+    ],
+)
+def test_delete_restore_channel_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = operations_pb2.Operation(name="operations/spam")
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.delete_restore_channel(request)
+
+    # Establish that the response is the type that we expect.
+    json_return_value = json_format.MessageToJson(return_value)
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_delete_restore_channel_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        operation.Operation, "_set_result_from_operation"
+    ), mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_restore_channel"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_delete_restore_channel_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_delete_restore_channel"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.DeleteRestoreChannelRequest.pb(
+            gkebackup.DeleteRestoreChannelRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = json_format.MessageToJson(operations_pb2.Operation())
+        req.return_value.content = return_value
+
+        request = gkebackup.DeleteRestoreChannelRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
+
+        client.delete_restore_channel(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_list_restore_plan_bindings_rest_bad_request(
+    request_type=gkebackup.ListRestorePlanBindingsRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.list_restore_plan_bindings(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.ListRestorePlanBindingsRequest,
+        dict,
+    ],
+)
+def test_list_restore_plan_bindings_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "parent": "projects/sample1/locations/sample2/restoreChannels/sample3"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = gkebackup.ListRestorePlanBindingsResponse(
+            next_page_token="next_page_token_value",
+            unreachable=["unreachable_value"],
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = gkebackup.ListRestorePlanBindingsResponse.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.list_restore_plan_bindings(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, pagers.ListRestorePlanBindingsPager)
+    assert response.next_page_token == "next_page_token_value"
+    assert response.unreachable == ["unreachable_value"]
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_list_restore_plan_bindings_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_restore_plan_bindings"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_list_restore_plan_bindings_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_list_restore_plan_bindings"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.ListRestorePlanBindingsRequest.pb(
+            gkebackup.ListRestorePlanBindingsRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = gkebackup.ListRestorePlanBindingsResponse.to_json(
+            gkebackup.ListRestorePlanBindingsResponse()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.ListRestorePlanBindingsRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = gkebackup.ListRestorePlanBindingsResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListRestorePlanBindingsResponse(),
+            metadata,
+        )
+
+        client.list_restore_plan_bindings(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_get_restore_plan_binding_rest_bad_request(
+    request_type=gkebackup.GetRestorePlanBindingRequest,
+):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3/restorePlanBindings/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.get_restore_plan_binding(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        gkebackup.GetRestorePlanBindingRequest,
+        dict,
+    ],
+)
+def test_get_restore_plan_binding_rest_call_success(request_type):
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {
+        "name": "projects/sample1/locations/sample2/restoreChannels/sample3/restorePlanBindings/sample4"
+    }
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = restore_plan_binding.RestorePlanBinding(
+            name="name_value",
+            uid="uid_value",
+            restore_plan="restore_plan_value",
+            etag="etag_value",
+            backup_plan="backup_plan_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = restore_plan_binding.RestorePlanBinding.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.get_restore_plan_binding(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, restore_plan_binding.RestorePlanBinding)
+    assert response.name == "name_value"
+    assert response.uid == "uid_value"
+    assert response.restore_plan == "restore_plan_value"
+    assert response.etag == "etag_value"
+    assert response.backup_plan == "backup_plan_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_get_restore_plan_binding_rest_interceptors(null_interceptor):
+    transport = transports.BackupForGKERestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.BackupForGKERestInterceptor(),
+    )
+    client = BackupForGKEClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_restore_plan_binding"
+    ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_get_restore_plan_binding_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "pre_get_restore_plan_binding"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = gkebackup.GetRestorePlanBindingRequest.pb(
+            gkebackup.GetRestorePlanBindingRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = restore_plan_binding.RestorePlanBinding.to_json(
+            restore_plan_binding.RestorePlanBinding()
+        )
+        req.return_value.content = return_value
+
+        request = gkebackup.GetRestorePlanBindingRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = restore_plan_binding.RestorePlanBinding()
+        post_with_metadata.return_value = (
+            restore_plan_binding.RestorePlanBinding(),
+            metadata,
+        )
+
+        client.get_restore_plan_binding(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_restore_rest_bad_request(request_type=gkebackup.CreateRestoreRequest):
@@ -20737,10 +32637,13 @@ def test_create_restore_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_create_restore"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_create_restore_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_create_restore"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.CreateRestoreRequest.pb(gkebackup.CreateRestoreRequest())
         transcode.return_value = {
             "method": "post",
@@ -20762,6 +32665,7 @@ def test_create_restore_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_restore(
             request,
@@ -20773,6 +32677,7 @@ def test_create_restore_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_restores_rest_bad_request(request_type=gkebackup.ListRestoresRequest):
@@ -20857,10 +32762,13 @@ def test_list_restores_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_restores"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_list_restores_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_restores"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListRestoresRequest.pb(gkebackup.ListRestoresRequest())
         transcode.return_value = {
             "method": "post",
@@ -20884,6 +32792,7 @@ def test_list_restores_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListRestoresResponse()
+        post_with_metadata.return_value = gkebackup.ListRestoresResponse(), metadata
 
         client.list_restores(
             request,
@@ -20895,6 +32804,7 @@ def test_list_restores_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_restore_rest_bad_request(request_type=gkebackup.GetRestoreRequest):
@@ -21003,10 +32913,13 @@ def test_get_restore_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_restore"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_restore_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_restore"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetRestoreRequest.pb(gkebackup.GetRestoreRequest())
         transcode.return_value = {
             "method": "post",
@@ -21028,6 +32941,7 @@ def test_get_restore_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = restore.Restore()
+        post_with_metadata.return_value = restore.Restore(), metadata
 
         client.get_restore(
             request,
@@ -21039,6 +32953,7 @@ def test_get_restore_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_restore_rest_bad_request(request_type=gkebackup.UpdateRestoreRequest):
@@ -21283,10 +33198,13 @@ def test_update_restore_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_update_restore"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_update_restore_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_update_restore"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.UpdateRestoreRequest.pb(gkebackup.UpdateRestoreRequest())
         transcode.return_value = {
             "method": "post",
@@ -21308,6 +33226,7 @@ def test_update_restore_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_restore(
             request,
@@ -21319,6 +33238,7 @@ def test_update_restore_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_restore_rest_bad_request(request_type=gkebackup.DeleteRestoreRequest):
@@ -21401,10 +33321,13 @@ def test_delete_restore_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_delete_restore"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_delete_restore_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_delete_restore"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.DeleteRestoreRequest.pb(gkebackup.DeleteRestoreRequest())
         transcode.return_value = {
             "method": "post",
@@ -21426,6 +33349,7 @@ def test_delete_restore_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_restore(
             request,
@@ -21437,6 +33361,7 @@ def test_delete_restore_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_volume_restores_rest_bad_request(
@@ -21525,10 +33450,14 @@ def test_list_volume_restores_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_list_volume_restores"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_list_volume_restores_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_list_volume_restores"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.ListVolumeRestoresRequest.pb(
             gkebackup.ListVolumeRestoresRequest()
         )
@@ -21554,6 +33483,10 @@ def test_list_volume_restores_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.ListVolumeRestoresResponse()
+        post_with_metadata.return_value = (
+            gkebackup.ListVolumeRestoresResponse(),
+            metadata,
+        )
 
         client.list_volume_restores(
             request,
@@ -21565,6 +33498,7 @@ def test_list_volume_restores_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_volume_restore_rest_bad_request(
@@ -21667,10 +33601,13 @@ def test_get_volume_restore_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_volume_restore"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor, "post_get_volume_restore_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_volume_restore"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetVolumeRestoreRequest.pb(
             gkebackup.GetVolumeRestoreRequest()
         )
@@ -21694,6 +33631,7 @@ def test_get_volume_restore_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = volume.VolumeRestore()
+        post_with_metadata.return_value = volume.VolumeRestore(), metadata
 
         client.get_volume_restore(
             request,
@@ -21705,6 +33643,7 @@ def test_get_volume_restore_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_backup_index_download_url_rest_bad_request(
@@ -21793,10 +33732,14 @@ def test_get_backup_index_download_url_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BackupForGKERestInterceptor, "post_get_backup_index_download_url"
     ) as post, mock.patch.object(
+        transports.BackupForGKERestInterceptor,
+        "post_get_backup_index_download_url_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.BackupForGKERestInterceptor, "pre_get_backup_index_download_url"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gkebackup.GetBackupIndexDownloadUrlRequest.pb(
             gkebackup.GetBackupIndexDownloadUrlRequest()
         )
@@ -21822,6 +33765,10 @@ def test_get_backup_index_download_url_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gkebackup.GetBackupIndexDownloadUrlResponse()
+        post_with_metadata.return_value = (
+            gkebackup.GetBackupIndexDownloadUrlResponse(),
+            metadata,
+        )
 
         client.get_backup_index_download_url(
             request,
@@ -21833,6 +33780,7 @@ def test_get_backup_index_download_url_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
@@ -22512,6 +34460,160 @@ def test_delete_backup_plan_empty_call_rest():
 
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
+def test_create_backup_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_backup_channel), "__call__"
+    ) as call:
+        client.create_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_backup_channels_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_channels), "__call__"
+    ) as call:
+        client.list_backup_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_backup_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_channel), "__call__"
+    ) as call:
+        client.get_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_backup_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_backup_channel), "__call__"
+    ) as call:
+        client.update_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_backup_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_backup_channel), "__call__"
+    ) as call:
+        client.delete_backup_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteBackupChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_backup_plan_bindings_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_backup_plan_bindings), "__call__"
+    ) as call:
+        client.list_backup_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListBackupPlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_backup_plan_binding_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_backup_plan_binding), "__call__"
+    ) as call:
+        client.get_backup_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetBackupPlanBindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
 def test_create_backup_empty_call_rest():
     client = BackupForGKEClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -22764,6 +34866,160 @@ def test_delete_restore_plan_empty_call_rest():
 
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
+def test_create_restore_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.create_restore_channel), "__call__"
+    ) as call:
+        client.create_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.CreateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_restore_channels_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_channels), "__call__"
+    ) as call:
+        client.list_restore_channels(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestoreChannelsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_restore_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_channel), "__call__"
+    ) as call:
+        client.get_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_restore_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.update_restore_channel), "__call__"
+    ) as call:
+        client.update_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.UpdateRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_delete_restore_channel_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.delete_restore_channel), "__call__"
+    ) as call:
+        client.delete_restore_channel(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.DeleteRestoreChannelRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_list_restore_plan_bindings_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.list_restore_plan_bindings), "__call__"
+    ) as call:
+        client.list_restore_plan_bindings(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.ListRestorePlanBindingsRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_get_restore_plan_binding_empty_call_rest():
+    client = BackupForGKEClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.get_restore_plan_binding), "__call__"
+    ) as call:
+        client.get_restore_plan_binding(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = gkebackup.GetRestorePlanBindingRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
 def test_create_restore_empty_call_rest():
     client = BackupForGKEClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -22983,6 +35239,13 @@ def test_backup_for_gke_base_transport():
         "get_backup_plan",
         "update_backup_plan",
         "delete_backup_plan",
+        "create_backup_channel",
+        "list_backup_channels",
+        "get_backup_channel",
+        "update_backup_channel",
+        "delete_backup_channel",
+        "list_backup_plan_bindings",
+        "get_backup_plan_binding",
         "create_backup",
         "list_backups",
         "get_backup",
@@ -22995,6 +35258,13 @@ def test_backup_for_gke_base_transport():
         "get_restore_plan",
         "update_restore_plan",
         "delete_restore_plan",
+        "create_restore_channel",
+        "list_restore_channels",
+        "get_restore_channel",
+        "update_restore_channel",
+        "delete_restore_channel",
+        "list_restore_plan_bindings",
+        "get_restore_plan_binding",
         "create_restore",
         "list_restores",
         "get_restore",
@@ -23287,6 +35557,27 @@ def test_backup_for_gke_client_transport_session_collision(transport_name):
     session1 = client1.transport.delete_backup_plan._session
     session2 = client2.transport.delete_backup_plan._session
     assert session1 != session2
+    session1 = client1.transport.create_backup_channel._session
+    session2 = client2.transport.create_backup_channel._session
+    assert session1 != session2
+    session1 = client1.transport.list_backup_channels._session
+    session2 = client2.transport.list_backup_channels._session
+    assert session1 != session2
+    session1 = client1.transport.get_backup_channel._session
+    session2 = client2.transport.get_backup_channel._session
+    assert session1 != session2
+    session1 = client1.transport.update_backup_channel._session
+    session2 = client2.transport.update_backup_channel._session
+    assert session1 != session2
+    session1 = client1.transport.delete_backup_channel._session
+    session2 = client2.transport.delete_backup_channel._session
+    assert session1 != session2
+    session1 = client1.transport.list_backup_plan_bindings._session
+    session2 = client2.transport.list_backup_plan_bindings._session
+    assert session1 != session2
+    session1 = client1.transport.get_backup_plan_binding._session
+    session2 = client2.transport.get_backup_plan_binding._session
+    assert session1 != session2
     session1 = client1.transport.create_backup._session
     session2 = client2.transport.create_backup._session
     assert session1 != session2
@@ -23322,6 +35613,27 @@ def test_backup_for_gke_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.delete_restore_plan._session
     session2 = client2.transport.delete_restore_plan._session
+    assert session1 != session2
+    session1 = client1.transport.create_restore_channel._session
+    session2 = client2.transport.create_restore_channel._session
+    assert session1 != session2
+    session1 = client1.transport.list_restore_channels._session
+    session2 = client2.transport.list_restore_channels._session
+    assert session1 != session2
+    session1 = client1.transport.get_restore_channel._session
+    session2 = client2.transport.get_restore_channel._session
+    assert session1 != session2
+    session1 = client1.transport.update_restore_channel._session
+    session2 = client2.transport.update_restore_channel._session
+    assert session1 != session2
+    session1 = client1.transport.delete_restore_channel._session
+    session2 = client2.transport.delete_restore_channel._session
+    assert session1 != session2
+    session1 = client1.transport.list_restore_plan_bindings._session
+    session2 = client2.transport.list_restore_plan_bindings._session
+    assert session1 != session2
+    session1 = client1.transport.get_restore_plan_binding._session
+    session2 = client2.transport.get_restore_plan_binding._session
     assert session1 != session2
     session1 = client1.transport.create_restore._session
     session2 = client2.transport.create_restore._session
@@ -23530,10 +35842,36 @@ def test_parse_backup_path():
     assert expected == actual
 
 
-def test_backup_plan_path():
+def test_backup_channel_path():
     project = "winkle"
     location = "nautilus"
-    backup_plan = "scallop"
+    backup_channel = "scallop"
+    expected = "projects/{project}/locations/{location}/backupChannels/{backup_channel}".format(
+        project=project,
+        location=location,
+        backup_channel=backup_channel,
+    )
+    actual = BackupForGKEClient.backup_channel_path(project, location, backup_channel)
+    assert expected == actual
+
+
+def test_parse_backup_channel_path():
+    expected = {
+        "project": "abalone",
+        "location": "squid",
+        "backup_channel": "clam",
+    }
+    path = BackupForGKEClient.backup_channel_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = BackupForGKEClient.parse_backup_channel_path(path)
+    assert expected == actual
+
+
+def test_backup_plan_path():
+    project = "whelk"
+    location = "octopus"
+    backup_plan = "oyster"
     expected = (
         "projects/{project}/locations/{location}/backupPlans/{backup_plan}".format(
             project=project,
@@ -23547,9 +35885,9 @@ def test_backup_plan_path():
 
 def test_parse_backup_plan_path():
     expected = {
-        "project": "abalone",
-        "location": "squid",
-        "backup_plan": "clam",
+        "project": "nudibranch",
+        "location": "cuttlefish",
+        "backup_plan": "mussel",
     }
     path = BackupForGKEClient.backup_plan_path(**expected)
 
@@ -23558,10 +35896,41 @@ def test_parse_backup_plan_path():
     assert expected == actual
 
 
+def test_backup_plan_binding_path():
+    project = "winkle"
+    location = "nautilus"
+    backup_channel = "scallop"
+    backup_plan_binding = "abalone"
+    expected = "projects/{project}/locations/{location}/backupChannels/{backup_channel}/backupPlanBindings/{backup_plan_binding}".format(
+        project=project,
+        location=location,
+        backup_channel=backup_channel,
+        backup_plan_binding=backup_plan_binding,
+    )
+    actual = BackupForGKEClient.backup_plan_binding_path(
+        project, location, backup_channel, backup_plan_binding
+    )
+    assert expected == actual
+
+
+def test_parse_backup_plan_binding_path():
+    expected = {
+        "project": "squid",
+        "location": "clam",
+        "backup_channel": "whelk",
+        "backup_plan_binding": "octopus",
+    }
+    path = BackupForGKEClient.backup_plan_binding_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = BackupForGKEClient.parse_backup_plan_binding_path(path)
+    assert expected == actual
+
+
 def test_cluster_path():
-    project = "whelk"
-    location = "octopus"
-    cluster = "oyster"
+    project = "oyster"
+    location = "nudibranch"
+    cluster = "cuttlefish"
     expected = "projects/{project}/locations/{location}/clusters/{cluster}".format(
         project=project,
         location=location,
@@ -23573,9 +35942,9 @@ def test_cluster_path():
 
 def test_parse_cluster_path():
     expected = {
-        "project": "nudibranch",
-        "location": "cuttlefish",
-        "cluster": "mussel",
+        "project": "mussel",
+        "location": "winkle",
+        "cluster": "nautilus",
     }
     path = BackupForGKEClient.cluster_path(**expected)
 
@@ -23585,10 +35954,10 @@ def test_parse_cluster_path():
 
 
 def test_crypto_key_path():
-    project = "winkle"
-    location = "nautilus"
-    key_ring = "scallop"
-    crypto_key = "abalone"
+    project = "scallop"
+    location = "abalone"
+    key_ring = "squid"
+    crypto_key = "clam"
     expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}".format(
         project=project,
         location=location,
@@ -23601,10 +35970,10 @@ def test_crypto_key_path():
 
 def test_parse_crypto_key_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
-        "key_ring": "whelk",
-        "crypto_key": "octopus",
+        "project": "whelk",
+        "location": "octopus",
+        "key_ring": "oyster",
+        "crypto_key": "nudibranch",
     }
     path = BackupForGKEClient.crypto_key_path(**expected)
 
@@ -23614,10 +35983,10 @@ def test_parse_crypto_key_path():
 
 
 def test_restore_path():
-    project = "oyster"
-    location = "nudibranch"
-    restore_plan = "cuttlefish"
-    restore = "mussel"
+    project = "cuttlefish"
+    location = "mussel"
+    restore_plan = "winkle"
+    restore = "nautilus"
     expected = "projects/{project}/locations/{location}/restorePlans/{restore_plan}/restores/{restore}".format(
         project=project,
         location=location,
@@ -23630,10 +35999,10 @@ def test_restore_path():
 
 def test_parse_restore_path():
     expected = {
-        "project": "winkle",
-        "location": "nautilus",
-        "restore_plan": "scallop",
-        "restore": "abalone",
+        "project": "scallop",
+        "location": "abalone",
+        "restore_plan": "squid",
+        "restore": "clam",
     }
     path = BackupForGKEClient.restore_path(**expected)
 
@@ -23642,10 +36011,36 @@ def test_parse_restore_path():
     assert expected == actual
 
 
+def test_restore_channel_path():
+    project = "whelk"
+    location = "octopus"
+    restore_channel = "oyster"
+    expected = "projects/{project}/locations/{location}/restoreChannels/{restore_channel}".format(
+        project=project,
+        location=location,
+        restore_channel=restore_channel,
+    )
+    actual = BackupForGKEClient.restore_channel_path(project, location, restore_channel)
+    assert expected == actual
+
+
+def test_parse_restore_channel_path():
+    expected = {
+        "project": "nudibranch",
+        "location": "cuttlefish",
+        "restore_channel": "mussel",
+    }
+    path = BackupForGKEClient.restore_channel_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = BackupForGKEClient.parse_restore_channel_path(path)
+    assert expected == actual
+
+
 def test_restore_plan_path():
-    project = "squid"
-    location = "clam"
-    restore_plan = "whelk"
+    project = "winkle"
+    location = "nautilus"
+    restore_plan = "scallop"
     expected = (
         "projects/{project}/locations/{location}/restorePlans/{restore_plan}".format(
             project=project,
@@ -23659,9 +36054,9 @@ def test_restore_plan_path():
 
 def test_parse_restore_plan_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "restore_plan": "nudibranch",
+        "project": "abalone",
+        "location": "squid",
+        "restore_plan": "clam",
     }
     path = BackupForGKEClient.restore_plan_path(**expected)
 
@@ -23670,12 +36065,43 @@ def test_parse_restore_plan_path():
     assert expected == actual
 
 
+def test_restore_plan_binding_path():
+    project = "whelk"
+    location = "octopus"
+    restore_channel = "oyster"
+    restore_plan_binding = "nudibranch"
+    expected = "projects/{project}/locations/{location}/restoreChannels/{restore_channel}/restorePlanBindings/{restore_plan_binding}".format(
+        project=project,
+        location=location,
+        restore_channel=restore_channel,
+        restore_plan_binding=restore_plan_binding,
+    )
+    actual = BackupForGKEClient.restore_plan_binding_path(
+        project, location, restore_channel, restore_plan_binding
+    )
+    assert expected == actual
+
+
+def test_parse_restore_plan_binding_path():
+    expected = {
+        "project": "cuttlefish",
+        "location": "mussel",
+        "restore_channel": "winkle",
+        "restore_plan_binding": "nautilus",
+    }
+    path = BackupForGKEClient.restore_plan_binding_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = BackupForGKEClient.parse_restore_plan_binding_path(path)
+    assert expected == actual
+
+
 def test_volume_backup_path():
-    project = "cuttlefish"
-    location = "mussel"
-    backup_plan = "winkle"
-    backup = "nautilus"
-    volume_backup = "scallop"
+    project = "scallop"
+    location = "abalone"
+    backup_plan = "squid"
+    backup = "clam"
+    volume_backup = "whelk"
     expected = "projects/{project}/locations/{location}/backupPlans/{backup_plan}/backups/{backup}/volumeBackups/{volume_backup}".format(
         project=project,
         location=location,
@@ -23691,11 +36117,11 @@ def test_volume_backup_path():
 
 def test_parse_volume_backup_path():
     expected = {
-        "project": "abalone",
-        "location": "squid",
-        "backup_plan": "clam",
-        "backup": "whelk",
-        "volume_backup": "octopus",
+        "project": "octopus",
+        "location": "oyster",
+        "backup_plan": "nudibranch",
+        "backup": "cuttlefish",
+        "volume_backup": "mussel",
     }
     path = BackupForGKEClient.volume_backup_path(**expected)
 
@@ -23705,11 +36131,11 @@ def test_parse_volume_backup_path():
 
 
 def test_volume_restore_path():
-    project = "oyster"
-    location = "nudibranch"
-    restore_plan = "cuttlefish"
-    restore = "mussel"
-    volume_restore = "winkle"
+    project = "winkle"
+    location = "nautilus"
+    restore_plan = "scallop"
+    restore = "abalone"
+    volume_restore = "squid"
     expected = "projects/{project}/locations/{location}/restorePlans/{restore_plan}/restores/{restore}/volumeRestores/{volume_restore}".format(
         project=project,
         location=location,
@@ -23725,11 +36151,11 @@ def test_volume_restore_path():
 
 def test_parse_volume_restore_path():
     expected = {
-        "project": "nautilus",
-        "location": "scallop",
-        "restore_plan": "abalone",
-        "restore": "squid",
-        "volume_restore": "clam",
+        "project": "clam",
+        "location": "whelk",
+        "restore_plan": "octopus",
+        "restore": "oyster",
+        "volume_restore": "nudibranch",
     }
     path = BackupForGKEClient.volume_restore_path(**expected)
 
@@ -23739,7 +36165,7 @@ def test_parse_volume_restore_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "whelk"
+    billing_account = "cuttlefish"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -23749,7 +36175,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "octopus",
+        "billing_account": "mussel",
     }
     path = BackupForGKEClient.common_billing_account_path(**expected)
 
@@ -23759,7 +36185,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "oyster"
+    folder = "winkle"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -23769,7 +36195,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nudibranch",
+        "folder": "nautilus",
     }
     path = BackupForGKEClient.common_folder_path(**expected)
 
@@ -23779,7 +36205,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "cuttlefish"
+    organization = "scallop"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -23789,7 +36215,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "mussel",
+        "organization": "abalone",
     }
     path = BackupForGKEClient.common_organization_path(**expected)
 
@@ -23799,7 +36225,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "winkle"
+    project = "squid"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -23809,7 +36235,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nautilus",
+        "project": "clam",
     }
     path = BackupForGKEClient.common_project_path(**expected)
 
@@ -23819,8 +36245,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "scallop"
-    location = "abalone"
+    project = "whelk"
+    location = "octopus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -23831,8 +36257,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
+        "project": "oyster",
+        "location": "nudibranch",
     }
     path = BackupForGKEClient.common_location_path(**expected)
 

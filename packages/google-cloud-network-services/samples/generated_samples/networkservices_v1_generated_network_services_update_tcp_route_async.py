@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,11 +39,7 @@ async def sample_update_tcp_route():
     client = network_services_v1.NetworkServicesAsyncClient()
 
     # Initialize request argument(s)
-    tcp_route = network_services_v1.TcpRoute()
-    tcp_route.name = "name_value"
-
     request = network_services_v1.UpdateTcpRouteRequest(
-        tcp_route=tcp_route,
     )
 
     # Make the request

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class GetCustomTargetingValueRequest(proto.Message):
         name (str):
             Required. The resource name of the CustomTargetingValue.
             Format:
-            ``networks/{network_code}/customTargetingKeys/{custom_targeting_key_id}/customTargetingValues/{custom_targeting_value_id}``
+            ``networks/{network_code}/customTargetingValues/{custom_targeting_value_id}``
     """
 
     name: str = proto.Field(
@@ -53,8 +53,7 @@ class ListCustomTargetingValuesRequest(proto.Message):
     Attributes:
         parent (str):
             Required. The parent, which owns this collection of
-            CustomTargetingValues. Format:
-            ``networks/{network_code}/customTargetingKeys/{custom_targeting_key_id}``
+            CustomTargetingValues. Format: ``networks/{network_code}``
         page_size (int):
             Optional. The maximum number of ``CustomTargetingValues`` to
             return. The service may return fewer than this value. If

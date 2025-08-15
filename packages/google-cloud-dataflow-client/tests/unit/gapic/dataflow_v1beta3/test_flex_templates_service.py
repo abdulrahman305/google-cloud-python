@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,6 +58,13 @@ from google.cloud.dataflow_v1beta3.services.flex_templates_service import (
     transports,
 )
 from google.cloud.dataflow_v1beta3.types import environment, jobs, templates
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -330,6 +337,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         FlexTemplatesServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = FlexTemplatesServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = FlexTemplatesServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1111,8 +1161,6 @@ def test_flex_templates_service_client_create_channel_credentials_file(
             default_scopes=(
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/compute",
-                "https://www.googleapis.com/auth/compute.readonly",
-                "https://www.googleapis.com/auth/userinfo.email",
             ),
             scopes=None,
             default_host="dataflow.googleapis.com",
@@ -1673,10 +1721,14 @@ def test_launch_flex_template_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlexTemplatesServiceRestInterceptor, "post_launch_flex_template"
     ) as post, mock.patch.object(
+        transports.FlexTemplatesServiceRestInterceptor,
+        "post_launch_flex_template_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.FlexTemplatesServiceRestInterceptor, "pre_launch_flex_template"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = templates.LaunchFlexTemplateRequest.pb(
             templates.LaunchFlexTemplateRequest()
         )
@@ -1702,6 +1754,10 @@ def test_launch_flex_template_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = templates.LaunchFlexTemplateResponse()
+        post_with_metadata.return_value = (
+            templates.LaunchFlexTemplateResponse(),
+            metadata,
+        )
 
         client.launch_flex_template(
             request,
@@ -1713,6 +1769,7 @@ def test_launch_flex_template_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():
@@ -1812,8 +1869,6 @@ def test_flex_templates_service_base_transport_with_credentials_file():
             default_scopes=(
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/compute",
-                "https://www.googleapis.com/auth/compute.readonly",
-                "https://www.googleapis.com/auth/userinfo.email",
             ),
             quota_project_id="octopus",
         )
@@ -1840,8 +1895,6 @@ def test_flex_templates_service_auth_adc():
             default_scopes=(
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/compute",
-                "https://www.googleapis.com/auth/compute.readonly",
-                "https://www.googleapis.com/auth/userinfo.email",
             ),
             quota_project_id=None,
         )
@@ -1865,8 +1918,6 @@ def test_flex_templates_service_transport_auth_adc(transport_class):
             default_scopes=(
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/compute",
-                "https://www.googleapis.com/auth/compute.readonly",
-                "https://www.googleapis.com/auth/userinfo.email",
             ),
             quota_project_id="octopus",
         )
@@ -1922,8 +1973,6 @@ def test_flex_templates_service_transport_create_channel(transport_class, grpc_h
             default_scopes=(
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/compute",
-                "https://www.googleapis.com/auth/compute.readonly",
-                "https://www.googleapis.com/auth/userinfo.email",
             ),
             scopes=["1", "2"],
             default_host="dataflow.googleapis.com",

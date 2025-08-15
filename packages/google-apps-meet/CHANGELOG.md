@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.15...google-apps-meet-v0.1.16) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([1562bb7](https://github.com/googleapis/google-cloud-python/commit/1562bb740c7cd56179e52185dde3c32af861de5e))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.14...google-apps-meet-v0.1.15) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.13...google-apps-meet-v0.1.14) (2025-02-27)
+
+
+### Features
+
+* [google-apps-meet] Add `ConnectActiveConference` method to `SpacesService` ([#13554](https://github.com/googleapis/google-cloud-python/issues/13554)) ([576bb98](https://github.com/googleapis/google-cloud-python/commit/576bb9843cc1a046de17ac483b9e7d7161d2ae24))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.12...google-apps-meet-v0.1.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.11...google-apps-meet-v0.1.12) (2025-01-29)
+
+
+### Features
+
+* Add methods for configuring meeting spaces and members (https://developers.google.com/meet/api/guides/beta/configuration-beta) ([7b23175](https://github.com/googleapis/google-cloud-python/commit/7b23175303cfd26145f3d00bbbd8defe06ae2090))
+* Add new OAuth scope `https://www.googleapis.com/auth/meetings.space.settings` to service `SpacesService` ([7b23175](https://github.com/googleapis/google-cloud-python/commit/7b23175303cfd26145f3d00bbbd8defe06ae2090))
+
+
+### Documentation
+
+* Improve docs for `GetSpaceRequest`, `EndActiveConferenceRequest`, `ListConferenceRecordsRequest` ([7b23175](https://github.com/googleapis/google-cloud-python/commit/7b23175303cfd26145f3d00bbbd8defe06ae2090))
+* improve docs for GetSpaceRequest, EndActiveConferenceRequest, ListConferenceRecordsRequest ([7b23175](https://github.com/googleapis/google-cloud-python/commit/7b23175303cfd26145f3d00bbbd8defe06ae2090))
+* Remove *Developer Preview* label from methods that are now generally available ([7b23175](https://github.com/googleapis/google-cloud-python/commit/7b23175303cfd26145f3d00bbbd8defe06ae2090))
+
 ## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-apps-meet-v0.1.10...google-apps-meet-v0.1.11) (2024-12-12)
 
 

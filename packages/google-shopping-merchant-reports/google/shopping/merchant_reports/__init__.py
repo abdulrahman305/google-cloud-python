@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ from google.shopping.merchant_reports import gapic_version as package_version
 __version__ = package_version.__version__
 
 
-from google.shopping.merchant_reports_v1beta.services.report_service.async_client import (
+from google.shopping.merchant_reports_v1.services.report_service.async_client import (
     ReportServiceAsyncClient,
 )
-from google.shopping.merchant_reports_v1beta.services.report_service.client import (
+from google.shopping.merchant_reports_v1.services.report_service.client import (
     ReportServiceClient,
 )
-from google.shopping.merchant_reports_v1beta.types.reports import (
+from google.shopping.merchant_reports_v1.types.reports import (
     BestSellersBrandView,
     BestSellersProductClusterView,
     CompetitiveVisibilityBenchmarkView,

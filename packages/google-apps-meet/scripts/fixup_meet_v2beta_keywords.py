@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,9 +39,13 @@ def partition(
 class meetCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'connect_active_conference': ('name', 'offer', ),
+        'create_member': ('parent', 'member', ),
         'create_space': ('space', ),
+        'delete_member': ('name', ),
         'end_active_conference': ('name', ),
         'get_conference_record': ('name', ),
+        'get_member': ('name', ),
         'get_participant': ('name', ),
         'get_participant_session': ('name', ),
         'get_recording': ('name', ),
@@ -49,6 +53,7 @@ class meetCallTransformer(cst.CSTTransformer):
         'get_transcript': ('name', ),
         'get_transcript_entry': ('name', ),
         'list_conference_records': ('page_size', 'page_token', 'filter', ),
+        'list_members': ('parent', 'page_size', 'page_token', ),
         'list_participants': ('parent', 'page_size', 'page_token', 'filter', ),
         'list_participant_sessions': ('parent', 'page_size', 'page_token', 'filter', ),
         'list_recordings': ('parent', 'page_size', 'page_token', ),

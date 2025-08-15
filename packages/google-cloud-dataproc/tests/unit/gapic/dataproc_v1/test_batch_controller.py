@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,6 +74,13 @@ from google.cloud.dataproc_v1.services.batch_controller import (
     transports,
 )
 from google.cloud.dataproc_v1.types import batches, operations, shared
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -331,6 +338,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         BatchControllerClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = BatchControllerClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = BatchControllerClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -3856,6 +3906,7 @@ def test_create_batch_rest_call_success(request_type):
                 "idle_ttl": {"seconds": 751, "nanos": 543},
                 "ttl": {},
                 "staging_bucket": "staging_bucket_value",
+                "authentication_config": {"user_workload_authentication_type": 1},
             },
             "peripherals_config": {
                 "metastore_service": "metastore_service_value",
@@ -3975,10 +4026,13 @@ def test_create_batch_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.BatchControllerRestInterceptor, "post_create_batch"
     ) as post, mock.patch.object(
+        transports.BatchControllerRestInterceptor, "post_create_batch_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BatchControllerRestInterceptor, "pre_create_batch"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = batches.CreateBatchRequest.pb(batches.CreateBatchRequest())
         transcode.return_value = {
             "method": "post",
@@ -4000,6 +4054,7 @@ def test_create_batch_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_batch(
             request,
@@ -4011,6 +4066,7 @@ def test_create_batch_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_batch_rest_bad_request(request_type=batches.GetBatchRequest):
@@ -4103,10 +4159,13 @@ def test_get_batch_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BatchControllerRestInterceptor, "post_get_batch"
     ) as post, mock.patch.object(
+        transports.BatchControllerRestInterceptor, "post_get_batch_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BatchControllerRestInterceptor, "pre_get_batch"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = batches.GetBatchRequest.pb(batches.GetBatchRequest())
         transcode.return_value = {
             "method": "post",
@@ -4128,6 +4187,7 @@ def test_get_batch_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = batches.Batch()
+        post_with_metadata.return_value = batches.Batch(), metadata
 
         client.get_batch(
             request,
@@ -4139,6 +4199,7 @@ def test_get_batch_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_batches_rest_bad_request(request_type=batches.ListBatchesRequest):
@@ -4223,10 +4284,13 @@ def test_list_batches_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.BatchControllerRestInterceptor, "post_list_batches"
     ) as post, mock.patch.object(
+        transports.BatchControllerRestInterceptor, "post_list_batches_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.BatchControllerRestInterceptor, "pre_list_batches"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = batches.ListBatchesRequest.pb(batches.ListBatchesRequest())
         transcode.return_value = {
             "method": "post",
@@ -4250,6 +4314,7 @@ def test_list_batches_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = batches.ListBatchesResponse()
+        post_with_metadata.return_value = batches.ListBatchesResponse(), metadata
 
         client.list_batches(
             request,
@@ -4261,6 +4326,7 @@ def test_list_batches_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_batch_rest_bad_request(request_type=batches.DeleteBatchRequest):

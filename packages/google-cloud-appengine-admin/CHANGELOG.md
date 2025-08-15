@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.14.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-appengine-admin-v1.14.1...google-cloud-appengine-admin-v1.14.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-appengine-admin-v1.14.0...google-cloud-appengine-admin-v1.14.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-appengine-admin-v1.13.0...google-cloud-appengine-admin-v1.14.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
 ## [1.13.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-appengine-admin-v1.12.1...google-cloud-appengine-admin-v1.13.0) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,6 +119,12 @@ from google.cloud.discoveryengine_v1beta.services.serving_config_service.async_c
 )
 from google.cloud.discoveryengine_v1beta.services.serving_config_service.client import (
     ServingConfigServiceClient,
+)
+from google.cloud.discoveryengine_v1beta.services.session_service.async_client import (
+    SessionServiceAsyncClient,
+)
+from google.cloud.discoveryengine_v1beta.services.session_service.client import (
+    SessionServiceClient,
 )
 from google.cloud.discoveryengine_v1beta.services.site_search_engine_service.async_client import (
     SiteSearchEngineServiceAsyncClient,
@@ -462,6 +468,8 @@ __all__ = (
     "SearchTuningServiceAsyncClient",
     "ServingConfigServiceClient",
     "ServingConfigServiceAsyncClient",
+    "SessionServiceClient",
+    "SessionServiceAsyncClient",
     "SiteSearchEngineServiceClient",
     "SiteSearchEngineServiceAsyncClient",
     "UserEventServiceClient",

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,6 +85,13 @@ from google.cloud.dialogflowcx_v3.types import (
 )
 from google.cloud.dialogflowcx_v3.types import flow
 from google.cloud.dialogflowcx_v3.types import flow as gcdc_flow
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -302,6 +309,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         FlowsClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = FlowsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = FlowsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -6742,6 +6792,13 @@ def test_create_flow_rest_call_success(request_type):
                         },
                     },
                     "enable_generative_fallback": True,
+                    "generators": [
+                        {
+                            "generator": "generator_value",
+                            "input_parameters": {},
+                            "output_parameter": "output_parameter_value",
+                        }
+                    ],
                 },
                 "target_page": "target_page_value",
                 "target_flow": "target_flow_value",
@@ -6772,7 +6829,11 @@ def test_create_flow_rest_call_success(request_type):
             "target_page": "target_page_value",
             "target_flow": "target_flow_value",
             "data_store_connections": [
-                {"data_store_type": 1, "data_store": "data_store_value"}
+                {
+                    "data_store_type": 1,
+                    "data_store": "data_store_value",
+                    "document_processing_mode": 1,
+                }
             ],
         },
         "multi_language_settings": {
@@ -6900,10 +6961,13 @@ def test_create_flow_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_create_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_create_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_create_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gcdc_flow.CreateFlowRequest.pb(gcdc_flow.CreateFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -6925,6 +6989,7 @@ def test_create_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcdc_flow.Flow()
+        post_with_metadata.return_value = gcdc_flow.Flow(), metadata
 
         client.create_flow(
             request,
@@ -6936,6 +7001,7 @@ def test_create_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_flow_rest_bad_request(request_type=flow.DeleteFlowRequest):
@@ -7123,10 +7189,13 @@ def test_list_flows_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_list_flows"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_list_flows_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_list_flows"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.ListFlowsRequest.pb(flow.ListFlowsRequest())
         transcode.return_value = {
             "method": "post",
@@ -7148,6 +7217,7 @@ def test_list_flows_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = flow.ListFlowsResponse()
+        post_with_metadata.return_value = flow.ListFlowsResponse(), metadata
 
         client.list_flows(
             request,
@@ -7159,6 +7229,7 @@ def test_list_flows_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_flow_rest_bad_request(request_type=flow.GetFlowRequest):
@@ -7251,10 +7322,13 @@ def test_get_flow_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_get_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_get_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_get_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.GetFlowRequest.pb(flow.GetFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -7276,6 +7350,7 @@ def test_get_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = flow.Flow()
+        post_with_metadata.return_value = flow.Flow(), metadata
 
         client.get_flow(
             request,
@@ -7287,6 +7362,7 @@ def test_get_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_flow_rest_bad_request(request_type=gcdc_flow.UpdateFlowRequest):
@@ -7431,6 +7507,13 @@ def test_update_flow_rest_call_success(request_type):
                         },
                     },
                     "enable_generative_fallback": True,
+                    "generators": [
+                        {
+                            "generator": "generator_value",
+                            "input_parameters": {},
+                            "output_parameter": "output_parameter_value",
+                        }
+                    ],
                 },
                 "target_page": "target_page_value",
                 "target_flow": "target_flow_value",
@@ -7461,7 +7544,11 @@ def test_update_flow_rest_call_success(request_type):
             "target_page": "target_page_value",
             "target_flow": "target_flow_value",
             "data_store_connections": [
-                {"data_store_type": 1, "data_store": "data_store_value"}
+                {
+                    "data_store_type": 1,
+                    "data_store": "data_store_value",
+                    "document_processing_mode": 1,
+                }
             ],
         },
         "multi_language_settings": {
@@ -7589,10 +7676,13 @@ def test_update_flow_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_update_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_update_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_update_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = gcdc_flow.UpdateFlowRequest.pb(gcdc_flow.UpdateFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -7614,6 +7704,7 @@ def test_update_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcdc_flow.Flow()
+        post_with_metadata.return_value = gcdc_flow.Flow(), metadata
 
         client.update_flow(
             request,
@@ -7625,6 +7716,7 @@ def test_update_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_train_flow_rest_bad_request(request_type=flow.TrainFlowRequest):
@@ -7705,10 +7797,13 @@ def test_train_flow_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.FlowsRestInterceptor, "post_train_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_train_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_train_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.TrainFlowRequest.pb(flow.TrainFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -7730,6 +7825,7 @@ def test_train_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.train_flow(
             request,
@@ -7741,6 +7837,7 @@ def test_train_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_validate_flow_rest_bad_request(request_type=flow.ValidateFlowRequest):
@@ -7825,10 +7922,13 @@ def test_validate_flow_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_validate_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_validate_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_validate_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.ValidateFlowRequest.pb(flow.ValidateFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -7850,6 +7950,7 @@ def test_validate_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = flow.FlowValidationResult()
+        post_with_metadata.return_value = flow.FlowValidationResult(), metadata
 
         client.validate_flow(
             request,
@@ -7861,6 +7962,7 @@ def test_validate_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_flow_validation_result_rest_bad_request(
@@ -7947,10 +8049,13 @@ def test_get_flow_validation_result_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.FlowsRestInterceptor, "post_get_flow_validation_result"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_get_flow_validation_result_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_get_flow_validation_result"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.GetFlowValidationResultRequest.pb(
             flow.GetFlowValidationResultRequest()
         )
@@ -7974,6 +8079,7 @@ def test_get_flow_validation_result_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = flow.FlowValidationResult()
+        post_with_metadata.return_value = flow.FlowValidationResult(), metadata
 
         client.get_flow_validation_result(
             request,
@@ -7985,6 +8091,7 @@ def test_get_flow_validation_result_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_import_flow_rest_bad_request(request_type=flow.ImportFlowRequest):
@@ -8061,10 +8168,13 @@ def test_import_flow_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.FlowsRestInterceptor, "post_import_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_import_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_import_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.ImportFlowRequest.pb(flow.ImportFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -8086,6 +8196,7 @@ def test_import_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.import_flow(
             request,
@@ -8097,6 +8208,7 @@ def test_import_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_export_flow_rest_bad_request(request_type=flow.ExportFlowRequest):
@@ -8177,10 +8289,13 @@ def test_export_flow_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.FlowsRestInterceptor, "post_export_flow"
     ) as post, mock.patch.object(
+        transports.FlowsRestInterceptor, "post_export_flow_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.FlowsRestInterceptor, "pre_export_flow"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = flow.ExportFlowRequest.pb(flow.ExportFlowRequest())
         transcode.return_value = {
             "method": "post",
@@ -8202,6 +8317,7 @@ def test_export_flow_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.export_flow(
             request,
@@ -8213,6 +8329,7 @@ def test_export_flow_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
@@ -9309,11 +9426,40 @@ def test_parse_flow_validation_result_path():
     assert expected == actual
 
 
-def test_intent_path():
+def test_generator_path():
     project = "oyster"
     location = "nudibranch"
     agent = "cuttlefish"
-    intent = "mussel"
+    generator = "mussel"
+    expected = "projects/{project}/locations/{location}/agents/{agent}/generators/{generator}".format(
+        project=project,
+        location=location,
+        agent=agent,
+        generator=generator,
+    )
+    actual = FlowsClient.generator_path(project, location, agent, generator)
+    assert expected == actual
+
+
+def test_parse_generator_path():
+    expected = {
+        "project": "winkle",
+        "location": "nautilus",
+        "agent": "scallop",
+        "generator": "abalone",
+    }
+    path = FlowsClient.generator_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = FlowsClient.parse_generator_path(path)
+    assert expected == actual
+
+
+def test_intent_path():
+    project = "squid"
+    location = "clam"
+    agent = "whelk"
+    intent = "octopus"
     expected = "projects/{project}/locations/{location}/agents/{agent}/intents/{intent}".format(
         project=project,
         location=location,
@@ -9326,10 +9472,10 @@ def test_intent_path():
 
 def test_parse_intent_path():
     expected = {
-        "project": "winkle",
-        "location": "nautilus",
-        "agent": "scallop",
-        "intent": "abalone",
+        "project": "oyster",
+        "location": "nudibranch",
+        "agent": "cuttlefish",
+        "intent": "mussel",
     }
     path = FlowsClient.intent_path(**expected)
 
@@ -9339,11 +9485,11 @@ def test_parse_intent_path():
 
 
 def test_page_path():
-    project = "squid"
-    location = "clam"
-    agent = "whelk"
-    flow = "octopus"
-    page = "oyster"
+    project = "winkle"
+    location = "nautilus"
+    agent = "scallop"
+    flow = "abalone"
+    page = "squid"
     expected = "projects/{project}/locations/{location}/agents/{agent}/flows/{flow}/pages/{page}".format(
         project=project,
         location=location,
@@ -9357,11 +9503,11 @@ def test_page_path():
 
 def test_parse_page_path():
     expected = {
-        "project": "nudibranch",
-        "location": "cuttlefish",
-        "agent": "mussel",
-        "flow": "winkle",
-        "page": "nautilus",
+        "project": "clam",
+        "location": "whelk",
+        "agent": "octopus",
+        "flow": "oyster",
+        "page": "nudibranch",
     }
     path = FlowsClient.page_path(**expected)
 
@@ -9371,11 +9517,11 @@ def test_parse_page_path():
 
 
 def test_transition_route_group_path():
-    project = "scallop"
-    location = "abalone"
-    agent = "squid"
-    flow = "clam"
-    transition_route_group = "whelk"
+    project = "cuttlefish"
+    location = "mussel"
+    agent = "winkle"
+    flow = "nautilus"
+    transition_route_group = "scallop"
     expected = "projects/{project}/locations/{location}/agents/{agent}/flows/{flow}/transitionRouteGroups/{transition_route_group}".format(
         project=project,
         location=location,
@@ -9391,11 +9537,11 @@ def test_transition_route_group_path():
 
 def test_parse_transition_route_group_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "agent": "nudibranch",
-        "flow": "cuttlefish",
-        "transition_route_group": "mussel",
+        "project": "abalone",
+        "location": "squid",
+        "agent": "clam",
+        "flow": "whelk",
+        "transition_route_group": "octopus",
     }
     path = FlowsClient.transition_route_group_path(**expected)
 
@@ -9405,10 +9551,10 @@ def test_parse_transition_route_group_path():
 
 
 def test_webhook_path():
-    project = "winkle"
-    location = "nautilus"
-    agent = "scallop"
-    webhook = "abalone"
+    project = "oyster"
+    location = "nudibranch"
+    agent = "cuttlefish"
+    webhook = "mussel"
     expected = "projects/{project}/locations/{location}/agents/{agent}/webhooks/{webhook}".format(
         project=project,
         location=location,
@@ -9421,10 +9567,10 @@ def test_webhook_path():
 
 def test_parse_webhook_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
-        "agent": "whelk",
-        "webhook": "octopus",
+        "project": "winkle",
+        "location": "nautilus",
+        "agent": "scallop",
+        "webhook": "abalone",
     }
     path = FlowsClient.webhook_path(**expected)
 
@@ -9434,7 +9580,7 @@ def test_parse_webhook_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "oyster"
+    billing_account = "squid"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -9444,7 +9590,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "nudibranch",
+        "billing_account": "clam",
     }
     path = FlowsClient.common_billing_account_path(**expected)
 
@@ -9454,7 +9600,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "cuttlefish"
+    folder = "whelk"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -9464,7 +9610,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "mussel",
+        "folder": "octopus",
     }
     path = FlowsClient.common_folder_path(**expected)
 
@@ -9474,7 +9620,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "winkle"
+    organization = "oyster"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -9484,7 +9630,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nautilus",
+        "organization": "nudibranch",
     }
     path = FlowsClient.common_organization_path(**expected)
 
@@ -9494,7 +9640,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "scallop"
+    project = "cuttlefish"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -9504,7 +9650,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "abalone",
+        "project": "mussel",
     }
     path = FlowsClient.common_project_path(**expected)
 
@@ -9514,8 +9660,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "squid"
-    location = "clam"
+    project = "winkle"
+    location = "nautilus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -9526,8 +9672,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
+        "project": "scallop",
+        "location": "abalone",
     }
     path = FlowsClient.common_location_path(**expected)
 

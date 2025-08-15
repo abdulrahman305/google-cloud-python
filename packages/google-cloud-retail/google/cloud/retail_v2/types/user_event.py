@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,9 +49,6 @@ class UserEvent(proto.Message):
                promotion pages viewed.
             -  ``detail-page-view``: Products detail page viewed.
             -  ``home-page-view``: Homepage viewed.
-            -  ``promotion-offered``: Promotion is offered to a user.
-            -  ``promotion-not-offered``: Promotion is not offered to a
-               user.
             -  ``purchase-complete``: User finishing a purchase.
             -  ``search``: Product search.
             -  ``shopping-cart-page-view``: User viewing a shopping
@@ -81,7 +78,7 @@ class UserEvent(proto.Message):
             length limit of 128 bytes. A session is an aggregation of an
             end user behavior in a time span.
 
-            A general guideline to populate the sesion_id:
+            A general guideline to populate the session_id:
 
             1. If user has no activity for 30 min, a new session_id
                should be assigned.

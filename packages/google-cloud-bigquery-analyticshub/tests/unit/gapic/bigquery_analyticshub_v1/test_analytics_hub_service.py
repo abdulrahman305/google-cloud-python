@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ try:
 except ImportError:  # pragma: NO COVER
     import mock
 
+import json
 import math
 
 from google.api_core import api_core_version
@@ -59,6 +60,7 @@ from google.iam.v1 import options_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
+from google.protobuf import duration_pb2  # type: ignore
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
@@ -71,7 +73,14 @@ from google.cloud.bigquery_analyticshub_v1.services.analytics_hub_service import
     pagers,
     transports,
 )
-from google.cloud.bigquery_analyticshub_v1.types import analyticshub
+from google.cloud.bigquery_analyticshub_v1.types import analyticshub, pubsub
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -344,6 +353,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         AnalyticsHubServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = AnalyticsHubServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = AnalyticsHubServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -2219,6 +2271,7 @@ def test_get_data_exchange(request_type, transport: str = "grpc"):
             listing_count=1410,
             icon=b"icon_blob",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            log_linked_dataset_query_user_email=True,
         )
         response = client.get_data_exchange(request)
 
@@ -2238,6 +2291,7 @@ def test_get_data_exchange(request_type, transport: str = "grpc"):
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 def test_get_data_exchange_non_empty_request_with_auto_populated_field():
@@ -2377,6 +2431,7 @@ async def test_get_data_exchange_async(
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         response = await client.get_data_exchange(request)
@@ -2397,6 +2452,7 @@ async def test_get_data_exchange_async(
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 @pytest.mark.asyncio
@@ -2586,6 +2642,7 @@ def test_create_data_exchange(request_type, transport: str = "grpc"):
             listing_count=1410,
             icon=b"icon_blob",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            log_linked_dataset_query_user_email=True,
         )
         response = client.create_data_exchange(request)
 
@@ -2605,6 +2662,7 @@ def test_create_data_exchange(request_type, transport: str = "grpc"):
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 def test_create_data_exchange_non_empty_request_with_auto_populated_field():
@@ -2748,6 +2806,7 @@ async def test_create_data_exchange_async(
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         response = await client.create_data_exchange(request)
@@ -2768,6 +2827,7 @@ async def test_create_data_exchange_async(
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 @pytest.mark.asyncio
@@ -2967,6 +3027,7 @@ def test_update_data_exchange(request_type, transport: str = "grpc"):
             listing_count=1410,
             icon=b"icon_blob",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            log_linked_dataset_query_user_email=True,
         )
         response = client.update_data_exchange(request)
 
@@ -2986,6 +3047,7 @@ def test_update_data_exchange(request_type, transport: str = "grpc"):
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 def test_update_data_exchange_non_empty_request_with_auto_populated_field():
@@ -3123,6 +3185,7 @@ async def test_update_data_exchange_async(
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         response = await client.update_data_exchange(request)
@@ -3143,6 +3206,7 @@ async def test_update_data_exchange_async(
     assert response.listing_count == 1410
     assert response.icon == b"icon_blob"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.log_linked_dataset_query_user_email is True
 
 
 @pytest.mark.asyncio
@@ -4190,6 +4254,9 @@ def test_get_listing(request_type, transport: str = "grpc"):
             categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
             request_access="request_access_value",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+            log_linked_dataset_query_user_email=True,
+            allow_only_metadata_sharing=True,
         )
         response = client.get_listing(request)
 
@@ -4211,6 +4278,9 @@ def test_get_listing(request_type, transport: str = "grpc"):
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 def test_get_listing_non_empty_request_with_auto_populated_field():
@@ -4346,6 +4416,9 @@ async def test_get_listing_async(
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         response = await client.get_listing(request)
@@ -4368,6 +4441,9 @@ async def test_get_listing_async(
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 @pytest.mark.asyncio
@@ -4549,6 +4625,9 @@ def test_create_listing(request_type, transport: str = "grpc"):
             categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
             request_access="request_access_value",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+            log_linked_dataset_query_user_email=True,
+            allow_only_metadata_sharing=True,
         )
         response = client.create_listing(request)
 
@@ -4570,6 +4649,9 @@ def test_create_listing(request_type, transport: str = "grpc"):
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 def test_create_listing_non_empty_request_with_auto_populated_field():
@@ -4707,6 +4789,9 @@ async def test_create_listing_async(
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         response = await client.create_listing(request)
@@ -4729,6 +4814,9 @@ async def test_create_listing_async(
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 @pytest.mark.asyncio
@@ -4944,6 +5032,9 @@ def test_update_listing(request_type, transport: str = "grpc"):
             categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
             request_access="request_access_value",
             discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+            resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+            log_linked_dataset_query_user_email=True,
+            allow_only_metadata_sharing=True,
         )
         response = client.update_listing(request)
 
@@ -4965,6 +5056,9 @@ def test_update_listing(request_type, transport: str = "grpc"):
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 def test_update_listing_non_empty_request_with_auto_populated_field():
@@ -5096,6 +5190,9 @@ async def test_update_listing_async(
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         response = await client.update_listing(request)
@@ -5118,6 +5215,9 @@ async def test_update_listing_async(
     assert response.categories == [analyticshub.Listing.Category.CATEGORY_OTHERS]
     assert response.request_access == "request_access_value"
     assert response.discovery_type == analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
+    assert response.allow_only_metadata_sharing is True
 
 
 @pytest.mark.asyncio
@@ -6671,6 +6771,8 @@ def test_get_subscription(request_type, transport: str = "grpc"):
             organization_display_name="organization_display_name_value",
             state=analyticshub.Subscription.State.STATE_ACTIVE,
             subscriber_contact="subscriber_contact_value",
+            resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+            log_linked_dataset_query_user_email=True,
             listing="listing_value",
         )
         response = client.get_subscription(request)
@@ -6688,6 +6790,8 @@ def test_get_subscription(request_type, transport: str = "grpc"):
     assert response.organization_display_name == "organization_display_name_value"
     assert response.state == analyticshub.Subscription.State.STATE_ACTIVE
     assert response.subscriber_contact == "subscriber_contact_value"
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
 
 
 def test_get_subscription_non_empty_request_with_auto_populated_field():
@@ -6820,6 +6924,8 @@ async def test_get_subscription_async(
                 organization_display_name="organization_display_name_value",
                 state=analyticshub.Subscription.State.STATE_ACTIVE,
                 subscriber_contact="subscriber_contact_value",
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
             )
         )
         response = await client.get_subscription(request)
@@ -6837,6 +6943,8 @@ async def test_get_subscription_async(
     assert response.organization_display_name == "organization_display_name_value"
     assert response.state == analyticshub.Subscription.State.STATE_ACTIVE
     assert response.subscriber_contact == "subscriber_contact_value"
+    assert response.resource_type == analyticshub.SharedResourceType.BIGQUERY_DATASET
+    assert response.log_linked_dataset_query_user_email is True
 
 
 @pytest.mark.asyncio
@@ -10250,6 +10358,7 @@ async def test_get_data_exchange_empty_call_grpc_asyncio():
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         await client.get_data_exchange(request=None)
@@ -10286,6 +10395,7 @@ async def test_create_data_exchange_empty_call_grpc_asyncio():
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         await client.create_data_exchange(request=None)
@@ -10322,6 +10432,7 @@ async def test_update_data_exchange_empty_call_grpc_asyncio():
                 listing_count=1410,
                 icon=b"icon_blob",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                log_linked_dataset_query_user_email=True,
             )
         )
         await client.update_data_exchange(request=None)
@@ -10410,6 +10521,9 @@ async def test_get_listing_empty_call_grpc_asyncio():
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         await client.get_listing(request=None)
@@ -10446,6 +10560,9 @@ async def test_create_listing_empty_call_grpc_asyncio():
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         await client.create_listing(request=None)
@@ -10482,6 +10599,9 @@ async def test_update_listing_empty_call_grpc_asyncio():
                 categories=[analyticshub.Listing.Category.CATEGORY_OTHERS],
                 request_access="request_access_value",
                 discovery_type=analyticshub.DiscoveryType.DISCOVERY_TYPE_PRIVATE,
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
+                allow_only_metadata_sharing=True,
             )
         )
         await client.update_listing(request=None)
@@ -10617,6 +10737,8 @@ async def test_get_subscription_empty_call_grpc_asyncio():
                 organization_display_name="organization_display_name_value",
                 state=analyticshub.Subscription.State.STATE_ACTIVE,
                 subscriber_contact="subscriber_contact_value",
+                resource_type=analyticshub.SharedResourceType.BIGQUERY_DATASET,
+                log_linked_dataset_query_user_email=True,
             )
         )
         await client.get_subscription(request=None)
@@ -11363,6 +11485,75 @@ def test_parse_listing_path():
     assert expected == actual
 
 
+def test_managed_service_path():
+    service = "cuttlefish"
+    expected = "services/{service}".format(
+        service=service,
+    )
+    actual = AnalyticsHubServiceClient.managed_service_path(service)
+    assert expected == actual
+
+
+def test_parse_managed_service_path():
+    expected = {
+        "service": "mussel",
+    }
+    path = AnalyticsHubServiceClient.managed_service_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AnalyticsHubServiceClient.parse_managed_service_path(path)
+    assert expected == actual
+
+
+def test_order_path():
+    project = "winkle"
+    order = "nautilus"
+    expected = "projects/{project}/orders/{order}".format(
+        project=project,
+        order=order,
+    )
+    actual = AnalyticsHubServiceClient.order_path(project, order)
+    assert expected == actual
+
+
+def test_parse_order_path():
+    expected = {
+        "project": "scallop",
+        "order": "abalone",
+    }
+    path = AnalyticsHubServiceClient.order_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AnalyticsHubServiceClient.parse_order_path(path)
+    assert expected == actual
+
+
+def test_routine_path():
+    project = "squid"
+    dataset = "clam"
+    routine = "whelk"
+    expected = "projects/{project}/datasets/{dataset}/routines/{routine}".format(
+        project=project,
+        dataset=dataset,
+        routine=routine,
+    )
+    actual = AnalyticsHubServiceClient.routine_path(project, dataset, routine)
+    assert expected == actual
+
+
+def test_parse_routine_path():
+    expected = {
+        "project": "octopus",
+        "dataset": "oyster",
+        "routine": "nudibranch",
+    }
+    path = AnalyticsHubServiceClient.routine_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AnalyticsHubServiceClient.parse_routine_path(path)
+    assert expected == actual
+
+
 def test_subscription_path():
     project = "cuttlefish"
     location = "mussel"
@@ -11419,8 +11610,31 @@ def test_parse_table_path():
     assert expected == actual
 
 
+def test_topic_path():
+    project = "cuttlefish"
+    topic = "mussel"
+    expected = "projects/{project}/topics/{topic}".format(
+        project=project,
+        topic=topic,
+    )
+    actual = AnalyticsHubServiceClient.topic_path(project, topic)
+    assert expected == actual
+
+
+def test_parse_topic_path():
+    expected = {
+        "project": "winkle",
+        "topic": "nautilus",
+    }
+    path = AnalyticsHubServiceClient.topic_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = AnalyticsHubServiceClient.parse_topic_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "cuttlefish"
+    billing_account = "scallop"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -11430,7 +11644,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "mussel",
+        "billing_account": "abalone",
     }
     path = AnalyticsHubServiceClient.common_billing_account_path(**expected)
 
@@ -11440,7 +11654,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "winkle"
+    folder = "squid"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -11450,7 +11664,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nautilus",
+        "folder": "clam",
     }
     path = AnalyticsHubServiceClient.common_folder_path(**expected)
 
@@ -11460,7 +11674,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "scallop"
+    organization = "whelk"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -11470,7 +11684,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "abalone",
+        "organization": "octopus",
     }
     path = AnalyticsHubServiceClient.common_organization_path(**expected)
 
@@ -11480,7 +11694,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "squid"
+    project = "oyster"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -11490,7 +11704,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "clam",
+        "project": "nudibranch",
     }
     path = AnalyticsHubServiceClient.common_project_path(**expected)
 
@@ -11500,8 +11714,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "whelk"
-    location = "octopus"
+    project = "cuttlefish"
+    location = "mussel"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -11512,8 +11726,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "oyster",
-        "location": "nudibranch",
+        "project": "winkle",
+        "location": "nautilus",
     }
     path = AnalyticsHubServiceClient.common_location_path(**expected)
 

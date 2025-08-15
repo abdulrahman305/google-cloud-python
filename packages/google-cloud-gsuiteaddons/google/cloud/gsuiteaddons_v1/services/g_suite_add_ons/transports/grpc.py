@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,12 +70,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.gsuiteaddons.v1.GSuiteAddOns",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -112,36 +111,36 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class GSuiteAddOnsGrpcTransport(GSuiteAddOnsTransport):
     """gRPC backend transport for GSuiteAddOns.
 
-    A service for managing Google Workspace Add-ons deployments.
+    A service for managing Google Workspace add-ons deployments.
 
-    A Google Workspace Add-on is a third-party embedded component
+    A Google Workspace add-on is a third-party embedded component
     that can be installed in Google Workspace Applications like
     Gmail, Calendar, Drive, and the Google Docs, Sheets, and Slides
-    editors. Google Workspace Add-ons can display UI cards, receive
+    editors. Google Workspace add-ons can display UI cards, receive
     contextual information from the host application, and perform
     actions in the host application (See:
 
     https://developers.google.com/gsuite/add-ons/overview for more
     information).
 
-    A Google Workspace Add-on deployment resource specifies metadata
+    A Google Workspace add-on deployment resource specifies metadata
     about the add-on, including a specification of the entry points
     in the host application that trigger add-on executions (see:
 
     https://developers.google.com/gsuite/add-ons/concepts/gsuite-manifests).
-    Add-on deployments defined via the Google Workspace Add-ons API
+    Add-on deployments defined via the Google Workspace add-ons API
     define their entrypoints using HTTPS URLs (See:
 
     https://developers.google.com/gsuite/add-ons/guides/alternate-runtimes),
 
-    A Google Workspace Add-on deployment can be installed in
+    A Google Workspace add-on deployment can be installed in
     developer mode, which allows an add-on developer to test the
     experience an end-user would see when installing and running the
     add-on in their G Suite applications.  When running in developer
     mode, more detailed error messages are exposed in the add-on UI
     to aid in debugging.
 
-    A Google Workspace Add-on deployment can be published to Google
+    A Google Workspace add-on deployment can be published to Google
     Workspace Marketplace, which allows other Google Workspace users
     to discover and install the add-on.  See:
 

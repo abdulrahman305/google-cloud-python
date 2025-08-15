@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.workflows_v1 import gapic_version as package_version
 
@@ -85,6 +86,10 @@ class WorkflowsAsyncClient:
 
     crypto_key_path = staticmethod(WorkflowsClient.crypto_key_path)
     parse_crypto_key_path = staticmethod(WorkflowsClient.parse_crypto_key_path)
+    crypto_key_version_path = staticmethod(WorkflowsClient.crypto_key_version_path)
+    parse_crypto_key_version_path = staticmethod(
+        WorkflowsClient.parse_crypto_key_version_path
+    )
     workflow_path = staticmethod(WorkflowsClient.workflow_path)
     parse_workflow_path = staticmethod(WorkflowsClient.parse_workflow_path)
     common_billing_account_path = staticmethod(
@@ -367,7 +372,10 @@ class WorkflowsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -489,7 +497,10 @@ class WorkflowsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -637,7 +648,10 @@ class WorkflowsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, workflow, workflow_id])
+        flattened_params = [parent, workflow, workflow_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -775,7 +789,10 @@ class WorkflowsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -914,7 +931,10 @@ class WorkflowsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([workflow, update_mask])
+        flattened_params = [workflow, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -964,6 +984,109 @@ class WorkflowsAsyncClient:
             self._client._transport.operations_client,
             workflows.Workflow,
             metadata_type=workflows.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def list_workflow_revisions(
+        self,
+        request: Optional[Union[workflows.ListWorkflowRevisionsRequest, dict]] = None,
+        *,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListWorkflowRevisionsAsyncPager:
+        r"""Lists revisions for a given workflow.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import workflows_v1
+
+            async def sample_list_workflow_revisions():
+                # Create a client
+                client = workflows_v1.WorkflowsAsyncClient()
+
+                # Initialize request argument(s)
+                request = workflows_v1.ListWorkflowRevisionsRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                page_result = client.list_workflow_revisions(request=request)
+
+                # Handle the response
+                async for response in page_result:
+                    print(response)
+
+        Args:
+            request (Optional[Union[google.cloud.workflows_v1.types.ListWorkflowRevisionsRequest, dict]]):
+                The request object. Request for the
+                [ListWorkflowRevisions][google.cloud.workflows.v1.Workflows.ListWorkflowRevisions]
+                method.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.workflows_v1.services.workflows.pagers.ListWorkflowRevisionsAsyncPager:
+                Response for the
+                   [ListWorkflowRevisions][google.cloud.workflows.v1.Workflows.ListWorkflowRevisions]
+                   method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, workflows.ListWorkflowRevisionsRequest):
+            request = workflows.ListWorkflowRevisionsRequest(request)
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.list_workflow_revisions
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__aiter__` convenience method.
+        response = pagers.ListWorkflowRevisionsAsyncPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
         )
 
         # Done; return the response.
@@ -1255,6 +1378,9 @@ class WorkflowsAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("WorkflowsAsyncClient",)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ __protobuf__ = proto.module(
     package="google.cloud.netapp.v1",
     manifest={
         "ServiceLevel",
+        "FlexPerformance",
         "EncryptionType",
+        "DirectoryServiceType",
         "LocationMetadata",
     },
 )
@@ -51,6 +53,22 @@ class ServiceLevel(proto.Enum):
     FLEX = 4
 
 
+class FlexPerformance(proto.Enum):
+    r"""Flex Storage Pool performance.
+
+    Values:
+        FLEX_PERFORMANCE_UNSPECIFIED (0):
+            Unspecified flex performance.
+        FLEX_PERFORMANCE_DEFAULT (1):
+            Flex Storage Pool with default performance.
+        FLEX_PERFORMANCE_CUSTOM (2):
+            Flex Storage Pool with custom performance.
+    """
+    FLEX_PERFORMANCE_UNSPECIFIED = 0
+    FLEX_PERFORMANCE_DEFAULT = 1
+    FLEX_PERFORMANCE_CUSTOM = 2
+
+
 class EncryptionType(proto.Enum):
     r"""The volume encryption key source.
 
@@ -69,6 +87,20 @@ class EncryptionType(proto.Enum):
     CLOUD_KMS = 2
 
 
+class DirectoryServiceType(proto.Enum):
+    r"""Type of directory service
+
+    Values:
+        DIRECTORY_SERVICE_TYPE_UNSPECIFIED (0):
+            Directory service type is not specified.
+        ACTIVE_DIRECTORY (1):
+            Active directory policy attached to the
+            storage pool.
+    """
+    DIRECTORY_SERVICE_TYPE_UNSPECIFIED = 0
+    ACTIVE_DIRECTORY = 1
+
+
 class LocationMetadata(proto.Message):
     r"""Metadata for a given
     [google.cloud.location.Location][google.cloud.location.Location].
@@ -77,12 +109,22 @@ class LocationMetadata(proto.Message):
         supported_service_levels (MutableSequence[google.cloud.netapp_v1.types.ServiceLevel]):
             Output only. Supported service levels in a
             location.
+        supported_flex_performance (MutableSequence[google.cloud.netapp_v1.types.FlexPerformance]):
+            Output only. Supported flex performance in a
+            location.
     """
 
     supported_service_levels: MutableSequence["ServiceLevel"] = proto.RepeatedField(
         proto.ENUM,
         number=1,
         enum="ServiceLevel",
+    )
+    supported_flex_performance: MutableSequence[
+        "FlexPerformance"
+    ] = proto.RepeatedField(
+        proto.ENUM,
+        number=2,
+        enum="FlexPerformance",
     )
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ __version__ = package_version.__version__
 
 
 from .services.catalog_service import CatalogServiceAsyncClient, CatalogServiceClient
+from .services.cmek_service import CmekServiceAsyncClient, CmekServiceClient
 from .services.content_service import ContentServiceAsyncClient, ContentServiceClient
 from .services.data_scan_service import (
     DataScanServiceAsyncClient,
@@ -76,6 +77,15 @@ from .types.catalog import (
     UpdateEntryGroupRequest,
     UpdateEntryRequest,
     UpdateEntryTypeRequest,
+)
+from .types.cmek import (
+    CreateEncryptionConfigRequest,
+    DeleteEncryptionConfigRequest,
+    EncryptionConfig,
+    GetEncryptionConfigRequest,
+    ListEncryptionConfigsRequest,
+    ListEncryptionConfigsResponse,
+    UpdateEncryptionConfigRequest,
 )
 from .types.content import (
     CreateContentRequest,
@@ -138,9 +148,11 @@ from .types.datascans import (
     UpdateDataScanRequest,
 )
 from .types.logs import (
+    BusinessGlossaryEvent,
     DataQualityScanRuleResult,
     DataScanEvent,
     DiscoveryEvent,
+    EntryLinkEvent,
     GovernanceEvent,
     JobEvent,
     SessionEvent,
@@ -216,6 +228,7 @@ from .types.tasks import Job, Task
 
 __all__ = (
     "CatalogServiceAsyncClient",
+    "CmekServiceAsyncClient",
     "ContentServiceAsyncClient",
     "DataScanServiceAsyncClient",
     "DataTaxonomyServiceAsyncClient",
@@ -227,9 +240,11 @@ __all__ = (
     "AspectType",
     "Asset",
     "AssetStatus",
+    "BusinessGlossaryEvent",
     "CancelJobRequest",
     "CancelMetadataJobRequest",
     "CatalogServiceClient",
+    "CmekServiceClient",
     "Content",
     "ContentServiceClient",
     "CreateAspectTypeRequest",
@@ -239,6 +254,7 @@ __all__ = (
     "CreateDataAttributeRequest",
     "CreateDataScanRequest",
     "CreateDataTaxonomyRequest",
+    "CreateEncryptionConfigRequest",
     "CreateEntityRequest",
     "CreateEntryGroupRequest",
     "CreateEntryRequest",
@@ -280,6 +296,7 @@ __all__ = (
     "DeleteDataAttributeRequest",
     "DeleteDataScanRequest",
     "DeleteDataTaxonomyRequest",
+    "DeleteEncryptionConfigRequest",
     "DeleteEntityRequest",
     "DeleteEntryGroupRequest",
     "DeleteEntryRequest",
@@ -290,9 +307,11 @@ __all__ = (
     "DeleteTaskRequest",
     "DeleteZoneRequest",
     "DiscoveryEvent",
+    "EncryptionConfig",
     "Entity",
     "Entry",
     "EntryGroup",
+    "EntryLinkEvent",
     "EntrySource",
     "EntryType",
     "EntryView",
@@ -307,6 +326,7 @@ __all__ = (
     "GetDataScanJobRequest",
     "GetDataScanRequest",
     "GetDataTaxonomyRequest",
+    "GetEncryptionConfigRequest",
     "GetEntityRequest",
     "GetEntryGroupRequest",
     "GetEntryRequest",
@@ -341,6 +361,8 @@ __all__ = (
     "ListDataScansResponse",
     "ListDataTaxonomiesRequest",
     "ListDataTaxonomiesResponse",
+    "ListEncryptionConfigsRequest",
+    "ListEncryptionConfigsResponse",
     "ListEntitiesRequest",
     "ListEntitiesResponse",
     "ListEntriesRequest",
@@ -398,6 +420,7 @@ __all__ = (
     "UpdateDataAttributeRequest",
     "UpdateDataScanRequest",
     "UpdateDataTaxonomyRequest",
+    "UpdateEncryptionConfigRequest",
     "UpdateEntityRequest",
     "UpdateEntryGroupRequest",
     "UpdateEntryRequest",

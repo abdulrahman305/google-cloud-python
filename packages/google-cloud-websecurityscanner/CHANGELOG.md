@@ -4,6 +4,36 @@
 
 [1]: https://pypi.org/project/google-cloud-websecurityscanner/#history
 
+## [1.17.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-websecurityscanner-v1.17.2...google-cloud-websecurityscanner-v1.17.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [1.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-websecurityscanner-v1.17.1...google-cloud-websecurityscanner-v1.17.2) (2025-04-12)
+
+
+### Documentation
+
+* group Security Command Center packages together on cloud.google.com ([#13715](https://github.com/googleapis/google-cloud-python/issues/13715)) ([3ce0eda](https://github.com/googleapis/google-cloud-python/commit/3ce0eda3fe7b86acf2e67102077c803bf743f613)), closes [#13714](https://github.com/googleapis/google-cloud-python/issues/13714)
+
+## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-websecurityscanner-v1.17.0...google-cloud-websecurityscanner-v1.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-websecurityscanner-v1.16.0...google-cloud-websecurityscanner-v1.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-websecurityscanner-v1.15.1...google-cloud-websecurityscanner-v1.16.0) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,14 @@ from .autofeedsettings import (
     GetAutofeedSettingsRequest,
     UpdateAutofeedSettingsRequest,
 )
+from .automaticimprovements import (
+    AutomaticImageImprovements,
+    AutomaticImprovements,
+    AutomaticItemUpdates,
+    AutomaticShippingImprovements,
+    GetAutomaticImprovementsRequest,
+    UpdateAutomaticImprovementsRequest,
+)
 from .businessidentity import (
     BusinessIdentity,
     GetBusinessIdentityRequest,
@@ -53,11 +61,26 @@ from .businessinfo import (
     GetBusinessInfoRequest,
     UpdateBusinessInfoRequest,
 )
+from .checkoutsettings import (
+    CheckoutSettings,
+    CreateCheckoutSettingsRequest,
+    DeleteCheckoutSettingsRequest,
+    GetCheckoutSettingsRequest,
+    UpdateCheckoutSettingsRequest,
+    UriSettings,
+)
 from .customerservice import CustomerService
 from .emailpreferences import (
     EmailPreferences,
     GetEmailPreferencesRequest,
     UpdateEmailPreferencesRequest,
+)
+from .gbpaccounts import (
+    GbpAccount,
+    LinkGbpAccountRequest,
+    LinkGbpAccountResponse,
+    ListGbpAccountsRequest,
+    ListGbpAccountsResponse,
 )
 from .homepage import (
     ClaimHomepageRequest,
@@ -66,11 +89,38 @@ from .homepage import (
     UnclaimHomepageRequest,
     UpdateHomepageRequest,
 )
+from .lfpproviders import (
+    FindLfpProvidersRequest,
+    FindLfpProvidersResponse,
+    LfpProvider,
+    LinkLfpProviderRequest,
+    LinkLfpProviderResponse,
+)
+from .omnichannelsettings import (
+    About,
+    CreateOmnichannelSettingRequest,
+    GetOmnichannelSettingRequest,
+    InStock,
+    InventoryVerification,
+    LfpLink,
+    ListOmnichannelSettingsRequest,
+    ListOmnichannelSettingsResponse,
+    OmnichannelSetting,
+    OnDisplayToOrder,
+    Pickup,
+    RequestInventoryVerificationRequest,
+    RequestInventoryVerificationResponse,
+    ReviewState,
+    UpdateOmnichannelSettingRequest,
+)
 from .online_return_policy import (
+    CreateOnlineReturnPolicyRequest,
+    DeleteOnlineReturnPolicyRequest,
     GetOnlineReturnPolicyRequest,
     ListOnlineReturnPoliciesRequest,
     ListOnlineReturnPoliciesResponse,
     OnlineReturnPolicy,
+    UpdateOnlineReturnPolicyRequest,
 )
 from .phoneverificationstate import PhoneVerificationState
 from .programs import (
@@ -161,25 +211,65 @@ __all__ = (
     "AutofeedSettings",
     "GetAutofeedSettingsRequest",
     "UpdateAutofeedSettingsRequest",
+    "AutomaticImageImprovements",
+    "AutomaticImprovements",
+    "AutomaticItemUpdates",
+    "AutomaticShippingImprovements",
+    "GetAutomaticImprovementsRequest",
+    "UpdateAutomaticImprovementsRequest",
     "BusinessIdentity",
     "GetBusinessIdentityRequest",
     "UpdateBusinessIdentityRequest",
     "BusinessInfo",
     "GetBusinessInfoRequest",
     "UpdateBusinessInfoRequest",
+    "CheckoutSettings",
+    "CreateCheckoutSettingsRequest",
+    "DeleteCheckoutSettingsRequest",
+    "GetCheckoutSettingsRequest",
+    "UpdateCheckoutSettingsRequest",
+    "UriSettings",
     "CustomerService",
     "EmailPreferences",
     "GetEmailPreferencesRequest",
     "UpdateEmailPreferencesRequest",
+    "GbpAccount",
+    "LinkGbpAccountRequest",
+    "LinkGbpAccountResponse",
+    "ListGbpAccountsRequest",
+    "ListGbpAccountsResponse",
     "ClaimHomepageRequest",
     "GetHomepageRequest",
     "Homepage",
     "UnclaimHomepageRequest",
     "UpdateHomepageRequest",
+    "FindLfpProvidersRequest",
+    "FindLfpProvidersResponse",
+    "LfpProvider",
+    "LinkLfpProviderRequest",
+    "LinkLfpProviderResponse",
+    "About",
+    "CreateOmnichannelSettingRequest",
+    "GetOmnichannelSettingRequest",
+    "InStock",
+    "InventoryVerification",
+    "LfpLink",
+    "ListOmnichannelSettingsRequest",
+    "ListOmnichannelSettingsResponse",
+    "OmnichannelSetting",
+    "OnDisplayToOrder",
+    "Pickup",
+    "RequestInventoryVerificationRequest",
+    "RequestInventoryVerificationResponse",
+    "ReviewState",
+    "UpdateOmnichannelSettingRequest",
+    "CreateOnlineReturnPolicyRequest",
+    "DeleteOnlineReturnPolicyRequest",
     "GetOnlineReturnPolicyRequest",
     "ListOnlineReturnPoliciesRequest",
     "ListOnlineReturnPoliciesResponse",
     "OnlineReturnPolicy",
+    "UpdateOnlineReturnPolicyRequest",
     "PhoneVerificationState",
     "DisableProgramRequest",
     "EnableProgramRequest",

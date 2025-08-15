@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,12 +71,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.privacy.dlp.v2.DlpService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -382,6 +381,10 @@ class DlpServiceGrpcTransport(DlpServiceTransport):
         detectors to run. By default this may be all types, but
         may change over time as detectors are updated.
 
+        Only the first frame of each multiframe image is
+        redacted. Metadata and other frames are omitted in the
+        response.
+
         Returns:
             Callable[[~.RedactImageRequest],
                     ~.RedactImageResponse]:
@@ -470,7 +473,7 @@ class DlpServiceGrpcTransport(DlpServiceTransport):
         r"""Return a callable for the list info types method over gRPC.
 
         Returns a list of the sensitive information types
-        that DLP API supports. See
+        that the DLP API supports. See
         https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference
         to learn more.
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,12 +70,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.support.v2.CommentService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -329,8 +328,7 @@ class CommentServiceGrpcTransport(CommentServiceTransport):
     ]:
         r"""Return a callable for the list comments method over gRPC.
 
-        Retrieve all Comments associated with the Case
-        object.
+        List all the comments associated with a case.
 
         Returns:
             Callable[[~.ListCommentsRequest],
@@ -356,9 +354,9 @@ class CommentServiceGrpcTransport(CommentServiceTransport):
     ) -> Callable[[comment_service.CreateCommentRequest], gcs_comment.Comment]:
         r"""Return a callable for the create comment method over gRPC.
 
-        Add a new comment to the specified Case.
-        The comment object must have the following fields set:
-        body.
+        Add a new comment to a case.
+
+        The comment must have the following fields set: ``body``.
 
         Returns:
             Callable[[~.CreateCommentRequest],

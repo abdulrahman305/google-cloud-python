@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,12 +73,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.dataform.v1beta1.Dataform",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -335,6 +334,10 @@ class DataformGrpcTransport(DataformTransport):
 
         Lists Repositories in a given project and location.
 
+        **Note:** *This method can return repositories not shown in
+        the*\ `Dataform
+        UI <https://console.cloud.google.com/bigquery/dataform>`__.
+
         Returns:
             Callable[[~.ListRepositoriesRequest],
                     ~.ListRepositoriesResponse]:
@@ -414,6 +417,12 @@ class DataformGrpcTransport(DataformTransport):
 
         Updates a single Repository.
 
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
         Returns:
             Callable[[~.UpdateRepositoryRequest],
                     ~.Repository]:
@@ -461,7 +470,10 @@ class DataformGrpcTransport(DataformTransport):
     @property
     def commit_repository_changes(
         self,
-    ) -> Callable[[dataform.CommitRepositoryChangesRequest], empty_pb2.Empty]:
+    ) -> Callable[
+        [dataform.CommitRepositoryChangesRequest],
+        dataform.CommitRepositoryChangesResponse,
+    ]:
         r"""Return a callable for the commit repository changes method over gRPC.
 
         Applies a Git commit to a Repository. The Repository must not
@@ -469,7 +481,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.CommitRepositoryChangesRequest],
-                    ~.Empty]:
+                    ~.CommitRepositoryChangesResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -481,7 +493,7 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["commit_repository_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CommitRepositoryChanges",
                 request_serializer=dataform.CommitRepositoryChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CommitRepositoryChangesResponse.deserialize,
             )
         return self._stubs["commit_repository_changes"]
 
@@ -775,7 +787,7 @@ class DataformGrpcTransport(DataformTransport):
     @property
     def pull_git_commits(
         self,
-    ) -> Callable[[dataform.PullGitCommitsRequest], empty_pb2.Empty]:
+    ) -> Callable[[dataform.PullGitCommitsRequest], dataform.PullGitCommitsResponse]:
         r"""Return a callable for the pull git commits method over gRPC.
 
         Pulls Git commits from the Repository's remote into a
@@ -783,7 +795,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.PullGitCommitsRequest],
-                    ~.Empty]:
+                    ~.PullGitCommitsResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -795,14 +807,14 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["pull_git_commits"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/PullGitCommits",
                 request_serializer=dataform.PullGitCommitsRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.PullGitCommitsResponse.deserialize,
             )
         return self._stubs["pull_git_commits"]
 
     @property
     def push_git_commits(
         self,
-    ) -> Callable[[dataform.PushGitCommitsRequest], empty_pb2.Empty]:
+    ) -> Callable[[dataform.PushGitCommitsRequest], dataform.PushGitCommitsResponse]:
         r"""Return a callable for the push git commits method over gRPC.
 
         Pushes Git commits from a Workspace to the
@@ -810,7 +822,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.PushGitCommitsRequest],
-                    ~.Empty]:
+                    ~.PushGitCommitsResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -822,7 +834,7 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["push_git_commits"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/PushGitCommits",
                 request_serializer=dataform.PushGitCommitsRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.PushGitCommitsResponse.deserialize,
             )
         return self._stubs["push_git_commits"]
 
@@ -885,7 +897,10 @@ class DataformGrpcTransport(DataformTransport):
     @property
     def commit_workspace_changes(
         self,
-    ) -> Callable[[dataform.CommitWorkspaceChangesRequest], empty_pb2.Empty]:
+    ) -> Callable[
+        [dataform.CommitWorkspaceChangesRequest],
+        dataform.CommitWorkspaceChangesResponse,
+    ]:
         r"""Return a callable for the commit workspace changes method over gRPC.
 
         Applies a Git commit for uncommitted files in a
@@ -893,7 +908,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.CommitWorkspaceChangesRequest],
-                    ~.Empty]:
+                    ~.CommitWorkspaceChangesResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -905,14 +920,16 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["commit_workspace_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CommitWorkspaceChanges",
                 request_serializer=dataform.CommitWorkspaceChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CommitWorkspaceChangesResponse.deserialize,
             )
         return self._stubs["commit_workspace_changes"]
 
     @property
     def reset_workspace_changes(
         self,
-    ) -> Callable[[dataform.ResetWorkspaceChangesRequest], empty_pb2.Empty]:
+    ) -> Callable[
+        [dataform.ResetWorkspaceChangesRequest], dataform.ResetWorkspaceChangesResponse
+    ]:
         r"""Return a callable for the reset workspace changes method over gRPC.
 
         Performs a Git reset for uncommitted files in a
@@ -920,7 +937,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.ResetWorkspaceChangesRequest],
-                    ~.Empty]:
+                    ~.ResetWorkspaceChangesResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -932,7 +949,7 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["reset_workspace_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/ResetWorkspaceChanges",
                 request_serializer=dataform.ResetWorkspaceChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.ResetWorkspaceChangesResponse.deserialize,
             )
         return self._stubs["reset_workspace_changes"]
 
@@ -993,6 +1010,33 @@ class DataformGrpcTransport(DataformTransport):
         return self._stubs["query_directory_contents"]
 
     @property
+    def search_files(
+        self,
+    ) -> Callable[[dataform.SearchFilesRequest], dataform.SearchFilesResponse]:
+        r"""Return a callable for the search files method over gRPC.
+
+        Finds the contents of a given Workspace directory by
+        filter.
+
+        Returns:
+            Callable[[~.SearchFilesRequest],
+                    ~.SearchFilesResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "search_files" not in self._stubs:
+            self._stubs["search_files"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/SearchFiles",
+                request_serializer=dataform.SearchFilesRequest.serialize,
+                response_deserializer=dataform.SearchFilesResponse.deserialize,
+            )
+        return self._stubs["search_files"]
+
+    @property
     def make_directory(
         self,
     ) -> Callable[[dataform.MakeDirectoryRequest], dataform.MakeDirectoryResponse]:
@@ -1021,7 +1065,7 @@ class DataformGrpcTransport(DataformTransport):
     @property
     def remove_directory(
         self,
-    ) -> Callable[[dataform.RemoveDirectoryRequest], empty_pb2.Empty]:
+    ) -> Callable[[dataform.RemoveDirectoryRequest], dataform.RemoveDirectoryResponse]:
         r"""Return a callable for the remove directory method over gRPC.
 
         Deletes a directory (inside a Workspace) and all of
@@ -1029,7 +1073,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.RemoveDirectoryRequest],
-                    ~.Empty]:
+                    ~.RemoveDirectoryResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1041,7 +1085,7 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["remove_directory"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/RemoveDirectory",
                 request_serializer=dataform.RemoveDirectoryRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.RemoveDirectoryResponse.deserialize,
             )
         return self._stubs["remove_directory"]
 
@@ -1099,14 +1143,16 @@ class DataformGrpcTransport(DataformTransport):
         return self._stubs["read_file"]
 
     @property
-    def remove_file(self) -> Callable[[dataform.RemoveFileRequest], empty_pb2.Empty]:
+    def remove_file(
+        self,
+    ) -> Callable[[dataform.RemoveFileRequest], dataform.RemoveFileResponse]:
         r"""Return a callable for the remove file method over gRPC.
 
         Deletes a file (inside a Workspace).
 
         Returns:
             Callable[[~.RemoveFileRequest],
-                    ~.Empty]:
+                    ~.RemoveFileResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1118,7 +1164,7 @@ class DataformGrpcTransport(DataformTransport):
             self._stubs["remove_file"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/RemoveFile",
                 request_serializer=dataform.RemoveFileRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.RemoveFileResponse.deserialize,
             )
         return self._stubs["remove_file"]
 
@@ -1261,6 +1307,12 @@ class DataformGrpcTransport(DataformTransport):
         r"""Return a callable for the update release config method over gRPC.
 
         Updates a single ReleaseConfig.
+
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
 
         Returns:
             Callable[[~.UpdateReleaseConfigRequest],
@@ -1511,6 +1563,12 @@ class DataformGrpcTransport(DataformTransport):
 
         Updates a single WorkflowConfig.
 
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
         Returns:
             Callable[[~.UpdateWorkflowConfigRequest],
                     ~.WorkflowConfig]:
@@ -1672,7 +1730,10 @@ class DataformGrpcTransport(DataformTransport):
     @property
     def cancel_workflow_invocation(
         self,
-    ) -> Callable[[dataform.CancelWorkflowInvocationRequest], empty_pb2.Empty]:
+    ) -> Callable[
+        [dataform.CancelWorkflowInvocationRequest],
+        dataform.CancelWorkflowInvocationResponse,
+    ]:
         r"""Return a callable for the cancel workflow invocation method over gRPC.
 
         Requests cancellation of a running
@@ -1680,7 +1741,7 @@ class DataformGrpcTransport(DataformTransport):
 
         Returns:
             Callable[[~.CancelWorkflowInvocationRequest],
-                    ~.Empty]:
+                    ~.CancelWorkflowInvocationResponse]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1694,7 +1755,7 @@ class DataformGrpcTransport(DataformTransport):
             ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CancelWorkflowInvocation",
                 request_serializer=dataform.CancelWorkflowInvocationRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CancelWorkflowInvocationResponse.deserialize,
             )
         return self._stubs["cancel_workflow_invocation"]
 
@@ -1730,6 +1791,62 @@ class DataformGrpcTransport(DataformTransport):
                 response_deserializer=dataform.QueryWorkflowInvocationActionsResponse.deserialize,
             )
         return self._stubs["query_workflow_invocation_actions"]
+
+    @property
+    def get_config(self) -> Callable[[dataform.GetConfigRequest], dataform.Config]:
+        r"""Return a callable for the get config method over gRPC.
+
+        Get default config for a given project and location.
+
+        Returns:
+            Callable[[~.GetConfigRequest],
+                    ~.Config]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_config" not in self._stubs:
+            self._stubs["get_config"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/GetConfig",
+                request_serializer=dataform.GetConfigRequest.serialize,
+                response_deserializer=dataform.Config.deserialize,
+            )
+        return self._stubs["get_config"]
+
+    @property
+    def update_config(
+        self,
+    ) -> Callable[[dataform.UpdateConfigRequest], dataform.Config]:
+        r"""Return a callable for the update config method over gRPC.
+
+        Update default config for a given project and location.
+
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
+        Returns:
+            Callable[[~.UpdateConfigRequest],
+                    ~.Config]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "update_config" not in self._stubs:
+            self._stubs["update_config"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/UpdateConfig",
+                request_serializer=dataform.UpdateConfigRequest.serialize,
+                response_deserializer=dataform.Config.deserialize,
+            )
+        return self._stubs["update_config"]
 
     def close(self):
         self._logged_channel.close()

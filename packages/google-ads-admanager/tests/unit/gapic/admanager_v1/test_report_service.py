@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,7 +72,14 @@ from google.ads.admanager_v1.services.report_service import (
     pagers,
     transports,
 )
-from google.ads.admanager_v1.types import report_service
+from google.ads.admanager_v1.types import report_messages, report_service
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -321,6 +328,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ReportServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = ReportServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = ReportServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -980,7 +1030,7 @@ def test_get_report_rest_required_fields(request_type=report_service.GetReportRe
     request = request_type(**request_init)
 
     # Designate an appropriate value for the returned response.
-    return_value = report_service.Report()
+    return_value = report_messages.Report()
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(Session, "request") as req:
         # We need to mock transcode() because providing default values
@@ -1001,7 +1051,7 @@ def test_get_report_rest_required_fields(request_type=report_service.GetReportRe
             response_value.status_code = 200
 
             # Convert return value to protobuf type
-            return_value = report_service.Report.pb(return_value)
+            return_value = report_messages.Report.pb(return_value)
             json_return_value = json_format.MessageToJson(return_value)
 
             response_value._content = json_return_value.encode("UTF-8")
@@ -1033,7 +1083,7 @@ def test_get_report_rest_flattened():
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report()
+        return_value = report_messages.Report()
 
         # get arguments that satisfy an http rule for this method
         sample_request = {"name": "networks/sample1/reports/sample2"}
@@ -1048,7 +1098,7 @@ def test_get_report_rest_flattened():
         response_value = Response()
         response_value.status_code = 200
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -1291,9 +1341,9 @@ def test_list_reports_rest_pager(transport: str = "rest"):
         response = (
             report_service.ListReportsResponse(
                 reports=[
-                    report_service.Report(),
-                    report_service.Report(),
-                    report_service.Report(),
+                    report_messages.Report(),
+                    report_messages.Report(),
+                    report_messages.Report(),
                 ],
                 next_page_token="abc",
             ),
@@ -1303,14 +1353,14 @@ def test_list_reports_rest_pager(transport: str = "rest"):
             ),
             report_service.ListReportsResponse(
                 reports=[
-                    report_service.Report(),
+                    report_messages.Report(),
                 ],
                 next_page_token="ghi",
             ),
             report_service.ListReportsResponse(
                 reports=[
-                    report_service.Report(),
-                    report_service.Report(),
+                    report_messages.Report(),
+                    report_messages.Report(),
                 ],
             ),
         )
@@ -1333,7 +1383,7 @@ def test_list_reports_rest_pager(transport: str = "rest"):
 
         results = list(pager)
         assert len(results) == 6
-        assert all(isinstance(i, report_service.Report) for i in results)
+        assert all(isinstance(i, report_messages.Report) for i in results)
 
         pages = list(client.list_reports(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
@@ -1416,7 +1466,7 @@ def test_create_report_rest_required_fields(
     request = request_type(**request_init)
 
     # Designate an appropriate value for the returned response.
-    return_value = report_service.Report()
+    return_value = report_messages.Report()
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(Session, "request") as req:
         # We need to mock transcode() because providing default values
@@ -1438,7 +1488,7 @@ def test_create_report_rest_required_fields(
             response_value.status_code = 200
 
             # Convert return value to protobuf type
-            return_value = report_service.Report.pb(return_value)
+            return_value = report_messages.Report.pb(return_value)
             json_return_value = json_format.MessageToJson(return_value)
 
             response_value._content = json_return_value.encode("UTF-8")
@@ -1478,7 +1528,7 @@ def test_create_report_rest_flattened():
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report()
+        return_value = report_messages.Report()
 
         # get arguments that satisfy an http rule for this method
         sample_request = {"parent": "networks/sample1"}
@@ -1486,7 +1536,7 @@ def test_create_report_rest_flattened():
         # get truthy value for each flattened field
         mock_args = dict(
             parent="parent_value",
-            report=report_service.Report(name="name_value"),
+            report=report_messages.Report(name="name_value"),
         )
         mock_args.update(sample_request)
 
@@ -1494,7 +1544,7 @@ def test_create_report_rest_flattened():
         response_value = Response()
         response_value.status_code = 200
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -1523,7 +1573,7 @@ def test_create_report_rest_flattened_error(transport: str = "rest"):
         client.create_report(
             report_service.CreateReportRequest(),
             parent="parent_value",
-            report=report_service.Report(name="name_value"),
+            report=report_messages.Report(name="name_value"),
         )
 
 
@@ -1600,7 +1650,7 @@ def test_update_report_rest_required_fields(
     request = request_type(**request_init)
 
     # Designate an appropriate value for the returned response.
-    return_value = report_service.Report()
+    return_value = report_messages.Report()
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(Session, "request") as req:
         # We need to mock transcode() because providing default values
@@ -1622,7 +1672,7 @@ def test_update_report_rest_required_fields(
             response_value.status_code = 200
 
             # Convert return value to protobuf type
-            return_value = report_service.Report.pb(return_value)
+            return_value = report_messages.Report.pb(return_value)
             json_return_value = json_format.MessageToJson(return_value)
 
             response_value._content = json_return_value.encode("UTF-8")
@@ -1662,14 +1712,14 @@ def test_update_report_rest_flattened():
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report()
+        return_value = report_messages.Report()
 
         # get arguments that satisfy an http rule for this method
         sample_request = {"report": {"name": "networks/sample1/reports/sample2"}}
 
         # get truthy value for each flattened field
         mock_args = dict(
-            report=report_service.Report(name="name_value"),
+            report=report_messages.Report(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
         mock_args.update(sample_request)
@@ -1678,7 +1728,7 @@ def test_update_report_rest_flattened():
         response_value = Response()
         response_value.status_code = 200
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value._content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -1706,7 +1756,7 @@ def test_update_report_rest_flattened_error(transport: str = "rest"):
     with pytest.raises(ValueError):
         client.update_report(
             report_service.UpdateReportRequest(),
-            report=report_service.Report(name="name_value"),
+            report=report_messages.Report(name="name_value"),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
 
@@ -1998,9 +2048,9 @@ def test_fetch_report_result_rows_rest_pager(transport: str = "rest"):
         response = (
             report_service.FetchReportResultRowsResponse(
                 rows=[
-                    report_service.Report.DataTable.Row(),
-                    report_service.Report.DataTable.Row(),
-                    report_service.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
                 ],
                 next_page_token="abc",
             ),
@@ -2010,14 +2060,14 @@ def test_fetch_report_result_rows_rest_pager(transport: str = "rest"):
             ),
             report_service.FetchReportResultRowsResponse(
                 rows=[
-                    report_service.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
                 ],
                 next_page_token="ghi",
             ),
             report_service.FetchReportResultRowsResponse(
                 rows=[
-                    report_service.Report.DataTable.Row(),
-                    report_service.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
+                    report_messages.Report.DataTable.Row(),
                 ],
             ),
         )
@@ -2040,7 +2090,7 @@ def test_fetch_report_result_rows_rest_pager(transport: str = "rest"):
 
         results = list(pager)
         assert len(results) == 6
-        assert all(isinstance(i, report_service.Report.DataTable.Row) for i in results)
+        assert all(isinstance(i, report_messages.Report.DataTable.Row) for i in results)
 
         pages = list(client.fetch_report_result_rows(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
@@ -2171,10 +2221,10 @@ def test_get_report_rest_call_success(request_type):
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report(
+        return_value = report_messages.Report(
             name="name_value",
             report_id=968,
-            visibility=report_service.Report.Visibility.DRAFT,
+            visibility=report_messages.Report.Visibility.DRAFT,
             display_name="display_name_value",
             locale="locale_value",
         )
@@ -2184,7 +2234,7 @@ def test_get_report_rest_call_success(request_type):
         response_value.status_code = 200
 
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -2192,10 +2242,10 @@ def test_get_report_rest_call_success(request_type):
         response = client.get_report(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, report_service.Report)
+    assert isinstance(response, report_messages.Report)
     assert response.name == "name_value"
     assert response.report_id == 968
-    assert response.visibility == report_service.Report.Visibility.DRAFT
+    assert response.visibility == report_messages.Report.Visibility.DRAFT
     assert response.display_name == "display_name_value"
     assert response.locale == "locale_value"
 
@@ -2217,10 +2267,13 @@ def test_get_report_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_get_report"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor, "post_get_report_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_get_report"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.GetReportRequest.pb(
             report_service.GetReportRequest()
         )
@@ -2234,7 +2287,7 @@ def test_get_report_rest_interceptors(null_interceptor):
         req.return_value = mock.Mock()
         req.return_value.status_code = 200
         req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
-        return_value = report_service.Report.to_json(report_service.Report())
+        return_value = report_messages.Report.to_json(report_messages.Report())
         req.return_value.content = return_value
 
         request = report_service.GetReportRequest()
@@ -2243,7 +2296,8 @@ def test_get_report_rest_interceptors(null_interceptor):
             ("cephalopod", "squid"),
         ]
         pre.return_value = request, metadata
-        post.return_value = report_service.Report()
+        post.return_value = report_messages.Report()
+        post_with_metadata.return_value = report_messages.Report(), metadata
 
         client.get_report(
             request,
@@ -2255,6 +2309,7 @@ def test_get_report_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_reports_rest_bad_request(request_type=report_service.ListReportsRequest):
@@ -2339,10 +2394,13 @@ def test_list_reports_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_list_reports"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor, "post_list_reports_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_list_reports"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.ListReportsRequest.pb(
             report_service.ListReportsRequest()
         )
@@ -2368,6 +2426,7 @@ def test_list_reports_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = report_service.ListReportsResponse()
+        post_with_metadata.return_value = report_service.ListReportsResponse(), metadata
 
         client.list_reports(
             request,
@@ -2379,6 +2438,7 @@ def test_list_reports_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_report_rest_bad_request(
@@ -2454,6 +2514,7 @@ def test_create_report_rest_call_success(request_type):
                     "or_filter": {},
                 }
             ],
+            "time_zone_source": 1,
             "time_zone": "time_zone_value",
             "currency_code": "currency_code_value",
             "date_range": {
@@ -2575,10 +2636,10 @@ def test_create_report_rest_call_success(request_type):
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report(
+        return_value = report_messages.Report(
             name="name_value",
             report_id=968,
-            visibility=report_service.Report.Visibility.DRAFT,
+            visibility=report_messages.Report.Visibility.DRAFT,
             display_name="display_name_value",
             locale="locale_value",
         )
@@ -2588,7 +2649,7 @@ def test_create_report_rest_call_success(request_type):
         response_value.status_code = 200
 
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -2596,10 +2657,10 @@ def test_create_report_rest_call_success(request_type):
         response = client.create_report(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, report_service.Report)
+    assert isinstance(response, report_messages.Report)
     assert response.name == "name_value"
     assert response.report_id == 968
-    assert response.visibility == report_service.Report.Visibility.DRAFT
+    assert response.visibility == report_messages.Report.Visibility.DRAFT
     assert response.display_name == "display_name_value"
     assert response.locale == "locale_value"
 
@@ -2621,10 +2682,13 @@ def test_create_report_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_create_report"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor, "post_create_report_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_create_report"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.CreateReportRequest.pb(
             report_service.CreateReportRequest()
         )
@@ -2638,7 +2702,7 @@ def test_create_report_rest_interceptors(null_interceptor):
         req.return_value = mock.Mock()
         req.return_value.status_code = 200
         req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
-        return_value = report_service.Report.to_json(report_service.Report())
+        return_value = report_messages.Report.to_json(report_messages.Report())
         req.return_value.content = return_value
 
         request = report_service.CreateReportRequest()
@@ -2647,7 +2711,8 @@ def test_create_report_rest_interceptors(null_interceptor):
             ("cephalopod", "squid"),
         ]
         pre.return_value = request, metadata
-        post.return_value = report_service.Report()
+        post.return_value = report_messages.Report()
+        post_with_metadata.return_value = report_messages.Report(), metadata
 
         client.create_report(
             request,
@@ -2659,6 +2724,7 @@ def test_create_report_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_report_rest_bad_request(
@@ -2734,6 +2800,7 @@ def test_update_report_rest_call_success(request_type):
                     "or_filter": {},
                 }
             ],
+            "time_zone_source": 1,
             "time_zone": "time_zone_value",
             "currency_code": "currency_code_value",
             "date_range": {
@@ -2855,10 +2922,10 @@ def test_update_report_rest_call_success(request_type):
     # Mock the http request call within the method and fake a response.
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
-        return_value = report_service.Report(
+        return_value = report_messages.Report(
             name="name_value",
             report_id=968,
-            visibility=report_service.Report.Visibility.DRAFT,
+            visibility=report_messages.Report.Visibility.DRAFT,
             display_name="display_name_value",
             locale="locale_value",
         )
@@ -2868,7 +2935,7 @@ def test_update_report_rest_call_success(request_type):
         response_value.status_code = 200
 
         # Convert return value to protobuf type
-        return_value = report_service.Report.pb(return_value)
+        return_value = report_messages.Report.pb(return_value)
         json_return_value = json_format.MessageToJson(return_value)
         response_value.content = json_return_value.encode("UTF-8")
         req.return_value = response_value
@@ -2876,10 +2943,10 @@ def test_update_report_rest_call_success(request_type):
         response = client.update_report(request)
 
     # Establish that the response is the type that we expect.
-    assert isinstance(response, report_service.Report)
+    assert isinstance(response, report_messages.Report)
     assert response.name == "name_value"
     assert response.report_id == 968
-    assert response.visibility == report_service.Report.Visibility.DRAFT
+    assert response.visibility == report_messages.Report.Visibility.DRAFT
     assert response.display_name == "display_name_value"
     assert response.locale == "locale_value"
 
@@ -2901,10 +2968,13 @@ def test_update_report_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_update_report"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor, "post_update_report_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_update_report"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.UpdateReportRequest.pb(
             report_service.UpdateReportRequest()
         )
@@ -2918,7 +2988,7 @@ def test_update_report_rest_interceptors(null_interceptor):
         req.return_value = mock.Mock()
         req.return_value.status_code = 200
         req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
-        return_value = report_service.Report.to_json(report_service.Report())
+        return_value = report_messages.Report.to_json(report_messages.Report())
         req.return_value.content = return_value
 
         request = report_service.UpdateReportRequest()
@@ -2927,7 +2997,8 @@ def test_update_report_rest_interceptors(null_interceptor):
             ("cephalopod", "squid"),
         ]
         pre.return_value = request, metadata
-        post.return_value = report_service.Report()
+        post.return_value = report_messages.Report()
+        post_with_metadata.return_value = report_messages.Report(), metadata
 
         client.update_report(
             request,
@@ -2939,6 +3010,7 @@ def test_update_report_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_run_report_rest_bad_request(request_type=report_service.RunReportRequest):
@@ -3017,10 +3089,13 @@ def test_run_report_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_run_report"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor, "post_run_report_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_run_report"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.RunReportRequest.pb(
             report_service.RunReportRequest()
         )
@@ -3044,6 +3119,7 @@ def test_run_report_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.run_report(
             request,
@@ -3055,6 +3131,7 @@ def test_run_report_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_fetch_report_result_rows_rest_bad_request(
@@ -3141,10 +3218,14 @@ def test_fetch_report_result_rows_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReportServiceRestInterceptor, "post_fetch_report_result_rows"
     ) as post, mock.patch.object(
+        transports.ReportServiceRestInterceptor,
+        "post_fetch_report_result_rows_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReportServiceRestInterceptor, "pre_fetch_report_result_rows"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = report_service.FetchReportResultRowsRequest.pb(
             report_service.FetchReportResultRowsRequest()
         )
@@ -3170,6 +3251,10 @@ def test_fetch_report_result_rows_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = report_service.FetchReportResultRowsResponse()
+        post_with_metadata.return_value = (
+            report_service.FetchReportResultRowsResponse(),
+            metadata,
+        )
 
         client.fetch_report_result_rows(
             request,
@@ -3181,6 +3266,7 @@ def test_fetch_report_result_rows_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_operation_rest_bad_request(
@@ -3458,7 +3544,7 @@ def test_report_service_base_transport_with_credentials_file():
         load_creds.assert_called_once_with(
             "credentials.json",
             scopes=None,
-            default_scopes=(),
+            default_scopes=("https://www.googleapis.com/auth/admanager",),
             quota_project_id="octopus",
         )
 
@@ -3481,7 +3567,7 @@ def test_report_service_auth_adc():
         ReportServiceClient()
         adc.assert_called_once_with(
             scopes=None,
-            default_scopes=(),
+            default_scopes=("https://www.googleapis.com/auth/admanager",),
             quota_project_id=None,
         )
 

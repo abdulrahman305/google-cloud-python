@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,13 @@ from google.ai.generativelanguage_v1beta.types import (
 )
 from google.ai.generativelanguage_v1beta.types import content
 from google.ai.generativelanguage_v1beta.types import content as gag_content
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -332,6 +339,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         GenerativeServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = GenerativeServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = GenerativeServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -3180,6 +3230,167 @@ async def test_count_tokens_flattened_error_async():
         )
 
 
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        generative_service.BidiGenerateContentClientMessage,
+        dict,
+    ],
+)
+def test_bidi_generate_content(request_type, transport: str = "grpc"):
+    client = GenerativeServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+    requests = [request]
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.bidi_generate_content), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = iter(
+            [generative_service.BidiGenerateContentServerMessage()]
+        )
+        response = client.bidi_generate_content(iter(requests))
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls) == 1
+        _, args, _ = call.mock_calls[0]
+        assert next(args[0]) == request
+
+    # Establish that the response is the type that we expect.
+    for message in response:
+        assert isinstance(message, generative_service.BidiGenerateContentServerMessage)
+
+
+def test_bidi_generate_content_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = GenerativeServiceClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="grpc",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.bidi_generate_content
+            in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.bidi_generate_content
+        ] = mock_rpc
+        request = [{}]
+        client.bidi_generate_content(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        client.bidi_generate_content(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_bidi_generate_content_async_use_cached_wrapped_rpc(
+    transport: str = "grpc_asyncio",
+):
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method_async.wrap_method") as wrapper_fn:
+        client = GenerativeServiceAsyncClient(
+            credentials=async_anonymous_credentials(),
+            transport=transport,
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._client._transport.bidi_generate_content
+            in client._client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.AsyncMock()
+        mock_rpc.return_value = mock.Mock()
+        client._client._transport._wrapped_methods[
+            client._client._transport.bidi_generate_content
+        ] = mock_rpc
+
+        request = [{}]
+        await client.bidi_generate_content(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        await client.bidi_generate_content(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_bidi_generate_content_async(
+    transport: str = "grpc_asyncio",
+    request_type=generative_service.BidiGenerateContentClientMessage,
+):
+    client = GenerativeServiceAsyncClient(
+        credentials=async_anonymous_credentials(),
+        transport=transport,
+    )
+
+    # Everything is optional in proto3 as far as the runtime is concerned,
+    # and we are mocking out the actual API, so just send an empty request.
+    request = request_type()
+    requests = [request]
+
+    # Mock the actual call within the gRPC stub, and fake the request.
+    with mock.patch.object(
+        type(client.transport.bidi_generate_content), "__call__"
+    ) as call:
+        # Designate an appropriate return value for the call.
+        call.return_value = mock.Mock(aio.StreamStreamCall, autospec=True)
+        call.return_value.read = mock.AsyncMock(
+            side_effect=[generative_service.BidiGenerateContentServerMessage()]
+        )
+        response = await client.bidi_generate_content(iter(requests))
+
+        # Establish that the underlying gRPC stub method was called.
+        assert len(call.mock_calls)
+        _, args, _ = call.mock_calls[0]
+        assert next(args[0]) == request
+
+    # Establish that the response is the type that we expect.
+    message = await response.read()
+    assert isinstance(message, generative_service.BidiGenerateContentServerMessage)
+
+
+@pytest.mark.asyncio
+async def test_bidi_generate_content_async_from_dict():
+    await test_bidi_generate_content_async(request_type=dict)
+
+
 def test_generate_content_rest_use_cached_wrapped_rpc():
     # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
     # instead of constructing them on each call
@@ -4330,6 +4541,30 @@ def test_count_tokens_rest_flattened_error(transport: str = "rest"):
         )
 
 
+def test_bidi_generate_content_rest_no_http_options():
+    client = GenerativeServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = generative_service.BidiGenerateContentClientMessage()
+    requests = [request]
+    with pytest.raises(RuntimeError):
+        client.bidi_generate_content(requests)
+
+
+def test_bidi_generate_content_rest_error():
+    client = GenerativeServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # Since a `google.api.http` annotation is required for using a rest transport
+    # method, this should error.
+    with pytest.raises(NotImplementedError) as not_implemented_error:
+        client.bidi_generate_content({})
+    assert "Method BidiGenerateContent is not available over REST transport" in str(
+        not_implemented_error.value
+    )
+
+
 def test_credentials_transport_error():
     # It is an error to provide credentials and a transport instance.
     transport = transports.GenerativeServiceGrpcTransport(
@@ -4831,10 +5066,14 @@ def test_generate_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_generate_content"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor,
+        "post_generate_content_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_generate_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.GenerateContentRequest.pb(
             generative_service.GenerateContentRequest()
         )
@@ -4860,6 +5099,10 @@ def test_generate_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.GenerateContentResponse()
+        post_with_metadata.return_value = (
+            generative_service.GenerateContentResponse(),
+            metadata,
+        )
 
         client.generate_content(
             request,
@@ -4871,6 +5114,7 @@ def test_generate_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_generate_answer_rest_bad_request(
@@ -4955,10 +5199,14 @@ def test_generate_answer_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_generate_answer"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor,
+        "post_generate_answer_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_generate_answer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.GenerateAnswerRequest.pb(
             generative_service.GenerateAnswerRequest()
         )
@@ -4984,6 +5232,10 @@ def test_generate_answer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.GenerateAnswerResponse()
+        post_with_metadata.return_value = (
+            generative_service.GenerateAnswerResponse(),
+            metadata,
+        )
 
         client.generate_answer(
             request,
@@ -4995,6 +5247,7 @@ def test_generate_answer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_stream_generate_content_rest_bad_request(
@@ -5083,10 +5336,14 @@ def test_stream_generate_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_stream_generate_content"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor,
+        "post_stream_generate_content_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_stream_generate_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.GenerateContentRequest.pb(
             generative_service.GenerateContentRequest()
         )
@@ -5112,6 +5369,10 @@ def test_stream_generate_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.GenerateContentResponse()
+        post_with_metadata.return_value = (
+            generative_service.GenerateContentResponse(),
+            metadata,
+        )
 
         client.stream_generate_content(
             request,
@@ -5123,6 +5384,7 @@ def test_stream_generate_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_embed_content_rest_bad_request(
@@ -5204,10 +5466,13 @@ def test_embed_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_embed_content"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor, "post_embed_content_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_embed_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.EmbedContentRequest.pb(
             generative_service.EmbedContentRequest()
         )
@@ -5233,6 +5498,10 @@ def test_embed_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.EmbedContentResponse()
+        post_with_metadata.return_value = (
+            generative_service.EmbedContentResponse(),
+            metadata,
+        )
 
         client.embed_content(
             request,
@@ -5244,6 +5513,7 @@ def test_embed_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_batch_embed_contents_rest_bad_request(
@@ -5325,10 +5595,14 @@ def test_batch_embed_contents_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_batch_embed_contents"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor,
+        "post_batch_embed_contents_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_batch_embed_contents"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.BatchEmbedContentsRequest.pb(
             generative_service.BatchEmbedContentsRequest()
         )
@@ -5354,6 +5628,10 @@ def test_batch_embed_contents_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.BatchEmbedContentsResponse()
+        post_with_metadata.return_value = (
+            generative_service.BatchEmbedContentsResponse(),
+            metadata,
+        )
 
         client.batch_embed_contents(
             request,
@@ -5365,6 +5643,7 @@ def test_batch_embed_contents_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_count_tokens_rest_bad_request(
@@ -5451,10 +5730,13 @@ def test_count_tokens_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "post_count_tokens"
     ) as post, mock.patch.object(
+        transports.GenerativeServiceRestInterceptor, "post_count_tokens_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.GenerativeServiceRestInterceptor, "pre_count_tokens"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = generative_service.CountTokensRequest.pb(
             generative_service.CountTokensRequest()
         )
@@ -5480,6 +5762,10 @@ def test_count_tokens_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = generative_service.CountTokensResponse()
+        post_with_metadata.return_value = (
+            generative_service.CountTokensResponse(),
+            metadata,
+        )
 
         client.count_tokens(
             request,
@@ -5491,6 +5777,19 @@ def test_count_tokens_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_bidi_generate_content_rest_error():
+    client = GenerativeServiceClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    with pytest.raises(NotImplementedError) as not_implemented_error:
+        client.bidi_generate_content({})
+    assert "Method BidiGenerateContent is not available over REST transport" in str(
+        not_implemented_error.value
+    )
 
 
 def test_get_operation_rest_bad_request(
@@ -5785,6 +6084,7 @@ def test_generative_service_base_transport():
         "embed_content",
         "batch_embed_contents",
         "count_tokens",
+        "bidi_generate_content",
         "get_operation",
         "list_operations",
     )
@@ -6062,6 +6362,9 @@ def test_generative_service_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.count_tokens._session
     session2 = client2.transport.count_tokens._session
+    assert session1 != session2
+    session1 = client1.transport.bidi_generate_content._session
+    session2 = client2.transport.bidi_generate_content._session
     assert session1 != session2
 
 

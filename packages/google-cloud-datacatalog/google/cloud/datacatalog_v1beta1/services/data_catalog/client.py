@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.datacatalog_v1beta1 import gapic_version as package_version
 
@@ -116,8 +119,10 @@ class DataCatalogClientMeta(type):
 
 
 class DataCatalogClient(metaclass=DataCatalogClientMeta):
-    """Data Catalog API service allows clients to discover,
-    understand, and manage their data.
+    """Deprecated: Please use Dataplex Catalog instead.
+
+    Data Catalog API service allows clients to discover, understand,
+    and manage their data.
     """
 
     @staticmethod
@@ -621,6 +626,33 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -918,10 +950,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 resolve additional pages automatically.
 
         """
+        warnings.warn(
+            "DataCatalogClient.search_catalog is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([scope, query])
+        flattened_params = [scope, query]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1066,10 +1105,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.create_entry_group is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, entry_group_id, entry_group])
+        flattened_params = [parent, entry_group_id, entry_group]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1194,10 +1240,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.update_entry_group is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([entry_group, update_mask])
+        flattened_params = [entry_group, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1314,10 +1367,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.get_entry_group is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, read_mask])
+        flattened_params = [name, read_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1417,10 +1477,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
         """
+        warnings.warn(
+            "DataCatalogClient.delete_entry_group is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1526,10 +1593,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 resolve additional pages automatically.
 
         """
+        warnings.warn(
+            "DataCatalogClient.list_entry_groups is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1687,10 +1761,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    [Tag][google.cloud.datacatalog.v1beta1.Tag].
 
         """
+        warnings.warn(
+            "DataCatalogClient.create_entry is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, entry_id, entry])
+        flattened_params = [parent, entry_id, entry]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1851,10 +1932,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    [Tag][google.cloud.datacatalog.v1beta1.Tag].
 
         """
+        warnings.warn(
+            "DataCatalogClient.update_entry is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([entry, update_mask])
+        flattened_params = [entry, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1958,10 +2046,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
         """
+        warnings.warn(
+            "DataCatalogClient.delete_entry is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2071,10 +2166,15 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    [Tag][google.cloud.datacatalog.v1beta1.Tag].
 
         """
+        warnings.warn("DataCatalogClient.get_entry is deprecated", DeprecationWarning)
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2181,6 +2281,10 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    [Tag][google.cloud.datacatalog.v1beta1.Tag].
 
         """
+        warnings.warn(
+            "DataCatalogClient.lookup_entry is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Use the request object if provided (there's no risk of modifying the input as
         #   there are no flattened fields), or create one.
@@ -2273,10 +2377,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 resolve additional pages automatically.
 
         """
+        warnings.warn(
+            "DataCatalogClient.list_entries is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2420,10 +2531,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    template to tag resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.create_tag_template is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, tag_template_id, tag_template])
+        flattened_params = [parent, tag_template_id, tag_template]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2537,10 +2655,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    template to tag resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.get_tag_template is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2670,10 +2795,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    template to tag resources.
 
         """
+        warnings.warn(
+            "DataCatalogClient.update_tag_template is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([tag_template, update_mask])
+        flattened_params = [tag_template, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2787,10 +2919,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
         """
+        warnings.warn(
+            "DataCatalogClient.delete_tag_template is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, force])
+        flattened_params = [name, force]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2927,10 +3066,18 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 within a tag template.
 
         """
+        warnings.warn(
+            "DataCatalogClient.create_tag_template_field is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, tag_template_field_id, tag_template_field])
+        flattened_params = [parent, tag_template_field_id, tag_template_field]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3080,10 +3227,18 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 within a tag template.
 
         """
+        warnings.warn(
+            "DataCatalogClient.update_tag_template_field is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, tag_template_field, update_mask])
+        flattened_params = [name, tag_template_field, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3207,10 +3362,18 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 within a tag template.
 
         """
+        warnings.warn(
+            "DataCatalogClient.rename_tag_template_field is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, new_tag_template_field_id])
+        flattened_params = [name, new_tag_template_field_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3331,10 +3494,18 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 within a tag template.
 
         """
+        warnings.warn(
+            "DataCatalogClient.rename_tag_template_field_enum_value is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, new_enum_value_display_name])
+        flattened_params = [name, new_enum_value_display_name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3451,10 +3622,18 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
         """
+        warnings.warn(
+            "DataCatalogClient.delete_tag_template_field is deprecated",
+            DeprecationWarning,
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name, force])
+        flattened_params = [name, force]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3585,10 +3764,15 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    or view tags.
 
         """
+        warnings.warn("DataCatalogClient.create_tag is deprecated", DeprecationWarning)
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, tag])
+        flattened_params = [parent, tag]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3719,10 +3903,15 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    or view tags.
 
         """
+        warnings.warn("DataCatalogClient.update_tag is deprecated", DeprecationWarning)
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([tag, update_mask])
+        flattened_params = [tag, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3818,10 +4007,15 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 but for metadata keys ending with the suffix `-bin`, the corresponding values must
                 be of type `bytes`.
         """
+        warnings.warn("DataCatalogClient.delete_tag is deprecated", DeprecationWarning)
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3934,10 +4128,15 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                 resolve additional pages automatically.
 
         """
+        warnings.warn("DataCatalogClient.list_tags is deprecated", DeprecationWarning)
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4096,10 +4295,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    documentation](\ https://cloud.google.com/iam/docs/).
 
         """
+        warnings.warn(
+            "DataCatalogClient.set_iam_policy is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([resource])
+        flattened_params = [resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4252,10 +4458,17 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
                    documentation](\ https://cloud.google.com/iam/docs/).
 
         """
+        warnings.warn(
+            "DataCatalogClient.get_iam_policy is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([resource])
+        flattened_params = [resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4362,6 +4575,10 @@ class DataCatalogClient(metaclass=DataCatalogClientMeta):
             google.iam.v1.iam_policy_pb2.TestIamPermissionsResponse:
                 Response message for TestIamPermissions method.
         """
+        warnings.warn(
+            "DataCatalogClient.test_iam_permissions is deprecated", DeprecationWarning
+        )
+
         # Create or coerce a protobuf request object.
         if isinstance(request, dict):
             # - The request isn't a proto-plus wrapped type,
@@ -4413,5 +4630,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("DataCatalogClient",)

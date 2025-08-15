@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +24,14 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
+from google.apps.chat_v1.types import (
+    space_notification_setting as gc_space_notification_setting,
+)
 from google.apps.chat_v1.types import attachment
 from google.apps.chat_v1.types import membership
 from google.apps.chat_v1.types import membership as gc_membership
@@ -38,6 +42,7 @@ from google.apps.chat_v1.types import reaction as gc_reaction
 from google.apps.chat_v1.types import space
 from google.apps.chat_v1.types import space as gc_space
 from google.apps.chat_v1.types import space_event
+from google.apps.chat_v1.types import space_notification_setting
 from google.apps.chat_v1.types import space_read_state
 from google.apps.chat_v1.types import space_read_state as gc_space_read_state
 from google.apps.chat_v1.types import space_setup, thread_read_state
@@ -65,6 +70,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     rest_version=f"requests@{requests_version}",
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
+
 
 class ChatServiceRestInterceptor:
     """Interceptor for ChatService.
@@ -86,6 +94,14 @@ class ChatServiceRestInterceptor:
                 return request, metadata
 
             def post_complete_import_space(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_create_custom_emoji(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_custom_emoji(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -120,6 +136,10 @@ class ChatServiceRestInterceptor:
             def post_create_space(self, response):
                 logging.log(f"Received response: {response}")
                 return response
+
+            def pre_delete_custom_emoji(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
 
             def pre_delete_membership(self, request, metadata):
                 logging.log(f"Received request: {request}")
@@ -157,6 +177,14 @@ class ChatServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_custom_emoji(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_custom_emoji(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_membership(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -189,6 +217,14 @@ class ChatServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_space_notification_setting(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_space_notification_setting(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_space_read_state(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -202,6 +238,14 @@ class ChatServiceRestInterceptor:
                 return request, metadata
 
             def post_get_thread_read_state(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_custom_emojis(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_custom_emojis(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -285,6 +329,14 @@ class ChatServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_update_space_notification_setting(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_space_notification_setting(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_update_space_read_state(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -326,11 +378,84 @@ class ChatServiceRestInterceptor:
     ) -> space.CompleteImportSpaceResponse:
         """Post-rpc interceptor for complete_import_space
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_complete_import_space_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_complete_import_space` interceptor runs
+        before the `post_complete_import_space_with_metadata` interceptor.
         """
         return response
+
+    def post_complete_import_space_with_metadata(
+        self,
+        response: space.CompleteImportSpaceResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        space.CompleteImportSpaceResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for complete_import_space
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_complete_import_space_with_metadata`
+        interceptor in new development instead of the `post_complete_import_space` interceptor.
+        When both interceptors are used, this `post_complete_import_space_with_metadata` interceptor runs after the
+        `post_complete_import_space` interceptor. The (possibly modified) response returned by
+        `post_complete_import_space` will be passed to
+        `post_complete_import_space_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_custom_emoji(
+        self,
+        request: reaction.CreateCustomEmojiRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reaction.CreateCustomEmojiRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_custom_emoji
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
+
+    def post_create_custom_emoji(
+        self, response: reaction.CustomEmoji
+    ) -> reaction.CustomEmoji:
+        """Post-rpc interceptor for create_custom_emoji
+
+        DEPRECATED. Please use the `post_create_custom_emoji_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ChatService server but before
+        it is returned to user code. This `post_create_custom_emoji` interceptor runs
+        before the `post_create_custom_emoji_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_custom_emoji_with_metadata(
+        self,
+        response: reaction.CustomEmoji,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[reaction.CustomEmoji, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_custom_emoji
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_create_custom_emoji_with_metadata`
+        interceptor in new development instead of the `post_create_custom_emoji` interceptor.
+        When both interceptors are used, this `post_create_custom_emoji_with_metadata` interceptor runs after the
+        `post_create_custom_emoji` interceptor. The (possibly modified) response returned by
+        `post_create_custom_emoji` will be passed to
+        `post_create_custom_emoji_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_membership(
         self,
@@ -351,11 +476,34 @@ class ChatServiceRestInterceptor:
     ) -> gc_membership.Membership:
         """Post-rpc interceptor for create_membership
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_membership_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_membership` interceptor runs
+        before the `post_create_membership_with_metadata` interceptor.
         """
         return response
+
+    def post_create_membership_with_metadata(
+        self,
+        response: gc_membership.Membership,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_membership.Membership, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_membership
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_create_membership_with_metadata`
+        interceptor in new development instead of the `post_create_membership` interceptor.
+        When both interceptors are used, this `post_create_membership_with_metadata` interceptor runs after the
+        `post_create_membership` interceptor. The (possibly modified) response returned by
+        `post_create_membership` will be passed to
+        `post_create_membership_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_message(
         self,
@@ -374,11 +522,34 @@ class ChatServiceRestInterceptor:
     def post_create_message(self, response: gc_message.Message) -> gc_message.Message:
         """Post-rpc interceptor for create_message
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_message_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_message` interceptor runs
+        before the `post_create_message_with_metadata` interceptor.
         """
         return response
+
+    def post_create_message_with_metadata(
+        self,
+        response: gc_message.Message,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_message.Message, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_message
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_create_message_with_metadata`
+        interceptor in new development instead of the `post_create_message` interceptor.
+        When both interceptors are used, this `post_create_message_with_metadata` interceptor runs after the
+        `post_create_message` interceptor. The (possibly modified) response returned by
+        `post_create_message` will be passed to
+        `post_create_message_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_reaction(
         self,
@@ -399,11 +570,34 @@ class ChatServiceRestInterceptor:
     ) -> gc_reaction.Reaction:
         """Post-rpc interceptor for create_reaction
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_reaction_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_reaction` interceptor runs
+        before the `post_create_reaction_with_metadata` interceptor.
         """
         return response
+
+    def post_create_reaction_with_metadata(
+        self,
+        response: gc_reaction.Reaction,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_reaction.Reaction, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_reaction
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_create_reaction_with_metadata`
+        interceptor in new development instead of the `post_create_reaction` interceptor.
+        When both interceptors are used, this `post_create_reaction_with_metadata` interceptor runs after the
+        `post_create_reaction` interceptor. The (possibly modified) response returned by
+        `post_create_reaction` will be passed to
+        `post_create_reaction_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_space(
         self,
@@ -420,11 +614,48 @@ class ChatServiceRestInterceptor:
     def post_create_space(self, response: gc_space.Space) -> gc_space.Space:
         """Post-rpc interceptor for create_space
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_space_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_space` interceptor runs
+        before the `post_create_space_with_metadata` interceptor.
         """
         return response
+
+    def post_create_space_with_metadata(
+        self,
+        response: gc_space.Space,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_space.Space, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_space
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_create_space_with_metadata`
+        interceptor in new development instead of the `post_create_space` interceptor.
+        When both interceptors are used, this `post_create_space_with_metadata` interceptor runs after the
+        `post_create_space` interceptor. The (possibly modified) response returned by
+        `post_create_space` will be passed to
+        `post_create_space_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_custom_emoji(
+        self,
+        request: reaction.DeleteCustomEmojiRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reaction.DeleteCustomEmojiRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for delete_custom_emoji
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
 
     def pre_delete_membership(
         self,
@@ -445,11 +676,34 @@ class ChatServiceRestInterceptor:
     ) -> membership.Membership:
         """Post-rpc interceptor for delete_membership
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_membership_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_membership` interceptor runs
+        before the `post_delete_membership_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_membership_with_metadata(
+        self,
+        response: membership.Membership,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[membership.Membership, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_membership
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_membership_with_metadata`
+        interceptor in new development instead of the `post_delete_membership` interceptor.
+        When both interceptors are used, this `post_delete_membership_with_metadata` interceptor runs after the
+        `post_delete_membership` interceptor. The (possibly modified) response returned by
+        `post_delete_membership` will be passed to
+        `post_delete_membership_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_message(
         self,
@@ -502,11 +756,32 @@ class ChatServiceRestInterceptor:
     def post_find_direct_message(self, response: space.Space) -> space.Space:
         """Post-rpc interceptor for find_direct_message
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_find_direct_message_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_find_direct_message` interceptor runs
+        before the `post_find_direct_message_with_metadata` interceptor.
         """
         return response
+
+    def post_find_direct_message_with_metadata(
+        self, response: space.Space, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[space.Space, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for find_direct_message
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_find_direct_message_with_metadata`
+        interceptor in new development instead of the `post_find_direct_message` interceptor.
+        When both interceptors are used, this `post_find_direct_message_with_metadata` interceptor runs after the
+        `post_find_direct_message` interceptor. The (possibly modified) response returned by
+        `post_find_direct_message` will be passed to
+        `post_find_direct_message_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_attachment(
         self,
@@ -527,11 +802,80 @@ class ChatServiceRestInterceptor:
     ) -> attachment.Attachment:
         """Post-rpc interceptor for get_attachment
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_attachment_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_attachment` interceptor runs
+        before the `post_get_attachment_with_metadata` interceptor.
         """
         return response
+
+    def post_get_attachment_with_metadata(
+        self,
+        response: attachment.Attachment,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[attachment.Attachment, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_attachment
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_attachment_with_metadata`
+        interceptor in new development instead of the `post_get_attachment` interceptor.
+        When both interceptors are used, this `post_get_attachment_with_metadata` interceptor runs after the
+        `post_get_attachment` interceptor. The (possibly modified) response returned by
+        `post_get_attachment` will be passed to
+        `post_get_attachment_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_custom_emoji(
+        self,
+        request: reaction.GetCustomEmojiRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[reaction.GetCustomEmojiRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for get_custom_emoji
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
+
+    def post_get_custom_emoji(
+        self, response: reaction.CustomEmoji
+    ) -> reaction.CustomEmoji:
+        """Post-rpc interceptor for get_custom_emoji
+
+        DEPRECATED. Please use the `post_get_custom_emoji_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ChatService server but before
+        it is returned to user code. This `post_get_custom_emoji` interceptor runs
+        before the `post_get_custom_emoji_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_custom_emoji_with_metadata(
+        self,
+        response: reaction.CustomEmoji,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[reaction.CustomEmoji, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_custom_emoji
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_custom_emoji_with_metadata`
+        interceptor in new development instead of the `post_get_custom_emoji` interceptor.
+        When both interceptors are used, this `post_get_custom_emoji_with_metadata` interceptor runs after the
+        `post_get_custom_emoji` interceptor. The (possibly modified) response returned by
+        `post_get_custom_emoji` will be passed to
+        `post_get_custom_emoji_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_membership(
         self,
@@ -552,11 +896,34 @@ class ChatServiceRestInterceptor:
     ) -> membership.Membership:
         """Post-rpc interceptor for get_membership
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_membership_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_membership` interceptor runs
+        before the `post_get_membership_with_metadata` interceptor.
         """
         return response
+
+    def post_get_membership_with_metadata(
+        self,
+        response: membership.Membership,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[membership.Membership, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_membership
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_membership_with_metadata`
+        interceptor in new development instead of the `post_get_membership` interceptor.
+        When both interceptors are used, this `post_get_membership_with_metadata` interceptor runs after the
+        `post_get_membership` interceptor. The (possibly modified) response returned by
+        `post_get_membership` will be passed to
+        `post_get_membership_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_message(
         self,
@@ -573,11 +940,34 @@ class ChatServiceRestInterceptor:
     def post_get_message(self, response: message.Message) -> message.Message:
         """Post-rpc interceptor for get_message
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_message_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_message` interceptor runs
+        before the `post_get_message_with_metadata` interceptor.
         """
         return response
+
+    def post_get_message_with_metadata(
+        self,
+        response: message.Message,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[message.Message, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_message
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_message_with_metadata`
+        interceptor in new development instead of the `post_get_message` interceptor.
+        When both interceptors are used, this `post_get_message_with_metadata` interceptor runs after the
+        `post_get_message` interceptor. The (possibly modified) response returned by
+        `post_get_message` will be passed to
+        `post_get_message_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_space(
         self,
@@ -594,11 +984,32 @@ class ChatServiceRestInterceptor:
     def post_get_space(self, response: space.Space) -> space.Space:
         """Post-rpc interceptor for get_space
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_space_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_space` interceptor runs
+        before the `post_get_space_with_metadata` interceptor.
         """
         return response
+
+    def post_get_space_with_metadata(
+        self, response: space.Space, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[space.Space, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_space
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_space_with_metadata`
+        interceptor in new development instead of the `post_get_space` interceptor.
+        When both interceptors are used, this `post_get_space_with_metadata` interceptor runs after the
+        `post_get_space` interceptor. The (possibly modified) response returned by
+        `post_get_space` will be passed to
+        `post_get_space_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_space_event(
         self,
@@ -619,11 +1030,86 @@ class ChatServiceRestInterceptor:
     ) -> space_event.SpaceEvent:
         """Post-rpc interceptor for get_space_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_space_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_space_event` interceptor runs
+        before the `post_get_space_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_space_event_with_metadata(
+        self,
+        response: space_event.SpaceEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[space_event.SpaceEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_space_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_space_event_with_metadata`
+        interceptor in new development instead of the `post_get_space_event` interceptor.
+        When both interceptors are used, this `post_get_space_event_with_metadata` interceptor runs after the
+        `post_get_space_event` interceptor. The (possibly modified) response returned by
+        `post_get_space_event` will be passed to
+        `post_get_space_event_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_space_notification_setting(
+        self,
+        request: space_notification_setting.GetSpaceNotificationSettingRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        space_notification_setting.GetSpaceNotificationSettingRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for get_space_notification_setting
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
+
+    def post_get_space_notification_setting(
+        self, response: space_notification_setting.SpaceNotificationSetting
+    ) -> space_notification_setting.SpaceNotificationSetting:
+        """Post-rpc interceptor for get_space_notification_setting
+
+        DEPRECATED. Please use the `post_get_space_notification_setting_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ChatService server but before
+        it is returned to user code. This `post_get_space_notification_setting` interceptor runs
+        before the `post_get_space_notification_setting_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_space_notification_setting_with_metadata(
+        self,
+        response: space_notification_setting.SpaceNotificationSetting,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        space_notification_setting.SpaceNotificationSetting,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_space_notification_setting
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_space_notification_setting_with_metadata`
+        interceptor in new development instead of the `post_get_space_notification_setting` interceptor.
+        When both interceptors are used, this `post_get_space_notification_setting_with_metadata` interceptor runs after the
+        `post_get_space_notification_setting` interceptor. The (possibly modified) response returned by
+        `post_get_space_notification_setting` will be passed to
+        `post_get_space_notification_setting_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_space_read_state(
         self,
@@ -645,11 +1131,36 @@ class ChatServiceRestInterceptor:
     ) -> space_read_state.SpaceReadState:
         """Post-rpc interceptor for get_space_read_state
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_space_read_state_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_space_read_state` interceptor runs
+        before the `post_get_space_read_state_with_metadata` interceptor.
         """
         return response
+
+    def post_get_space_read_state_with_metadata(
+        self,
+        response: space_read_state.SpaceReadState,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        space_read_state.SpaceReadState, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_space_read_state
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_space_read_state_with_metadata`
+        interceptor in new development instead of the `post_get_space_read_state` interceptor.
+        When both interceptors are used, this `post_get_space_read_state_with_metadata` interceptor runs after the
+        `post_get_space_read_state` interceptor. The (possibly modified) response returned by
+        `post_get_space_read_state` will be passed to
+        `post_get_space_read_state_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_thread_read_state(
         self,
@@ -671,11 +1182,86 @@ class ChatServiceRestInterceptor:
     ) -> thread_read_state.ThreadReadState:
         """Post-rpc interceptor for get_thread_read_state
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_thread_read_state_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_thread_read_state` interceptor runs
+        before the `post_get_thread_read_state_with_metadata` interceptor.
         """
         return response
+
+    def post_get_thread_read_state_with_metadata(
+        self,
+        response: thread_read_state.ThreadReadState,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        thread_read_state.ThreadReadState, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_thread_read_state
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_get_thread_read_state_with_metadata`
+        interceptor in new development instead of the `post_get_thread_read_state` interceptor.
+        When both interceptors are used, this `post_get_thread_read_state_with_metadata` interceptor runs after the
+        `post_get_thread_read_state` interceptor. The (possibly modified) response returned by
+        `post_get_thread_read_state` will be passed to
+        `post_get_thread_read_state_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_custom_emojis(
+        self,
+        request: reaction.ListCustomEmojisRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reaction.ListCustomEmojisRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_custom_emojis
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
+
+    def post_list_custom_emojis(
+        self, response: reaction.ListCustomEmojisResponse
+    ) -> reaction.ListCustomEmojisResponse:
+        """Post-rpc interceptor for list_custom_emojis
+
+        DEPRECATED. Please use the `post_list_custom_emojis_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ChatService server but before
+        it is returned to user code. This `post_list_custom_emojis` interceptor runs
+        before the `post_list_custom_emojis_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_custom_emojis_with_metadata(
+        self,
+        response: reaction.ListCustomEmojisResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        reaction.ListCustomEmojisResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_custom_emojis
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_custom_emojis_with_metadata`
+        interceptor in new development instead of the `post_list_custom_emojis` interceptor.
+        When both interceptors are used, this `post_list_custom_emojis_with_metadata` interceptor runs after the
+        `post_list_custom_emojis` interceptor. The (possibly modified) response returned by
+        `post_list_custom_emojis` will be passed to
+        `post_list_custom_emojis_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_memberships(
         self,
@@ -696,11 +1282,36 @@ class ChatServiceRestInterceptor:
     ) -> membership.ListMembershipsResponse:
         """Post-rpc interceptor for list_memberships
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_memberships_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_memberships` interceptor runs
+        before the `post_list_memberships_with_metadata` interceptor.
         """
         return response
+
+    def post_list_memberships_with_metadata(
+        self,
+        response: membership.ListMembershipsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        membership.ListMembershipsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_memberships
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_memberships_with_metadata`
+        interceptor in new development instead of the `post_list_memberships` interceptor.
+        When both interceptors are used, this `post_list_memberships_with_metadata` interceptor runs after the
+        `post_list_memberships` interceptor. The (possibly modified) response returned by
+        `post_list_memberships` will be passed to
+        `post_list_memberships_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_messages(
         self,
@@ -719,11 +1330,34 @@ class ChatServiceRestInterceptor:
     ) -> message.ListMessagesResponse:
         """Post-rpc interceptor for list_messages
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_messages_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_messages` interceptor runs
+        before the `post_list_messages_with_metadata` interceptor.
         """
         return response
+
+    def post_list_messages_with_metadata(
+        self,
+        response: message.ListMessagesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[message.ListMessagesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_messages
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_messages_with_metadata`
+        interceptor in new development instead of the `post_list_messages` interceptor.
+        When both interceptors are used, this `post_list_messages_with_metadata` interceptor runs after the
+        `post_list_messages` interceptor. The (possibly modified) response returned by
+        `post_list_messages` will be passed to
+        `post_list_messages_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_reactions(
         self,
@@ -742,11 +1376,34 @@ class ChatServiceRestInterceptor:
     ) -> reaction.ListReactionsResponse:
         """Post-rpc interceptor for list_reactions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_reactions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_reactions` interceptor runs
+        before the `post_list_reactions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_reactions_with_metadata(
+        self,
+        response: reaction.ListReactionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[reaction.ListReactionsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_reactions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_reactions_with_metadata`
+        interceptor in new development instead of the `post_list_reactions` interceptor.
+        When both interceptors are used, this `post_list_reactions_with_metadata` interceptor runs after the
+        `post_list_reactions` interceptor. The (possibly modified) response returned by
+        `post_list_reactions` will be passed to
+        `post_list_reactions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_space_events(
         self,
@@ -767,11 +1424,36 @@ class ChatServiceRestInterceptor:
     ) -> space_event.ListSpaceEventsResponse:
         """Post-rpc interceptor for list_space_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_space_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_space_events` interceptor runs
+        before the `post_list_space_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_space_events_with_metadata(
+        self,
+        response: space_event.ListSpaceEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        space_event.ListSpaceEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_space_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_space_events_with_metadata`
+        interceptor in new development instead of the `post_list_space_events` interceptor.
+        When both interceptors are used, this `post_list_space_events_with_metadata` interceptor runs after the
+        `post_list_space_events` interceptor. The (possibly modified) response returned by
+        `post_list_space_events` will be passed to
+        `post_list_space_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_spaces(
         self,
@@ -790,11 +1472,34 @@ class ChatServiceRestInterceptor:
     ) -> space.ListSpacesResponse:
         """Post-rpc interceptor for list_spaces
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_spaces_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_spaces` interceptor runs
+        before the `post_list_spaces_with_metadata` interceptor.
         """
         return response
+
+    def post_list_spaces_with_metadata(
+        self,
+        response: space.ListSpacesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[space.ListSpacesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_spaces
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_list_spaces_with_metadata`
+        interceptor in new development instead of the `post_list_spaces` interceptor.
+        When both interceptors are used, this `post_list_spaces_with_metadata` interceptor runs after the
+        `post_list_spaces` interceptor. The (possibly modified) response returned by
+        `post_list_spaces` will be passed to
+        `post_list_spaces_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_spaces(
         self,
@@ -813,11 +1518,34 @@ class ChatServiceRestInterceptor:
     ) -> space.SearchSpacesResponse:
         """Post-rpc interceptor for search_spaces
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_spaces_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_spaces` interceptor runs
+        before the `post_search_spaces_with_metadata` interceptor.
         """
         return response
+
+    def post_search_spaces_with_metadata(
+        self,
+        response: space.SearchSpacesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[space.SearchSpacesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for search_spaces
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_search_spaces_with_metadata`
+        interceptor in new development instead of the `post_search_spaces` interceptor.
+        When both interceptors are used, this `post_search_spaces_with_metadata` interceptor runs after the
+        `post_search_spaces` interceptor. The (possibly modified) response returned by
+        `post_search_spaces` will be passed to
+        `post_search_spaces_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_up_space(
         self,
@@ -834,11 +1562,32 @@ class ChatServiceRestInterceptor:
     def post_set_up_space(self, response: space.Space) -> space.Space:
         """Post-rpc interceptor for set_up_space
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_up_space_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_up_space` interceptor runs
+        before the `post_set_up_space_with_metadata` interceptor.
         """
         return response
+
+    def post_set_up_space_with_metadata(
+        self, response: space.Space, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[space.Space, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_up_space
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_set_up_space_with_metadata`
+        interceptor in new development instead of the `post_set_up_space` interceptor.
+        When both interceptors are used, this `post_set_up_space_with_metadata` interceptor runs after the
+        `post_set_up_space` interceptor. The (possibly modified) response returned by
+        `post_set_up_space` will be passed to
+        `post_set_up_space_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_membership(
         self,
@@ -859,11 +1608,34 @@ class ChatServiceRestInterceptor:
     ) -> gc_membership.Membership:
         """Post-rpc interceptor for update_membership
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_membership_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_membership` interceptor runs
+        before the `post_update_membership_with_metadata` interceptor.
         """
         return response
+
+    def post_update_membership_with_metadata(
+        self,
+        response: gc_membership.Membership,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_membership.Membership, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_membership
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_update_membership_with_metadata`
+        interceptor in new development instead of the `post_update_membership` interceptor.
+        When both interceptors are used, this `post_update_membership_with_metadata` interceptor runs after the
+        `post_update_membership` interceptor. The (possibly modified) response returned by
+        `post_update_membership` will be passed to
+        `post_update_membership_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_message(
         self,
@@ -882,11 +1654,34 @@ class ChatServiceRestInterceptor:
     def post_update_message(self, response: gc_message.Message) -> gc_message.Message:
         """Post-rpc interceptor for update_message
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_message_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_message` interceptor runs
+        before the `post_update_message_with_metadata` interceptor.
         """
         return response
+
+    def post_update_message_with_metadata(
+        self,
+        response: gc_message.Message,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_message.Message, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_message
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_update_message_with_metadata`
+        interceptor in new development instead of the `post_update_message` interceptor.
+        When both interceptors are used, this `post_update_message_with_metadata` interceptor runs after the
+        `post_update_message` interceptor. The (possibly modified) response returned by
+        `post_update_message` will be passed to
+        `post_update_message_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_space(
         self,
@@ -903,11 +1698,86 @@ class ChatServiceRestInterceptor:
     def post_update_space(self, response: gc_space.Space) -> gc_space.Space:
         """Post-rpc interceptor for update_space
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_space_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_space` interceptor runs
+        before the `post_update_space_with_metadata` interceptor.
         """
         return response
+
+    def post_update_space_with_metadata(
+        self,
+        response: gc_space.Space,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gc_space.Space, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_space
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_update_space_with_metadata`
+        interceptor in new development instead of the `post_update_space` interceptor.
+        When both interceptors are used, this `post_update_space_with_metadata` interceptor runs after the
+        `post_update_space` interceptor. The (possibly modified) response returned by
+        `post_update_space` will be passed to
+        `post_update_space_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_space_notification_setting(
+        self,
+        request: gc_space_notification_setting.UpdateSpaceNotificationSettingRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gc_space_notification_setting.UpdateSpaceNotificationSettingRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for update_space_notification_setting
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the ChatService server.
+        """
+        return request, metadata
+
+    def post_update_space_notification_setting(
+        self, response: gc_space_notification_setting.SpaceNotificationSetting
+    ) -> gc_space_notification_setting.SpaceNotificationSetting:
+        """Post-rpc interceptor for update_space_notification_setting
+
+        DEPRECATED. Please use the `post_update_space_notification_setting_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the ChatService server but before
+        it is returned to user code. This `post_update_space_notification_setting` interceptor runs
+        before the `post_update_space_notification_setting_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_space_notification_setting_with_metadata(
+        self,
+        response: gc_space_notification_setting.SpaceNotificationSetting,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gc_space_notification_setting.SpaceNotificationSetting,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for update_space_notification_setting
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_update_space_notification_setting_with_metadata`
+        interceptor in new development instead of the `post_update_space_notification_setting` interceptor.
+        When both interceptors are used, this `post_update_space_notification_setting_with_metadata` interceptor runs after the
+        `post_update_space_notification_setting` interceptor. The (possibly modified) response returned by
+        `post_update_space_notification_setting` will be passed to
+        `post_update_space_notification_setting_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_space_read_state(
         self,
@@ -929,11 +1799,36 @@ class ChatServiceRestInterceptor:
     ) -> gc_space_read_state.SpaceReadState:
         """Post-rpc interceptor for update_space_read_state
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_space_read_state_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_space_read_state` interceptor runs
+        before the `post_update_space_read_state_with_metadata` interceptor.
         """
         return response
+
+    def post_update_space_read_state_with_metadata(
+        self,
+        response: gc_space_read_state.SpaceReadState,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gc_space_read_state.SpaceReadState, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_space_read_state
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_update_space_read_state_with_metadata`
+        interceptor in new development instead of the `post_update_space_read_state` interceptor.
+        When both interceptors are used, this `post_update_space_read_state_with_metadata` interceptor runs after the
+        `post_update_space_read_state` interceptor. The (possibly modified) response returned by
+        `post_update_space_read_state` will be passed to
+        `post_update_space_read_state_with_metadata`.
+        """
+        return response, metadata
 
     def pre_upload_attachment(
         self,
@@ -954,11 +1849,36 @@ class ChatServiceRestInterceptor:
     ) -> attachment.UploadAttachmentResponse:
         """Post-rpc interceptor for upload_attachment
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_upload_attachment_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ChatService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_upload_attachment` interceptor runs
+        before the `post_upload_attachment_with_metadata` interceptor.
         """
         return response
+
+    def post_upload_attachment_with_metadata(
+        self,
+        response: attachment.UploadAttachmentResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        attachment.UploadAttachmentResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for upload_attachment
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ChatService server but before it is returned to user code.
+
+        We recommend only using this `post_upload_attachment_with_metadata`
+        interceptor in new development instead of the `post_upload_attachment` interceptor.
+        When both interceptors are used, this `post_upload_attachment_with_metadata` interceptor runs after the
+        `post_upload_attachment` interceptor. The (possibly modified) response returned by
+        `post_upload_attachment` will be passed to
+        `post_upload_attachment_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -1176,6 +2096,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_complete_import_space(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_complete_import_space_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1195,6 +2119,160 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     extra={
                         "serviceName": "google.chat.v1.ChatService",
                         "rpcName": "CompleteImportSpace",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateCustomEmoji(
+        _BaseChatServiceRestTransport._BaseCreateCustomEmoji, ChatServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.CreateCustomEmoji")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: reaction.CreateCustomEmojiRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> reaction.CustomEmoji:
+            r"""Call the create custom emoji method over HTTP.
+
+            Args:
+                request (~.reaction.CreateCustomEmojiRequest):
+                    The request object. A request to create a custom emoji.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.reaction.CustomEmoji:
+                    Represents a `custom
+                emoji <https://support.google.com/chat/answer/12800149>`__.
+
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseCreateCustomEmoji._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_custom_emoji(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseCreateCustomEmoji._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseChatServiceRestTransport._BaseCreateCustomEmoji._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseCreateCustomEmoji._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.CreateCustomEmoji",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "CreateCustomEmoji",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ChatServiceRestTransport._CreateCustomEmoji._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = reaction.CustomEmoji()
+            pb_resp = reaction.CustomEmoji.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_custom_emoji(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_custom_emoji_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reaction.CustomEmoji.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.chat_v1.ChatServiceClient.create_custom_emoji",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "CreateCustomEmoji",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -1331,6 +2409,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_membership(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_membership_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1481,6 +2563,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_message(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_message_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1627,6 +2713,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_reaction(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_reaction_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1784,6 +2874,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_space(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_space_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1806,6 +2900,114 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     },
                 )
             return resp
+
+    class _DeleteCustomEmoji(
+        _BaseChatServiceRestTransport._BaseDeleteCustomEmoji, ChatServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.DeleteCustomEmoji")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: reaction.DeleteCustomEmojiRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ):
+            r"""Call the delete custom emoji method over HTTP.
+
+            Args:
+                request (~.reaction.DeleteCustomEmojiRequest):
+                    The request object. Request for deleting a custom emoji.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseDeleteCustomEmoji._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_custom_emoji(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseDeleteCustomEmoji._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseDeleteCustomEmoji._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.DeleteCustomEmoji",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "DeleteCustomEmoji",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ChatServiceRestTransport._DeleteCustomEmoji._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
 
     class _DeleteMembership(
         _BaseChatServiceRestTransport._BaseDeleteMembership, ChatServiceRestStub
@@ -1931,6 +3133,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_membership(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_membership_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2402,6 +3608,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_find_direct_message(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_find_direct_message_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2544,6 +3754,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_attachment(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_attachment_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2561,6 +3775,155 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     extra={
                         "serviceName": "google.chat.v1.ChatService",
                         "rpcName": "GetAttachment",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetCustomEmoji(
+        _BaseChatServiceRestTransport._BaseGetCustomEmoji, ChatServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.GetCustomEmoji")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: reaction.GetCustomEmojiRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> reaction.CustomEmoji:
+            r"""Call the get custom emoji method over HTTP.
+
+            Args:
+                request (~.reaction.GetCustomEmojiRequest):
+                    The request object. A request to return a single custom
+                emoji.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.reaction.CustomEmoji:
+                    Represents a `custom
+                emoji <https://support.google.com/chat/answer/12800149>`__.
+
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseGetCustomEmoji._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_custom_emoji(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseGetCustomEmoji._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseGetCustomEmoji._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.GetCustomEmoji",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "GetCustomEmoji",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ChatServiceRestTransport._GetCustomEmoji._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = reaction.CustomEmoji()
+            pb_resp = reaction.CustomEmoji.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_custom_emoji(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_custom_emoji_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reaction.CustomEmoji.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.chat_v1.ChatServiceClient.get_custom_emoji",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "GetCustomEmoji",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2691,6 +4054,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_membership(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_membership_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2835,6 +4202,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_message(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_message_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2981,6 +4352,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_space(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_space_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3128,6 +4503,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_space_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_space_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3145,6 +4524,168 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     extra={
                         "serviceName": "google.chat.v1.ChatService",
                         "rpcName": "GetSpaceEvent",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetSpaceNotificationSetting(
+        _BaseChatServiceRestTransport._BaseGetSpaceNotificationSetting,
+        ChatServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.GetSpaceNotificationSetting")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: space_notification_setting.GetSpaceNotificationSettingRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> space_notification_setting.SpaceNotificationSetting:
+            r"""Call the get space notification
+            setting method over HTTP.
+
+                Args:
+                    request (~.space_notification_setting.GetSpaceNotificationSettingRequest):
+                        The request object. Request message to get space
+                    notification setting. Only supports
+                    getting notification setting for the
+                    calling user.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.space_notification_setting.SpaceNotificationSetting:
+                        The notification setting of a user in
+                    a space.
+
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseGetSpaceNotificationSetting._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_space_notification_setting(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseGetSpaceNotificationSetting._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseGetSpaceNotificationSetting._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.GetSpaceNotificationSetting",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "GetSpaceNotificationSetting",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = (
+                ChatServiceRestTransport._GetSpaceNotificationSetting._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                )
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = space_notification_setting.SpaceNotificationSetting()
+            pb_resp = space_notification_setting.SpaceNotificationSetting.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_space_notification_setting(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_space_notification_setting_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        space_notification_setting.SpaceNotificationSetting.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.chat_v1.ChatServiceClient.get_space_notification_setting",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "GetSpaceNotificationSetting",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3274,6 +4815,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_space_read_state(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_space_read_state_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3420,6 +4965,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_thread_read_state(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_thread_read_state_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3439,6 +4988,155 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     extra={
                         "serviceName": "google.chat.v1.ChatService",
                         "rpcName": "GetThreadReadState",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListCustomEmojis(
+        _BaseChatServiceRestTransport._BaseListCustomEmojis, ChatServiceRestStub
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.ListCustomEmojis")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: reaction.ListCustomEmojisRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> reaction.ListCustomEmojisResponse:
+            r"""Call the list custom emojis method over HTTP.
+
+            Args:
+                request (~.reaction.ListCustomEmojisRequest):
+                    The request object. A request to return a list of custom
+                emojis.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.reaction.ListCustomEmojisResponse:
+                    A response to list custom emojis.
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseListCustomEmojis._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_custom_emojis(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseListCustomEmojis._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseListCustomEmojis._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.ListCustomEmojis",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "ListCustomEmojis",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = ChatServiceRestTransport._ListCustomEmojis._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = reaction.ListCustomEmojisResponse()
+            pb_resp = reaction.ListCustomEmojisResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_custom_emojis(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_custom_emojis_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = reaction.ListCustomEmojisResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.chat_v1.ChatServiceClient.list_custom_emojis",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "ListCustomEmojis",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3567,6 +5265,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_memberships(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_memberships_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3716,6 +5418,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_messages(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_messages_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3858,6 +5564,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_reactions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_reactions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4003,6 +5713,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_space_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_space_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4152,6 +5866,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_spaces(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_spaces_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4300,6 +6018,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_spaces(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_spaces_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4455,6 +6177,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_up_space(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_up_space_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4608,6 +6334,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_membership(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_membership_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4758,6 +6488,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_message(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_message_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4914,6 +6648,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_space(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_space_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4931,6 +6669,174 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
                     extra={
                         "serviceName": "google.chat.v1.ChatService",
                         "rpcName": "UpdateSpace",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateSpaceNotificationSetting(
+        _BaseChatServiceRestTransport._BaseUpdateSpaceNotificationSetting,
+        ChatServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("ChatServiceRestTransport.UpdateSpaceNotificationSetting")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gc_space_notification_setting.UpdateSpaceNotificationSettingRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> gc_space_notification_setting.SpaceNotificationSetting:
+            r"""Call the update space notification
+            setting method over HTTP.
+
+                Args:
+                    request (~.gc_space_notification_setting.UpdateSpaceNotificationSettingRequest):
+                        The request object. Request to update the space
+                    notification settings. Only supports
+                    updating notification setting for the
+                    calling user.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.gc_space_notification_setting.SpaceNotificationSetting:
+                        The notification setting of a user in
+                    a space.
+
+            """
+
+            http_options = (
+                _BaseChatServiceRestTransport._BaseUpdateSpaceNotificationSetting._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_space_notification_setting(
+                request, metadata
+            )
+            transcoded_request = _BaseChatServiceRestTransport._BaseUpdateSpaceNotificationSetting._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseChatServiceRestTransport._BaseUpdateSpaceNotificationSetting._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseChatServiceRestTransport._BaseUpdateSpaceNotificationSetting._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.chat_v1.ChatServiceClient.UpdateSpaceNotificationSetting",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "UpdateSpaceNotificationSetting",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = (
+                ChatServiceRestTransport._UpdateSpaceNotificationSetting._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = gc_space_notification_setting.SpaceNotificationSetting()
+            pb_resp = gc_space_notification_setting.SpaceNotificationSetting.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_space_notification_setting(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_space_notification_setting_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        gc_space_notification_setting.SpaceNotificationSetting.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.chat_v1.ChatServiceClient.update_space_notification_setting",
+                    extra={
+                        "serviceName": "google.chat.v1.ChatService",
+                        "rpcName": "UpdateSpaceNotificationSetting",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -5066,6 +6972,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_space_read_state(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_space_read_state_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5216,6 +7126,10 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_upload_attachment(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_upload_attachment_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5252,6 +7166,14 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         return self._CompleteImportSpace(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def create_custom_emoji(
+        self,
+    ) -> Callable[[reaction.CreateCustomEmojiRequest], reaction.CustomEmoji]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateCustomEmoji(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def create_membership(
         self,
     ) -> Callable[[gc_membership.CreateMembershipRequest], gc_membership.Membership]:
@@ -5280,6 +7202,14 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._CreateSpace(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def delete_custom_emoji(
+        self,
+    ) -> Callable[[reaction.DeleteCustomEmojiRequest], empty_pb2.Empty]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteCustomEmoji(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def delete_membership(
@@ -5328,6 +7258,14 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         return self._GetAttachment(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_custom_emoji(
+        self,
+    ) -> Callable[[reaction.GetCustomEmojiRequest], reaction.CustomEmoji]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetCustomEmoji(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_membership(
         self,
     ) -> Callable[[membership.GetMembershipRequest], membership.Membership]:
@@ -5356,6 +7294,17 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         return self._GetSpaceEvent(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_space_notification_setting(
+        self,
+    ) -> Callable[
+        [space_notification_setting.GetSpaceNotificationSettingRequest],
+        space_notification_setting.SpaceNotificationSetting,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetSpaceNotificationSetting(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_space_read_state(
         self,
     ) -> Callable[
@@ -5374,6 +7323,16 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetThreadReadState(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_custom_emojis(
+        self,
+    ) -> Callable[
+        [reaction.ListCustomEmojisRequest], reaction.ListCustomEmojisResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListCustomEmojis(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_memberships(
@@ -5454,6 +7413,17 @@ class ChatServiceRestTransport(_BaseChatServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateSpace(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_space_notification_setting(
+        self,
+    ) -> Callable[
+        [gc_space_notification_setting.UpdateSpaceNotificationSettingRequest],
+        gc_space_notification_setting.SpaceNotificationSetting,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateSpaceNotificationSetting(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def update_space_read_state(

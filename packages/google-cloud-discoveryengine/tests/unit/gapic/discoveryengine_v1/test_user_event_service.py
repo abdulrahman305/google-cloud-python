@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,6 +80,13 @@ from google.cloud.discoveryengine_v1.types import (
     user_event,
     user_event_service,
 )
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -338,6 +345,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         UserEventServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = UserEventServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = UserEventServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1133,6 +1183,7 @@ def test_write_user_event(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = user_event.UserEvent(
             event_type="event_type_value",
+            conversion_type="conversion_type_value",
             user_pseudo_id="user_pseudo_id_value",
             engine="engine_value",
             data_store="data_store_value",
@@ -1154,6 +1205,7 @@ def test_write_user_event(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, user_event.UserEvent)
     assert response.event_type == "event_type_value"
+    assert response.conversion_type == "conversion_type_value"
     assert response.user_pseudo_id == "user_pseudo_id_value"
     assert response.engine == "engine_value"
     assert response.data_store == "data_store_value"
@@ -1292,6 +1344,7 @@ async def test_write_user_event_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             user_event.UserEvent(
                 event_type="event_type_value",
+                conversion_type="conversion_type_value",
                 user_pseudo_id="user_pseudo_id_value",
                 engine="engine_value",
                 data_store="data_store_value",
@@ -1314,6 +1367,7 @@ async def test_write_user_event_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, user_event.UserEvent)
     assert response.event_type == "event_type_value"
+    assert response.conversion_type == "conversion_type_value"
     assert response.user_pseudo_id == "user_pseudo_id_value"
     assert response.engine == "engine_value"
     assert response.data_store == "data_store_value"
@@ -2950,6 +3004,7 @@ async def test_write_user_event_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             user_event.UserEvent(
                 event_type="event_type_value",
+                conversion_type="conversion_type_value",
                 user_pseudo_id="user_pseudo_id_value",
                 engine="engine_value",
                 data_store="data_store_value",
@@ -3103,11 +3158,16 @@ def test_write_user_event_rest_call_success(request_type):
     request_init = {"parent": "projects/sample1/locations/sample2/dataStores/sample3"}
     request_init["user_event"] = {
         "event_type": "event_type_value",
+        "conversion_type": "conversion_type_value",
         "user_pseudo_id": "user_pseudo_id_value",
         "engine": "engine_value",
         "data_store": "data_store_value",
         "event_time": {"seconds": 751, "nanos": 543},
-        "user_info": {"user_id": "user_id_value", "user_agent": "user_agent_value"},
+        "user_info": {
+            "user_id": "user_id_value",
+            "user_agent": "user_agent_value",
+            "time_zone": "time_zone_value",
+        },
         "direct_user_request": True,
         "session_id": "session_id_value",
         "page_info": {
@@ -3126,6 +3186,7 @@ def test_write_user_event_rest_call_success(request_type):
                 "quantity": 895,
                 "promotion_ids": ["promotion_ids_value1", "promotion_ids_value2"],
                 "joined": True,
+                "conversion_value": 0.17300000000000001,
             }
         ],
         "panel": {
@@ -3133,6 +3194,7 @@ def test_write_user_event_rest_call_success(request_type):
             "display_name": "display_name_value",
             "panel_position": 1508,
             "total_panels": 1286,
+            "documents": {},
         },
         "search_info": {
             "search_query": "search_query_value",
@@ -3158,6 +3220,7 @@ def test_write_user_event_rest_call_success(request_type):
             "media_progress_duration": {"seconds": 751, "nanos": 543},
             "media_progress_percentage": 0.2641,
         },
+        "panels": {},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -3233,6 +3296,7 @@ def test_write_user_event_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = user_event.UserEvent(
             event_type="event_type_value",
+            conversion_type="conversion_type_value",
             user_pseudo_id="user_pseudo_id_value",
             engine="engine_value",
             data_store="data_store_value",
@@ -3259,6 +3323,7 @@ def test_write_user_event_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, user_event.UserEvent)
     assert response.event_type == "event_type_value"
+    assert response.conversion_type == "conversion_type_value"
     assert response.user_pseudo_id == "user_pseudo_id_value"
     assert response.engine == "engine_value"
     assert response.data_store == "data_store_value"
@@ -3287,10 +3352,14 @@ def test_write_user_event_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "post_write_user_event"
     ) as post, mock.patch.object(
+        transports.UserEventServiceRestInterceptor,
+        "post_write_user_event_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "pre_write_user_event"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = user_event_service.WriteUserEventRequest.pb(
             user_event_service.WriteUserEventRequest()
         )
@@ -3314,6 +3383,7 @@ def test_write_user_event_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = user_event.UserEvent()
+        post_with_metadata.return_value = user_event.UserEvent(), metadata
 
         client.write_user_event(
             request,
@@ -3325,6 +3395,7 @@ def test_write_user_event_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_collect_user_event_rest_bad_request(
@@ -3408,10 +3479,14 @@ def test_collect_user_event_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "post_collect_user_event"
     ) as post, mock.patch.object(
+        transports.UserEventServiceRestInterceptor,
+        "post_collect_user_event_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "pre_collect_user_event"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = user_event_service.CollectUserEventRequest.pb(
             user_event_service.CollectUserEventRequest()
         )
@@ -3435,6 +3510,7 @@ def test_collect_user_event_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = httpbody_pb2.HttpBody()
+        post_with_metadata.return_value = httpbody_pb2.HttpBody(), metadata
 
         client.collect_user_event(
             request,
@@ -3446,6 +3522,7 @@ def test_collect_user_event_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_purge_user_events_rest_bad_request(
@@ -3526,10 +3603,14 @@ def test_purge_user_events_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.UserEventServiceRestInterceptor, "post_purge_user_events"
     ) as post, mock.patch.object(
+        transports.UserEventServiceRestInterceptor,
+        "post_purge_user_events_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "pre_purge_user_events"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = purge_config.PurgeUserEventsRequest.pb(
             purge_config.PurgeUserEventsRequest()
         )
@@ -3553,6 +3634,7 @@ def test_purge_user_events_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.purge_user_events(
             request,
@@ -3564,6 +3646,7 @@ def test_purge_user_events_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_import_user_events_rest_bad_request(
@@ -3644,10 +3727,14 @@ def test_import_user_events_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.UserEventServiceRestInterceptor, "post_import_user_events"
     ) as post, mock.patch.object(
+        transports.UserEventServiceRestInterceptor,
+        "post_import_user_events_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.UserEventServiceRestInterceptor, "pre_import_user_events"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = import_config.ImportUserEventsRequest.pb(
             import_config.ImportUserEventsRequest()
         )
@@ -3671,6 +3758,7 @@ def test_import_user_events_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.import_user_events(
             request,
@@ -3682,6 +3770,7 @@ def test_import_user_events_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_cancel_operation_rest_bad_request(

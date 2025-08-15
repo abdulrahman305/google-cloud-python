@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -54,6 +55,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class LivestreamServiceRestInterceptor:
@@ -92,6 +96,14 @@ class LivestreamServiceRestInterceptor:
                 return request, metadata
 
             def post_create_clip(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_create_dvr_session(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_dvr_session(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -135,6 +147,14 @@ class LivestreamServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_delete_dvr_session(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_delete_dvr_session(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_delete_event(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -168,6 +188,14 @@ class LivestreamServiceRestInterceptor:
                 return request, metadata
 
             def post_get_clip(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_dvr_session(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_dvr_session(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -219,6 +247,14 @@ class LivestreamServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_list_dvr_sessions(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_dvr_sessions(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_list_events(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -256,6 +292,14 @@ class LivestreamServiceRestInterceptor:
                 return request, metadata
 
             def post_update_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_update_dvr_session(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_dvr_session(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -298,11 +342,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_asset
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_asset_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_asset` interceptor runs
+        before the `post_create_asset_with_metadata` interceptor.
         """
         return response
+
+    def post_create_asset_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_asset
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_asset_with_metadata`
+        interceptor in new development instead of the `post_create_asset` interceptor.
+        When both interceptors are used, this `post_create_asset_with_metadata` interceptor runs after the
+        `post_create_asset` interceptor. The (possibly modified) response returned by
+        `post_create_asset` will be passed to
+        `post_create_asset_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_channel(
         self,
@@ -321,11 +388,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_channel` interceptor runs
+        before the `post_create_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_create_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_channel_with_metadata`
+        interceptor in new development instead of the `post_create_channel` interceptor.
+        When both interceptors are used, this `post_create_channel_with_metadata` interceptor runs after the
+        `post_create_channel` interceptor. The (possibly modified) response returned by
+        `post_create_channel` will be passed to
+        `post_create_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_clip(
         self,
@@ -344,11 +434,82 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_clip
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_clip_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_clip` interceptor runs
+        before the `post_create_clip_with_metadata` interceptor.
         """
         return response
+
+    def post_create_clip_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_clip
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_clip_with_metadata`
+        interceptor in new development instead of the `post_create_clip` interceptor.
+        When both interceptors are used, this `post_create_clip_with_metadata` interceptor runs after the
+        `post_create_clip` interceptor. The (possibly modified) response returned by
+        `post_create_clip` will be passed to
+        `post_create_clip_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_dvr_session(
+        self,
+        request: service.CreateDvrSessionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.CreateDvrSessionRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_dvr_session
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the LivestreamService server.
+        """
+        return request, metadata
+
+    def post_create_dvr_session(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for create_dvr_session
+
+        DEPRECATED. Please use the `post_create_dvr_session_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the LivestreamService server but before
+        it is returned to user code. This `post_create_dvr_session` interceptor runs
+        before the `post_create_dvr_session_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_dvr_session_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_dvr_session
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_dvr_session_with_metadata`
+        interceptor in new development instead of the `post_create_dvr_session` interceptor.
+        When both interceptors are used, this `post_create_dvr_session_with_metadata` interceptor runs after the
+        `post_create_dvr_session` interceptor. The (possibly modified) response returned by
+        `post_create_dvr_session` will be passed to
+        `post_create_dvr_session_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_event(
         self,
@@ -365,11 +526,34 @@ class LivestreamServiceRestInterceptor:
     def post_create_event(self, response: resources.Event) -> resources.Event:
         """Post-rpc interceptor for create_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_event` interceptor runs
+        before the `post_create_event_with_metadata` interceptor.
         """
         return response
+
+    def post_create_event_with_metadata(
+        self,
+        response: resources.Event,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Event, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_event_with_metadata`
+        interceptor in new development instead of the `post_create_event` interceptor.
+        When both interceptors are used, this `post_create_event_with_metadata` interceptor runs after the
+        `post_create_event` interceptor. The (possibly modified) response returned by
+        `post_create_event` will be passed to
+        `post_create_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_input(
         self,
@@ -388,11 +572,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_input
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_input_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_input` interceptor runs
+        before the `post_create_input_with_metadata` interceptor.
         """
         return response
+
+    def post_create_input_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_input
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_create_input_with_metadata`
+        interceptor in new development instead of the `post_create_input` interceptor.
+        When both interceptors are used, this `post_create_input_with_metadata` interceptor runs after the
+        `post_create_input` interceptor. The (possibly modified) response returned by
+        `post_create_input` will be passed to
+        `post_create_input_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_asset(
         self,
@@ -411,11 +618,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_asset
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_asset_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_asset` interceptor runs
+        before the `post_delete_asset_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_asset_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_asset
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_asset_with_metadata`
+        interceptor in new development instead of the `post_delete_asset` interceptor.
+        When both interceptors are used, this `post_delete_asset_with_metadata` interceptor runs after the
+        `post_delete_asset` interceptor. The (possibly modified) response returned by
+        `post_delete_asset` will be passed to
+        `post_delete_asset_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_channel(
         self,
@@ -434,11 +664,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_channel` interceptor runs
+        before the `post_delete_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_channel_with_metadata`
+        interceptor in new development instead of the `post_delete_channel` interceptor.
+        When both interceptors are used, this `post_delete_channel_with_metadata` interceptor runs after the
+        `post_delete_channel` interceptor. The (possibly modified) response returned by
+        `post_delete_channel` will be passed to
+        `post_delete_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_clip(
         self,
@@ -457,11 +710,82 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_clip
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_clip_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_clip` interceptor runs
+        before the `post_delete_clip_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_clip_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_clip
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_clip_with_metadata`
+        interceptor in new development instead of the `post_delete_clip` interceptor.
+        When both interceptors are used, this `post_delete_clip_with_metadata` interceptor runs after the
+        `post_delete_clip` interceptor. The (possibly modified) response returned by
+        `post_delete_clip` will be passed to
+        `post_delete_clip_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_dvr_session(
+        self,
+        request: service.DeleteDvrSessionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.DeleteDvrSessionRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for delete_dvr_session
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the LivestreamService server.
+        """
+        return request, metadata
+
+    def post_delete_dvr_session(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for delete_dvr_session
+
+        DEPRECATED. Please use the `post_delete_dvr_session_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the LivestreamService server but before
+        it is returned to user code. This `post_delete_dvr_session` interceptor runs
+        before the `post_delete_dvr_session_with_metadata` interceptor.
+        """
+        return response
+
+    def post_delete_dvr_session_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_dvr_session
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_dvr_session_with_metadata`
+        interceptor in new development instead of the `post_delete_dvr_session` interceptor.
+        When both interceptors are used, this `post_delete_dvr_session_with_metadata` interceptor runs after the
+        `post_delete_dvr_session` interceptor. The (possibly modified) response returned by
+        `post_delete_dvr_session` will be passed to
+        `post_delete_dvr_session_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_event(
         self,
@@ -492,11 +816,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_input
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_input_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_input` interceptor runs
+        before the `post_delete_input_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_input_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_input
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_input_with_metadata`
+        interceptor in new development instead of the `post_delete_input` interceptor.
+        When both interceptors are used, this `post_delete_input_with_metadata` interceptor runs after the
+        `post_delete_input` interceptor. The (possibly modified) response returned by
+        `post_delete_input` will be passed to
+        `post_delete_input_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_asset(
         self,
@@ -513,11 +860,34 @@ class LivestreamServiceRestInterceptor:
     def post_get_asset(self, response: resources.Asset) -> resources.Asset:
         """Post-rpc interceptor for get_asset
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_asset_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_asset` interceptor runs
+        before the `post_get_asset_with_metadata` interceptor.
         """
         return response
+
+    def post_get_asset_with_metadata(
+        self,
+        response: resources.Asset,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Asset, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_asset
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_asset_with_metadata`
+        interceptor in new development instead of the `post_get_asset` interceptor.
+        When both interceptors are used, this `post_get_asset_with_metadata` interceptor runs after the
+        `post_get_asset` interceptor. The (possibly modified) response returned by
+        `post_get_asset` will be passed to
+        `post_get_asset_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_channel(
         self,
@@ -534,11 +904,34 @@ class LivestreamServiceRestInterceptor:
     def post_get_channel(self, response: resources.Channel) -> resources.Channel:
         """Post-rpc interceptor for get_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_channel` interceptor runs
+        before the `post_get_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_get_channel_with_metadata(
+        self,
+        response: resources.Channel,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Channel, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_channel_with_metadata`
+        interceptor in new development instead of the `post_get_channel` interceptor.
+        When both interceptors are used, this `post_get_channel_with_metadata` interceptor runs after the
+        `post_get_channel` interceptor. The (possibly modified) response returned by
+        `post_get_channel` will be passed to
+        `post_get_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_clip(
         self,
@@ -555,11 +948,80 @@ class LivestreamServiceRestInterceptor:
     def post_get_clip(self, response: resources.Clip) -> resources.Clip:
         """Post-rpc interceptor for get_clip
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_clip_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_clip` interceptor runs
+        before the `post_get_clip_with_metadata` interceptor.
         """
         return response
+
+    def post_get_clip_with_metadata(
+        self,
+        response: resources.Clip,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Clip, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_clip
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_clip_with_metadata`
+        interceptor in new development instead of the `post_get_clip` interceptor.
+        When both interceptors are used, this `post_get_clip_with_metadata` interceptor runs after the
+        `post_get_clip` interceptor. The (possibly modified) response returned by
+        `post_get_clip` will be passed to
+        `post_get_clip_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_dvr_session(
+        self,
+        request: service.GetDvrSessionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.GetDvrSessionRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for get_dvr_session
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the LivestreamService server.
+        """
+        return request, metadata
+
+    def post_get_dvr_session(
+        self, response: resources.DvrSession
+    ) -> resources.DvrSession:
+        """Post-rpc interceptor for get_dvr_session
+
+        DEPRECATED. Please use the `post_get_dvr_session_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the LivestreamService server but before
+        it is returned to user code. This `post_get_dvr_session` interceptor runs
+        before the `post_get_dvr_session_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_dvr_session_with_metadata(
+        self,
+        response: resources.DvrSession,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.DvrSession, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_dvr_session
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_dvr_session_with_metadata`
+        interceptor in new development instead of the `post_get_dvr_session` interceptor.
+        When both interceptors are used, this `post_get_dvr_session_with_metadata` interceptor runs after the
+        `post_get_dvr_session` interceptor. The (possibly modified) response returned by
+        `post_get_dvr_session` will be passed to
+        `post_get_dvr_session_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_event(
         self,
@@ -576,11 +1038,34 @@ class LivestreamServiceRestInterceptor:
     def post_get_event(self, response: resources.Event) -> resources.Event:
         """Post-rpc interceptor for get_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_event` interceptor runs
+        before the `post_get_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_event_with_metadata(
+        self,
+        response: resources.Event,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Event, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_event_with_metadata`
+        interceptor in new development instead of the `post_get_event` interceptor.
+        When both interceptors are used, this `post_get_event_with_metadata` interceptor runs after the
+        `post_get_event` interceptor. The (possibly modified) response returned by
+        `post_get_event` will be passed to
+        `post_get_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_input(
         self,
@@ -597,11 +1082,34 @@ class LivestreamServiceRestInterceptor:
     def post_get_input(self, response: resources.Input) -> resources.Input:
         """Post-rpc interceptor for get_input
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_input_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_input` interceptor runs
+        before the `post_get_input_with_metadata` interceptor.
         """
         return response
+
+    def post_get_input_with_metadata(
+        self,
+        response: resources.Input,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Input, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_input
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_input_with_metadata`
+        interceptor in new development instead of the `post_get_input` interceptor.
+        When both interceptors are used, this `post_get_input_with_metadata` interceptor runs after the
+        `post_get_input` interceptor. The (possibly modified) response returned by
+        `post_get_input` will be passed to
+        `post_get_input_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_pool(
         self,
@@ -618,11 +1126,34 @@ class LivestreamServiceRestInterceptor:
     def post_get_pool(self, response: resources.Pool) -> resources.Pool:
         """Post-rpc interceptor for get_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_pool` interceptor runs
+        before the `post_get_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_get_pool_with_metadata(
+        self,
+        response: resources.Pool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Pool, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_get_pool_with_metadata`
+        interceptor in new development instead of the `post_get_pool` interceptor.
+        When both interceptors are used, this `post_get_pool_with_metadata` interceptor runs after the
+        `post_get_pool` interceptor. The (possibly modified) response returned by
+        `post_get_pool` will be passed to
+        `post_get_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_assets(
         self,
@@ -641,11 +1172,34 @@ class LivestreamServiceRestInterceptor:
     ) -> service.ListAssetsResponse:
         """Post-rpc interceptor for list_assets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_assets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_assets` interceptor runs
+        before the `post_list_assets_with_metadata` interceptor.
         """
         return response
+
+    def post_list_assets_with_metadata(
+        self,
+        response: service.ListAssetsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListAssetsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_assets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_assets_with_metadata`
+        interceptor in new development instead of the `post_list_assets` interceptor.
+        When both interceptors are used, this `post_list_assets_with_metadata` interceptor runs after the
+        `post_list_assets` interceptor. The (possibly modified) response returned by
+        `post_list_assets` will be passed to
+        `post_list_assets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_channels(
         self,
@@ -664,11 +1218,34 @@ class LivestreamServiceRestInterceptor:
     ) -> service.ListChannelsResponse:
         """Post-rpc interceptor for list_channels
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_channels_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_channels` interceptor runs
+        before the `post_list_channels_with_metadata` interceptor.
         """
         return response
+
+    def post_list_channels_with_metadata(
+        self,
+        response: service.ListChannelsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListChannelsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_channels
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_channels_with_metadata`
+        interceptor in new development instead of the `post_list_channels` interceptor.
+        When both interceptors are used, this `post_list_channels_with_metadata` interceptor runs after the
+        `post_list_channels` interceptor. The (possibly modified) response returned by
+        `post_list_channels` will be passed to
+        `post_list_channels_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_clips(
         self,
@@ -687,11 +1264,82 @@ class LivestreamServiceRestInterceptor:
     ) -> service.ListClipsResponse:
         """Post-rpc interceptor for list_clips
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_clips_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_clips` interceptor runs
+        before the `post_list_clips_with_metadata` interceptor.
         """
         return response
+
+    def post_list_clips_with_metadata(
+        self,
+        response: service.ListClipsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListClipsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_clips
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_clips_with_metadata`
+        interceptor in new development instead of the `post_list_clips` interceptor.
+        When both interceptors are used, this `post_list_clips_with_metadata` interceptor runs after the
+        `post_list_clips` interceptor. The (possibly modified) response returned by
+        `post_list_clips` will be passed to
+        `post_list_clips_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_dvr_sessions(
+        self,
+        request: service.ListDvrSessionsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListDvrSessionsRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for list_dvr_sessions
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the LivestreamService server.
+        """
+        return request, metadata
+
+    def post_list_dvr_sessions(
+        self, response: service.ListDvrSessionsResponse
+    ) -> service.ListDvrSessionsResponse:
+        """Post-rpc interceptor for list_dvr_sessions
+
+        DEPRECATED. Please use the `post_list_dvr_sessions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the LivestreamService server but before
+        it is returned to user code. This `post_list_dvr_sessions` interceptor runs
+        before the `post_list_dvr_sessions_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_dvr_sessions_with_metadata(
+        self,
+        response: service.ListDvrSessionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListDvrSessionsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_dvr_sessions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_dvr_sessions_with_metadata`
+        interceptor in new development instead of the `post_list_dvr_sessions` interceptor.
+        When both interceptors are used, this `post_list_dvr_sessions_with_metadata` interceptor runs after the
+        `post_list_dvr_sessions` interceptor. The (possibly modified) response returned by
+        `post_list_dvr_sessions` will be passed to
+        `post_list_dvr_sessions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_events(
         self,
@@ -710,11 +1358,34 @@ class LivestreamServiceRestInterceptor:
     ) -> service.ListEventsResponse:
         """Post-rpc interceptor for list_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_events` interceptor runs
+        before the `post_list_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_events_with_metadata(
+        self,
+        response: service.ListEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_events_with_metadata`
+        interceptor in new development instead of the `post_list_events` interceptor.
+        When both interceptors are used, this `post_list_events_with_metadata` interceptor runs after the
+        `post_list_events` interceptor. The (possibly modified) response returned by
+        `post_list_events` will be passed to
+        `post_list_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_inputs(
         self,
@@ -733,11 +1404,34 @@ class LivestreamServiceRestInterceptor:
     ) -> service.ListInputsResponse:
         """Post-rpc interceptor for list_inputs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_inputs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_inputs` interceptor runs
+        before the `post_list_inputs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_inputs_with_metadata(
+        self,
+        response: service.ListInputsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.ListInputsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_inputs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_list_inputs_with_metadata`
+        interceptor in new development instead of the `post_list_inputs` interceptor.
+        When both interceptors are used, this `post_list_inputs_with_metadata` interceptor runs after the
+        `post_list_inputs` interceptor. The (possibly modified) response returned by
+        `post_list_inputs` will be passed to
+        `post_list_inputs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_start_channel(
         self,
@@ -756,11 +1450,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for start_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_start_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_start_channel` interceptor runs
+        before the `post_start_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_start_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for start_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_start_channel_with_metadata`
+        interceptor in new development instead of the `post_start_channel` interceptor.
+        When both interceptors are used, this `post_start_channel_with_metadata` interceptor runs after the
+        `post_start_channel` interceptor. The (possibly modified) response returned by
+        `post_start_channel` will be passed to
+        `post_start_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_stop_channel(
         self,
@@ -779,11 +1496,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for stop_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_stop_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_stop_channel` interceptor runs
+        before the `post_stop_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_stop_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for stop_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_stop_channel_with_metadata`
+        interceptor in new development instead of the `post_stop_channel` interceptor.
+        When both interceptors are used, this `post_stop_channel_with_metadata` interceptor runs after the
+        `post_stop_channel` interceptor. The (possibly modified) response returned by
+        `post_stop_channel` will be passed to
+        `post_stop_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_channel(
         self,
@@ -802,11 +1542,82 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_channel
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_channel` interceptor runs
+        before the `post_update_channel_with_metadata` interceptor.
         """
         return response
+
+    def post_update_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_update_channel_with_metadata`
+        interceptor in new development instead of the `post_update_channel` interceptor.
+        When both interceptors are used, this `post_update_channel_with_metadata` interceptor runs after the
+        `post_update_channel` interceptor. The (possibly modified) response returned by
+        `post_update_channel` will be passed to
+        `post_update_channel_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_dvr_session(
+        self,
+        request: service.UpdateDvrSessionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.UpdateDvrSessionRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for update_dvr_session
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the LivestreamService server.
+        """
+        return request, metadata
+
+    def post_update_dvr_session(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for update_dvr_session
+
+        DEPRECATED. Please use the `post_update_dvr_session_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the LivestreamService server but before
+        it is returned to user code. This `post_update_dvr_session` interceptor runs
+        before the `post_update_dvr_session_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_dvr_session_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_dvr_session
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_update_dvr_session_with_metadata`
+        interceptor in new development instead of the `post_update_dvr_session` interceptor.
+        When both interceptors are used, this `post_update_dvr_session_with_metadata` interceptor runs after the
+        `post_update_dvr_session` interceptor. The (possibly modified) response returned by
+        `post_update_dvr_session` will be passed to
+        `post_update_dvr_session_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_input(
         self,
@@ -825,11 +1636,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_input
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_input_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_input` interceptor runs
+        before the `post_update_input_with_metadata` interceptor.
         """
         return response
+
+    def post_update_input_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_input
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_update_input_with_metadata`
+        interceptor in new development instead of the `post_update_input` interceptor.
+        When both interceptors are used, this `post_update_input_with_metadata` interceptor runs after the
+        `post_update_input` interceptor. The (possibly modified) response returned by
+        `post_update_input` will be passed to
+        `post_update_input_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_pool(
         self,
@@ -848,11 +1682,34 @@ class LivestreamServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LivestreamService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_pool` interceptor runs
+        before the `post_update_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_update_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LivestreamService server but before it is returned to user code.
+
+        We recommend only using this `post_update_pool_with_metadata`
+        interceptor in new development instead of the `post_update_pool` interceptor.
+        When both interceptors are used, this `post_update_pool_with_metadata` interceptor runs after the
+        `post_update_pool` interceptor. The (possibly modified) response returned by
+        `post_update_pool` will be passed to
+        `post_update_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -1271,6 +2128,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_asset(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_asset_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1420,6 +2281,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1568,6 +2433,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_clip(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_clip_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1585,6 +2454,161 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
                     extra={
                         "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
                         "rpcName": "CreateClip",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateDvrSession(
+        _BaseLivestreamServiceRestTransport._BaseCreateDvrSession,
+        LivestreamServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("LivestreamServiceRestTransport.CreateDvrSession")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.CreateDvrSessionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the create dvr session method over HTTP.
+
+            Args:
+                request (~.service.CreateDvrSessionRequest):
+                    The request object. Request message for
+                "LivestreamService.CreateDvrSession".
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseLivestreamServiceRestTransport._BaseCreateDvrSession._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_dvr_session(
+                request, metadata
+            )
+            transcoded_request = _BaseLivestreamServiceRestTransport._BaseCreateDvrSession._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseLivestreamServiceRestTransport._BaseCreateDvrSession._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseLivestreamServiceRestTransport._BaseCreateDvrSession._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.video.livestream_v1.LivestreamServiceClient.CreateDvrSession",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "CreateDvrSession",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = LivestreamServiceRestTransport._CreateDvrSession._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_dvr_session(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_dvr_session_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.video.livestream_v1.LivestreamServiceClient.create_dvr_session",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "CreateDvrSession",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -1719,6 +2743,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1867,6 +2895,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_input(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_input_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2009,6 +3041,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_asset(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_asset_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2152,6 +3188,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2294,6 +3334,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_clip(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_clip_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2311,6 +3355,155 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
                     extra={
                         "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
                         "rpcName": "DeleteClip",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _DeleteDvrSession(
+        _BaseLivestreamServiceRestTransport._BaseDeleteDvrSession,
+        LivestreamServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("LivestreamServiceRestTransport.DeleteDvrSession")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.DeleteDvrSessionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the delete dvr session method over HTTP.
+
+            Args:
+                request (~.service.DeleteDvrSessionRequest):
+                    The request object. Request message for
+                "LivestreamService.DeleteDvrSession".
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseLivestreamServiceRestTransport._BaseDeleteDvrSession._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_dvr_session(
+                request, metadata
+            )
+            transcoded_request = _BaseLivestreamServiceRestTransport._BaseDeleteDvrSession._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseLivestreamServiceRestTransport._BaseDeleteDvrSession._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.video.livestream_v1.LivestreamServiceClient.DeleteDvrSession",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "DeleteDvrSession",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = LivestreamServiceRestTransport._DeleteDvrSession._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_delete_dvr_session(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_dvr_session_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.video.livestream_v1.LivestreamServiceClient.delete_dvr_session",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "DeleteDvrSession",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2543,6 +3736,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_input(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_input_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2686,6 +3883,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_asset(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_asset_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2835,6 +4036,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2983,6 +4188,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_clip(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_clip_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3000,6 +4209,156 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
                     extra={
                         "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
                         "rpcName": "GetClip",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetDvrSession(
+        _BaseLivestreamServiceRestTransport._BaseGetDvrSession,
+        LivestreamServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("LivestreamServiceRestTransport.GetDvrSession")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.GetDvrSessionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.DvrSession:
+            r"""Call the get dvr session method over HTTP.
+
+            Args:
+                request (~.service.GetDvrSessionRequest):
+                    The request object. Request message for
+                "LivestreamService.GetDvrSession".
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.resources.DvrSession:
+                    DvrSession is a sub-resource under
+                channel. Each DvrSession represents a
+                DVR recording of the live stream for a
+                specific time range.
+
+            """
+
+            http_options = (
+                _BaseLivestreamServiceRestTransport._BaseGetDvrSession._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_dvr_session(request, metadata)
+            transcoded_request = _BaseLivestreamServiceRestTransport._BaseGetDvrSession._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseLivestreamServiceRestTransport._BaseGetDvrSession._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.video.livestream_v1.LivestreamServiceClient.GetDvrSession",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "GetDvrSession",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = LivestreamServiceRestTransport._GetDvrSession._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.DvrSession()
+            pb_resp = resources.DvrSession.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_dvr_session(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_dvr_session_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.DvrSession.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.video.livestream_v1.LivestreamServiceClient.get_dvr_session",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "GetDvrSession",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3128,6 +4487,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3272,6 +4635,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_input(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_input_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3423,6 +4790,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3566,6 +4937,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_assets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_assets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3709,6 +5084,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_channels(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_channels_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3852,6 +5231,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_clips(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_clips_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3869,6 +5252,156 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
                     extra={
                         "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
                         "rpcName": "ListClips",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListDvrSessions(
+        _BaseLivestreamServiceRestTransport._BaseListDvrSessions,
+        LivestreamServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("LivestreamServiceRestTransport.ListDvrSessions")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.ListDvrSessionsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> service.ListDvrSessionsResponse:
+            r"""Call the list dvr sessions method over HTTP.
+
+            Args:
+                request (~.service.ListDvrSessionsRequest):
+                    The request object. Request message for
+                "LivestreamService.ListDvrSessions".
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.service.ListDvrSessionsResponse:
+                    Response message for
+                "LivestreamService.ListDvrSessions".
+
+            """
+
+            http_options = (
+                _BaseLivestreamServiceRestTransport._BaseListDvrSessions._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_dvr_sessions(
+                request, metadata
+            )
+            transcoded_request = _BaseLivestreamServiceRestTransport._BaseListDvrSessions._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseLivestreamServiceRestTransport._BaseListDvrSessions._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.video.livestream_v1.LivestreamServiceClient.ListDvrSessions",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "ListDvrSessions",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = LivestreamServiceRestTransport._ListDvrSessions._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = service.ListDvrSessionsResponse()
+            pb_resp = service.ListDvrSessionsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_dvr_sessions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_dvr_sessions_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = service.ListDvrSessionsResponse.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.video.livestream_v1.LivestreamServiceClient.list_dvr_sessions",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "ListDvrSessions",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3995,6 +5528,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4138,6 +5675,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_inputs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_inputs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4286,6 +5827,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_start_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_start_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4434,6 +5979,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_stop_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_stop_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4583,6 +6132,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_channel_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4600,6 +6153,161 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
                     extra={
                         "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
                         "rpcName": "UpdateChannel",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateDvrSession(
+        _BaseLivestreamServiceRestTransport._BaseUpdateDvrSession,
+        LivestreamServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("LivestreamServiceRestTransport.UpdateDvrSession")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.UpdateDvrSessionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the update dvr session method over HTTP.
+
+            Args:
+                request (~.service.UpdateDvrSessionRequest):
+                    The request object. Request message for
+                "LivestreamService.UpdateDvrSession".
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseLivestreamServiceRestTransport._BaseUpdateDvrSession._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_dvr_session(
+                request, metadata
+            )
+            transcoded_request = _BaseLivestreamServiceRestTransport._BaseUpdateDvrSession._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseLivestreamServiceRestTransport._BaseUpdateDvrSession._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseLivestreamServiceRestTransport._BaseUpdateDvrSession._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.video.livestream_v1.LivestreamServiceClient.UpdateDvrSession",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "UpdateDvrSession",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = LivestreamServiceRestTransport._UpdateDvrSession._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_dvr_session(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_dvr_session_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.video.livestream_v1.LivestreamServiceClient.update_dvr_session",
+                    extra={
+                        "serviceName": "google.cloud.video.livestream.v1.LivestreamService",
+                        "rpcName": "UpdateDvrSession",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -4731,6 +6439,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_input(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_input_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4879,6 +6591,10 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4927,6 +6643,14 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
         return self._CreateClip(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def create_dvr_session(
+        self,
+    ) -> Callable[[service.CreateDvrSessionRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateDvrSession(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def create_event(self) -> Callable[[service.CreateEventRequest], resources.Event]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
@@ -4965,6 +6689,14 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
         return self._DeleteClip(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def delete_dvr_session(
+        self,
+    ) -> Callable[[service.DeleteDvrSessionRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteDvrSession(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def delete_event(self) -> Callable[[service.DeleteEventRequest], empty_pb2.Empty]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
@@ -4995,6 +6727,14 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetClip(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_dvr_session(
+        self,
+    ) -> Callable[[service.GetDvrSessionRequest], resources.DvrSession]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetDvrSession(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_event(self) -> Callable[[service.GetEventRequest], resources.Event]:
@@ -5039,6 +6779,14 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
         return self._ListClips(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def list_dvr_sessions(
+        self,
+    ) -> Callable[[service.ListDvrSessionsRequest], service.ListDvrSessionsResponse]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListDvrSessions(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def list_events(
         self,
     ) -> Callable[[service.ListEventsRequest], service.ListEventsResponse]:
@@ -5077,6 +6825,14 @@ class LivestreamServiceRestTransport(_BaseLivestreamServiceRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateChannel(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_dvr_session(
+        self,
+    ) -> Callable[[service.UpdateDvrSessionRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateDvrSession(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def update_input(

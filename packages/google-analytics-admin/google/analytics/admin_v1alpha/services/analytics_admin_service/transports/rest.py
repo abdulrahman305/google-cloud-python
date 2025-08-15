@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -66,6 +67,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AnalyticsAdminServiceRestInterceptor:
@@ -315,6 +319,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_create_reporting_data_annotation(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_reporting_data_annotation(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_create_rollup_property(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -434,6 +446,10 @@ class AnalyticsAdminServiceRestInterceptor:
             def post_delete_property(self, response):
                 logging.log(f"Received response: {response}")
                 return response
+
+            def pre_delete_reporting_data_annotation(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
 
             def pre_delete_rollup_property_source_link(self, request, metadata):
                 logging.log(f"Received request: {request}")
@@ -675,6 +691,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_reporting_data_annotation(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_reporting_data_annotation(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_rollup_property_source_link(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -704,6 +728,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 return request, metadata
 
             def post_get_subproperty_event_filter(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_subproperty_sync_config(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_subproperty_sync_config(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -891,6 +923,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_list_reporting_data_annotations(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_reporting_data_annotations(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_list_rollup_property_source_links(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -920,6 +960,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 return request, metadata
 
             def post_list_subproperty_event_filters(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_subproperty_sync_configs(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_subproperty_sync_configs(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -964,6 +1012,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 return request, metadata
 
             def post_set_automated_ga4_configuration_opt_out(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_submit_user_deletion(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_submit_user_deletion(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -1151,6 +1207,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_update_reporting_data_annotation(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_reporting_data_annotation(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_update_search_ads360_link(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -1172,6 +1236,14 @@ class AnalyticsAdminServiceRestInterceptor:
                 return request, metadata
 
             def post_update_subproperty_event_filter(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_update_subproperty_sync_config(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_subproperty_sync_config(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -1201,11 +1273,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.AcknowledgeUserDataCollectionResponse:
         """Post-rpc interceptor for acknowledge_user_data_collection
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_acknowledge_user_data_collection_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_acknowledge_user_data_collection` interceptor runs
+        before the `post_acknowledge_user_data_collection_with_metadata` interceptor.
         """
         return response
+
+    def post_acknowledge_user_data_collection_with_metadata(
+        self,
+        response: analytics_admin.AcknowledgeUserDataCollectionResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.AcknowledgeUserDataCollectionResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for acknowledge_user_data_collection
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_acknowledge_user_data_collection_with_metadata`
+        interceptor in new development instead of the `post_acknowledge_user_data_collection` interceptor.
+        When both interceptors are used, this `post_acknowledge_user_data_collection_with_metadata` interceptor runs after the
+        `post_acknowledge_user_data_collection` interceptor. The (possibly modified) response returned by
+        `post_acknowledge_user_data_collection` will be passed to
+        `post_acknowledge_user_data_collection_with_metadata`.
+        """
+        return response, metadata
 
     def pre_approve_display_video360_advertiser_link_proposal(
         self,
@@ -1228,11 +1326,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ApproveDisplayVideo360AdvertiserLinkProposalResponse:
         """Post-rpc interceptor for approve_display_video360_advertiser_link_proposal
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_approve_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_approve_display_video360_advertiser_link_proposal` interceptor runs
+        before the `post_approve_display_video360_advertiser_link_proposal_with_metadata` interceptor.
         """
         return response
+
+    def post_approve_display_video360_advertiser_link_proposal_with_metadata(
+        self,
+        response: analytics_admin.ApproveDisplayVideo360AdvertiserLinkProposalResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ApproveDisplayVideo360AdvertiserLinkProposalResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for approve_display_video360_advertiser_link_proposal
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_approve_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor in new development instead of the `post_approve_display_video360_advertiser_link_proposal` interceptor.
+        When both interceptors are used, this `post_approve_display_video360_advertiser_link_proposal_with_metadata` interceptor runs after the
+        `post_approve_display_video360_advertiser_link_proposal` interceptor. The (possibly modified) response returned by
+        `post_approve_display_video360_advertiser_link_proposal` will be passed to
+        `post_approve_display_video360_advertiser_link_proposal_with_metadata`.
+        """
+        return response, metadata
 
     def pre_archive_audience(
         self,
@@ -1298,11 +1422,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.BatchCreateAccessBindingsResponse:
         """Post-rpc interceptor for batch_create_access_bindings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_create_access_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_create_access_bindings` interceptor runs
+        before the `post_batch_create_access_bindings_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_create_access_bindings_with_metadata(
+        self,
+        response: analytics_admin.BatchCreateAccessBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.BatchCreateAccessBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_create_access_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_batch_create_access_bindings_with_metadata`
+        interceptor in new development instead of the `post_batch_create_access_bindings` interceptor.
+        When both interceptors are used, this `post_batch_create_access_bindings_with_metadata` interceptor runs after the
+        `post_batch_create_access_bindings` interceptor. The (possibly modified) response returned by
+        `post_batch_create_access_bindings` will be passed to
+        `post_batch_create_access_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_batch_delete_access_bindings(
         self,
@@ -1339,11 +1489,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.BatchGetAccessBindingsResponse:
         """Post-rpc interceptor for batch_get_access_bindings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_get_access_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_get_access_bindings` interceptor runs
+        before the `post_batch_get_access_bindings_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_get_access_bindings_with_metadata(
+        self,
+        response: analytics_admin.BatchGetAccessBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.BatchGetAccessBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_get_access_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_batch_get_access_bindings_with_metadata`
+        interceptor in new development instead of the `post_batch_get_access_bindings` interceptor.
+        When both interceptors are used, this `post_batch_get_access_bindings_with_metadata` interceptor runs after the
+        `post_batch_get_access_bindings` interceptor. The (possibly modified) response returned by
+        `post_batch_get_access_bindings` will be passed to
+        `post_batch_get_access_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_batch_update_access_bindings(
         self,
@@ -1365,11 +1541,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.BatchUpdateAccessBindingsResponse:
         """Post-rpc interceptor for batch_update_access_bindings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_update_access_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_update_access_bindings` interceptor runs
+        before the `post_batch_update_access_bindings_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_update_access_bindings_with_metadata(
+        self,
+        response: analytics_admin.BatchUpdateAccessBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.BatchUpdateAccessBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_update_access_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_batch_update_access_bindings_with_metadata`
+        interceptor in new development instead of the `post_batch_update_access_bindings` interceptor.
+        When both interceptors are used, this `post_batch_update_access_bindings_with_metadata` interceptor runs after the
+        `post_batch_update_access_bindings` interceptor. The (possibly modified) response returned by
+        `post_batch_update_access_bindings` will be passed to
+        `post_batch_update_access_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_display_video360_advertiser_link_proposal(
         self,
@@ -1391,11 +1593,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLinkProposal:
         """Post-rpc interceptor for cancel_display_video360_advertiser_link_proposal
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_cancel_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_cancel_display_video360_advertiser_link_proposal` interceptor runs
+        before the `post_cancel_display_video360_advertiser_link_proposal_with_metadata` interceptor.
         """
         return response
+
+    def post_cancel_display_video360_advertiser_link_proposal_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLinkProposal,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLinkProposal,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for cancel_display_video360_advertiser_link_proposal
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_cancel_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor in new development instead of the `post_cancel_display_video360_advertiser_link_proposal` interceptor.
+        When both interceptors are used, this `post_cancel_display_video360_advertiser_link_proposal_with_metadata` interceptor runs after the
+        `post_cancel_display_video360_advertiser_link_proposal` interceptor. The (possibly modified) response returned by
+        `post_cancel_display_video360_advertiser_link_proposal` will be passed to
+        `post_cancel_display_video360_advertiser_link_proposal_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_access_binding(
         self,
@@ -1417,11 +1645,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AccessBinding:
         """Post-rpc interceptor for create_access_binding
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_access_binding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_access_binding` interceptor runs
+        before the `post_create_access_binding_with_metadata` interceptor.
         """
         return response
+
+    def post_create_access_binding_with_metadata(
+        self,
+        response: resources.AccessBinding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AccessBinding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_access_binding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_access_binding_with_metadata`
+        interceptor in new development instead of the `post_create_access_binding` interceptor.
+        When both interceptors are used, this `post_create_access_binding_with_metadata` interceptor runs after the
+        `post_create_access_binding` interceptor. The (possibly modified) response returned by
+        `post_create_access_binding` will be passed to
+        `post_create_access_binding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_ad_sense_link(
         self,
@@ -1443,11 +1694,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AdSenseLink:
         """Post-rpc interceptor for create_ad_sense_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_ad_sense_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_ad_sense_link` interceptor runs
+        before the `post_create_ad_sense_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_ad_sense_link_with_metadata(
+        self,
+        response: resources.AdSenseLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AdSenseLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_ad_sense_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_ad_sense_link_with_metadata`
+        interceptor in new development instead of the `post_create_ad_sense_link` interceptor.
+        When both interceptors are used, this `post_create_ad_sense_link_with_metadata` interceptor runs after the
+        `post_create_ad_sense_link` interceptor. The (possibly modified) response returned by
+        `post_create_ad_sense_link` will be passed to
+        `post_create_ad_sense_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_audience(
         self,
@@ -1468,11 +1742,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_audience.Audience:
         """Post-rpc interceptor for create_audience
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_audience_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_audience` interceptor runs
+        before the `post_create_audience_with_metadata` interceptor.
         """
         return response
+
+    def post_create_audience_with_metadata(
+        self,
+        response: gaa_audience.Audience,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gaa_audience.Audience, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_audience
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_audience_with_metadata`
+        interceptor in new development instead of the `post_create_audience` interceptor.
+        When both interceptors are used, this `post_create_audience_with_metadata` interceptor runs after the
+        `post_create_audience` interceptor. The (possibly modified) response returned by
+        `post_create_audience` will be passed to
+        `post_create_audience_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_big_query_link(
         self,
@@ -1494,11 +1791,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.BigQueryLink:
         """Post-rpc interceptor for create_big_query_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_big_query_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_big_query_link` interceptor runs
+        before the `post_create_big_query_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_big_query_link_with_metadata(
+        self,
+        response: resources.BigQueryLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.BigQueryLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_big_query_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_big_query_link_with_metadata`
+        interceptor in new development instead of the `post_create_big_query_link` interceptor.
+        When both interceptors are used, this `post_create_big_query_link_with_metadata` interceptor runs after the
+        `post_create_big_query_link` interceptor. The (possibly modified) response returned by
+        `post_create_big_query_link` will be passed to
+        `post_create_big_query_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_calculated_metric(
         self,
@@ -1520,11 +1840,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CalculatedMetric:
         """Post-rpc interceptor for create_calculated_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_calculated_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_calculated_metric` interceptor runs
+        before the `post_create_calculated_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_create_calculated_metric_with_metadata(
+        self,
+        response: resources.CalculatedMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CalculatedMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_calculated_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_calculated_metric_with_metadata`
+        interceptor in new development instead of the `post_create_calculated_metric` interceptor.
+        When both interceptors are used, this `post_create_calculated_metric_with_metadata` interceptor runs after the
+        `post_create_calculated_metric` interceptor. The (possibly modified) response returned by
+        `post_create_calculated_metric` will be passed to
+        `post_create_calculated_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_channel_group(
         self,
@@ -1546,11 +1889,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_channel_group.ChannelGroup:
         """Post-rpc interceptor for create_channel_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_channel_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_channel_group` interceptor runs
+        before the `post_create_channel_group_with_metadata` interceptor.
         """
         return response
+
+    def post_create_channel_group_with_metadata(
+        self,
+        response: gaa_channel_group.ChannelGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gaa_channel_group.ChannelGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_channel_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_channel_group_with_metadata`
+        interceptor in new development instead of the `post_create_channel_group` interceptor.
+        When both interceptors are used, this `post_create_channel_group_with_metadata` interceptor runs after the
+        `post_create_channel_group` interceptor. The (possibly modified) response returned by
+        `post_create_channel_group` will be passed to
+        `post_create_channel_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_connected_site_tag(
         self,
@@ -1572,11 +1938,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.CreateConnectedSiteTagResponse:
         """Post-rpc interceptor for create_connected_site_tag
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_connected_site_tag_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_connected_site_tag` interceptor runs
+        before the `post_create_connected_site_tag_with_metadata` interceptor.
         """
         return response
+
+    def post_create_connected_site_tag_with_metadata(
+        self,
+        response: analytics_admin.CreateConnectedSiteTagResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.CreateConnectedSiteTagResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_connected_site_tag
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_connected_site_tag_with_metadata`
+        interceptor in new development instead of the `post_create_connected_site_tag` interceptor.
+        When both interceptors are used, this `post_create_connected_site_tag_with_metadata` interceptor runs after the
+        `post_create_connected_site_tag` interceptor. The (possibly modified) response returned by
+        `post_create_connected_site_tag` will be passed to
+        `post_create_connected_site_tag_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_conversion_event(
         self,
@@ -1598,11 +1990,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.ConversionEvent:
         """Post-rpc interceptor for create_conversion_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_conversion_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_conversion_event` interceptor runs
+        before the `post_create_conversion_event_with_metadata` interceptor.
         """
         return response
+
+    def post_create_conversion_event_with_metadata(
+        self,
+        response: resources.ConversionEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConversionEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_conversion_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_conversion_event_with_metadata`
+        interceptor in new development instead of the `post_create_conversion_event` interceptor.
+        When both interceptors are used, this `post_create_conversion_event_with_metadata` interceptor runs after the
+        `post_create_conversion_event` interceptor. The (possibly modified) response returned by
+        `post_create_conversion_event` will be passed to
+        `post_create_conversion_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_custom_dimension(
         self,
@@ -1624,11 +2039,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomDimension:
         """Post-rpc interceptor for create_custom_dimension
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_custom_dimension_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_custom_dimension` interceptor runs
+        before the `post_create_custom_dimension_with_metadata` interceptor.
         """
         return response
+
+    def post_create_custom_dimension_with_metadata(
+        self,
+        response: resources.CustomDimension,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomDimension, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_custom_dimension
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_custom_dimension_with_metadata`
+        interceptor in new development instead of the `post_create_custom_dimension` interceptor.
+        When both interceptors are used, this `post_create_custom_dimension_with_metadata` interceptor runs after the
+        `post_create_custom_dimension` interceptor. The (possibly modified) response returned by
+        `post_create_custom_dimension` will be passed to
+        `post_create_custom_dimension_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_custom_metric(
         self,
@@ -1650,11 +2088,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomMetric:
         """Post-rpc interceptor for create_custom_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_custom_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_custom_metric` interceptor runs
+        before the `post_create_custom_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_create_custom_metric_with_metadata(
+        self,
+        response: resources.CustomMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_custom_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_custom_metric_with_metadata`
+        interceptor in new development instead of the `post_create_custom_metric` interceptor.
+        When both interceptors are used, this `post_create_custom_metric_with_metadata` interceptor runs after the
+        `post_create_custom_metric` interceptor. The (possibly modified) response returned by
+        `post_create_custom_metric` will be passed to
+        `post_create_custom_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_data_stream(
         self,
@@ -1675,11 +2136,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataStream:
         """Post-rpc interceptor for create_data_stream
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_data_stream_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_data_stream` interceptor runs
+        before the `post_create_data_stream_with_metadata` interceptor.
         """
         return response
+
+    def post_create_data_stream_with_metadata(
+        self,
+        response: resources.DataStream,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.DataStream, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_data_stream
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_data_stream_with_metadata`
+        interceptor in new development instead of the `post_create_data_stream` interceptor.
+        When both interceptors are used, this `post_create_data_stream_with_metadata` interceptor runs after the
+        `post_create_data_stream` interceptor. The (possibly modified) response returned by
+        `post_create_data_stream` will be passed to
+        `post_create_data_stream_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_display_video360_advertiser_link(
         self,
@@ -1701,11 +2185,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLink:
         """Post-rpc interceptor for create_display_video360_advertiser_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_display_video360_advertiser_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_display_video360_advertiser_link` interceptor runs
+        before the `post_create_display_video360_advertiser_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_display_video360_advertiser_link_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLink, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_display_video360_advertiser_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_display_video360_advertiser_link_with_metadata`
+        interceptor in new development instead of the `post_create_display_video360_advertiser_link` interceptor.
+        When both interceptors are used, this `post_create_display_video360_advertiser_link_with_metadata` interceptor runs after the
+        `post_create_display_video360_advertiser_link` interceptor. The (possibly modified) response returned by
+        `post_create_display_video360_advertiser_link` will be passed to
+        `post_create_display_video360_advertiser_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_display_video360_advertiser_link_proposal(
         self,
@@ -1727,11 +2236,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLinkProposal:
         """Post-rpc interceptor for create_display_video360_advertiser_link_proposal
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_display_video360_advertiser_link_proposal` interceptor runs
+        before the `post_create_display_video360_advertiser_link_proposal_with_metadata` interceptor.
         """
         return response
+
+    def post_create_display_video360_advertiser_link_proposal_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLinkProposal,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLinkProposal,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_display_video360_advertiser_link_proposal
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor in new development instead of the `post_create_display_video360_advertiser_link_proposal` interceptor.
+        When both interceptors are used, this `post_create_display_video360_advertiser_link_proposal_with_metadata` interceptor runs after the
+        `post_create_display_video360_advertiser_link_proposal` interceptor. The (possibly modified) response returned by
+        `post_create_display_video360_advertiser_link_proposal` will be passed to
+        `post_create_display_video360_advertiser_link_proposal_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_event_create_rule(
         self,
@@ -1753,11 +2288,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventCreateRule:
         """Post-rpc interceptor for create_event_create_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_event_create_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_event_create_rule` interceptor runs
+        before the `post_create_event_create_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_create_event_create_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventCreateRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventCreateRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_event_create_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_event_create_rule_with_metadata`
+        interceptor in new development instead of the `post_create_event_create_rule` interceptor.
+        When both interceptors are used, this `post_create_event_create_rule_with_metadata` interceptor runs after the
+        `post_create_event_create_rule` interceptor. The (possibly modified) response returned by
+        `post_create_event_create_rule` will be passed to
+        `post_create_event_create_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_event_edit_rule(
         self,
@@ -1779,11 +2339,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventEditRule:
         """Post-rpc interceptor for create_event_edit_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_event_edit_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_event_edit_rule` interceptor runs
+        before the `post_create_event_edit_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_create_event_edit_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventEditRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventEditRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_event_edit_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_event_edit_rule_with_metadata`
+        interceptor in new development instead of the `post_create_event_edit_rule` interceptor.
+        When both interceptors are used, this `post_create_event_edit_rule_with_metadata` interceptor runs after the
+        `post_create_event_edit_rule` interceptor. The (possibly modified) response returned by
+        `post_create_event_edit_rule` will be passed to
+        `post_create_event_edit_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_expanded_data_set(
         self,
@@ -1805,11 +2390,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_expanded_data_set.ExpandedDataSet:
         """Post-rpc interceptor for create_expanded_data_set
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_expanded_data_set_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_expanded_data_set` interceptor runs
+        before the `post_create_expanded_data_set_with_metadata` interceptor.
         """
         return response
+
+    def post_create_expanded_data_set_with_metadata(
+        self,
+        response: gaa_expanded_data_set.ExpandedDataSet,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gaa_expanded_data_set.ExpandedDataSet, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_expanded_data_set
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_expanded_data_set_with_metadata`
+        interceptor in new development instead of the `post_create_expanded_data_set` interceptor.
+        When both interceptors are used, this `post_create_expanded_data_set_with_metadata` interceptor runs after the
+        `post_create_expanded_data_set` interceptor. The (possibly modified) response returned by
+        `post_create_expanded_data_set` will be passed to
+        `post_create_expanded_data_set_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_firebase_link(
         self,
@@ -1831,11 +2441,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.FirebaseLink:
         """Post-rpc interceptor for create_firebase_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_firebase_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_firebase_link` interceptor runs
+        before the `post_create_firebase_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_firebase_link_with_metadata(
+        self,
+        response: resources.FirebaseLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.FirebaseLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_firebase_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_firebase_link_with_metadata`
+        interceptor in new development instead of the `post_create_firebase_link` interceptor.
+        When both interceptors are used, this `post_create_firebase_link_with_metadata` interceptor runs after the
+        `post_create_firebase_link` interceptor. The (possibly modified) response returned by
+        `post_create_firebase_link` will be passed to
+        `post_create_firebase_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_google_ads_link(
         self,
@@ -1857,11 +2490,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.GoogleAdsLink:
         """Post-rpc interceptor for create_google_ads_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_google_ads_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_google_ads_link` interceptor runs
+        before the `post_create_google_ads_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_google_ads_link_with_metadata(
+        self,
+        response: resources.GoogleAdsLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.GoogleAdsLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_google_ads_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_google_ads_link_with_metadata`
+        interceptor in new development instead of the `post_create_google_ads_link` interceptor.
+        When both interceptors are used, this `post_create_google_ads_link_with_metadata` interceptor runs after the
+        `post_create_google_ads_link` interceptor. The (possibly modified) response returned by
+        `post_create_google_ads_link` will be passed to
+        `post_create_google_ads_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_key_event(
         self,
@@ -1880,11 +2536,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_create_key_event(self, response: resources.KeyEvent) -> resources.KeyEvent:
         """Post-rpc interceptor for create_key_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_key_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_key_event` interceptor runs
+        before the `post_create_key_event_with_metadata` interceptor.
         """
         return response
+
+    def post_create_key_event_with_metadata(
+        self,
+        response: resources.KeyEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.KeyEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_key_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_key_event_with_metadata`
+        interceptor in new development instead of the `post_create_key_event` interceptor.
+        When both interceptors are used, this `post_create_key_event_with_metadata` interceptor runs after the
+        `post_create_key_event` interceptor. The (possibly modified) response returned by
+        `post_create_key_event` will be passed to
+        `post_create_key_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_measurement_protocol_secret(
         self,
@@ -1906,11 +2585,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.MeasurementProtocolSecret:
         """Post-rpc interceptor for create_measurement_protocol_secret
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_measurement_protocol_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_measurement_protocol_secret` interceptor runs
+        before the `post_create_measurement_protocol_secret_with_metadata` interceptor.
         """
         return response
+
+    def post_create_measurement_protocol_secret_with_metadata(
+        self,
+        response: resources.MeasurementProtocolSecret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.MeasurementProtocolSecret, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_measurement_protocol_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_measurement_protocol_secret_with_metadata`
+        interceptor in new development instead of the `post_create_measurement_protocol_secret` interceptor.
+        When both interceptors are used, this `post_create_measurement_protocol_secret_with_metadata` interceptor runs after the
+        `post_create_measurement_protocol_secret` interceptor. The (possibly modified) response returned by
+        `post_create_measurement_protocol_secret` will be passed to
+        `post_create_measurement_protocol_secret_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_property(
         self,
@@ -1929,11 +2633,85 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_create_property(self, response: resources.Property) -> resources.Property:
         """Post-rpc interceptor for create_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_property` interceptor runs
+        before the `post_create_property_with_metadata` interceptor.
         """
         return response
+
+    def post_create_property_with_metadata(
+        self,
+        response: resources.Property,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Property, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_property_with_metadata`
+        interceptor in new development instead of the `post_create_property` interceptor.
+        When both interceptors are used, this `post_create_property_with_metadata` interceptor runs after the
+        `post_create_property` interceptor. The (possibly modified) response returned by
+        `post_create_property` will be passed to
+        `post_create_property_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_reporting_data_annotation(
+        self,
+        request: analytics_admin.CreateReportingDataAnnotationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.CreateReportingDataAnnotationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for create_reporting_data_annotation
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_create_reporting_data_annotation(
+        self, response: resources.ReportingDataAnnotation
+    ) -> resources.ReportingDataAnnotation:
+        """Post-rpc interceptor for create_reporting_data_annotation
+
+        DEPRECATED. Please use the `post_create_reporting_data_annotation_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_create_reporting_data_annotation` interceptor runs
+        before the `post_create_reporting_data_annotation_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_reporting_data_annotation_with_metadata(
+        self,
+        response: resources.ReportingDataAnnotation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.ReportingDataAnnotation, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_reporting_data_annotation
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_reporting_data_annotation_with_metadata`
+        interceptor in new development instead of the `post_create_reporting_data_annotation` interceptor.
+        When both interceptors are used, this `post_create_reporting_data_annotation_with_metadata` interceptor runs after the
+        `post_create_reporting_data_annotation` interceptor. The (possibly modified) response returned by
+        `post_create_reporting_data_annotation` will be passed to
+        `post_create_reporting_data_annotation_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_rollup_property(
         self,
@@ -1955,11 +2733,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.CreateRollupPropertyResponse:
         """Post-rpc interceptor for create_rollup_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_rollup_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_rollup_property` interceptor runs
+        before the `post_create_rollup_property_with_metadata` interceptor.
         """
         return response
+
+    def post_create_rollup_property_with_metadata(
+        self,
+        response: analytics_admin.CreateRollupPropertyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.CreateRollupPropertyResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_rollup_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_rollup_property_with_metadata`
+        interceptor in new development instead of the `post_create_rollup_property` interceptor.
+        When both interceptors are used, this `post_create_rollup_property_with_metadata` interceptor runs after the
+        `post_create_rollup_property` interceptor. The (possibly modified) response returned by
+        `post_create_rollup_property` will be passed to
+        `post_create_rollup_property_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_rollup_property_source_link(
         self,
@@ -1981,11 +2785,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.RollupPropertySourceLink:
         """Post-rpc interceptor for create_rollup_property_source_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_rollup_property_source_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_rollup_property_source_link` interceptor runs
+        before the `post_create_rollup_property_source_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_rollup_property_source_link_with_metadata(
+        self,
+        response: resources.RollupPropertySourceLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.RollupPropertySourceLink, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for create_rollup_property_source_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_rollup_property_source_link_with_metadata`
+        interceptor in new development instead of the `post_create_rollup_property_source_link` interceptor.
+        When both interceptors are used, this `post_create_rollup_property_source_link_with_metadata` interceptor runs after the
+        `post_create_rollup_property_source_link` interceptor. The (possibly modified) response returned by
+        `post_create_rollup_property_source_link` will be passed to
+        `post_create_rollup_property_source_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_search_ads360_link(
         self,
@@ -2007,11 +2836,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SearchAds360Link:
         """Post-rpc interceptor for create_search_ads360_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_search_ads360_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_search_ads360_link` interceptor runs
+        before the `post_create_search_ads360_link_with_metadata` interceptor.
         """
         return response
+
+    def post_create_search_ads360_link_with_metadata(
+        self,
+        response: resources.SearchAds360Link,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SearchAds360Link, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_search_ads360_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_search_ads360_link_with_metadata`
+        interceptor in new development instead of the `post_create_search_ads360_link` interceptor.
+        When both interceptors are used, this `post_create_search_ads360_link_with_metadata` interceptor runs after the
+        `post_create_search_ads360_link` interceptor. The (possibly modified) response returned by
+        `post_create_search_ads360_link` will be passed to
+        `post_create_search_ads360_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_sk_ad_network_conversion_value_schema(
         self,
@@ -2033,11 +2885,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SKAdNetworkConversionValueSchema:
         """Post-rpc interceptor for create_sk_ad_network_conversion_value_schema
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_sk_ad_network_conversion_value_schema` interceptor runs
+        before the `post_create_sk_ad_network_conversion_value_schema_with_metadata` interceptor.
         """
         return response
+
+    def post_create_sk_ad_network_conversion_value_schema_with_metadata(
+        self,
+        response: resources.SKAdNetworkConversionValueSchema,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.SKAdNetworkConversionValueSchema,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_sk_ad_network_conversion_value_schema
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor in new development instead of the `post_create_sk_ad_network_conversion_value_schema` interceptor.
+        When both interceptors are used, this `post_create_sk_ad_network_conversion_value_schema_with_metadata` interceptor runs after the
+        `post_create_sk_ad_network_conversion_value_schema` interceptor. The (possibly modified) response returned by
+        `post_create_sk_ad_network_conversion_value_schema` will be passed to
+        `post_create_sk_ad_network_conversion_value_schema_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_subproperty_event_filter(
         self,
@@ -2059,11 +2937,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_subproperty_event_filter.SubpropertyEventFilter:
         """Post-rpc interceptor for create_subproperty_event_filter
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_subproperty_event_filter_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_subproperty_event_filter` interceptor runs
+        before the `post_create_subproperty_event_filter_with_metadata` interceptor.
         """
         return response
+
+    def post_create_subproperty_event_filter_with_metadata(
+        self,
+        response: gaa_subproperty_event_filter.SubpropertyEventFilter,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gaa_subproperty_event_filter.SubpropertyEventFilter,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_subproperty_event_filter
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_subproperty_event_filter_with_metadata`
+        interceptor in new development instead of the `post_create_subproperty_event_filter` interceptor.
+        When both interceptors are used, this `post_create_subproperty_event_filter_with_metadata` interceptor runs after the
+        `post_create_subproperty_event_filter` interceptor. The (possibly modified) response returned by
+        `post_create_subproperty_event_filter` will be passed to
+        `post_create_subproperty_event_filter_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_access_binding(
         self,
@@ -2349,11 +3253,49 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_delete_property(self, response: resources.Property) -> resources.Property:
         """Post-rpc interceptor for delete_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_property` interceptor runs
+        before the `post_delete_property_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_property_with_metadata(
+        self,
+        response: resources.Property,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Property, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_property_with_metadata`
+        interceptor in new development instead of the `post_delete_property` interceptor.
+        When both interceptors are used, this `post_delete_property_with_metadata` interceptor runs after the
+        `post_delete_property` interceptor. The (possibly modified) response returned by
+        `post_delete_property` will be passed to
+        `post_delete_property_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_reporting_data_annotation(
+        self,
+        request: analytics_admin.DeleteReportingDataAnnotationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.DeleteReportingDataAnnotationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for delete_reporting_data_annotation
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
 
     def pre_delete_rollup_property_source_link(
         self,
@@ -2435,11 +3377,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.FetchAutomatedGa4ConfigurationOptOutResponse:
         """Post-rpc interceptor for fetch_automated_ga4_configuration_opt_out
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_fetch_automated_ga4_configuration_opt_out_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_fetch_automated_ga4_configuration_opt_out` interceptor runs
+        before the `post_fetch_automated_ga4_configuration_opt_out_with_metadata` interceptor.
         """
         return response
+
+    def post_fetch_automated_ga4_configuration_opt_out_with_metadata(
+        self,
+        response: analytics_admin.FetchAutomatedGa4ConfigurationOptOutResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.FetchAutomatedGa4ConfigurationOptOutResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for fetch_automated_ga4_configuration_opt_out
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_fetch_automated_ga4_configuration_opt_out_with_metadata`
+        interceptor in new development instead of the `post_fetch_automated_ga4_configuration_opt_out` interceptor.
+        When both interceptors are used, this `post_fetch_automated_ga4_configuration_opt_out_with_metadata` interceptor runs after the
+        `post_fetch_automated_ga4_configuration_opt_out` interceptor. The (possibly modified) response returned by
+        `post_fetch_automated_ga4_configuration_opt_out` will be passed to
+        `post_fetch_automated_ga4_configuration_opt_out_with_metadata`.
+        """
+        return response, metadata
 
     def pre_fetch_connected_ga4_property(
         self,
@@ -2461,11 +3429,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.FetchConnectedGa4PropertyResponse:
         """Post-rpc interceptor for fetch_connected_ga4_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_fetch_connected_ga4_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_fetch_connected_ga4_property` interceptor runs
+        before the `post_fetch_connected_ga4_property_with_metadata` interceptor.
         """
         return response
+
+    def post_fetch_connected_ga4_property_with_metadata(
+        self,
+        response: analytics_admin.FetchConnectedGa4PropertyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.FetchConnectedGa4PropertyResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for fetch_connected_ga4_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_fetch_connected_ga4_property_with_metadata`
+        interceptor in new development instead of the `post_fetch_connected_ga4_property` interceptor.
+        When both interceptors are used, this `post_fetch_connected_ga4_property_with_metadata` interceptor runs after the
+        `post_fetch_connected_ga4_property` interceptor. The (possibly modified) response returned by
+        `post_fetch_connected_ga4_property` will be passed to
+        `post_fetch_connected_ga4_property_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_access_binding(
         self,
@@ -2486,11 +3480,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AccessBinding:
         """Post-rpc interceptor for get_access_binding
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_access_binding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_access_binding` interceptor runs
+        before the `post_get_access_binding_with_metadata` interceptor.
         """
         return response
+
+    def post_get_access_binding_with_metadata(
+        self,
+        response: resources.AccessBinding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AccessBinding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_access_binding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_access_binding_with_metadata`
+        interceptor in new development instead of the `post_get_access_binding` interceptor.
+        When both interceptors are used, this `post_get_access_binding_with_metadata` interceptor runs after the
+        `post_get_access_binding` interceptor. The (possibly modified) response returned by
+        `post_get_access_binding` will be passed to
+        `post_get_access_binding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_account(
         self,
@@ -2509,11 +3526,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_get_account(self, response: resources.Account) -> resources.Account:
         """Post-rpc interceptor for get_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_account` interceptor runs
+        before the `post_get_account_with_metadata` interceptor.
         """
         return response
+
+    def post_get_account_with_metadata(
+        self,
+        response: resources.Account,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Account, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_account_with_metadata`
+        interceptor in new development instead of the `post_get_account` interceptor.
+        When both interceptors are used, this `post_get_account_with_metadata` interceptor runs after the
+        `post_get_account` interceptor. The (possibly modified) response returned by
+        `post_get_account` will be passed to
+        `post_get_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_ad_sense_link(
         self,
@@ -2534,11 +3574,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AdSenseLink:
         """Post-rpc interceptor for get_ad_sense_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_ad_sense_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_ad_sense_link` interceptor runs
+        before the `post_get_ad_sense_link_with_metadata` interceptor.
         """
         return response
+
+    def post_get_ad_sense_link_with_metadata(
+        self,
+        response: resources.AdSenseLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AdSenseLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_ad_sense_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_ad_sense_link_with_metadata`
+        interceptor in new development instead of the `post_get_ad_sense_link` interceptor.
+        When both interceptors are used, this `post_get_ad_sense_link_with_metadata` interceptor runs after the
+        `post_get_ad_sense_link` interceptor. The (possibly modified) response returned by
+        `post_get_ad_sense_link` will be passed to
+        `post_get_ad_sense_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_attribution_settings(
         self,
@@ -2560,11 +3623,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AttributionSettings:
         """Post-rpc interceptor for get_attribution_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_attribution_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_attribution_settings` interceptor runs
+        before the `post_get_attribution_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_attribution_settings_with_metadata(
+        self,
+        response: resources.AttributionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AttributionSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_attribution_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_attribution_settings_with_metadata`
+        interceptor in new development instead of the `post_get_attribution_settings` interceptor.
+        When both interceptors are used, this `post_get_attribution_settings_with_metadata` interceptor runs after the
+        `post_get_attribution_settings` interceptor. The (possibly modified) response returned by
+        `post_get_attribution_settings` will be passed to
+        `post_get_attribution_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_audience(
         self,
@@ -2583,11 +3669,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_get_audience(self, response: audience.Audience) -> audience.Audience:
         """Post-rpc interceptor for get_audience
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_audience_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_audience` interceptor runs
+        before the `post_get_audience_with_metadata` interceptor.
         """
         return response
+
+    def post_get_audience_with_metadata(
+        self,
+        response: audience.Audience,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[audience.Audience, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_audience
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_audience_with_metadata`
+        interceptor in new development instead of the `post_get_audience` interceptor.
+        When both interceptors are used, this `post_get_audience_with_metadata` interceptor runs after the
+        `post_get_audience` interceptor. The (possibly modified) response returned by
+        `post_get_audience` will be passed to
+        `post_get_audience_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_big_query_link(
         self,
@@ -2608,11 +3717,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.BigQueryLink:
         """Post-rpc interceptor for get_big_query_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_big_query_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_big_query_link` interceptor runs
+        before the `post_get_big_query_link_with_metadata` interceptor.
         """
         return response
+
+    def post_get_big_query_link_with_metadata(
+        self,
+        response: resources.BigQueryLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.BigQueryLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_big_query_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_big_query_link_with_metadata`
+        interceptor in new development instead of the `post_get_big_query_link` interceptor.
+        When both interceptors are used, this `post_get_big_query_link_with_metadata` interceptor runs after the
+        `post_get_big_query_link` interceptor. The (possibly modified) response returned by
+        `post_get_big_query_link` will be passed to
+        `post_get_big_query_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_calculated_metric(
         self,
@@ -2634,11 +3766,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CalculatedMetric:
         """Post-rpc interceptor for get_calculated_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_calculated_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_calculated_metric` interceptor runs
+        before the `post_get_calculated_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_get_calculated_metric_with_metadata(
+        self,
+        response: resources.CalculatedMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CalculatedMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_calculated_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_calculated_metric_with_metadata`
+        interceptor in new development instead of the `post_get_calculated_metric` interceptor.
+        When both interceptors are used, this `post_get_calculated_metric_with_metadata` interceptor runs after the
+        `post_get_calculated_metric` interceptor. The (possibly modified) response returned by
+        `post_get_calculated_metric` will be passed to
+        `post_get_calculated_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_channel_group(
         self,
@@ -2659,11 +3814,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> channel_group.ChannelGroup:
         """Post-rpc interceptor for get_channel_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_channel_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_channel_group` interceptor runs
+        before the `post_get_channel_group_with_metadata` interceptor.
         """
         return response
+
+    def post_get_channel_group_with_metadata(
+        self,
+        response: channel_group.ChannelGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[channel_group.ChannelGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_channel_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_channel_group_with_metadata`
+        interceptor in new development instead of the `post_get_channel_group` interceptor.
+        When both interceptors are used, this `post_get_channel_group_with_metadata` interceptor runs after the
+        `post_get_channel_group` interceptor. The (possibly modified) response returned by
+        `post_get_channel_group` will be passed to
+        `post_get_channel_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_conversion_event(
         self,
@@ -2685,11 +3863,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.ConversionEvent:
         """Post-rpc interceptor for get_conversion_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_conversion_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_conversion_event` interceptor runs
+        before the `post_get_conversion_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_conversion_event_with_metadata(
+        self,
+        response: resources.ConversionEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConversionEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_conversion_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_conversion_event_with_metadata`
+        interceptor in new development instead of the `post_get_conversion_event` interceptor.
+        When both interceptors are used, this `post_get_conversion_event_with_metadata` interceptor runs after the
+        `post_get_conversion_event` interceptor. The (possibly modified) response returned by
+        `post_get_conversion_event` will be passed to
+        `post_get_conversion_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_custom_dimension(
         self,
@@ -2711,11 +3912,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomDimension:
         """Post-rpc interceptor for get_custom_dimension
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_custom_dimension_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_custom_dimension` interceptor runs
+        before the `post_get_custom_dimension_with_metadata` interceptor.
         """
         return response
+
+    def post_get_custom_dimension_with_metadata(
+        self,
+        response: resources.CustomDimension,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomDimension, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_custom_dimension
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_custom_dimension_with_metadata`
+        interceptor in new development instead of the `post_get_custom_dimension` interceptor.
+        When both interceptors are used, this `post_get_custom_dimension_with_metadata` interceptor runs after the
+        `post_get_custom_dimension` interceptor. The (possibly modified) response returned by
+        `post_get_custom_dimension` will be passed to
+        `post_get_custom_dimension_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_custom_metric(
         self,
@@ -2736,11 +3960,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomMetric:
         """Post-rpc interceptor for get_custom_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_custom_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_custom_metric` interceptor runs
+        before the `post_get_custom_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_get_custom_metric_with_metadata(
+        self,
+        response: resources.CustomMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_custom_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_custom_metric_with_metadata`
+        interceptor in new development instead of the `post_get_custom_metric` interceptor.
+        When both interceptors are used, this `post_get_custom_metric_with_metadata` interceptor runs after the
+        `post_get_custom_metric` interceptor. The (possibly modified) response returned by
+        `post_get_custom_metric` will be passed to
+        `post_get_custom_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_data_redaction_settings(
         self,
@@ -2762,11 +4009,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataRedactionSettings:
         """Post-rpc interceptor for get_data_redaction_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_data_redaction_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_data_redaction_settings` interceptor runs
+        before the `post_get_data_redaction_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_data_redaction_settings_with_metadata(
+        self,
+        response: resources.DataRedactionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DataRedactionSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_data_redaction_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_data_redaction_settings_with_metadata`
+        interceptor in new development instead of the `post_get_data_redaction_settings` interceptor.
+        When both interceptors are used, this `post_get_data_redaction_settings_with_metadata` interceptor runs after the
+        `post_get_data_redaction_settings` interceptor. The (possibly modified) response returned by
+        `post_get_data_redaction_settings` will be passed to
+        `post_get_data_redaction_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_data_retention_settings(
         self,
@@ -2788,11 +4060,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataRetentionSettings:
         """Post-rpc interceptor for get_data_retention_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_data_retention_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_data_retention_settings` interceptor runs
+        before the `post_get_data_retention_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_data_retention_settings_with_metadata(
+        self,
+        response: resources.DataRetentionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DataRetentionSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_data_retention_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_data_retention_settings_with_metadata`
+        interceptor in new development instead of the `post_get_data_retention_settings` interceptor.
+        When both interceptors are used, this `post_get_data_retention_settings_with_metadata` interceptor runs after the
+        `post_get_data_retention_settings` interceptor. The (possibly modified) response returned by
+        `post_get_data_retention_settings` will be passed to
+        `post_get_data_retention_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_data_sharing_settings(
         self,
@@ -2814,11 +4111,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataSharingSettings:
         """Post-rpc interceptor for get_data_sharing_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_data_sharing_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_data_sharing_settings` interceptor runs
+        before the `post_get_data_sharing_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_data_sharing_settings_with_metadata(
+        self,
+        response: resources.DataSharingSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.DataSharingSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_data_sharing_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_data_sharing_settings_with_metadata`
+        interceptor in new development instead of the `post_get_data_sharing_settings` interceptor.
+        When both interceptors are used, this `post_get_data_sharing_settings_with_metadata` interceptor runs after the
+        `post_get_data_sharing_settings` interceptor. The (possibly modified) response returned by
+        `post_get_data_sharing_settings` will be passed to
+        `post_get_data_sharing_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_data_stream(
         self,
@@ -2839,11 +4159,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataStream:
         """Post-rpc interceptor for get_data_stream
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_data_stream_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_data_stream` interceptor runs
+        before the `post_get_data_stream_with_metadata` interceptor.
         """
         return response
+
+    def post_get_data_stream_with_metadata(
+        self,
+        response: resources.DataStream,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.DataStream, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_data_stream
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_data_stream_with_metadata`
+        interceptor in new development instead of the `post_get_data_stream` interceptor.
+        When both interceptors are used, this `post_get_data_stream_with_metadata` interceptor runs after the
+        `post_get_data_stream` interceptor. The (possibly modified) response returned by
+        `post_get_data_stream` will be passed to
+        `post_get_data_stream_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_display_video360_advertiser_link(
         self,
@@ -2865,11 +4208,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLink:
         """Post-rpc interceptor for get_display_video360_advertiser_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_display_video360_advertiser_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_display_video360_advertiser_link` interceptor runs
+        before the `post_get_display_video360_advertiser_link_with_metadata` interceptor.
         """
         return response
+
+    def post_get_display_video360_advertiser_link_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLink, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_display_video360_advertiser_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_display_video360_advertiser_link_with_metadata`
+        interceptor in new development instead of the `post_get_display_video360_advertiser_link` interceptor.
+        When both interceptors are used, this `post_get_display_video360_advertiser_link_with_metadata` interceptor runs after the
+        `post_get_display_video360_advertiser_link` interceptor. The (possibly modified) response returned by
+        `post_get_display_video360_advertiser_link` will be passed to
+        `post_get_display_video360_advertiser_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_display_video360_advertiser_link_proposal(
         self,
@@ -2891,11 +4259,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLinkProposal:
         """Post-rpc interceptor for get_display_video360_advertiser_link_proposal
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_display_video360_advertiser_link_proposal` interceptor runs
+        before the `post_get_display_video360_advertiser_link_proposal_with_metadata` interceptor.
         """
         return response
+
+    def post_get_display_video360_advertiser_link_proposal_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLinkProposal,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLinkProposal,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_display_video360_advertiser_link_proposal
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_display_video360_advertiser_link_proposal_with_metadata`
+        interceptor in new development instead of the `post_get_display_video360_advertiser_link_proposal` interceptor.
+        When both interceptors are used, this `post_get_display_video360_advertiser_link_proposal_with_metadata` interceptor runs after the
+        `post_get_display_video360_advertiser_link_proposal` interceptor. The (possibly modified) response returned by
+        `post_get_display_video360_advertiser_link_proposal` will be passed to
+        `post_get_display_video360_advertiser_link_proposal_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_enhanced_measurement_settings(
         self,
@@ -2917,11 +4311,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.EnhancedMeasurementSettings:
         """Post-rpc interceptor for get_enhanced_measurement_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_enhanced_measurement_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_enhanced_measurement_settings` interceptor runs
+        before the `post_get_enhanced_measurement_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_enhanced_measurement_settings_with_metadata(
+        self,
+        response: resources.EnhancedMeasurementSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.EnhancedMeasurementSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_enhanced_measurement_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_enhanced_measurement_settings_with_metadata`
+        interceptor in new development instead of the `post_get_enhanced_measurement_settings` interceptor.
+        When both interceptors are used, this `post_get_enhanced_measurement_settings_with_metadata` interceptor runs after the
+        `post_get_enhanced_measurement_settings` interceptor. The (possibly modified) response returned by
+        `post_get_enhanced_measurement_settings` will be passed to
+        `post_get_enhanced_measurement_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_event_create_rule(
         self,
@@ -2943,11 +4362,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventCreateRule:
         """Post-rpc interceptor for get_event_create_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_event_create_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_event_create_rule` interceptor runs
+        before the `post_get_event_create_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_get_event_create_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventCreateRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventCreateRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_event_create_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_event_create_rule_with_metadata`
+        interceptor in new development instead of the `post_get_event_create_rule` interceptor.
+        When both interceptors are used, this `post_get_event_create_rule_with_metadata` interceptor runs after the
+        `post_get_event_create_rule` interceptor. The (possibly modified) response returned by
+        `post_get_event_create_rule` will be passed to
+        `post_get_event_create_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_event_edit_rule(
         self,
@@ -2968,11 +4412,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventEditRule:
         """Post-rpc interceptor for get_event_edit_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_event_edit_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_event_edit_rule` interceptor runs
+        before the `post_get_event_edit_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_get_event_edit_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventEditRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventEditRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_event_edit_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_event_edit_rule_with_metadata`
+        interceptor in new development instead of the `post_get_event_edit_rule` interceptor.
+        When both interceptors are used, this `post_get_event_edit_rule_with_metadata` interceptor runs after the
+        `post_get_event_edit_rule` interceptor. The (possibly modified) response returned by
+        `post_get_event_edit_rule` will be passed to
+        `post_get_event_edit_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_expanded_data_set(
         self,
@@ -2994,11 +4463,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> expanded_data_set.ExpandedDataSet:
         """Post-rpc interceptor for get_expanded_data_set
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_expanded_data_set_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_expanded_data_set` interceptor runs
+        before the `post_get_expanded_data_set_with_metadata` interceptor.
         """
         return response
+
+    def post_get_expanded_data_set_with_metadata(
+        self,
+        response: expanded_data_set.ExpandedDataSet,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        expanded_data_set.ExpandedDataSet, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_expanded_data_set
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_expanded_data_set_with_metadata`
+        interceptor in new development instead of the `post_get_expanded_data_set` interceptor.
+        When both interceptors are used, this `post_get_expanded_data_set_with_metadata` interceptor runs after the
+        `post_get_expanded_data_set` interceptor. The (possibly modified) response returned by
+        `post_get_expanded_data_set` will be passed to
+        `post_get_expanded_data_set_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_global_site_tag(
         self,
@@ -3019,11 +4513,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.GlobalSiteTag:
         """Post-rpc interceptor for get_global_site_tag
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_global_site_tag_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_global_site_tag` interceptor runs
+        before the `post_get_global_site_tag_with_metadata` interceptor.
         """
         return response
+
+    def post_get_global_site_tag_with_metadata(
+        self,
+        response: resources.GlobalSiteTag,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.GlobalSiteTag, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_global_site_tag
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_global_site_tag_with_metadata`
+        interceptor in new development instead of the `post_get_global_site_tag` interceptor.
+        When both interceptors are used, this `post_get_global_site_tag_with_metadata` interceptor runs after the
+        `post_get_global_site_tag` interceptor. The (possibly modified) response returned by
+        `post_get_global_site_tag` will be passed to
+        `post_get_global_site_tag_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_google_signals_settings(
         self,
@@ -3045,11 +4562,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.GoogleSignalsSettings:
         """Post-rpc interceptor for get_google_signals_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_google_signals_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_google_signals_settings` interceptor runs
+        before the `post_get_google_signals_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_google_signals_settings_with_metadata(
+        self,
+        response: resources.GoogleSignalsSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.GoogleSignalsSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_google_signals_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_google_signals_settings_with_metadata`
+        interceptor in new development instead of the `post_get_google_signals_settings` interceptor.
+        When both interceptors are used, this `post_get_google_signals_settings_with_metadata` interceptor runs after the
+        `post_get_google_signals_settings` interceptor. The (possibly modified) response returned by
+        `post_get_google_signals_settings` will be passed to
+        `post_get_google_signals_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_key_event(
         self,
@@ -3068,11 +4610,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_get_key_event(self, response: resources.KeyEvent) -> resources.KeyEvent:
         """Post-rpc interceptor for get_key_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_key_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_key_event` interceptor runs
+        before the `post_get_key_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_key_event_with_metadata(
+        self,
+        response: resources.KeyEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.KeyEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_key_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_key_event_with_metadata`
+        interceptor in new development instead of the `post_get_key_event` interceptor.
+        When both interceptors are used, this `post_get_key_event_with_metadata` interceptor runs after the
+        `post_get_key_event` interceptor. The (possibly modified) response returned by
+        `post_get_key_event` will be passed to
+        `post_get_key_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_measurement_protocol_secret(
         self,
@@ -3094,11 +4659,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.MeasurementProtocolSecret:
         """Post-rpc interceptor for get_measurement_protocol_secret
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_measurement_protocol_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_measurement_protocol_secret` interceptor runs
+        before the `post_get_measurement_protocol_secret_with_metadata` interceptor.
         """
         return response
+
+    def post_get_measurement_protocol_secret_with_metadata(
+        self,
+        response: resources.MeasurementProtocolSecret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.MeasurementProtocolSecret, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_measurement_protocol_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_measurement_protocol_secret_with_metadata`
+        interceptor in new development instead of the `post_get_measurement_protocol_secret` interceptor.
+        When both interceptors are used, this `post_get_measurement_protocol_secret_with_metadata` interceptor runs after the
+        `post_get_measurement_protocol_secret` interceptor. The (possibly modified) response returned by
+        `post_get_measurement_protocol_secret` will be passed to
+        `post_get_measurement_protocol_secret_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_property(
         self,
@@ -3117,11 +4707,85 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_get_property(self, response: resources.Property) -> resources.Property:
         """Post-rpc interceptor for get_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_property` interceptor runs
+        before the `post_get_property_with_metadata` interceptor.
         """
         return response
+
+    def post_get_property_with_metadata(
+        self,
+        response: resources.Property,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Property, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_property_with_metadata`
+        interceptor in new development instead of the `post_get_property` interceptor.
+        When both interceptors are used, this `post_get_property_with_metadata` interceptor runs after the
+        `post_get_property` interceptor. The (possibly modified) response returned by
+        `post_get_property` will be passed to
+        `post_get_property_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_reporting_data_annotation(
+        self,
+        request: analytics_admin.GetReportingDataAnnotationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.GetReportingDataAnnotationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for get_reporting_data_annotation
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_get_reporting_data_annotation(
+        self, response: resources.ReportingDataAnnotation
+    ) -> resources.ReportingDataAnnotation:
+        """Post-rpc interceptor for get_reporting_data_annotation
+
+        DEPRECATED. Please use the `post_get_reporting_data_annotation_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_get_reporting_data_annotation` interceptor runs
+        before the `post_get_reporting_data_annotation_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_reporting_data_annotation_with_metadata(
+        self,
+        response: resources.ReportingDataAnnotation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.ReportingDataAnnotation, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_reporting_data_annotation
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_reporting_data_annotation_with_metadata`
+        interceptor in new development instead of the `post_get_reporting_data_annotation` interceptor.
+        When both interceptors are used, this `post_get_reporting_data_annotation_with_metadata` interceptor runs after the
+        `post_get_reporting_data_annotation` interceptor. The (possibly modified) response returned by
+        `post_get_reporting_data_annotation` will be passed to
+        `post_get_reporting_data_annotation_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_rollup_property_source_link(
         self,
@@ -3143,11 +4807,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.RollupPropertySourceLink:
         """Post-rpc interceptor for get_rollup_property_source_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_rollup_property_source_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_rollup_property_source_link` interceptor runs
+        before the `post_get_rollup_property_source_link_with_metadata` interceptor.
         """
         return response
+
+    def post_get_rollup_property_source_link_with_metadata(
+        self,
+        response: resources.RollupPropertySourceLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.RollupPropertySourceLink, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_rollup_property_source_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_rollup_property_source_link_with_metadata`
+        interceptor in new development instead of the `post_get_rollup_property_source_link` interceptor.
+        When both interceptors are used, this `post_get_rollup_property_source_link_with_metadata` interceptor runs after the
+        `post_get_rollup_property_source_link` interceptor. The (possibly modified) response returned by
+        `post_get_rollup_property_source_link` will be passed to
+        `post_get_rollup_property_source_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_search_ads360_link(
         self,
@@ -3169,11 +4858,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SearchAds360Link:
         """Post-rpc interceptor for get_search_ads360_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_search_ads360_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_search_ads360_link` interceptor runs
+        before the `post_get_search_ads360_link_with_metadata` interceptor.
         """
         return response
+
+    def post_get_search_ads360_link_with_metadata(
+        self,
+        response: resources.SearchAds360Link,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SearchAds360Link, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_search_ads360_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_search_ads360_link_with_metadata`
+        interceptor in new development instead of the `post_get_search_ads360_link` interceptor.
+        When both interceptors are used, this `post_get_search_ads360_link_with_metadata` interceptor runs after the
+        `post_get_search_ads360_link` interceptor. The (possibly modified) response returned by
+        `post_get_search_ads360_link` will be passed to
+        `post_get_search_ads360_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_sk_ad_network_conversion_value_schema(
         self,
@@ -3195,11 +4907,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SKAdNetworkConversionValueSchema:
         """Post-rpc interceptor for get_sk_ad_network_conversion_value_schema
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_sk_ad_network_conversion_value_schema` interceptor runs
+        before the `post_get_sk_ad_network_conversion_value_schema_with_metadata` interceptor.
         """
         return response
+
+    def post_get_sk_ad_network_conversion_value_schema_with_metadata(
+        self,
+        response: resources.SKAdNetworkConversionValueSchema,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.SKAdNetworkConversionValueSchema,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_sk_ad_network_conversion_value_schema
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor in new development instead of the `post_get_sk_ad_network_conversion_value_schema` interceptor.
+        When both interceptors are used, this `post_get_sk_ad_network_conversion_value_schema_with_metadata` interceptor runs after the
+        `post_get_sk_ad_network_conversion_value_schema` interceptor. The (possibly modified) response returned by
+        `post_get_sk_ad_network_conversion_value_schema` will be passed to
+        `post_get_sk_ad_network_conversion_value_schema_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_subproperty_event_filter(
         self,
@@ -3221,11 +4959,88 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> subproperty_event_filter.SubpropertyEventFilter:
         """Post-rpc interceptor for get_subproperty_event_filter
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_subproperty_event_filter_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_subproperty_event_filter` interceptor runs
+        before the `post_get_subproperty_event_filter_with_metadata` interceptor.
         """
         return response
+
+    def post_get_subproperty_event_filter_with_metadata(
+        self,
+        response: subproperty_event_filter.SubpropertyEventFilter,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        subproperty_event_filter.SubpropertyEventFilter,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_subproperty_event_filter
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_subproperty_event_filter_with_metadata`
+        interceptor in new development instead of the `post_get_subproperty_event_filter` interceptor.
+        When both interceptors are used, this `post_get_subproperty_event_filter_with_metadata` interceptor runs after the
+        `post_get_subproperty_event_filter` interceptor. The (possibly modified) response returned by
+        `post_get_subproperty_event_filter` will be passed to
+        `post_get_subproperty_event_filter_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_subproperty_sync_config(
+        self,
+        request: analytics_admin.GetSubpropertySyncConfigRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.GetSubpropertySyncConfigRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for get_subproperty_sync_config
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_get_subproperty_sync_config(
+        self, response: resources.SubpropertySyncConfig
+    ) -> resources.SubpropertySyncConfig:
+        """Post-rpc interceptor for get_subproperty_sync_config
+
+        DEPRECATED. Please use the `post_get_subproperty_sync_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_get_subproperty_sync_config` interceptor runs
+        before the `post_get_subproperty_sync_config_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_subproperty_sync_config_with_metadata(
+        self,
+        response: resources.SubpropertySyncConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.SubpropertySyncConfig, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_subproperty_sync_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_subproperty_sync_config_with_metadata`
+        interceptor in new development instead of the `post_get_subproperty_sync_config` interceptor.
+        When both interceptors are used, this `post_get_subproperty_sync_config_with_metadata` interceptor runs after the
+        `post_get_subproperty_sync_config` interceptor. The (possibly modified) response returned by
+        `post_get_subproperty_sync_config` will be passed to
+        `post_get_subproperty_sync_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_access_bindings(
         self,
@@ -3247,11 +5062,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListAccessBindingsResponse:
         """Post-rpc interceptor for list_access_bindings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_access_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_access_bindings` interceptor runs
+        before the `post_list_access_bindings_with_metadata` interceptor.
         """
         return response
+
+    def post_list_access_bindings_with_metadata(
+        self,
+        response: analytics_admin.ListAccessBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListAccessBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_access_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_access_bindings_with_metadata`
+        interceptor in new development instead of the `post_list_access_bindings` interceptor.
+        When both interceptors are used, this `post_list_access_bindings_with_metadata` interceptor runs after the
+        `post_list_access_bindings` interceptor. The (possibly modified) response returned by
+        `post_list_access_bindings` will be passed to
+        `post_list_access_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_accounts(
         self,
@@ -3272,11 +5113,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListAccountsResponse:
         """Post-rpc interceptor for list_accounts
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_accounts_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_accounts` interceptor runs
+        before the `post_list_accounts_with_metadata` interceptor.
         """
         return response
+
+    def post_list_accounts_with_metadata(
+        self,
+        response: analytics_admin.ListAccountsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListAccountsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_accounts
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_accounts_with_metadata`
+        interceptor in new development instead of the `post_list_accounts` interceptor.
+        When both interceptors are used, this `post_list_accounts_with_metadata` interceptor runs after the
+        `post_list_accounts` interceptor. The (possibly modified) response returned by
+        `post_list_accounts` will be passed to
+        `post_list_accounts_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_account_summaries(
         self,
@@ -3298,11 +5164,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListAccountSummariesResponse:
         """Post-rpc interceptor for list_account_summaries
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_account_summaries_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_account_summaries` interceptor runs
+        before the `post_list_account_summaries_with_metadata` interceptor.
         """
         return response
+
+    def post_list_account_summaries_with_metadata(
+        self,
+        response: analytics_admin.ListAccountSummariesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListAccountSummariesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_account_summaries
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_account_summaries_with_metadata`
+        interceptor in new development instead of the `post_list_account_summaries` interceptor.
+        When both interceptors are used, this `post_list_account_summaries_with_metadata` interceptor runs after the
+        `post_list_account_summaries` interceptor. The (possibly modified) response returned by
+        `post_list_account_summaries` will be passed to
+        `post_list_account_summaries_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_ad_sense_links(
         self,
@@ -3323,11 +5215,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListAdSenseLinksResponse:
         """Post-rpc interceptor for list_ad_sense_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_ad_sense_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_ad_sense_links` interceptor runs
+        before the `post_list_ad_sense_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_ad_sense_links_with_metadata(
+        self,
+        response: analytics_admin.ListAdSenseLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListAdSenseLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_ad_sense_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_ad_sense_links_with_metadata`
+        interceptor in new development instead of the `post_list_ad_sense_links` interceptor.
+        When both interceptors are used, this `post_list_ad_sense_links_with_metadata` interceptor runs after the
+        `post_list_ad_sense_links` interceptor. The (possibly modified) response returned by
+        `post_list_ad_sense_links` will be passed to
+        `post_list_ad_sense_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_audiences(
         self,
@@ -3348,11 +5266,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListAudiencesResponse:
         """Post-rpc interceptor for list_audiences
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_audiences_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_audiences` interceptor runs
+        before the `post_list_audiences_with_metadata` interceptor.
         """
         return response
+
+    def post_list_audiences_with_metadata(
+        self,
+        response: analytics_admin.ListAudiencesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListAudiencesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_audiences
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_audiences_with_metadata`
+        interceptor in new development instead of the `post_list_audiences` interceptor.
+        When both interceptors are used, this `post_list_audiences_with_metadata` interceptor runs after the
+        `post_list_audiences` interceptor. The (possibly modified) response returned by
+        `post_list_audiences` will be passed to
+        `post_list_audiences_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_big_query_links(
         self,
@@ -3374,11 +5317,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListBigQueryLinksResponse:
         """Post-rpc interceptor for list_big_query_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_big_query_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_big_query_links` interceptor runs
+        before the `post_list_big_query_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_big_query_links_with_metadata(
+        self,
+        response: analytics_admin.ListBigQueryLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListBigQueryLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_big_query_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_big_query_links_with_metadata`
+        interceptor in new development instead of the `post_list_big_query_links` interceptor.
+        When both interceptors are used, this `post_list_big_query_links_with_metadata` interceptor runs after the
+        `post_list_big_query_links` interceptor. The (possibly modified) response returned by
+        `post_list_big_query_links` will be passed to
+        `post_list_big_query_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_calculated_metrics(
         self,
@@ -3400,11 +5369,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListCalculatedMetricsResponse:
         """Post-rpc interceptor for list_calculated_metrics
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_calculated_metrics_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_calculated_metrics` interceptor runs
+        before the `post_list_calculated_metrics_with_metadata` interceptor.
         """
         return response
+
+    def post_list_calculated_metrics_with_metadata(
+        self,
+        response: analytics_admin.ListCalculatedMetricsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListCalculatedMetricsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_calculated_metrics
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_calculated_metrics_with_metadata`
+        interceptor in new development instead of the `post_list_calculated_metrics` interceptor.
+        When both interceptors are used, this `post_list_calculated_metrics_with_metadata` interceptor runs after the
+        `post_list_calculated_metrics` interceptor. The (possibly modified) response returned by
+        `post_list_calculated_metrics` will be passed to
+        `post_list_calculated_metrics_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_channel_groups(
         self,
@@ -3426,11 +5421,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListChannelGroupsResponse:
         """Post-rpc interceptor for list_channel_groups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_channel_groups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_channel_groups` interceptor runs
+        before the `post_list_channel_groups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_channel_groups_with_metadata(
+        self,
+        response: analytics_admin.ListChannelGroupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListChannelGroupsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_channel_groups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_channel_groups_with_metadata`
+        interceptor in new development instead of the `post_list_channel_groups` interceptor.
+        When both interceptors are used, this `post_list_channel_groups_with_metadata` interceptor runs after the
+        `post_list_channel_groups` interceptor. The (possibly modified) response returned by
+        `post_list_channel_groups` will be passed to
+        `post_list_channel_groups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_connected_site_tags(
         self,
@@ -3452,11 +5473,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListConnectedSiteTagsResponse:
         """Post-rpc interceptor for list_connected_site_tags
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_connected_site_tags_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_connected_site_tags` interceptor runs
+        before the `post_list_connected_site_tags_with_metadata` interceptor.
         """
         return response
+
+    def post_list_connected_site_tags_with_metadata(
+        self,
+        response: analytics_admin.ListConnectedSiteTagsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListConnectedSiteTagsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_connected_site_tags
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_connected_site_tags_with_metadata`
+        interceptor in new development instead of the `post_list_connected_site_tags` interceptor.
+        When both interceptors are used, this `post_list_connected_site_tags_with_metadata` interceptor runs after the
+        `post_list_connected_site_tags` interceptor. The (possibly modified) response returned by
+        `post_list_connected_site_tags` will be passed to
+        `post_list_connected_site_tags_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_conversion_events(
         self,
@@ -3478,11 +5525,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListConversionEventsResponse:
         """Post-rpc interceptor for list_conversion_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_conversion_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_conversion_events` interceptor runs
+        before the `post_list_conversion_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_conversion_events_with_metadata(
+        self,
+        response: analytics_admin.ListConversionEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListConversionEventsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_conversion_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_conversion_events_with_metadata`
+        interceptor in new development instead of the `post_list_conversion_events` interceptor.
+        When both interceptors are used, this `post_list_conversion_events_with_metadata` interceptor runs after the
+        `post_list_conversion_events` interceptor. The (possibly modified) response returned by
+        `post_list_conversion_events` will be passed to
+        `post_list_conversion_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_custom_dimensions(
         self,
@@ -3504,11 +5577,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListCustomDimensionsResponse:
         """Post-rpc interceptor for list_custom_dimensions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_custom_dimensions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_custom_dimensions` interceptor runs
+        before the `post_list_custom_dimensions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_custom_dimensions_with_metadata(
+        self,
+        response: analytics_admin.ListCustomDimensionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListCustomDimensionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_custom_dimensions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_custom_dimensions_with_metadata`
+        interceptor in new development instead of the `post_list_custom_dimensions` interceptor.
+        When both interceptors are used, this `post_list_custom_dimensions_with_metadata` interceptor runs after the
+        `post_list_custom_dimensions` interceptor. The (possibly modified) response returned by
+        `post_list_custom_dimensions` will be passed to
+        `post_list_custom_dimensions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_custom_metrics(
         self,
@@ -3530,11 +5629,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListCustomMetricsResponse:
         """Post-rpc interceptor for list_custom_metrics
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_custom_metrics_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_custom_metrics` interceptor runs
+        before the `post_list_custom_metrics_with_metadata` interceptor.
         """
         return response
+
+    def post_list_custom_metrics_with_metadata(
+        self,
+        response: analytics_admin.ListCustomMetricsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListCustomMetricsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_custom_metrics
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_custom_metrics_with_metadata`
+        interceptor in new development instead of the `post_list_custom_metrics` interceptor.
+        When both interceptors are used, this `post_list_custom_metrics_with_metadata` interceptor runs after the
+        `post_list_custom_metrics` interceptor. The (possibly modified) response returned by
+        `post_list_custom_metrics` will be passed to
+        `post_list_custom_metrics_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_data_streams(
         self,
@@ -3555,11 +5680,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListDataStreamsResponse:
         """Post-rpc interceptor for list_data_streams
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_data_streams_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_data_streams` interceptor runs
+        before the `post_list_data_streams_with_metadata` interceptor.
         """
         return response
+
+    def post_list_data_streams_with_metadata(
+        self,
+        response: analytics_admin.ListDataStreamsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListDataStreamsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_data_streams
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_data_streams_with_metadata`
+        interceptor in new development instead of the `post_list_data_streams` interceptor.
+        When both interceptors are used, this `post_list_data_streams_with_metadata` interceptor runs after the
+        `post_list_data_streams` interceptor. The (possibly modified) response returned by
+        `post_list_data_streams` will be passed to
+        `post_list_data_streams_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_display_video360_advertiser_link_proposals(
         self,
@@ -3582,11 +5732,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListDisplayVideo360AdvertiserLinkProposalsResponse:
         """Post-rpc interceptor for list_display_video360_advertiser_link_proposals
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_display_video360_advertiser_link_proposals_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_display_video360_advertiser_link_proposals` interceptor runs
+        before the `post_list_display_video360_advertiser_link_proposals_with_metadata` interceptor.
         """
         return response
+
+    def post_list_display_video360_advertiser_link_proposals_with_metadata(
+        self,
+        response: analytics_admin.ListDisplayVideo360AdvertiserLinkProposalsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListDisplayVideo360AdvertiserLinkProposalsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_display_video360_advertiser_link_proposals
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_display_video360_advertiser_link_proposals_with_metadata`
+        interceptor in new development instead of the `post_list_display_video360_advertiser_link_proposals` interceptor.
+        When both interceptors are used, this `post_list_display_video360_advertiser_link_proposals_with_metadata` interceptor runs after the
+        `post_list_display_video360_advertiser_link_proposals` interceptor. The (possibly modified) response returned by
+        `post_list_display_video360_advertiser_link_proposals` will be passed to
+        `post_list_display_video360_advertiser_link_proposals_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_display_video360_advertiser_links(
         self,
@@ -3608,11 +5784,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListDisplayVideo360AdvertiserLinksResponse:
         """Post-rpc interceptor for list_display_video360_advertiser_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_display_video360_advertiser_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_display_video360_advertiser_links` interceptor runs
+        before the `post_list_display_video360_advertiser_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_display_video360_advertiser_links_with_metadata(
+        self,
+        response: analytics_admin.ListDisplayVideo360AdvertiserLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListDisplayVideo360AdvertiserLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_display_video360_advertiser_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_display_video360_advertiser_links_with_metadata`
+        interceptor in new development instead of the `post_list_display_video360_advertiser_links` interceptor.
+        When both interceptors are used, this `post_list_display_video360_advertiser_links_with_metadata` interceptor runs after the
+        `post_list_display_video360_advertiser_links` interceptor. The (possibly modified) response returned by
+        `post_list_display_video360_advertiser_links` will be passed to
+        `post_list_display_video360_advertiser_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_event_create_rules(
         self,
@@ -3634,11 +5836,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListEventCreateRulesResponse:
         """Post-rpc interceptor for list_event_create_rules
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_event_create_rules_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_event_create_rules` interceptor runs
+        before the `post_list_event_create_rules_with_metadata` interceptor.
         """
         return response
+
+    def post_list_event_create_rules_with_metadata(
+        self,
+        response: analytics_admin.ListEventCreateRulesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListEventCreateRulesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_event_create_rules
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_event_create_rules_with_metadata`
+        interceptor in new development instead of the `post_list_event_create_rules` interceptor.
+        When both interceptors are used, this `post_list_event_create_rules_with_metadata` interceptor runs after the
+        `post_list_event_create_rules` interceptor. The (possibly modified) response returned by
+        `post_list_event_create_rules` will be passed to
+        `post_list_event_create_rules_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_event_edit_rules(
         self,
@@ -3660,11 +5888,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListEventEditRulesResponse:
         """Post-rpc interceptor for list_event_edit_rules
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_event_edit_rules_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_event_edit_rules` interceptor runs
+        before the `post_list_event_edit_rules_with_metadata` interceptor.
         """
         return response
+
+    def post_list_event_edit_rules_with_metadata(
+        self,
+        response: analytics_admin.ListEventEditRulesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListEventEditRulesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_event_edit_rules
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_event_edit_rules_with_metadata`
+        interceptor in new development instead of the `post_list_event_edit_rules` interceptor.
+        When both interceptors are used, this `post_list_event_edit_rules_with_metadata` interceptor runs after the
+        `post_list_event_edit_rules` interceptor. The (possibly modified) response returned by
+        `post_list_event_edit_rules` will be passed to
+        `post_list_event_edit_rules_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_expanded_data_sets(
         self,
@@ -3686,11 +5940,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListExpandedDataSetsResponse:
         """Post-rpc interceptor for list_expanded_data_sets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_expanded_data_sets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_expanded_data_sets` interceptor runs
+        before the `post_list_expanded_data_sets_with_metadata` interceptor.
         """
         return response
+
+    def post_list_expanded_data_sets_with_metadata(
+        self,
+        response: analytics_admin.ListExpandedDataSetsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListExpandedDataSetsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_expanded_data_sets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_expanded_data_sets_with_metadata`
+        interceptor in new development instead of the `post_list_expanded_data_sets` interceptor.
+        When both interceptors are used, this `post_list_expanded_data_sets_with_metadata` interceptor runs after the
+        `post_list_expanded_data_sets` interceptor. The (possibly modified) response returned by
+        `post_list_expanded_data_sets` will be passed to
+        `post_list_expanded_data_sets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_firebase_links(
         self,
@@ -3712,11 +5992,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListFirebaseLinksResponse:
         """Post-rpc interceptor for list_firebase_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_firebase_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_firebase_links` interceptor runs
+        before the `post_list_firebase_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_firebase_links_with_metadata(
+        self,
+        response: analytics_admin.ListFirebaseLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListFirebaseLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_firebase_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_firebase_links_with_metadata`
+        interceptor in new development instead of the `post_list_firebase_links` interceptor.
+        When both interceptors are used, this `post_list_firebase_links_with_metadata` interceptor runs after the
+        `post_list_firebase_links` interceptor. The (possibly modified) response returned by
+        `post_list_firebase_links` will be passed to
+        `post_list_firebase_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_google_ads_links(
         self,
@@ -3738,11 +6044,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListGoogleAdsLinksResponse:
         """Post-rpc interceptor for list_google_ads_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_google_ads_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_google_ads_links` interceptor runs
+        before the `post_list_google_ads_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_google_ads_links_with_metadata(
+        self,
+        response: analytics_admin.ListGoogleAdsLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListGoogleAdsLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_google_ads_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_google_ads_links_with_metadata`
+        interceptor in new development instead of the `post_list_google_ads_links` interceptor.
+        When both interceptors are used, this `post_list_google_ads_links_with_metadata` interceptor runs after the
+        `post_list_google_ads_links` interceptor. The (possibly modified) response returned by
+        `post_list_google_ads_links` will be passed to
+        `post_list_google_ads_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_key_events(
         self,
@@ -3763,11 +6095,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListKeyEventsResponse:
         """Post-rpc interceptor for list_key_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_key_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_key_events` interceptor runs
+        before the `post_list_key_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_key_events_with_metadata(
+        self,
+        response: analytics_admin.ListKeyEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListKeyEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_key_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_key_events_with_metadata`
+        interceptor in new development instead of the `post_list_key_events` interceptor.
+        When both interceptors are used, this `post_list_key_events_with_metadata` interceptor runs after the
+        `post_list_key_events` interceptor. The (possibly modified) response returned by
+        `post_list_key_events` will be passed to
+        `post_list_key_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_measurement_protocol_secrets(
         self,
@@ -3789,11 +6146,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListMeasurementProtocolSecretsResponse:
         """Post-rpc interceptor for list_measurement_protocol_secrets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_measurement_protocol_secrets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_measurement_protocol_secrets` interceptor runs
+        before the `post_list_measurement_protocol_secrets_with_metadata` interceptor.
         """
         return response
+
+    def post_list_measurement_protocol_secrets_with_metadata(
+        self,
+        response: analytics_admin.ListMeasurementProtocolSecretsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListMeasurementProtocolSecretsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_measurement_protocol_secrets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_measurement_protocol_secrets_with_metadata`
+        interceptor in new development instead of the `post_list_measurement_protocol_secrets` interceptor.
+        When both interceptors are used, this `post_list_measurement_protocol_secrets_with_metadata` interceptor runs after the
+        `post_list_measurement_protocol_secrets` interceptor. The (possibly modified) response returned by
+        `post_list_measurement_protocol_secrets` will be passed to
+        `post_list_measurement_protocol_secrets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_properties(
         self,
@@ -3814,11 +6197,88 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListPropertiesResponse:
         """Post-rpc interceptor for list_properties
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_properties_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_properties` interceptor runs
+        before the `post_list_properties_with_metadata` interceptor.
         """
         return response
+
+    def post_list_properties_with_metadata(
+        self,
+        response: analytics_admin.ListPropertiesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListPropertiesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_properties
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_properties_with_metadata`
+        interceptor in new development instead of the `post_list_properties` interceptor.
+        When both interceptors are used, this `post_list_properties_with_metadata` interceptor runs after the
+        `post_list_properties` interceptor. The (possibly modified) response returned by
+        `post_list_properties` will be passed to
+        `post_list_properties_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_reporting_data_annotations(
+        self,
+        request: analytics_admin.ListReportingDataAnnotationsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListReportingDataAnnotationsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for list_reporting_data_annotations
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_list_reporting_data_annotations(
+        self, response: analytics_admin.ListReportingDataAnnotationsResponse
+    ) -> analytics_admin.ListReportingDataAnnotationsResponse:
+        """Post-rpc interceptor for list_reporting_data_annotations
+
+        DEPRECATED. Please use the `post_list_reporting_data_annotations_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_list_reporting_data_annotations` interceptor runs
+        before the `post_list_reporting_data_annotations_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_reporting_data_annotations_with_metadata(
+        self,
+        response: analytics_admin.ListReportingDataAnnotationsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListReportingDataAnnotationsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_reporting_data_annotations
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_reporting_data_annotations_with_metadata`
+        interceptor in new development instead of the `post_list_reporting_data_annotations` interceptor.
+        When both interceptors are used, this `post_list_reporting_data_annotations_with_metadata` interceptor runs after the
+        `post_list_reporting_data_annotations` interceptor. The (possibly modified) response returned by
+        `post_list_reporting_data_annotations` will be passed to
+        `post_list_reporting_data_annotations_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_rollup_property_source_links(
         self,
@@ -3840,11 +6300,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListRollupPropertySourceLinksResponse:
         """Post-rpc interceptor for list_rollup_property_source_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_rollup_property_source_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_rollup_property_source_links` interceptor runs
+        before the `post_list_rollup_property_source_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_rollup_property_source_links_with_metadata(
+        self,
+        response: analytics_admin.ListRollupPropertySourceLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListRollupPropertySourceLinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_rollup_property_source_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_rollup_property_source_links_with_metadata`
+        interceptor in new development instead of the `post_list_rollup_property_source_links` interceptor.
+        When both interceptors are used, this `post_list_rollup_property_source_links_with_metadata` interceptor runs after the
+        `post_list_rollup_property_source_links` interceptor. The (possibly modified) response returned by
+        `post_list_rollup_property_source_links` will be passed to
+        `post_list_rollup_property_source_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_search_ads360_links(
         self,
@@ -3866,11 +6352,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListSearchAds360LinksResponse:
         """Post-rpc interceptor for list_search_ads360_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_search_ads360_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_search_ads360_links` interceptor runs
+        before the `post_list_search_ads360_links_with_metadata` interceptor.
         """
         return response
+
+    def post_list_search_ads360_links_with_metadata(
+        self,
+        response: analytics_admin.ListSearchAds360LinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListSearchAds360LinksResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_search_ads360_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_search_ads360_links_with_metadata`
+        interceptor in new development instead of the `post_list_search_ads360_links` interceptor.
+        When both interceptors are used, this `post_list_search_ads360_links_with_metadata` interceptor runs after the
+        `post_list_search_ads360_links` interceptor. The (possibly modified) response returned by
+        `post_list_search_ads360_links` will be passed to
+        `post_list_search_ads360_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_sk_ad_network_conversion_value_schemas(
         self,
@@ -3892,11 +6404,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListSKAdNetworkConversionValueSchemasResponse:
         """Post-rpc interceptor for list_sk_ad_network_conversion_value_schemas
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_sk_ad_network_conversion_value_schemas_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_sk_ad_network_conversion_value_schemas` interceptor runs
+        before the `post_list_sk_ad_network_conversion_value_schemas_with_metadata` interceptor.
         """
         return response
+
+    def post_list_sk_ad_network_conversion_value_schemas_with_metadata(
+        self,
+        response: analytics_admin.ListSKAdNetworkConversionValueSchemasResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListSKAdNetworkConversionValueSchemasResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_sk_ad_network_conversion_value_schemas
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_sk_ad_network_conversion_value_schemas_with_metadata`
+        interceptor in new development instead of the `post_list_sk_ad_network_conversion_value_schemas` interceptor.
+        When both interceptors are used, this `post_list_sk_ad_network_conversion_value_schemas_with_metadata` interceptor runs after the
+        `post_list_sk_ad_network_conversion_value_schemas` interceptor. The (possibly modified) response returned by
+        `post_list_sk_ad_network_conversion_value_schemas` will be passed to
+        `post_list_sk_ad_network_conversion_value_schemas_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_subproperty_event_filters(
         self,
@@ -3918,11 +6456,89 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ListSubpropertyEventFiltersResponse:
         """Post-rpc interceptor for list_subproperty_event_filters
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_subproperty_event_filters_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_subproperty_event_filters` interceptor runs
+        before the `post_list_subproperty_event_filters_with_metadata` interceptor.
         """
         return response
+
+    def post_list_subproperty_event_filters_with_metadata(
+        self,
+        response: analytics_admin.ListSubpropertyEventFiltersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListSubpropertyEventFiltersResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_subproperty_event_filters
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_subproperty_event_filters_with_metadata`
+        interceptor in new development instead of the `post_list_subproperty_event_filters` interceptor.
+        When both interceptors are used, this `post_list_subproperty_event_filters_with_metadata` interceptor runs after the
+        `post_list_subproperty_event_filters` interceptor. The (possibly modified) response returned by
+        `post_list_subproperty_event_filters` will be passed to
+        `post_list_subproperty_event_filters_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_subproperty_sync_configs(
+        self,
+        request: analytics_admin.ListSubpropertySyncConfigsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListSubpropertySyncConfigsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for list_subproperty_sync_configs
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_list_subproperty_sync_configs(
+        self, response: analytics_admin.ListSubpropertySyncConfigsResponse
+    ) -> analytics_admin.ListSubpropertySyncConfigsResponse:
+        """Post-rpc interceptor for list_subproperty_sync_configs
+
+        DEPRECATED. Please use the `post_list_subproperty_sync_configs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_list_subproperty_sync_configs` interceptor runs
+        before the `post_list_subproperty_sync_configs_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_subproperty_sync_configs_with_metadata(
+        self,
+        response: analytics_admin.ListSubpropertySyncConfigsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ListSubpropertySyncConfigsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_subproperty_sync_configs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_subproperty_sync_configs_with_metadata`
+        interceptor in new development instead of the `post_list_subproperty_sync_configs` interceptor.
+        When both interceptors are used, this `post_list_subproperty_sync_configs_with_metadata` interceptor runs after the
+        `post_list_subproperty_sync_configs` interceptor. The (possibly modified) response returned by
+        `post_list_subproperty_sync_configs` will be passed to
+        `post_list_subproperty_sync_configs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_provision_account_ticket(
         self,
@@ -3944,11 +6560,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ProvisionAccountTicketResponse:
         """Post-rpc interceptor for provision_account_ticket
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_provision_account_ticket_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_provision_account_ticket` interceptor runs
+        before the `post_provision_account_ticket_with_metadata` interceptor.
         """
         return response
+
+    def post_provision_account_ticket_with_metadata(
+        self,
+        response: analytics_admin.ProvisionAccountTicketResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ProvisionAccountTicketResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for provision_account_ticket
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_provision_account_ticket_with_metadata`
+        interceptor in new development instead of the `post_provision_account_ticket` interceptor.
+        When both interceptors are used, this `post_provision_account_ticket_with_metadata` interceptor runs after the
+        `post_provision_account_ticket` interceptor. The (possibly modified) response returned by
+        `post_provision_account_ticket` will be passed to
+        `post_provision_account_ticket_with_metadata`.
+        """
+        return response, metadata
 
     def pre_provision_subproperty(
         self,
@@ -3970,11 +6612,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.ProvisionSubpropertyResponse:
         """Post-rpc interceptor for provision_subproperty
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_provision_subproperty_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_provision_subproperty` interceptor runs
+        before the `post_provision_subproperty_with_metadata` interceptor.
         """
         return response
+
+    def post_provision_subproperty_with_metadata(
+        self,
+        response: analytics_admin.ProvisionSubpropertyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.ProvisionSubpropertyResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for provision_subproperty
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_provision_subproperty_with_metadata`
+        interceptor in new development instead of the `post_provision_subproperty` interceptor.
+        When both interceptors are used, this `post_provision_subproperty_with_metadata` interceptor runs after the
+        `post_provision_subproperty` interceptor. The (possibly modified) response returned by
+        `post_provision_subproperty` will be passed to
+        `post_provision_subproperty_with_metadata`.
+        """
+        return response, metadata
 
     def pre_reorder_event_edit_rules(
         self,
@@ -4010,11 +6678,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.RunAccessReportResponse:
         """Post-rpc interceptor for run_access_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_access_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_access_report` interceptor runs
+        before the `post_run_access_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_access_report_with_metadata(
+        self,
+        response: analytics_admin.RunAccessReportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.RunAccessReportResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for run_access_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_run_access_report_with_metadata`
+        interceptor in new development instead of the `post_run_access_report` interceptor.
+        When both interceptors are used, this `post_run_access_report_with_metadata` interceptor runs after the
+        `post_run_access_report` interceptor. The (possibly modified) response returned by
+        `post_run_access_report` will be passed to
+        `post_run_access_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_change_history_events(
         self,
@@ -4036,11 +6729,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.SearchChangeHistoryEventsResponse:
         """Post-rpc interceptor for search_change_history_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_change_history_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_change_history_events` interceptor runs
+        before the `post_search_change_history_events_with_metadata` interceptor.
         """
         return response
+
+    def post_search_change_history_events_with_metadata(
+        self,
+        response: analytics_admin.SearchChangeHistoryEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.SearchChangeHistoryEventsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for search_change_history_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_search_change_history_events_with_metadata`
+        interceptor in new development instead of the `post_search_change_history_events` interceptor.
+        When both interceptors are used, this `post_search_change_history_events_with_metadata` interceptor runs after the
+        `post_search_change_history_events` interceptor. The (possibly modified) response returned by
+        `post_search_change_history_events` will be passed to
+        `post_search_change_history_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_automated_ga4_configuration_opt_out(
         self,
@@ -4062,11 +6781,89 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> analytics_admin.SetAutomatedGa4ConfigurationOptOutResponse:
         """Post-rpc interceptor for set_automated_ga4_configuration_opt_out
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_automated_ga4_configuration_opt_out_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_automated_ga4_configuration_opt_out` interceptor runs
+        before the `post_set_automated_ga4_configuration_opt_out_with_metadata` interceptor.
         """
         return response
+
+    def post_set_automated_ga4_configuration_opt_out_with_metadata(
+        self,
+        response: analytics_admin.SetAutomatedGa4ConfigurationOptOutResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.SetAutomatedGa4ConfigurationOptOutResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for set_automated_ga4_configuration_opt_out
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_set_automated_ga4_configuration_opt_out_with_metadata`
+        interceptor in new development instead of the `post_set_automated_ga4_configuration_opt_out` interceptor.
+        When both interceptors are used, this `post_set_automated_ga4_configuration_opt_out_with_metadata` interceptor runs after the
+        `post_set_automated_ga4_configuration_opt_out` interceptor. The (possibly modified) response returned by
+        `post_set_automated_ga4_configuration_opt_out` will be passed to
+        `post_set_automated_ga4_configuration_opt_out_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_submit_user_deletion(
+        self,
+        request: analytics_admin.SubmitUserDeletionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.SubmitUserDeletionRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for submit_user_deletion
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_submit_user_deletion(
+        self, response: analytics_admin.SubmitUserDeletionResponse
+    ) -> analytics_admin.SubmitUserDeletionResponse:
+        """Post-rpc interceptor for submit_user_deletion
+
+        DEPRECATED. Please use the `post_submit_user_deletion_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_submit_user_deletion` interceptor runs
+        before the `post_submit_user_deletion_with_metadata` interceptor.
+        """
+        return response
+
+    def post_submit_user_deletion_with_metadata(
+        self,
+        response: analytics_admin.SubmitUserDeletionResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.SubmitUserDeletionResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for submit_user_deletion
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_submit_user_deletion_with_metadata`
+        interceptor in new development instead of the `post_submit_user_deletion` interceptor.
+        When both interceptors are used, this `post_submit_user_deletion_with_metadata` interceptor runs after the
+        `post_submit_user_deletion` interceptor. The (possibly modified) response returned by
+        `post_submit_user_deletion` will be passed to
+        `post_submit_user_deletion_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_access_binding(
         self,
@@ -4088,11 +6885,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AccessBinding:
         """Post-rpc interceptor for update_access_binding
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_access_binding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_access_binding` interceptor runs
+        before the `post_update_access_binding_with_metadata` interceptor.
         """
         return response
+
+    def post_update_access_binding_with_metadata(
+        self,
+        response: resources.AccessBinding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AccessBinding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_access_binding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_access_binding_with_metadata`
+        interceptor in new development instead of the `post_update_access_binding` interceptor.
+        When both interceptors are used, this `post_update_access_binding_with_metadata` interceptor runs after the
+        `post_update_access_binding` interceptor. The (possibly modified) response returned by
+        `post_update_access_binding` will be passed to
+        `post_update_access_binding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_account(
         self,
@@ -4111,11 +6931,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_update_account(self, response: resources.Account) -> resources.Account:
         """Post-rpc interceptor for update_account
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_account_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_account` interceptor runs
+        before the `post_update_account_with_metadata` interceptor.
         """
         return response
+
+    def post_update_account_with_metadata(
+        self,
+        response: resources.Account,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Account, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_account
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_account_with_metadata`
+        interceptor in new development instead of the `post_update_account` interceptor.
+        When both interceptors are used, this `post_update_account_with_metadata` interceptor runs after the
+        `post_update_account` interceptor. The (possibly modified) response returned by
+        `post_update_account` will be passed to
+        `post_update_account_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_attribution_settings(
         self,
@@ -4137,11 +6980,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.AttributionSettings:
         """Post-rpc interceptor for update_attribution_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_attribution_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_attribution_settings` interceptor runs
+        before the `post_update_attribution_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_attribution_settings_with_metadata(
+        self,
+        response: resources.AttributionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.AttributionSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_attribution_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_attribution_settings_with_metadata`
+        interceptor in new development instead of the `post_update_attribution_settings` interceptor.
+        When both interceptors are used, this `post_update_attribution_settings_with_metadata` interceptor runs after the
+        `post_update_attribution_settings` interceptor. The (possibly modified) response returned by
+        `post_update_attribution_settings` will be passed to
+        `post_update_attribution_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_audience(
         self,
@@ -4162,11 +7028,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_audience.Audience:
         """Post-rpc interceptor for update_audience
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_audience_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_audience` interceptor runs
+        before the `post_update_audience_with_metadata` interceptor.
         """
         return response
+
+    def post_update_audience_with_metadata(
+        self,
+        response: gaa_audience.Audience,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gaa_audience.Audience, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_audience
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_audience_with_metadata`
+        interceptor in new development instead of the `post_update_audience` interceptor.
+        When both interceptors are used, this `post_update_audience_with_metadata` interceptor runs after the
+        `post_update_audience` interceptor. The (possibly modified) response returned by
+        `post_update_audience` will be passed to
+        `post_update_audience_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_big_query_link(
         self,
@@ -4188,11 +7077,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.BigQueryLink:
         """Post-rpc interceptor for update_big_query_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_big_query_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_big_query_link` interceptor runs
+        before the `post_update_big_query_link_with_metadata` interceptor.
         """
         return response
+
+    def post_update_big_query_link_with_metadata(
+        self,
+        response: resources.BigQueryLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.BigQueryLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_big_query_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_big_query_link_with_metadata`
+        interceptor in new development instead of the `post_update_big_query_link` interceptor.
+        When both interceptors are used, this `post_update_big_query_link_with_metadata` interceptor runs after the
+        `post_update_big_query_link` interceptor. The (possibly modified) response returned by
+        `post_update_big_query_link` will be passed to
+        `post_update_big_query_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_calculated_metric(
         self,
@@ -4214,11 +7126,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CalculatedMetric:
         """Post-rpc interceptor for update_calculated_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_calculated_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_calculated_metric` interceptor runs
+        before the `post_update_calculated_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_update_calculated_metric_with_metadata(
+        self,
+        response: resources.CalculatedMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CalculatedMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_calculated_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_calculated_metric_with_metadata`
+        interceptor in new development instead of the `post_update_calculated_metric` interceptor.
+        When both interceptors are used, this `post_update_calculated_metric_with_metadata` interceptor runs after the
+        `post_update_calculated_metric` interceptor. The (possibly modified) response returned by
+        `post_update_calculated_metric` will be passed to
+        `post_update_calculated_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_channel_group(
         self,
@@ -4240,11 +7175,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_channel_group.ChannelGroup:
         """Post-rpc interceptor for update_channel_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_channel_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_channel_group` interceptor runs
+        before the `post_update_channel_group_with_metadata` interceptor.
         """
         return response
+
+    def post_update_channel_group_with_metadata(
+        self,
+        response: gaa_channel_group.ChannelGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gaa_channel_group.ChannelGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_channel_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_channel_group_with_metadata`
+        interceptor in new development instead of the `post_update_channel_group` interceptor.
+        When both interceptors are used, this `post_update_channel_group_with_metadata` interceptor runs after the
+        `post_update_channel_group` interceptor. The (possibly modified) response returned by
+        `post_update_channel_group` will be passed to
+        `post_update_channel_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_conversion_event(
         self,
@@ -4266,11 +7224,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.ConversionEvent:
         """Post-rpc interceptor for update_conversion_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_conversion_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_conversion_event` interceptor runs
+        before the `post_update_conversion_event_with_metadata` interceptor.
         """
         return response
+
+    def post_update_conversion_event_with_metadata(
+        self,
+        response: resources.ConversionEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.ConversionEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_conversion_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_conversion_event_with_metadata`
+        interceptor in new development instead of the `post_update_conversion_event` interceptor.
+        When both interceptors are used, this `post_update_conversion_event_with_metadata` interceptor runs after the
+        `post_update_conversion_event` interceptor. The (possibly modified) response returned by
+        `post_update_conversion_event` will be passed to
+        `post_update_conversion_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_custom_dimension(
         self,
@@ -4292,11 +7273,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomDimension:
         """Post-rpc interceptor for update_custom_dimension
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_custom_dimension_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_custom_dimension` interceptor runs
+        before the `post_update_custom_dimension_with_metadata` interceptor.
         """
         return response
+
+    def post_update_custom_dimension_with_metadata(
+        self,
+        response: resources.CustomDimension,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomDimension, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_custom_dimension
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_custom_dimension_with_metadata`
+        interceptor in new development instead of the `post_update_custom_dimension` interceptor.
+        When both interceptors are used, this `post_update_custom_dimension_with_metadata` interceptor runs after the
+        `post_update_custom_dimension` interceptor. The (possibly modified) response returned by
+        `post_update_custom_dimension` will be passed to
+        `post_update_custom_dimension_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_custom_metric(
         self,
@@ -4318,11 +7322,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.CustomMetric:
         """Post-rpc interceptor for update_custom_metric
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_custom_metric_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_custom_metric` interceptor runs
+        before the `post_update_custom_metric_with_metadata` interceptor.
         """
         return response
+
+    def post_update_custom_metric_with_metadata(
+        self,
+        response: resources.CustomMetric,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.CustomMetric, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_custom_metric
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_custom_metric_with_metadata`
+        interceptor in new development instead of the `post_update_custom_metric` interceptor.
+        When both interceptors are used, this `post_update_custom_metric_with_metadata` interceptor runs after the
+        `post_update_custom_metric` interceptor. The (possibly modified) response returned by
+        `post_update_custom_metric` will be passed to
+        `post_update_custom_metric_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_data_redaction_settings(
         self,
@@ -4344,11 +7371,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataRedactionSettings:
         """Post-rpc interceptor for update_data_redaction_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_data_redaction_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_data_redaction_settings` interceptor runs
+        before the `post_update_data_redaction_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_data_redaction_settings_with_metadata(
+        self,
+        response: resources.DataRedactionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DataRedactionSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_data_redaction_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_data_redaction_settings_with_metadata`
+        interceptor in new development instead of the `post_update_data_redaction_settings` interceptor.
+        When both interceptors are used, this `post_update_data_redaction_settings_with_metadata` interceptor runs after the
+        `post_update_data_redaction_settings` interceptor. The (possibly modified) response returned by
+        `post_update_data_redaction_settings` will be passed to
+        `post_update_data_redaction_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_data_retention_settings(
         self,
@@ -4370,11 +7422,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataRetentionSettings:
         """Post-rpc interceptor for update_data_retention_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_data_retention_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_data_retention_settings` interceptor runs
+        before the `post_update_data_retention_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_data_retention_settings_with_metadata(
+        self,
+        response: resources.DataRetentionSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DataRetentionSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_data_retention_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_data_retention_settings_with_metadata`
+        interceptor in new development instead of the `post_update_data_retention_settings` interceptor.
+        When both interceptors are used, this `post_update_data_retention_settings_with_metadata` interceptor runs after the
+        `post_update_data_retention_settings` interceptor. The (possibly modified) response returned by
+        `post_update_data_retention_settings` will be passed to
+        `post_update_data_retention_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_data_stream(
         self,
@@ -4395,11 +7472,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DataStream:
         """Post-rpc interceptor for update_data_stream
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_data_stream_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_data_stream` interceptor runs
+        before the `post_update_data_stream_with_metadata` interceptor.
         """
         return response
+
+    def post_update_data_stream_with_metadata(
+        self,
+        response: resources.DataStream,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.DataStream, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_data_stream
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_data_stream_with_metadata`
+        interceptor in new development instead of the `post_update_data_stream` interceptor.
+        When both interceptors are used, this `post_update_data_stream_with_metadata` interceptor runs after the
+        `post_update_data_stream` interceptor. The (possibly modified) response returned by
+        `post_update_data_stream` will be passed to
+        `post_update_data_stream_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_display_video360_advertiser_link(
         self,
@@ -4421,11 +7521,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.DisplayVideo360AdvertiserLink:
         """Post-rpc interceptor for update_display_video360_advertiser_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_display_video360_advertiser_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_display_video360_advertiser_link` interceptor runs
+        before the `post_update_display_video360_advertiser_link_with_metadata` interceptor.
         """
         return response
+
+    def post_update_display_video360_advertiser_link_with_metadata(
+        self,
+        response: resources.DisplayVideo360AdvertiserLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.DisplayVideo360AdvertiserLink, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_display_video360_advertiser_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_display_video360_advertiser_link_with_metadata`
+        interceptor in new development instead of the `post_update_display_video360_advertiser_link` interceptor.
+        When both interceptors are used, this `post_update_display_video360_advertiser_link_with_metadata` interceptor runs after the
+        `post_update_display_video360_advertiser_link` interceptor. The (possibly modified) response returned by
+        `post_update_display_video360_advertiser_link` will be passed to
+        `post_update_display_video360_advertiser_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_enhanced_measurement_settings(
         self,
@@ -4447,11 +7572,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.EnhancedMeasurementSettings:
         """Post-rpc interceptor for update_enhanced_measurement_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_enhanced_measurement_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_enhanced_measurement_settings` interceptor runs
+        before the `post_update_enhanced_measurement_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_enhanced_measurement_settings_with_metadata(
+        self,
+        response: resources.EnhancedMeasurementSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.EnhancedMeasurementSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_enhanced_measurement_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_enhanced_measurement_settings_with_metadata`
+        interceptor in new development instead of the `post_update_enhanced_measurement_settings` interceptor.
+        When both interceptors are used, this `post_update_enhanced_measurement_settings_with_metadata` interceptor runs after the
+        `post_update_enhanced_measurement_settings` interceptor. The (possibly modified) response returned by
+        `post_update_enhanced_measurement_settings` will be passed to
+        `post_update_enhanced_measurement_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_event_create_rule(
         self,
@@ -4473,11 +7623,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventCreateRule:
         """Post-rpc interceptor for update_event_create_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_event_create_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_event_create_rule` interceptor runs
+        before the `post_update_event_create_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_update_event_create_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventCreateRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventCreateRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_event_create_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_event_create_rule_with_metadata`
+        interceptor in new development instead of the `post_update_event_create_rule` interceptor.
+        When both interceptors are used, this `post_update_event_create_rule_with_metadata` interceptor runs after the
+        `post_update_event_create_rule` interceptor. The (possibly modified) response returned by
+        `post_update_event_create_rule` will be passed to
+        `post_update_event_create_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_event_edit_rule(
         self,
@@ -4499,11 +7674,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> event_create_and_edit.EventEditRule:
         """Post-rpc interceptor for update_event_edit_rule
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_event_edit_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_event_edit_rule` interceptor runs
+        before the `post_update_event_edit_rule_with_metadata` interceptor.
         """
         return response
+
+    def post_update_event_edit_rule_with_metadata(
+        self,
+        response: event_create_and_edit.EventEditRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_create_and_edit.EventEditRule, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_event_edit_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_event_edit_rule_with_metadata`
+        interceptor in new development instead of the `post_update_event_edit_rule` interceptor.
+        When both interceptors are used, this `post_update_event_edit_rule_with_metadata` interceptor runs after the
+        `post_update_event_edit_rule` interceptor. The (possibly modified) response returned by
+        `post_update_event_edit_rule` will be passed to
+        `post_update_event_edit_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_expanded_data_set(
         self,
@@ -4525,11 +7725,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_expanded_data_set.ExpandedDataSet:
         """Post-rpc interceptor for update_expanded_data_set
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_expanded_data_set_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_expanded_data_set` interceptor runs
+        before the `post_update_expanded_data_set_with_metadata` interceptor.
         """
         return response
+
+    def post_update_expanded_data_set_with_metadata(
+        self,
+        response: gaa_expanded_data_set.ExpandedDataSet,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gaa_expanded_data_set.ExpandedDataSet, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_expanded_data_set
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_expanded_data_set_with_metadata`
+        interceptor in new development instead of the `post_update_expanded_data_set` interceptor.
+        When both interceptors are used, this `post_update_expanded_data_set_with_metadata` interceptor runs after the
+        `post_update_expanded_data_set` interceptor. The (possibly modified) response returned by
+        `post_update_expanded_data_set` will be passed to
+        `post_update_expanded_data_set_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_google_ads_link(
         self,
@@ -4551,11 +7776,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.GoogleAdsLink:
         """Post-rpc interceptor for update_google_ads_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_google_ads_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_google_ads_link` interceptor runs
+        before the `post_update_google_ads_link_with_metadata` interceptor.
         """
         return response
+
+    def post_update_google_ads_link_with_metadata(
+        self,
+        response: resources.GoogleAdsLink,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.GoogleAdsLink, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_google_ads_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_google_ads_link_with_metadata`
+        interceptor in new development instead of the `post_update_google_ads_link` interceptor.
+        When both interceptors are used, this `post_update_google_ads_link_with_metadata` interceptor runs after the
+        `post_update_google_ads_link` interceptor. The (possibly modified) response returned by
+        `post_update_google_ads_link` will be passed to
+        `post_update_google_ads_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_google_signals_settings(
         self,
@@ -4577,11 +7825,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.GoogleSignalsSettings:
         """Post-rpc interceptor for update_google_signals_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_google_signals_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_google_signals_settings` interceptor runs
+        before the `post_update_google_signals_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_google_signals_settings_with_metadata(
+        self,
+        response: resources.GoogleSignalsSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.GoogleSignalsSettings, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_google_signals_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_google_signals_settings_with_metadata`
+        interceptor in new development instead of the `post_update_google_signals_settings` interceptor.
+        When both interceptors are used, this `post_update_google_signals_settings_with_metadata` interceptor runs after the
+        `post_update_google_signals_settings` interceptor. The (possibly modified) response returned by
+        `post_update_google_signals_settings` will be passed to
+        `post_update_google_signals_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_key_event(
         self,
@@ -4600,11 +7873,34 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_update_key_event(self, response: resources.KeyEvent) -> resources.KeyEvent:
         """Post-rpc interceptor for update_key_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_key_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_key_event` interceptor runs
+        before the `post_update_key_event_with_metadata` interceptor.
         """
         return response
+
+    def post_update_key_event_with_metadata(
+        self,
+        response: resources.KeyEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.KeyEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_key_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_key_event_with_metadata`
+        interceptor in new development instead of the `post_update_key_event` interceptor.
+        When both interceptors are used, this `post_update_key_event_with_metadata` interceptor runs after the
+        `post_update_key_event` interceptor. The (possibly modified) response returned by
+        `post_update_key_event` will be passed to
+        `post_update_key_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_measurement_protocol_secret(
         self,
@@ -4626,11 +7922,36 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.MeasurementProtocolSecret:
         """Post-rpc interceptor for update_measurement_protocol_secret
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_measurement_protocol_secret_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_measurement_protocol_secret` interceptor runs
+        before the `post_update_measurement_protocol_secret_with_metadata` interceptor.
         """
         return response
+
+    def post_update_measurement_protocol_secret_with_metadata(
+        self,
+        response: resources.MeasurementProtocolSecret,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.MeasurementProtocolSecret, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_measurement_protocol_secret
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_measurement_protocol_secret_with_metadata`
+        interceptor in new development instead of the `post_update_measurement_protocol_secret` interceptor.
+        When both interceptors are used, this `post_update_measurement_protocol_secret_with_metadata` interceptor runs after the
+        `post_update_measurement_protocol_secret` interceptor. The (possibly modified) response returned by
+        `post_update_measurement_protocol_secret` will be passed to
+        `post_update_measurement_protocol_secret_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_property(
         self,
@@ -4649,11 +7970,85 @@ class AnalyticsAdminServiceRestInterceptor:
     def post_update_property(self, response: resources.Property) -> resources.Property:
         """Post-rpc interceptor for update_property
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_property_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_property` interceptor runs
+        before the `post_update_property_with_metadata` interceptor.
         """
         return response
+
+    def post_update_property_with_metadata(
+        self,
+        response: resources.Property,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.Property, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_property
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_property_with_metadata`
+        interceptor in new development instead of the `post_update_property` interceptor.
+        When both interceptors are used, this `post_update_property_with_metadata` interceptor runs after the
+        `post_update_property` interceptor. The (possibly modified) response returned by
+        `post_update_property` will be passed to
+        `post_update_property_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_reporting_data_annotation(
+        self,
+        request: analytics_admin.UpdateReportingDataAnnotationRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.UpdateReportingDataAnnotationRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for update_reporting_data_annotation
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_update_reporting_data_annotation(
+        self, response: resources.ReportingDataAnnotation
+    ) -> resources.ReportingDataAnnotation:
+        """Post-rpc interceptor for update_reporting_data_annotation
+
+        DEPRECATED. Please use the `post_update_reporting_data_annotation_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_update_reporting_data_annotation` interceptor runs
+        before the `post_update_reporting_data_annotation_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_reporting_data_annotation_with_metadata(
+        self,
+        response: resources.ReportingDataAnnotation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.ReportingDataAnnotation, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_reporting_data_annotation
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_reporting_data_annotation_with_metadata`
+        interceptor in new development instead of the `post_update_reporting_data_annotation` interceptor.
+        When both interceptors are used, this `post_update_reporting_data_annotation_with_metadata` interceptor runs after the
+        `post_update_reporting_data_annotation` interceptor. The (possibly modified) response returned by
+        `post_update_reporting_data_annotation` will be passed to
+        `post_update_reporting_data_annotation_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_search_ads360_link(
         self,
@@ -4675,11 +8070,34 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SearchAds360Link:
         """Post-rpc interceptor for update_search_ads360_link
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_search_ads360_link_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_search_ads360_link` interceptor runs
+        before the `post_update_search_ads360_link_with_metadata` interceptor.
         """
         return response
+
+    def post_update_search_ads360_link_with_metadata(
+        self,
+        response: resources.SearchAds360Link,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[resources.SearchAds360Link, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_search_ads360_link
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_search_ads360_link_with_metadata`
+        interceptor in new development instead of the `post_update_search_ads360_link` interceptor.
+        When both interceptors are used, this `post_update_search_ads360_link_with_metadata` interceptor runs after the
+        `post_update_search_ads360_link` interceptor. The (possibly modified) response returned by
+        `post_update_search_ads360_link` will be passed to
+        `post_update_search_ads360_link_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_sk_ad_network_conversion_value_schema(
         self,
@@ -4701,11 +8119,37 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> resources.SKAdNetworkConversionValueSchema:
         """Post-rpc interceptor for update_sk_ad_network_conversion_value_schema
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_sk_ad_network_conversion_value_schema` interceptor runs
+        before the `post_update_sk_ad_network_conversion_value_schema_with_metadata` interceptor.
         """
         return response
+
+    def post_update_sk_ad_network_conversion_value_schema_with_metadata(
+        self,
+        response: resources.SKAdNetworkConversionValueSchema,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.SKAdNetworkConversionValueSchema,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for update_sk_ad_network_conversion_value_schema
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_sk_ad_network_conversion_value_schema_with_metadata`
+        interceptor in new development instead of the `post_update_sk_ad_network_conversion_value_schema` interceptor.
+        When both interceptors are used, this `post_update_sk_ad_network_conversion_value_schema_with_metadata` interceptor runs after the
+        `post_update_sk_ad_network_conversion_value_schema` interceptor. The (possibly modified) response returned by
+        `post_update_sk_ad_network_conversion_value_schema` will be passed to
+        `post_update_sk_ad_network_conversion_value_schema_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_subproperty_event_filter(
         self,
@@ -4727,11 +8171,88 @@ class AnalyticsAdminServiceRestInterceptor:
     ) -> gaa_subproperty_event_filter.SubpropertyEventFilter:
         """Post-rpc interceptor for update_subproperty_event_filter
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_subproperty_event_filter_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the AnalyticsAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_subproperty_event_filter` interceptor runs
+        before the `post_update_subproperty_event_filter_with_metadata` interceptor.
         """
         return response
+
+    def post_update_subproperty_event_filter_with_metadata(
+        self,
+        response: gaa_subproperty_event_filter.SubpropertyEventFilter,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gaa_subproperty_event_filter.SubpropertyEventFilter,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for update_subproperty_event_filter
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_subproperty_event_filter_with_metadata`
+        interceptor in new development instead of the `post_update_subproperty_event_filter` interceptor.
+        When both interceptors are used, this `post_update_subproperty_event_filter_with_metadata` interceptor runs after the
+        `post_update_subproperty_event_filter` interceptor. The (possibly modified) response returned by
+        `post_update_subproperty_event_filter` will be passed to
+        `post_update_subproperty_event_filter_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_subproperty_sync_config(
+        self,
+        request: analytics_admin.UpdateSubpropertySyncConfigRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_admin.UpdateSubpropertySyncConfigRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for update_subproperty_sync_config
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the AnalyticsAdminService server.
+        """
+        return request, metadata
+
+    def post_update_subproperty_sync_config(
+        self, response: resources.SubpropertySyncConfig
+    ) -> resources.SubpropertySyncConfig:
+        """Post-rpc interceptor for update_subproperty_sync_config
+
+        DEPRECATED. Please use the `post_update_subproperty_sync_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the AnalyticsAdminService server but before
+        it is returned to user code. This `post_update_subproperty_sync_config` interceptor runs
+        before the `post_update_subproperty_sync_config_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_subproperty_sync_config_with_metadata(
+        self,
+        response: resources.SubpropertySyncConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        resources.SubpropertySyncConfig, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_subproperty_sync_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the AnalyticsAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_subproperty_sync_config_with_metadata`
+        interceptor in new development instead of the `post_update_subproperty_sync_config` interceptor.
+        When both interceptors are used, this `post_update_subproperty_sync_config_with_metadata` interceptor runs after the
+        `post_update_subproperty_sync_config` interceptor. The (possibly modified) response returned by
+        `post_update_subproperty_sync_config` will be passed to
+        `post_update_subproperty_sync_config_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -4744,7 +8265,7 @@ class AnalyticsAdminServiceRestStub:
 class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport):
     """REST backend synchronous transport for AnalyticsAdminService.
 
-    Service Interface for the Analytics Admin API (GA4).
+    Service Interface for the Google Analytics Admin API.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
@@ -4952,6 +8473,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_acknowledge_user_data_collection(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_acknowledge_user_data_collection_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5123,6 +8651,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             resp = self._interceptor.post_approve_display_video360_advertiser_link_proposal(
                 resp
+            )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_approve_display_video360_advertiser_link_proposal_with_metadata(
+                resp, response_metadata
             )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
@@ -5631,6 +9166,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_create_access_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_create_access_bindings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5898,6 +9437,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_get_access_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_get_access_bindings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6053,6 +9596,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_update_access_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_update_access_bindings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6138,9 +9685,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLinkProposal:
-                        A proposal for a link between a GA4
-                    property and a Display & Video 360
-                    advertiser.
+                        A proposal for a link between a
+                    Google Analytics property and a Display
+                    & Video 360 advertiser.
 
                     A proposal is converted to a
                     DisplayVideo360AdvertiserLink once
@@ -6227,6 +9774,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                 self._interceptor.post_cancel_display_video360_advertiser_link_proposal(
                     resp
                 )
+            )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_cancel_display_video360_advertiser_link_proposal_with_metadata(
+                resp, response_metadata
             )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
@@ -6386,6 +9940,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_access_binding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_access_binding_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6463,8 +10021,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.AdSenseLink:
-                    A link between a GA4 Property and an
-                AdSense for Content ad client.
+                    A link between a Google Analytics
+                property and an AdSense for Content ad
+                client.
 
             """
 
@@ -6540,6 +10099,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_ad_sense_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_ad_sense_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6617,7 +10180,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.gaa_audience.Audience:
-                    A resource message representing a GA4
+                    A resource message representing an
                 Audience.
 
             """
@@ -6690,6 +10253,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_audience(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_audience_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6767,8 +10334,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.BigQueryLink:
-                    A link between a GA4 Property and
-                BigQuery project.
+                    A link between a Google Analytics
+                property and BigQuery project.
 
             """
 
@@ -6844,6 +10411,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_big_query_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_big_query_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6994,6 +10565,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_calculated_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_calculated_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7148,6 +10723,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_channel_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_channel_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7300,6 +10879,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_connected_site_tag(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_connected_site_tag_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7456,6 +11039,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_conversion_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_conversion_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7608,6 +11195,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_custom_dimension(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_custom_dimension_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7760,6 +11351,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_custom_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_custom_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7914,6 +11509,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_data_stream(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_data_stream_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7994,8 +11593,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLink:
-                        A link between a GA4 property and a
-                    Display & Video 360 advertiser.
+                        A link between a Google Analytics
+                    property and a Display & Video 360
+                    advertiser.
 
             """
 
@@ -8072,6 +11672,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_display_video360_advertiser_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_display_video360_advertiser_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8155,9 +11762,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLinkProposal:
-                        A proposal for a link between a GA4
-                    property and a Display & Video 360
-                    advertiser.
+                        A proposal for a link between a
+                    Google Analytics property and a Display
+                    & Video 360 advertiser.
 
                     A proposal is converted to a
                     DisplayVideo360AdvertiserLink once
@@ -8244,6 +11851,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                 self._interceptor.post_create_display_video360_advertiser_link_proposal(
                     resp
                 )
+            )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_display_video360_advertiser_link_proposal_with_metadata(
+                resp, response_metadata
             )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
@@ -8415,6 +12029,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_event_create_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_event_create_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8583,6 +12201,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_event_edit_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_event_edit_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8662,9 +12284,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.gaa_expanded_data_set.ExpandedDataSet:
-                    A resource message representing a GA4
-                ExpandedDataSet.
-
+                    A resource message representing an ``ExpandedDataSet``.
             """
 
             http_options = (
@@ -8739,6 +12359,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_expanded_data_set(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_expanded_data_set_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8818,8 +12442,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.FirebaseLink:
-                    A link between a GA4 property and a
-                Firebase project.
+                    A link between a Google Analytics
+                property and a Firebase project.
 
             """
 
@@ -8895,6 +12519,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_firebase_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_firebase_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8972,8 +12600,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.GoogleAdsLink:
-                    A link between a GA4 property and a
-                Google Ads account.
+                    A link between a Google Analytics
+                property and a Google Ads account.
 
             """
 
@@ -9049,6 +12677,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_google_ads_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_google_ads_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9201,6 +12833,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_key_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_key_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9359,6 +12995,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_measurement_protocol_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_measurement_protocol_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9439,7 +13082,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             Returns:
                 ~.resources.Property:
                     A resource message representing a
-                Google Analytics GA4 property.
+                Google Analytics property.
 
             """
 
@@ -9511,6 +13154,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9528,6 +13175,171 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "CreateProperty",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateReportingDataAnnotation(
+        _BaseAnalyticsAdminServiceRestTransport._BaseCreateReportingDataAnnotation,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "AnalyticsAdminServiceRestTransport.CreateReportingDataAnnotation"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.CreateReportingDataAnnotationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.ReportingDataAnnotation:
+            r"""Call the create reporting data
+            annotation method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.CreateReportingDataAnnotationRequest):
+                        The request object. Request message for
+                    CreateReportingDataAnnotation RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.resources.ReportingDataAnnotation:
+                        A Reporting Data Annotation is a
+                    comment connected to certain dates for
+                    reporting data.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseCreateReportingDataAnnotation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_reporting_data_annotation(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseCreateReportingDataAnnotation._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAnalyticsAdminServiceRestTransport._BaseCreateReportingDataAnnotation._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseCreateReportingDataAnnotation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.CreateReportingDataAnnotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "CreateReportingDataAnnotation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._CreateReportingDataAnnotation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.ReportingDataAnnotation()
+            pb_resp = resources.ReportingDataAnnotation.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_reporting_data_annotation(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_reporting_data_annotation_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.ReportingDataAnnotation.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.create_reporting_data_annotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "CreateReportingDataAnnotation",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -9665,6 +13477,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_rollup_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_rollup_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9826,6 +13642,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_rollup_property_source_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_rollup_property_source_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9905,8 +13728,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.SearchAds360Link:
-                    A link between a GA4 property and a
-                Search Ads 360 entity.
+                    A link between a Google Analytics
+                property and a Search Ads 360 entity.
 
             """
 
@@ -9980,6 +13803,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_search_ads360_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_search_ads360_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -10141,6 +13968,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             resp = self._interceptor.post_create_sk_ad_network_conversion_value_schema(
                 resp
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_sk_ad_network_conversion_value_schema_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -10223,8 +14057,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.gaa_subproperty_event_filter.SubpropertyEventFilter:
-                        A resource message representing a GA4
-                    Subproperty event filter.
+                        A resource message representing a
+                    Google Analytics subproperty event
+                    filter.
 
             """
 
@@ -10298,6 +14133,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_subproperty_event_filter(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_subproperty_event_filter_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -12404,7 +16246,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             Returns:
                 ~.resources.Property:
                     A resource message representing a
-                Google Analytics GA4 property.
+                Google Analytics property.
 
             """
 
@@ -12471,6 +16313,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -12493,6 +16339,119 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     },
                 )
             return resp
+
+    class _DeleteReportingDataAnnotation(
+        _BaseAnalyticsAdminServiceRestTransport._BaseDeleteReportingDataAnnotation,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "AnalyticsAdminServiceRestTransport.DeleteReportingDataAnnotation"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.DeleteReportingDataAnnotationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ):
+            r"""Call the delete reporting data
+            annotation method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.DeleteReportingDataAnnotationRequest):
+                        The request object. Request message for
+                    DeleteReportingDataAnnotation RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseDeleteReportingDataAnnotation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_reporting_data_annotation(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseDeleteReportingDataAnnotation._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseDeleteReportingDataAnnotation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.DeleteReportingDataAnnotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "DeleteReportingDataAnnotation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._DeleteReportingDataAnnotation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
 
     class _DeleteRollupPropertySourceLink(
         _BaseAnalyticsAdminServiceRestTransport._BaseDeleteRollupPropertySourceLink,
@@ -13091,6 +17050,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             resp = self._interceptor.post_fetch_automated_ga4_configuration_opt_out(
                 resp
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_fetch_automated_ga4_configuration_opt_out_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13240,6 +17206,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_fetch_connected_ga4_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_fetch_connected_ga4_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13392,6 +17362,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_access_binding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_access_binding_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13535,6 +17509,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13611,8 +17589,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.AdSenseLink:
-                    A link between a GA4 Property and an
-                AdSense for Content ad client.
+                    A link between a Google Analytics
+                property and an AdSense for Content ad
+                client.
 
             """
 
@@ -13681,6 +17660,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_ad_sense_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_ad_sense_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13828,6 +17811,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_attribution_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_attribution_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -13903,7 +17890,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.audience.Audience:
-                    A resource message representing a GA4
+                    A resource message representing an
                 Audience.
 
             """
@@ -13971,6 +17958,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_audience(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_audience_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14047,8 +18038,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.BigQueryLink:
-                    A link between a GA4 Property and
-                BigQuery project.
+                    A link between a Google Analytics
+                property and BigQuery project.
 
             """
 
@@ -14119,6 +18110,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_big_query_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_big_query_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14265,6 +18260,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_calculated_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_calculated_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14413,6 +18412,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_channel_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_channel_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14561,6 +18564,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_conversion_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_conversion_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14707,6 +18714,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_custom_dimension(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_custom_dimension_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -14853,6 +18864,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_custom_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_custom_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15001,6 +19016,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_data_redaction_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_data_redaction_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15148,6 +19167,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_data_retention_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_data_retention_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15295,6 +19318,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_data_sharing_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_data_sharing_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15439,6 +19466,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_data_stream(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_data_stream_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15518,8 +19549,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLink:
-                        A link between a GA4 property and a
-                    Display & Video 360 advertiser.
+                        A link between a Google Analytics
+                    property and a Display & Video 360
+                    advertiser.
 
             """
 
@@ -15591,6 +19623,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_display_video360_advertiser_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_display_video360_advertiser_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -15673,9 +19712,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLinkProposal:
-                        A proposal for a link between a GA4
-                    property and a Display & Video 360
-                    advertiser.
+                        A proposal for a link between a
+                    Google Analytics property and a Display
+                    & Video 360 advertiser.
 
                     A proposal is converted to a
                     DisplayVideo360AdvertiserLink once
@@ -15755,6 +19794,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             resp = self._interceptor.post_get_display_video360_advertiser_link_proposal(
                 resp
+            )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_display_video360_advertiser_link_proposal_with_metadata(
+                resp, response_metadata
             )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
@@ -15911,6 +19957,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_enhanced_measurement_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_enhanced_measurement_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16073,6 +20126,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_event_create_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_event_create_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16235,6 +20292,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_event_edit_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_event_edit_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16313,9 +20374,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.expanded_data_set.ExpandedDataSet:
-                    A resource message representing a GA4
-                ExpandedDataSet.
-
+                    A resource message representing an ``ExpandedDataSet``.
             """
 
             http_options = (
@@ -16385,6 +20444,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_expanded_data_set(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_expanded_data_set_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16537,6 +20600,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_global_site_tag(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_global_site_tag_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16684,6 +20751,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_google_signals_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_google_signals_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16827,6 +20898,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_key_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_key_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -16976,6 +21051,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_measurement_protocol_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_measurement_protocol_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17054,7 +21136,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             Returns:
                 ~.resources.Property:
                     A resource message representing a
-                Google Analytics GA4 property.
+                Google Analytics property.
 
             """
 
@@ -17121,6 +21203,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17138,6 +21224,163 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "GetProperty",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetReportingDataAnnotation(
+        _BaseAnalyticsAdminServiceRestTransport._BaseGetReportingDataAnnotation,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AnalyticsAdminServiceRestTransport.GetReportingDataAnnotation")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.GetReportingDataAnnotationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.ReportingDataAnnotation:
+            r"""Call the get reporting data
+            annotation method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.GetReportingDataAnnotationRequest):
+                        The request object. Request message for
+                    GetReportingDataAnnotation RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.resources.ReportingDataAnnotation:
+                        A Reporting Data Annotation is a
+                    comment connected to certain dates for
+                    reporting data.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseGetReportingDataAnnotation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_reporting_data_annotation(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseGetReportingDataAnnotation._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseGetReportingDataAnnotation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.GetReportingDataAnnotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "GetReportingDataAnnotation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._GetReportingDataAnnotation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.ReportingDataAnnotation()
+            pb_resp = resources.ReportingDataAnnotation.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_reporting_data_annotation(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_reporting_data_annotation_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.ReportingDataAnnotation.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.get_reporting_data_annotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "GetReportingDataAnnotation",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -17271,6 +21514,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_rollup_property_source_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_rollup_property_source_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17349,8 +21599,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.SearchAds360Link:
-                    A link between a GA4 property and a
-                Search Ads 360 entity.
+                    A link between a Google Analytics
+                property and a Search Ads 360 entity.
 
             """
 
@@ -17421,6 +21671,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_search_ads360_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_search_ads360_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17575,6 +21829,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             resp = self._interceptor.post_get_sk_ad_network_conversion_value_schema(
                 resp
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_sk_ad_network_conversion_value_schema_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17654,8 +21915,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.subproperty_event_filter.SubpropertyEventFilter:
-                        A resource message representing a GA4
-                    Subproperty event filter.
+                        A resource message representing a
+                    Google Analytics subproperty event
+                    filter.
 
             """
 
@@ -17724,6 +21986,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_subproperty_event_filter(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_subproperty_event_filter_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -17745,6 +22011,161 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "GetSubpropertyEventFilter",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetSubpropertySyncConfig(
+        _BaseAnalyticsAdminServiceRestTransport._BaseGetSubpropertySyncConfig,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AnalyticsAdminServiceRestTransport.GetSubpropertySyncConfig")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.GetSubpropertySyncConfigRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.SubpropertySyncConfig:
+            r"""Call the get subproperty sync
+            config method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.GetSubpropertySyncConfigRequest):
+                        The request object. Request message for
+                    GetSubpropertySyncConfig RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.resources.SubpropertySyncConfig:
+                        Subproperty synchronization
+                    configuration controls how ordinary
+                    property configurations are synchronized
+                    to subproperties. This resource is
+                    provisioned automatically for each
+                    subproperty.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseGetSubpropertySyncConfig._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_subproperty_sync_config(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseGetSubpropertySyncConfig._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseGetSubpropertySyncConfig._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.GetSubpropertySyncConfig",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "GetSubpropertySyncConfig",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._GetSubpropertySyncConfig._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.SubpropertySyncConfig()
+            pb_resp = resources.SubpropertySyncConfig.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_subproperty_sync_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_subproperty_sync_config_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.SubpropertySyncConfig.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.get_subproperty_sync_config",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "GetSubpropertySyncConfig",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -17876,6 +22297,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_access_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_access_bindings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18019,6 +22444,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_accounts(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_accounts_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18169,6 +22598,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_account_summaries(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_account_summaries_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18319,6 +22752,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_ad_sense_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_ad_sense_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18465,6 +22902,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_audiences(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_audiences_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18615,6 +23056,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_big_query_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_big_query_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18765,6 +23210,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_calculated_metrics(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_calculated_metrics_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -18915,6 +23364,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_channel_groups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_channel_groups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19071,6 +23524,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_connected_site_tags(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_connected_site_tags_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19221,6 +23678,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_conversion_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_conversion_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19371,6 +23832,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_custom_dimensions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_custom_dimensions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19521,6 +23986,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_custom_metrics(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_custom_metrics_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19671,6 +24140,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_data_streams(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_data_streams_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19835,6 +24308,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     resp
                 )
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_display_video360_advertiser_link_proposals_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -19991,6 +24471,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_display_video360_advertiser_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_display_video360_advertiser_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20141,6 +24628,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_event_create_rules(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_event_create_rules_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20291,6 +24782,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_event_edit_rules(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_event_edit_rules_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20441,6 +24936,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_expanded_data_sets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_expanded_data_sets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20591,6 +25090,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_firebase_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_firebase_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20741,6 +25244,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_google_ads_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_google_ads_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -20886,6 +25393,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_key_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_key_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21037,6 +25548,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_measurement_protocol_secrets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_measurement_protocol_secrets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21185,6 +25703,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_properties(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_properties_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21204,6 +25726,166 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "ListProperties",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListReportingDataAnnotations(
+        _BaseAnalyticsAdminServiceRestTransport._BaseListReportingDataAnnotations,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "AnalyticsAdminServiceRestTransport.ListReportingDataAnnotations"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.ListReportingDataAnnotationsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> analytics_admin.ListReportingDataAnnotationsResponse:
+            r"""Call the list reporting data
+            annotations method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.ListReportingDataAnnotationsRequest):
+                        The request object. Request message for
+                    ListReportingDataAnnotation RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.analytics_admin.ListReportingDataAnnotationsResponse:
+                        Response message for
+                    ListReportingDataAnnotation RPC.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseListReportingDataAnnotations._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_reporting_data_annotations(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseListReportingDataAnnotations._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseListReportingDataAnnotations._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.ListReportingDataAnnotations",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "ListReportingDataAnnotations",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._ListReportingDataAnnotations._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = analytics_admin.ListReportingDataAnnotationsResponse()
+            pb_resp = analytics_admin.ListReportingDataAnnotationsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_reporting_data_annotations(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_reporting_data_annotations_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_admin.ListReportingDataAnnotationsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.list_reporting_data_annotations",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "ListReportingDataAnnotations",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -21336,6 +26018,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_rollup_property_source_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_rollup_property_source_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21488,6 +26177,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_search_ads360_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_search_ads360_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21648,6 +26341,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             resp = self._interceptor.post_list_sk_ad_network_conversion_value_schemas(
                 resp
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_sk_ad_network_conversion_value_schemas_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21799,6 +26499,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_subproperty_event_filters(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_subproperty_event_filters_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -21820,6 +26527,164 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "ListSubpropertyEventFilters",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListSubpropertySyncConfigs(
+        _BaseAnalyticsAdminServiceRestTransport._BaseListSubpropertySyncConfigs,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AnalyticsAdminServiceRestTransport.ListSubpropertySyncConfigs")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.ListSubpropertySyncConfigsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> analytics_admin.ListSubpropertySyncConfigsResponse:
+            r"""Call the list subproperty sync
+            configs method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.ListSubpropertySyncConfigsRequest):
+                        The request object. Request message for
+                    ListSubpropertySyncConfigs RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.analytics_admin.ListSubpropertySyncConfigsResponse:
+                        Response message for
+                    ListSubpropertySyncConfigs RPC.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseListSubpropertySyncConfigs._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_subproperty_sync_configs(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseListSubpropertySyncConfigs._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseListSubpropertySyncConfigs._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.ListSubpropertySyncConfigs",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "ListSubpropertySyncConfigs",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._ListSubpropertySyncConfigs._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = analytics_admin.ListSubpropertySyncConfigsResponse()
+            pb_resp = analytics_admin.ListSubpropertySyncConfigsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_subproperty_sync_configs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_subproperty_sync_configs_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_admin.ListSubpropertySyncConfigsResponse.to_json(
+                            response
+                        )
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.list_subproperty_sync_configs",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "ListSubpropertySyncConfigs",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -21955,6 +26820,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_provision_account_ticket(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_provision_account_ticket_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -22111,6 +26980,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_provision_subproperty(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_provision_subproperty_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -22385,6 +27258,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_access_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_access_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -22540,6 +27417,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_change_history_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_change_history_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -22706,6 +27587,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_automated_ga4_configuration_opt_out(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_set_automated_ga4_configuration_opt_out_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -22725,6 +27613,166 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "SetAutomatedGa4ConfigurationOptOut",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _SubmitUserDeletion(
+        _BaseAnalyticsAdminServiceRestTransport._BaseSubmitUserDeletion,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash("AnalyticsAdminServiceRestTransport.SubmitUserDeletion")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.SubmitUserDeletionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> analytics_admin.SubmitUserDeletionResponse:
+            r"""Call the submit user deletion method over HTTP.
+
+            Args:
+                request (~.analytics_admin.SubmitUserDeletionRequest):
+                    The request object. Request message for
+                SubmitUserDeletion RPC.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.analytics_admin.SubmitUserDeletionResponse:
+                    Response message for
+                SubmitUserDeletion RPC.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseSubmitUserDeletion._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_submit_user_deletion(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseSubmitUserDeletion._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAnalyticsAdminServiceRestTransport._BaseSubmitUserDeletion._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseSubmitUserDeletion._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.SubmitUserDeletion",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "SubmitUserDeletion",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = (
+                AnalyticsAdminServiceRestTransport._SubmitUserDeletion._get_response(
+                    self._host,
+                    metadata,
+                    query_params,
+                    self._session,
+                    timeout,
+                    transcoded_request,
+                    body,
+                )
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = analytics_admin.SubmitUserDeletionResponse()
+            pb_resp = analytics_admin.SubmitUserDeletionResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_submit_user_deletion(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_submit_user_deletion_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        analytics_admin.SubmitUserDeletionResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.submit_user_deletion",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "SubmitUserDeletion",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -22862,6 +27910,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_access_binding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_access_binding_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23012,6 +28064,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_account(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_account_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23166,6 +28222,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_attribution_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_attribution_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23243,7 +28303,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.gaa_audience.Audience:
-                    A resource message representing a GA4
+                    A resource message representing an
                 Audience.
 
             """
@@ -23316,6 +28376,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_audience(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_audience_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23393,8 +28457,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.BigQueryLink:
-                    A link between a GA4 Property and
-                BigQuery project.
+                    A link between a Google Analytics
+                property and BigQuery project.
 
             """
 
@@ -23470,6 +28534,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_big_query_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_big_query_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23620,6 +28688,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_calculated_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_calculated_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23774,6 +28846,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_channel_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_channel_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -23928,6 +29004,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_conversion_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_conversion_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24080,6 +29160,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_custom_dimension(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_custom_dimension_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24232,6 +29316,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_custom_metric(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_custom_metric_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24388,6 +29476,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_data_redaction_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_data_redaction_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24543,6 +29638,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_data_retention_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_data_retention_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24697,6 +29799,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_data_stream(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_data_stream_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -24777,8 +29883,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.resources.DisplayVideo360AdvertiserLink:
-                        A link between a GA4 property and a
-                    Display & Video 360 advertiser.
+                        A link between a Google Analytics
+                    property and a Display & Video 360
+                    advertiser.
 
             """
 
@@ -24855,6 +29962,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_display_video360_advertiser_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_display_video360_advertiser_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25017,6 +30131,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_enhanced_measurement_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_enhanced_measurement_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25185,6 +30306,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_event_create_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_event_create_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25353,6 +30478,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_event_edit_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_event_edit_rule_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25432,9 +30561,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.gaa_expanded_data_set.ExpandedDataSet:
-                    A resource message representing a GA4
-                ExpandedDataSet.
-
+                    A resource message representing an ``ExpandedDataSet``.
             """
 
             http_options = (
@@ -25509,6 +30636,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_expanded_data_set(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_expanded_data_set_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25588,8 +30719,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.GoogleAdsLink:
-                    A link between a GA4 property and a
-                Google Ads account.
+                    A link between a Google Analytics
+                property and a Google Ads account.
 
             """
 
@@ -25665,6 +30796,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_google_ads_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_google_ads_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25820,6 +30955,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_google_signals_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_google_signals_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -25972,6 +31114,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_key_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_key_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26130,6 +31276,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_measurement_protocol_secret(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_measurement_protocol_secret_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26210,7 +31363,7 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             Returns:
                 ~.resources.Property:
                     A resource message representing a
-                Google Analytics GA4 property.
+                Google Analytics property.
 
             """
 
@@ -26282,6 +31435,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_property(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_property_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26299,6 +31456,171 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "UpdateProperty",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateReportingDataAnnotation(
+        _BaseAnalyticsAdminServiceRestTransport._BaseUpdateReportingDataAnnotation,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "AnalyticsAdminServiceRestTransport.UpdateReportingDataAnnotation"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.UpdateReportingDataAnnotationRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.ReportingDataAnnotation:
+            r"""Call the update reporting data
+            annotation method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.UpdateReportingDataAnnotationRequest):
+                        The request object. Request message for
+                    UpdateReportingDataAnnotation RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.resources.ReportingDataAnnotation:
+                        A Reporting Data Annotation is a
+                    comment connected to certain dates for
+                    reporting data.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseUpdateReportingDataAnnotation._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_reporting_data_annotation(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateReportingDataAnnotation._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateReportingDataAnnotation._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateReportingDataAnnotation._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.UpdateReportingDataAnnotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "UpdateReportingDataAnnotation",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._UpdateReportingDataAnnotation._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.ReportingDataAnnotation()
+            pb_resp = resources.ReportingDataAnnotation.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_reporting_data_annotation(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_reporting_data_annotation_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.ReportingDataAnnotation.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.update_reporting_data_annotation",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "UpdateReportingDataAnnotation",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -26359,8 +31681,8 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
             Returns:
                 ~.resources.SearchAds360Link:
-                    A link between a GA4 property and a
-                Search Ads 360 entity.
+                    A link between a Google Analytics
+                property and a Search Ads 360 entity.
 
             """
 
@@ -26434,6 +31756,10 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_search_ads360_link(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_search_ads360_link_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26595,6 +31921,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             resp = self._interceptor.post_update_sk_ad_network_conversion_value_schema(
                 resp
             )
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_sk_ad_network_conversion_value_schema_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26677,8 +32010,9 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
 
                 Returns:
                     ~.gaa_subproperty_event_filter.SubpropertyEventFilter:
-                        A resource message representing a GA4
-                    Subproperty event filter.
+                        A resource message representing a
+                    Google Analytics subproperty event
+                    filter.
 
             """
 
@@ -26752,6 +32086,13 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_subproperty_event_filter(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_subproperty_event_filter_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -26773,6 +32114,172 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
                     extra={
                         "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
                         "rpcName": "UpdateSubpropertyEventFilter",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateSubpropertySyncConfig(
+        _BaseAnalyticsAdminServiceRestTransport._BaseUpdateSubpropertySyncConfig,
+        AnalyticsAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "AnalyticsAdminServiceRestTransport.UpdateSubpropertySyncConfig"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: analytics_admin.UpdateSubpropertySyncConfigRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> resources.SubpropertySyncConfig:
+            r"""Call the update subproperty sync
+            config method over HTTP.
+
+                Args:
+                    request (~.analytics_admin.UpdateSubpropertySyncConfigRequest):
+                        The request object. Request message for
+                    UpdateSubpropertySyncConfig RPC.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.resources.SubpropertySyncConfig:
+                        Subproperty synchronization
+                    configuration controls how ordinary
+                    property configurations are synchronized
+                    to subproperties. This resource is
+                    provisioned automatically for each
+                    subproperty.
+
+            """
+
+            http_options = (
+                _BaseAnalyticsAdminServiceRestTransport._BaseUpdateSubpropertySyncConfig._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_subproperty_sync_config(
+                request, metadata
+            )
+            transcoded_request = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateSubpropertySyncConfig._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateSubpropertySyncConfig._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseAnalyticsAdminServiceRestTransport._BaseUpdateSubpropertySyncConfig._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.UpdateSubpropertySyncConfig",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "UpdateSubpropertySyncConfig",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = AnalyticsAdminServiceRestTransport._UpdateSubpropertySyncConfig._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = resources.SubpropertySyncConfig()
+            pb_resp = resources.SubpropertySyncConfig.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_subproperty_sync_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_update_subproperty_sync_config_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = resources.SubpropertySyncConfig.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.analytics.admin_v1alpha.AnalyticsAdminServiceClient.update_subproperty_sync_config",
+                    extra={
+                        "serviceName": "google.analytics.admin.v1alpha.AnalyticsAdminService",
+                        "rpcName": "UpdateSubpropertySyncConfig",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -27079,6 +32586,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         return self._CreateProperty(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def create_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.CreateReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateReportingDataAnnotation(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def create_rollup_property(
         self,
     ) -> Callable[
@@ -27290,6 +32808,16 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._DeleteProperty(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def delete_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.DeleteReportingDataAnnotationRequest], empty_pb2.Empty
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteReportingDataAnnotation(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def delete_rollup_property_source_link(
@@ -27598,6 +33126,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         return self._GetProperty(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetReportingDataAnnotation(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_rollup_property_source_link(
         self,
     ) -> Callable[
@@ -27639,6 +33178,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetSubpropertyEventFilter(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetSubpropertySyncConfigRequest],
+        resources.SubpropertySyncConfig,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetSubpropertySyncConfig(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_access_bindings(
@@ -27890,6 +33440,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         return self._ListProperties(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def list_reporting_data_annotations(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListReportingDataAnnotationsRequest],
+        analytics_admin.ListReportingDataAnnotationsResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListReportingDataAnnotations(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def list_rollup_property_source_links(
         self,
     ) -> Callable[
@@ -27932,6 +33493,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListSubpropertyEventFilters(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_subproperty_sync_configs(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListSubpropertySyncConfigsRequest],
+        analytics_admin.ListSubpropertySyncConfigsResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListSubpropertySyncConfigs(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def provision_account_ticket(
@@ -27995,6 +33567,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._SetAutomatedGa4ConfigurationOptOut(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def submit_user_deletion(
+        self,
+    ) -> Callable[
+        [analytics_admin.SubmitUserDeletionRequest],
+        analytics_admin.SubmitUserDeletionResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._SubmitUserDeletion(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def update_access_binding(
@@ -28223,6 +33806,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         return self._UpdateProperty(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def update_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateReportingDataAnnotationRequest],
+        resources.ReportingDataAnnotation,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateReportingDataAnnotation(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def update_search_ads360_link(
         self,
     ) -> Callable[
@@ -28253,6 +33847,17 @@ class AnalyticsAdminServiceRestTransport(_BaseAnalyticsAdminServiceRestTransport
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateSubpropertyEventFilter(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateSubpropertySyncConfigRequest],
+        resources.SubpropertySyncConfig,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateSubpropertySyncConfig(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def kind(self) -> str:

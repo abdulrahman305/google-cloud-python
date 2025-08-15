@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,10 @@ class oracledatabaseCallTransformer(cst.CSTTransformer):
         'list_db_system_shapes': ('parent', 'page_size', 'page_token', ),
         'list_entitlements': ('parent', 'page_size', 'page_token', ),
         'list_gi_versions': ('parent', 'page_size', 'page_token', ),
+        'restart_autonomous_database': ('name', ),
         'restore_autonomous_database': ('name', 'restore_time', ),
+        'start_autonomous_database': ('name', ),
+        'stop_autonomous_database': ('name', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

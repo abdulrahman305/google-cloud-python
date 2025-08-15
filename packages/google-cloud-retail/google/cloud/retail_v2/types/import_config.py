@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -113,9 +113,6 @@ class BigQuerySource(proto.Message):
         partition_date (google.type.date_pb2.Date):
             BigQuery time partitioned table's \_PARTITIONDATE in
             YYYY-MM-DD format.
-
-            Only supported in
-            [ImportProductsRequest][google.cloud.retail.v2.ImportProductsRequest].
 
             This field is a member of `oneof`_ ``partition``.
         project_id (str):

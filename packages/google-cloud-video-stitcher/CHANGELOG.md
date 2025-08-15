@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-stitcher-v0.7.17...google-cloud-video-stitcher-v0.7.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [0.7.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-stitcher-v0.7.16...google-cloud-video-stitcher-v0.7.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.7.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-stitcher-v0.7.15...google-cloud-video-stitcher-v0.7.16) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.7.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-stitcher-v0.7.14...google-cloud-video-stitcher-v0.7.15) (2024-12-12)
 
 

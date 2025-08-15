@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.3.0](https://github.com/googleapis/google-cloud-python/compare/google-ads-admanager-v0.2.6...google-ads-admanager-v0.3.0) (2025-07-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* Added proto3 optional modifier to all primitive type fields
+* Moved Company enums to a separate file
+* Moved Report messages to a separate file
+* Changed canonical resource name format for CustomTargetingValue resource
+* New required field customTargetingKey added to CustomTargetingValue resource
+
+### Features
+
+* Added support for AdBreak resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for BandwidthGroup resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for DeviceCategory resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for GeoTarget resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for OperatingSystem resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for OperatingSystemVersion resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for PrivateAuction resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Added support for ProgrammaticBuyer ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* New required field customTargetingKey added to CustomTargetingValue resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+
+
+### Bug Fixes
+
+* Added proto3 optional modifier to all primitive type fields ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Changed canonical resource name format for CustomTargetingValue resource ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Moved Company enums to a separate file ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+* Moved Report messages to a separate file ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+
+
+### Documentation
+
+* Updated documentation for multiple Report enums ([8bd8937](https://github.com/googleapis/google-cloud-python/commit/8bd893714d28ef47ecb76aad6abc06158b0815b4))
+
+## [0.2.6](https://github.com/googleapis/google-cloud-python/compare/google-ads-admanager-v0.2.5...google-ads-admanager-v0.2.6) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([1562bb7](https://github.com/googleapis/google-cloud-python/commit/1562bb740c7cd56179e52185dde3c32af861de5e))
+
+## [0.2.5](https://github.com/googleapis/google-cloud-python/compare/google-ads-admanager-v0.2.4...google-ads-admanager-v0.2.5) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-ads-admanager-v0.2.3...google-ads-admanager-v0.2.4) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
 ## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-ads-admanager-v0.2.2...google-ads-admanager-v0.2.3) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.devtools.containeranalysis_v1 import gapic_version as package_version
 from google.cloud.devtools.containeranalysis_v1.types import containeranalysis
@@ -32,6 +33,9 @@ from google.cloud.devtools.containeranalysis_v1.types import containeranalysis
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ContainerAnalysisTransport(abc.ABC):
@@ -150,6 +154,11 @@ class ContainerAnalysisTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.export_sbom: gapic_v1.method.wrap_method(
+                self.export_sbom,
+                default_timeout=None,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -199,6 +208,18 @@ class ContainerAnalysisTransport(abc.ABC):
         Union[
             containeranalysis.VulnerabilityOccurrencesSummary,
             Awaitable[containeranalysis.VulnerabilityOccurrencesSummary],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def export_sbom(
+        self,
+    ) -> Callable[
+        [containeranalysis.ExportSBOMRequest],
+        Union[
+            containeranalysis.ExportSBOMResponse,
+            Awaitable[containeranalysis.ExportSBOMResponse],
         ],
     ]:
         raise NotImplementedError()

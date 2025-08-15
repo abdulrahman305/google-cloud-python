@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.gsuiteaddons_v1 import gapic_version as package_version
 
@@ -63,36 +64,36 @@ _LOGGER = std_logging.getLogger(__name__)
 
 
 class GSuiteAddOnsAsyncClient:
-    """A service for managing Google Workspace Add-ons deployments.
+    """A service for managing Google Workspace add-ons deployments.
 
-    A Google Workspace Add-on is a third-party embedded component
+    A Google Workspace add-on is a third-party embedded component
     that can be installed in Google Workspace Applications like
     Gmail, Calendar, Drive, and the Google Docs, Sheets, and Slides
-    editors. Google Workspace Add-ons can display UI cards, receive
+    editors. Google Workspace add-ons can display UI cards, receive
     contextual information from the host application, and perform
     actions in the host application (See:
 
     https://developers.google.com/gsuite/add-ons/overview for more
     information).
 
-    A Google Workspace Add-on deployment resource specifies metadata
+    A Google Workspace add-on deployment resource specifies metadata
     about the add-on, including a specification of the entry points
     in the host application that trigger add-on executions (see:
 
     https://developers.google.com/gsuite/add-ons/concepts/gsuite-manifests).
-    Add-on deployments defined via the Google Workspace Add-ons API
+    Add-on deployments defined via the Google Workspace add-ons API
     define their entrypoints using HTTPS URLs (See:
 
     https://developers.google.com/gsuite/add-ons/guides/alternate-runtimes),
 
-    A Google Workspace Add-on deployment can be installed in
+    A Google Workspace add-on deployment can be installed in
     developer mode, which allows an add-on developer to test the
     experience an end-user would see when installing and running the
     add-on in their G Suite applications.  When running in developer
     mode, more detailed error messages are exposed in the add-on UI
     to aid in debugging.
 
-    A Google Workspace Add-on deployment can be published to Google
+    A Google Workspace add-on deployment can be published to Google
     Workspace Marketplace, which allows other Google Workspace users
     to discover and install the add-on.  See:
 
@@ -366,11 +367,11 @@ class GSuiteAddOnsAsyncClient:
         Args:
             request (Optional[Union[google.cloud.gsuiteaddons_v1.types.GetAuthorizationRequest, dict]]):
                 The request object. Request message to get Google
-                Workspace Add-ons authorization
+                Workspace add-ons authorization
                 information.
             name (:class:`str`):
                 Required. Name of the project for which to get the
-                Google Workspace Add-ons authorization information.
+                Google Workspace add-ons authorization information.
 
                 Example: ``projects/my_project/authorization``.
 
@@ -394,7 +395,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -516,12 +520,15 @@ class GSuiteAddOnsAsyncClient:
 
         Returns:
             google.cloud.gsuiteaddons_v1.types.Deployment:
-                A Google Workspace Add-on deployment
+                A Google Workspace add-on deployment
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, deployment, deployment_id])
+        flattened_params = [parent, deployment, deployment_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -626,12 +633,15 @@ class GSuiteAddOnsAsyncClient:
 
         Returns:
             google.cloud.gsuiteaddons_v1.types.Deployment:
-                A Google Workspace Add-on deployment
+                A Google Workspace add-on deployment
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([deployment])
+        flattened_params = [deployment]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -736,12 +746,15 @@ class GSuiteAddOnsAsyncClient:
 
         Returns:
             google.cloud.gsuiteaddons_v1.types.Deployment:
-                A Google Workspace Add-on deployment
+                A Google Workspace add-on deployment
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -855,7 +868,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -968,7 +984,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1070,7 +1089,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1172,7 +1194,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1280,7 +1305,10 @@ class GSuiteAddOnsAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1333,6 +1361,9 @@ class GSuiteAddOnsAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("GSuiteAddOnsAsyncClient",)

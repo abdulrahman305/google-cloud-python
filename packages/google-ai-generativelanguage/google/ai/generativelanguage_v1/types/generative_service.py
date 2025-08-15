@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,9 @@ class TaskType(proto.Enum):
         FACT_VERIFICATION (7):
             Specifies that the given text will be used
             for fact verification.
+        CODE_RETRIEVAL_QUERY (8):
+            Specifies that the given text will be used
+            for code retrieval.
     """
     TASK_TYPE_UNSPECIFIED = 0
     RETRIEVAL_QUERY = 1
@@ -86,6 +89,7 @@ class TaskType(proto.Enum):
     CLUSTERING = 5
     QUESTION_ANSWERING = 6
     FACT_VERIFICATION = 7
+    CODE_RETRIEVAL_QUERY = 8
 
 
 class GenerateContentRequest(proto.Message):
@@ -98,7 +102,7 @@ class GenerateContentRequest(proto.Message):
             Required. The name of the ``Model`` to use for generating
             the completion.
 
-            Format: ``name=models/{model}``.
+            Format: ``models/{model}``.
         contents (MutableSequence[google.ai.generativelanguage_v1.types.Content]):
             Required. The content of the current conversation with the
             model.
@@ -124,8 +128,8 @@ class GenerateContentRequest(proto.Message):
             will use the default safety setting for that category. Harm
             categories HARM_CATEGORY_HATE_SPEECH,
             HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            HARM_CATEGORY_DANGEROUS_CONTENT, HARM_CATEGORY_HARASSMENT
-            are supported. Refer to the
+            HARM_CATEGORY_DANGEROUS_CONTENT, HARM_CATEGORY_HARASSMENT,
+            HARM_CATEGORY_CIVIC_INTEGRITY are supported. Refer to the
             `guide <https://ai.google.dev/gemini-api/docs/safety-settings>`__
             for detailed information on available safety settings. Also
             refer to the `Safety
@@ -171,9 +175,9 @@ class GenerationConfig(proto.Message):
     Attributes:
         candidate_count (int):
             Optional. Number of generated responses to
-            return.
-            Currently, this value can only be set to 1. If
-            unset, this will default to 1.
+            return. If unset, this will default to 1. Please
+            note that this doesn't work for previous
+            generation models (Gemini 1.0 family)
 
             This field is a member of `oneof`_ ``_candidate_count``.
         stop_sequences (MutableSequence[str]):
@@ -235,6 +239,11 @@ class GenerationConfig(proto.Message):
             doesn't allow setting ``top_k`` on requests.
 
             This field is a member of `oneof`_ ``_top_k``.
+        seed (int):
+            Optional. Seed used in decoding. If not set,
+            the request uses a randomly generated seed.
+
+            This field is a member of `oneof`_ ``_seed``.
         presence_penalty (float):
             Optional. Presence penalty applied to the next token's
             logprobs if the token has already been seen in the response.
@@ -261,7 +270,7 @@ class GenerationConfig(proto.Message):
             A positive penalty will discourage the use of tokens that
             have already been used, proportional to the number of times
             the token has been used: The more a token is used, the more
-            dificult it is for the model to use that token again
+            difficult it is for the model to use that token again
             increasing the vocabulary of responses.
 
             Caution: A *negative* penalty will encourage the model to
@@ -287,6 +296,11 @@ class GenerationConfig(proto.Message):
             [Candidate.logprobs_result][google.ai.generativelanguage.v1.Candidate.logprobs_result].
 
             This field is a member of `oneof`_ ``_logprobs``.
+        enable_enhanced_civic_answers (bool):
+            Optional. Enables enhanced civic answers. It
+            may not be available for all models.
+
+            This field is a member of `oneof`_ ``_enable_enhanced_civic_answers``.
     """
 
     candidate_count: int = proto.Field(
@@ -318,6 +332,11 @@ class GenerationConfig(proto.Message):
         number=7,
         optional=True,
     )
+    seed: int = proto.Field(
+        proto.INT32,
+        number=8,
+        optional=True,
+    )
     presence_penalty: float = proto.Field(
         proto.FLOAT,
         number=15,
@@ -336,6 +355,11 @@ class GenerationConfig(proto.Message):
     logprobs: int = proto.Field(
         proto.INT32,
         number=18,
+        optional=True,
+    )
+    enable_enhanced_civic_answers: bool = proto.Field(
+        proto.BOOL,
+        number=19,
         optional=True,
     )
 
@@ -397,12 +421,16 @@ class GenerateContentResponse(proto.Message):
                     included from the terminology blocklist.
                 PROHIBITED_CONTENT (4):
                     Prompt was blocked due to prohibited content.
+                IMAGE_SAFETY (5):
+                    Candidates blocked due to unsafe image
+                    generation content.
             """
             BLOCK_REASON_UNSPECIFIED = 0
             SAFETY = 1
             OTHER = 2
             BLOCKLIST = 3
             PROHIBITED_CONTENT = 4
+            IMAGE_SAFETY = 5
 
         block_reason: "GenerateContentResponse.PromptFeedback.BlockReason" = (
             proto.Field(
@@ -428,9 +456,27 @@ class GenerateContentResponse(proto.Message):
             candidates_token_count (int):
                 Total number of tokens across all the
                 generated response candidates.
+            tool_use_prompt_token_count (int):
+                Output only. Number of tokens present in
+                tool-use prompt(s).
+            thoughts_token_count (int):
+                Output only. Number of tokens of thoughts for
+                thinking models.
             total_token_count (int):
                 Total token count for the generation request
                 (prompt + response candidates).
+            prompt_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+                Output only. List of modalities that were
+                processed in the request input.
+            cache_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+                Output only. List of modalities of the cached
+                content in the request input.
+            candidates_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+                Output only. List of modalities that were
+                returned in the response.
+            tool_use_prompt_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+                Output only. List of modalities that were
+                processed for tool-use request inputs.
         """
 
         prompt_token_count: int = proto.Field(
@@ -441,9 +487,45 @@ class GenerateContentResponse(proto.Message):
             proto.INT32,
             number=2,
         )
+        tool_use_prompt_token_count: int = proto.Field(
+            proto.INT32,
+            number=8,
+        )
+        thoughts_token_count: int = proto.Field(
+            proto.INT32,
+            number=10,
+        )
         total_token_count: int = proto.Field(
             proto.INT32,
             number=3,
+        )
+        prompt_tokens_details: MutableSequence[
+            gag_content.ModalityTokenCount
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=5,
+            message=gag_content.ModalityTokenCount,
+        )
+        cache_tokens_details: MutableSequence[
+            gag_content.ModalityTokenCount
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=6,
+            message=gag_content.ModalityTokenCount,
+        )
+        candidates_tokens_details: MutableSequence[
+            gag_content.ModalityTokenCount
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=7,
+            message=gag_content.ModalityTokenCount,
+        )
+        tool_use_prompt_tokens_details: MutableSequence[
+            gag_content.ModalityTokenCount
+        ] = proto.RepeatedField(
+            proto.MESSAGE,
+            number=9,
+            message=gag_content.ModalityTokenCount,
         )
 
     candidates: MutableSequence["Candidate"] = proto.RepeatedField(
@@ -548,6 +630,9 @@ class Candidate(proto.Message):
             MALFORMED_FUNCTION_CALL (10):
                 The function call generated by the model is
                 invalid.
+            IMAGE_SAFETY (11):
+                Token generation stopped because generated
+                images contain safety violations.
         """
         FINISH_REASON_UNSPECIFIED = 0
         STOP = 1
@@ -560,6 +645,7 @@ class Candidate(proto.Message):
         PROHIBITED_CONTENT = 8
         SPII = 9
         MALFORMED_FUNCTION_CALL = 10
+        IMAGE_SAFETY = 11
 
     index: int = proto.Field(
         proto.INT32,
@@ -919,7 +1005,8 @@ class EmbedContentRequest(proto.Message):
             fields will be counted.
         task_type (google.ai.generativelanguage_v1.types.TaskType):
             Optional. Optional task type for which the embeddings will
-            be used. Can only be set for ``models/embedding-001``.
+            be used. Not supported on earlier models
+            (``models/embedding-001``).
 
             This field is a member of `oneof`_ ``_task_type``.
         title (str):
@@ -1100,11 +1187,31 @@ class CountTokensResponse(proto.Message):
         total_tokens (int):
             The number of tokens that the ``Model`` tokenizes the
             ``prompt`` into. Always non-negative.
+        prompt_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+            Output only. List of modalities that were
+            processed in the request input.
+        cache_tokens_details (MutableSequence[google.ai.generativelanguage_v1.types.ModalityTokenCount]):
+            Output only. List of modalities that were
+            processed in the cached content.
     """
 
     total_tokens: int = proto.Field(
         proto.INT32,
         number=1,
+    )
+    prompt_tokens_details: MutableSequence[
+        gag_content.ModalityTokenCount
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=6,
+        message=gag_content.ModalityTokenCount,
+    )
+    cache_tokens_details: MutableSequence[
+        gag_content.ModalityTokenCount
+    ] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=7,
+        message=gag_content.ModalityTokenCount,
     )
 
 

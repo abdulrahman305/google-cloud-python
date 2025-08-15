@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ApiKeysRestInterceptor:
@@ -156,11 +160,34 @@ class ApiKeysRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_key` interceptor runs
+        before the `post_create_key_with_metadata` interceptor.
         """
         return response
+
+    def post_create_key_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_create_key_with_metadata`
+        interceptor in new development instead of the `post_create_key` interceptor.
+        When both interceptors are used, this `post_create_key_with_metadata` interceptor runs after the
+        `post_create_key` interceptor. The (possibly modified) response returned by
+        `post_create_key` will be passed to
+        `post_create_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_key(
         self,
@@ -179,11 +206,34 @@ class ApiKeysRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_key` interceptor runs
+        before the `post_delete_key_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_key_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_delete_key_with_metadata`
+        interceptor in new development instead of the `post_delete_key` interceptor.
+        When both interceptors are used, this `post_delete_key_with_metadata` interceptor runs after the
+        `post_delete_key` interceptor. The (possibly modified) response returned by
+        `post_delete_key` will be passed to
+        `post_delete_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_key(
         self,
@@ -200,11 +250,32 @@ class ApiKeysRestInterceptor:
     def post_get_key(self, response: resources.Key) -> resources.Key:
         """Post-rpc interceptor for get_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_key` interceptor runs
+        before the `post_get_key_with_metadata` interceptor.
         """
         return response
+
+    def post_get_key_with_metadata(
+        self, response: resources.Key, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[resources.Key, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_get_key_with_metadata`
+        interceptor in new development instead of the `post_get_key` interceptor.
+        When both interceptors are used, this `post_get_key_with_metadata` interceptor runs after the
+        `post_get_key` interceptor. The (possibly modified) response returned by
+        `post_get_key` will be passed to
+        `post_get_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_key_string(
         self,
@@ -223,11 +294,34 @@ class ApiKeysRestInterceptor:
     ) -> apikeys.GetKeyStringResponse:
         """Post-rpc interceptor for get_key_string
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_key_string_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_key_string` interceptor runs
+        before the `post_get_key_string_with_metadata` interceptor.
         """
         return response
+
+    def post_get_key_string_with_metadata(
+        self,
+        response: apikeys.GetKeyStringResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[apikeys.GetKeyStringResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_key_string
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_get_key_string_with_metadata`
+        interceptor in new development instead of the `post_get_key_string` interceptor.
+        When both interceptors are used, this `post_get_key_string_with_metadata` interceptor runs after the
+        `post_get_key_string` interceptor. The (possibly modified) response returned by
+        `post_get_key_string` will be passed to
+        `post_get_key_string_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_keys(
         self,
@@ -246,11 +340,34 @@ class ApiKeysRestInterceptor:
     ) -> apikeys.ListKeysResponse:
         """Post-rpc interceptor for list_keys
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_keys_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_keys` interceptor runs
+        before the `post_list_keys_with_metadata` interceptor.
         """
         return response
+
+    def post_list_keys_with_metadata(
+        self,
+        response: apikeys.ListKeysResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[apikeys.ListKeysResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_keys
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_list_keys_with_metadata`
+        interceptor in new development instead of the `post_list_keys` interceptor.
+        When both interceptors are used, this `post_list_keys_with_metadata` interceptor runs after the
+        `post_list_keys` interceptor. The (possibly modified) response returned by
+        `post_list_keys` will be passed to
+        `post_list_keys_with_metadata`.
+        """
+        return response, metadata
 
     def pre_lookup_key(
         self,
@@ -269,11 +386,34 @@ class ApiKeysRestInterceptor:
     ) -> apikeys.LookupKeyResponse:
         """Post-rpc interceptor for lookup_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_lookup_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_lookup_key` interceptor runs
+        before the `post_lookup_key_with_metadata` interceptor.
         """
         return response
+
+    def post_lookup_key_with_metadata(
+        self,
+        response: apikeys.LookupKeyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[apikeys.LookupKeyResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for lookup_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_lookup_key_with_metadata`
+        interceptor in new development instead of the `post_lookup_key` interceptor.
+        When both interceptors are used, this `post_lookup_key_with_metadata` interceptor runs after the
+        `post_lookup_key` interceptor. The (possibly modified) response returned by
+        `post_lookup_key` will be passed to
+        `post_lookup_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_undelete_key(
         self,
@@ -292,11 +432,34 @@ class ApiKeysRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for undelete_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_undelete_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_undelete_key` interceptor runs
+        before the `post_undelete_key_with_metadata` interceptor.
         """
         return response
+
+    def post_undelete_key_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for undelete_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_undelete_key_with_metadata`
+        interceptor in new development instead of the `post_undelete_key` interceptor.
+        When both interceptors are used, this `post_undelete_key_with_metadata` interceptor runs after the
+        `post_undelete_key` interceptor. The (possibly modified) response returned by
+        `post_undelete_key` will be passed to
+        `post_undelete_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_key(
         self,
@@ -315,11 +478,34 @@ class ApiKeysRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ApiKeys server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_key` interceptor runs
+        before the `post_update_key_with_metadata` interceptor.
         """
         return response
+
+    def post_update_key_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ApiKeys server but before it is returned to user code.
+
+        We recommend only using this `post_update_key_with_metadata`
+        interceptor in new development instead of the `post_update_key` interceptor.
+        When both interceptors are used, this `post_update_key_with_metadata` interceptor runs after the
+        `post_update_key` interceptor. The (possibly modified) response returned by
+        `post_update_key` will be passed to
+        `post_update_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -592,6 +778,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -733,6 +923,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -873,6 +1067,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1015,6 +1213,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_key_string(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_key_string_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1155,6 +1357,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_keys(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_keys_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1295,6 +1501,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_lookup_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_lookup_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1444,6 +1654,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_undelete_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_undelete_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1591,6 +1805,10 @@ class ApiKeysRestTransport(_BaseApiKeysRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

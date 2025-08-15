@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ def sample_create_report():
     # Initialize request argument(s)
     report = admanager_v1.Report()
     report.report_definition.dimensions = ['CUSTOM_DIMENSION_9_VALUE']
-    report.report_definition.metrics = ['YIELD_GROUP_MEDIATION_THIRD_PARTY_ECPM']
+    report.report_definition.metrics = ['YIELD_GROUP_SUCCESSFUL_RESPONSES']
     report.report_definition.report_type = "HISTORICAL"
 
     request = admanager_v1.CreateReportRequest(

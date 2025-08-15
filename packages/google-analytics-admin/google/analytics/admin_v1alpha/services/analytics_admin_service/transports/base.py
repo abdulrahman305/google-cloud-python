@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ from google.api_core import retry as retries
 import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.analytics.admin_v1alpha import gapic_version as package_version
@@ -45,6 +46,9 @@ from google.analytics.admin_v1alpha.types import subproperty_event_filter
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AnalyticsAdminServiceTransport(abc.ABC):
@@ -895,6 +899,51 @@ class AnalyticsAdminServiceTransport(abc.ABC):
             ),
             self.delete_subproperty_event_filter: gapic_v1.method.wrap_method(
                 self.delete_subproperty_event_filter,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_reporting_data_annotation: gapic_v1.method.wrap_method(
+                self.create_reporting_data_annotation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_reporting_data_annotation: gapic_v1.method.wrap_method(
+                self.get_reporting_data_annotation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_reporting_data_annotations: gapic_v1.method.wrap_method(
+                self.list_reporting_data_annotations,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_reporting_data_annotation: gapic_v1.method.wrap_method(
+                self.update_reporting_data_annotation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_reporting_data_annotation: gapic_v1.method.wrap_method(
+                self.delete_reporting_data_annotation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.submit_user_deletion: gapic_v1.method.wrap_method(
+                self.submit_user_deletion,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_subproperty_sync_configs: gapic_v1.method.wrap_method(
+                self.list_subproperty_sync_configs,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_subproperty_sync_config: gapic_v1.method.wrap_method(
+                self.update_subproperty_sync_config,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_subproperty_sync_config: gapic_v1.method.wrap_method(
+                self.get_subproperty_sync_config,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -2483,6 +2532,109 @@ class AnalyticsAdminServiceTransport(abc.ABC):
     ) -> Callable[
         [analytics_admin.DeleteSubpropertyEventFilterRequest],
         Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.CreateReportingDataAnnotationRequest],
+        Union[
+            resources.ReportingDataAnnotation,
+            Awaitable[resources.ReportingDataAnnotation],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetReportingDataAnnotationRequest],
+        Union[
+            resources.ReportingDataAnnotation,
+            Awaitable[resources.ReportingDataAnnotation],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_reporting_data_annotations(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListReportingDataAnnotationsRequest],
+        Union[
+            analytics_admin.ListReportingDataAnnotationsResponse,
+            Awaitable[analytics_admin.ListReportingDataAnnotationsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateReportingDataAnnotationRequest],
+        Union[
+            resources.ReportingDataAnnotation,
+            Awaitable[resources.ReportingDataAnnotation],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_reporting_data_annotation(
+        self,
+    ) -> Callable[
+        [analytics_admin.DeleteReportingDataAnnotationRequest],
+        Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def submit_user_deletion(
+        self,
+    ) -> Callable[
+        [analytics_admin.SubmitUserDeletionRequest],
+        Union[
+            analytics_admin.SubmitUserDeletionResponse,
+            Awaitable[analytics_admin.SubmitUserDeletionResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_subproperty_sync_configs(
+        self,
+    ) -> Callable[
+        [analytics_admin.ListSubpropertySyncConfigsRequest],
+        Union[
+            analytics_admin.ListSubpropertySyncConfigsResponse,
+            Awaitable[analytics_admin.ListSubpropertySyncConfigsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.UpdateSubpropertySyncConfigRequest],
+        Union[
+            resources.SubpropertySyncConfig, Awaitable[resources.SubpropertySyncConfig]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_subproperty_sync_config(
+        self,
+    ) -> Callable[
+        [analytics_admin.GetSubpropertySyncConfigRequest],
+        Union[
+            resources.SubpropertySyncConfig, Awaitable[resources.SubpropertySyncConfig]
+        ],
     ]:
         raise NotImplementedError()
 

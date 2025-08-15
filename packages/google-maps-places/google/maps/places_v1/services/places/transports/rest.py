@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class PlacesRestInterceptor:
@@ -134,11 +138,37 @@ class PlacesRestInterceptor:
     ) -> places_service.AutocompletePlacesResponse:
         """Post-rpc interceptor for autocomplete_places
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_autocomplete_places_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Places server but before
-        it is returned to user code.
+        it is returned to user code. This `post_autocomplete_places` interceptor runs
+        before the `post_autocomplete_places_with_metadata` interceptor.
         """
         return response
+
+    def post_autocomplete_places_with_metadata(
+        self,
+        response: places_service.AutocompletePlacesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        places_service.AutocompletePlacesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for autocomplete_places
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Places server but before it is returned to user code.
+
+        We recommend only using this `post_autocomplete_places_with_metadata`
+        interceptor in new development instead of the `post_autocomplete_places` interceptor.
+        When both interceptors are used, this `post_autocomplete_places_with_metadata` interceptor runs after the
+        `post_autocomplete_places` interceptor. The (possibly modified) response returned by
+        `post_autocomplete_places` will be passed to
+        `post_autocomplete_places_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_photo_media(
         self,
@@ -159,11 +189,34 @@ class PlacesRestInterceptor:
     ) -> places_service.PhotoMedia:
         """Post-rpc interceptor for get_photo_media
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_photo_media_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Places server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_photo_media` interceptor runs
+        before the `post_get_photo_media_with_metadata` interceptor.
         """
         return response
+
+    def post_get_photo_media_with_metadata(
+        self,
+        response: places_service.PhotoMedia,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[places_service.PhotoMedia, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_photo_media
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Places server but before it is returned to user code.
+
+        We recommend only using this `post_get_photo_media_with_metadata`
+        interceptor in new development instead of the `post_get_photo_media` interceptor.
+        When both interceptors are used, this `post_get_photo_media_with_metadata` interceptor runs after the
+        `post_get_photo_media` interceptor. The (possibly modified) response returned by
+        `post_get_photo_media` will be passed to
+        `post_get_photo_media_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_place(
         self,
@@ -180,11 +233,32 @@ class PlacesRestInterceptor:
     def post_get_place(self, response: place.Place) -> place.Place:
         """Post-rpc interceptor for get_place
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_place_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Places server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_place` interceptor runs
+        before the `post_get_place_with_metadata` interceptor.
         """
         return response
+
+    def post_get_place_with_metadata(
+        self, response: place.Place, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[place.Place, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_place
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Places server but before it is returned to user code.
+
+        We recommend only using this `post_get_place_with_metadata`
+        interceptor in new development instead of the `post_get_place` interceptor.
+        When both interceptors are used, this `post_get_place_with_metadata` interceptor runs after the
+        `post_get_place` interceptor. The (possibly modified) response returned by
+        `post_get_place` will be passed to
+        `post_get_place_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_nearby(
         self,
@@ -205,11 +279,36 @@ class PlacesRestInterceptor:
     ) -> places_service.SearchNearbyResponse:
         """Post-rpc interceptor for search_nearby
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_nearby_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Places server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_nearby` interceptor runs
+        before the `post_search_nearby_with_metadata` interceptor.
         """
         return response
+
+    def post_search_nearby_with_metadata(
+        self,
+        response: places_service.SearchNearbyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        places_service.SearchNearbyResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for search_nearby
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Places server but before it is returned to user code.
+
+        We recommend only using this `post_search_nearby_with_metadata`
+        interceptor in new development instead of the `post_search_nearby` interceptor.
+        When both interceptors are used, this `post_search_nearby_with_metadata` interceptor runs after the
+        `post_search_nearby` interceptor. The (possibly modified) response returned by
+        `post_search_nearby` will be passed to
+        `post_search_nearby_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_text(
         self,
@@ -230,11 +329,36 @@ class PlacesRestInterceptor:
     ) -> places_service.SearchTextResponse:
         """Post-rpc interceptor for search_text
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_text_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Places server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_text` interceptor runs
+        before the `post_search_text_with_metadata` interceptor.
         """
         return response
+
+    def post_search_text_with_metadata(
+        self,
+        response: places_service.SearchTextResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        places_service.SearchTextResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for search_text
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Places server but before it is returned to user code.
+
+        We recommend only using this `post_search_text_with_metadata`
+        interceptor in new development instead of the `post_search_text` interceptor.
+        When both interceptors are used, this `post_search_text_with_metadata` interceptor runs after the
+        `post_search_text` interceptor. The (possibly modified) response returned by
+        `post_search_text` will be passed to
+        `post_search_text_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -248,9 +372,9 @@ class PlacesRestTransport(_BasePlacesRestTransport):
     """REST backend synchronous transport for Places.
 
     Service definition for the Places API. Note: every request (except
-    for Autocomplete requests) requires a field mask set outside of the
-    request proto (``all/*``, is not assumed). The field mask can be set
-    via the HTTP header ``X-Goog-FieldMask``. See:
+    for Autocomplete and GetPhotoMedia requests) requires a field mask
+    set outside of the request proto (``all/*``, is not assumed). The
+    field mask can be set via the HTTP header ``X-Goog-FieldMask``. See:
     https://developers.google.com/maps/documentation/places/web-service/choose-fields
 
     This class defines the same methods as the primary client, so the
@@ -458,6 +582,10 @@ class PlacesRestTransport(_BasePlacesRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_autocomplete_places(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_autocomplete_places_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -603,6 +731,10 @@ class PlacesRestTransport(_BasePlacesRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_photo_media(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_photo_media_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -746,6 +878,10 @@ class PlacesRestTransport(_BasePlacesRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_place(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_place_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -894,6 +1030,10 @@ class PlacesRestTransport(_BasePlacesRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_nearby(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_nearby_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1042,6 +1182,10 @@ class PlacesRestTransport(_BasePlacesRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_text(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_text_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

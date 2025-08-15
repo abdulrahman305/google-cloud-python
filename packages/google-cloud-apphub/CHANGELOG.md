@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.9...google-cloud-apphub-v0.1.10) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.8...google-cloud-apphub-v0.1.9) (2025-03-27)
+
+
+### Features
+
+* add enum `Type.GLOBAL` ([5293282](https://github.com/googleapis/google-cloud-python/commit/5293282236161407d435a51afd08d28bc032415d))
+
+
+### Documentation
+
+* misc comment updates, formatting ([5293282](https://github.com/googleapis/google-cloud-python/commit/5293282236161407d435a51afd08d28bc032415d))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.7...google-cloud-apphub-v0.1.8) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.6...google-cloud-apphub-v0.1.7) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.5...google-cloud-apphub-v0.1.6) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apphub-v0.1.4...google-cloud-apphub-v0.1.5) (2024-12-12)
 
 

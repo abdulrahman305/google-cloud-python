@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,13 @@ from google.cloud.kms_v1.services.key_management_service import (
     transports,
 )
 from google.cloud.kms_v1.types import resources, service
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -340,6 +347,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         KeyManagementServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = KeyManagementServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = KeyManagementServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -4340,6 +4390,7 @@ def test_get_public_key(request_type, transport: str = "grpc"):
             algorithm=resources.CryptoKeyVersion.CryptoKeyVersionAlgorithm.GOOGLE_SYMMETRIC_ENCRYPTION,
             name="name_value",
             protection_level=resources.ProtectionLevel.SOFTWARE,
+            public_key_format=resources.PublicKey.PublicKeyFormat.PEM,
         )
         response = client.get_public_key(request)
 
@@ -4358,6 +4409,7 @@ def test_get_public_key(request_type, transport: str = "grpc"):
     )
     assert response.name == "name_value"
     assert response.protection_level == resources.ProtectionLevel.SOFTWARE
+    assert response.public_key_format == resources.PublicKey.PublicKeyFormat.PEM
 
 
 def test_get_public_key_non_empty_request_with_auto_populated_field():
@@ -4487,6 +4539,7 @@ async def test_get_public_key_async(
                 algorithm=resources.CryptoKeyVersion.CryptoKeyVersionAlgorithm.GOOGLE_SYMMETRIC_ENCRYPTION,
                 name="name_value",
                 protection_level=resources.ProtectionLevel.SOFTWARE,
+                public_key_format=resources.PublicKey.PublicKeyFormat.PEM,
             )
         )
         response = await client.get_public_key(request)
@@ -4506,6 +4559,7 @@ async def test_get_public_key_async(
     )
     assert response.name == "name_value"
     assert response.protection_level == resources.ProtectionLevel.SOFTWARE
+    assert response.public_key_format == resources.PublicKey.PublicKeyFormat.PEM
 
 
 @pytest.mark.asyncio
@@ -13325,6 +13379,8 @@ def test_get_public_key_rest_required_fields(request_type=service.GetPublicKeyRe
     unset_fields = transport_class(
         credentials=ga_credentials.AnonymousCredentials()
     ).get_public_key._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("public_key_format",))
     jsonified_request.update(unset_fields)
 
     # verify required fields with non-default values are left alone
@@ -13379,7 +13435,7 @@ def test_get_public_key_rest_unset_required_fields():
     )
 
     unset_fields = transport.get_public_key._get_unset_required_fields({})
-    assert set(unset_fields) == (set(()) & set(("name",)))
+    assert set(unset_fields) == (set(("publicKeyFormat",)) & set(("name",)))
 
 
 def test_get_public_key_rest_flattened():
@@ -18047,6 +18103,7 @@ async def test_get_public_key_empty_call_grpc_asyncio():
                 algorithm=resources.CryptoKeyVersion.CryptoKeyVersionAlgorithm.GOOGLE_SYMMETRIC_ENCRYPTION,
                 name="name_value",
                 protection_level=resources.ProtectionLevel.SOFTWARE,
+                public_key_format=resources.PublicKey.PublicKeyFormat.PEM,
             )
         )
         await client.get_public_key(request=None)
@@ -18796,10 +18853,14 @@ def test_list_key_rings_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_list_key_rings"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_list_key_rings_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_list_key_rings"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListKeyRingsRequest.pb(service.ListKeyRingsRequest())
         transcode.return_value = {
             "method": "post",
@@ -18823,6 +18884,7 @@ def test_list_key_rings_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListKeyRingsResponse()
+        post_with_metadata.return_value = service.ListKeyRingsResponse(), metadata
 
         client.list_key_rings(
             request,
@@ -18834,6 +18896,7 @@ def test_list_key_rings_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_crypto_keys_rest_bad_request(request_type=service.ListCryptoKeysRequest):
@@ -18918,10 +18981,14 @@ def test_list_crypto_keys_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_list_crypto_keys"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_list_crypto_keys_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_list_crypto_keys"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListCryptoKeysRequest.pb(service.ListCryptoKeysRequest())
         transcode.return_value = {
             "method": "post",
@@ -18945,6 +19012,7 @@ def test_list_crypto_keys_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListCryptoKeysResponse()
+        post_with_metadata.return_value = service.ListCryptoKeysResponse(), metadata
 
         client.list_crypto_keys(
             request,
@@ -18956,6 +19024,7 @@ def test_list_crypto_keys_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_crypto_key_versions_rest_bad_request(
@@ -19046,10 +19115,14 @@ def test_list_crypto_key_versions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_list_crypto_key_versions"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_list_crypto_key_versions_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_list_crypto_key_versions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListCryptoKeyVersionsRequest.pb(
             service.ListCryptoKeyVersionsRequest()
         )
@@ -19075,6 +19148,10 @@ def test_list_crypto_key_versions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListCryptoKeyVersionsResponse()
+        post_with_metadata.return_value = (
+            service.ListCryptoKeyVersionsResponse(),
+            metadata,
+        )
 
         client.list_crypto_key_versions(
             request,
@@ -19086,6 +19163,7 @@ def test_list_crypto_key_versions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_import_jobs_rest_bad_request(request_type=service.ListImportJobsRequest):
@@ -19170,10 +19248,14 @@ def test_list_import_jobs_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_list_import_jobs"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_list_import_jobs_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_list_import_jobs"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ListImportJobsRequest.pb(service.ListImportJobsRequest())
         transcode.return_value = {
             "method": "post",
@@ -19197,6 +19279,7 @@ def test_list_import_jobs_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.ListImportJobsResponse()
+        post_with_metadata.return_value = service.ListImportJobsResponse(), metadata
 
         client.list_import_jobs(
             request,
@@ -19208,6 +19291,7 @@ def test_list_import_jobs_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_key_ring_rest_bad_request(request_type=service.GetKeyRingRequest):
@@ -19290,10 +19374,14 @@ def test_get_key_ring_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_get_key_ring"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_get_key_ring_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_get_key_ring"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetKeyRingRequest.pb(service.GetKeyRingRequest())
         transcode.return_value = {
             "method": "post",
@@ -19315,6 +19403,7 @@ def test_get_key_ring_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.KeyRing()
+        post_with_metadata.return_value = resources.KeyRing(), metadata
 
         client.get_key_ring(
             request,
@@ -19326,6 +19415,7 @@ def test_get_key_ring_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_crypto_key_rest_bad_request(request_type=service.GetCryptoKeyRequest):
@@ -19418,10 +19508,14 @@ def test_get_crypto_key_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_get_crypto_key"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_get_crypto_key_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_get_crypto_key"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetCryptoKeyRequest.pb(service.GetCryptoKeyRequest())
         transcode.return_value = {
             "method": "post",
@@ -19443,6 +19537,7 @@ def test_get_crypto_key_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKey()
+        post_with_metadata.return_value = resources.CryptoKey(), metadata
 
         client.get_crypto_key(
             request,
@@ -19454,6 +19549,7 @@ def test_get_crypto_key_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_crypto_key_version_rest_bad_request(
@@ -19567,10 +19663,14 @@ def test_get_crypto_key_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_get_crypto_key_version"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_get_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_get_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetCryptoKeyVersionRequest.pb(
             service.GetCryptoKeyVersionRequest()
         )
@@ -19594,6 +19694,7 @@ def test_get_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.get_crypto_key_version(
             request,
@@ -19605,6 +19706,7 @@ def test_get_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_public_key_rest_bad_request(request_type=service.GetPublicKeyRequest):
@@ -19658,6 +19760,7 @@ def test_get_public_key_rest_call_success(request_type):
             algorithm=resources.CryptoKeyVersion.CryptoKeyVersionAlgorithm.GOOGLE_SYMMETRIC_ENCRYPTION,
             name="name_value",
             protection_level=resources.ProtectionLevel.SOFTWARE,
+            public_key_format=resources.PublicKey.PublicKeyFormat.PEM,
         )
 
         # Wrap the value into a proper Response obj
@@ -19681,6 +19784,7 @@ def test_get_public_key_rest_call_success(request_type):
     )
     assert response.name == "name_value"
     assert response.protection_level == resources.ProtectionLevel.SOFTWARE
+    assert response.public_key_format == resources.PublicKey.PublicKeyFormat.PEM
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -19700,10 +19804,14 @@ def test_get_public_key_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_get_public_key"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_get_public_key_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_get_public_key"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetPublicKeyRequest.pb(service.GetPublicKeyRequest())
         transcode.return_value = {
             "method": "post",
@@ -19725,6 +19833,7 @@ def test_get_public_key_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.PublicKey()
+        post_with_metadata.return_value = resources.PublicKey(), metadata
 
         client.get_public_key(
             request,
@@ -19736,6 +19845,7 @@ def test_get_public_key_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_import_job_rest_bad_request(request_type=service.GetImportJobRequest):
@@ -19831,10 +19941,14 @@ def test_get_import_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_get_import_job"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_get_import_job_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_get_import_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GetImportJobRequest.pb(service.GetImportJobRequest())
         transcode.return_value = {
             "method": "post",
@@ -19856,6 +19970,7 @@ def test_get_import_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.ImportJob()
+        post_with_metadata.return_value = resources.ImportJob(), metadata
 
         client.get_import_job(
             request,
@@ -19867,6 +19982,7 @@ def test_get_import_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_key_ring_rest_bad_request(request_type=service.CreateKeyRingRequest):
@@ -20020,10 +20136,14 @@ def test_create_key_ring_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_create_key_ring"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_create_key_ring_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_create_key_ring"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateKeyRingRequest.pb(service.CreateKeyRingRequest())
         transcode.return_value = {
             "method": "post",
@@ -20045,6 +20165,7 @@ def test_create_key_ring_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.KeyRing()
+        post_with_metadata.return_value = resources.KeyRing(), metadata
 
         client.create_key_ring(
             request,
@@ -20056,6 +20177,7 @@ def test_create_key_ring_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_crypto_key_rest_bad_request(
@@ -20261,10 +20383,14 @@ def test_create_crypto_key_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_create_crypto_key"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_create_crypto_key_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_create_crypto_key"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateCryptoKeyRequest.pb(service.CreateCryptoKeyRequest())
         transcode.return_value = {
             "method": "post",
@@ -20286,6 +20412,7 @@ def test_create_crypto_key_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKey()
+        post_with_metadata.return_value = resources.CryptoKey(), metadata
 
         client.create_crypto_key(
             request,
@@ -20297,6 +20424,7 @@ def test_create_crypto_key_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_crypto_key_version_rest_bad_request(
@@ -20512,10 +20640,14 @@ def test_create_crypto_key_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_create_crypto_key_version"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_create_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_create_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateCryptoKeyVersionRequest.pb(
             service.CreateCryptoKeyVersionRequest()
         )
@@ -20539,6 +20671,7 @@ def test_create_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.create_crypto_key_version(
             request,
@@ -20550,6 +20683,7 @@ def test_create_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_import_crypto_key_version_rest_bad_request(
@@ -20663,10 +20797,14 @@ def test_import_crypto_key_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_import_crypto_key_version"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_import_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_import_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.ImportCryptoKeyVersionRequest.pb(
             service.ImportCryptoKeyVersionRequest()
         )
@@ -20690,6 +20828,7 @@ def test_import_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.import_crypto_key_version(
             request,
@@ -20701,6 +20840,7 @@ def test_import_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_import_job_rest_bad_request(
@@ -20887,10 +21027,14 @@ def test_create_import_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_create_import_job"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_create_import_job_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_create_import_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.CreateImportJobRequest.pb(service.CreateImportJobRequest())
         transcode.return_value = {
             "method": "post",
@@ -20912,6 +21056,7 @@ def test_create_import_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.ImportJob()
+        post_with_metadata.return_value = resources.ImportJob(), metadata
 
         client.create_import_job(
             request,
@@ -20923,6 +21068,7 @@ def test_create_import_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_crypto_key_rest_bad_request(
@@ -21136,10 +21282,14 @@ def test_update_crypto_key_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_update_crypto_key"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_update_crypto_key_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_update_crypto_key"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateCryptoKeyRequest.pb(service.UpdateCryptoKeyRequest())
         transcode.return_value = {
             "method": "post",
@@ -21161,6 +21311,7 @@ def test_update_crypto_key_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKey()
+        post_with_metadata.return_value = resources.CryptoKey(), metadata
 
         client.update_crypto_key(
             request,
@@ -21172,6 +21323,7 @@ def test_update_crypto_key_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_crypto_key_version_rest_bad_request(
@@ -21391,10 +21543,14 @@ def test_update_crypto_key_version_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_update_crypto_key_version"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_update_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_update_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateCryptoKeyVersionRequest.pb(
             service.UpdateCryptoKeyVersionRequest()
         )
@@ -21418,6 +21574,7 @@ def test_update_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.update_crypto_key_version(
             request,
@@ -21429,6 +21586,7 @@ def test_update_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_crypto_key_primary_version_rest_bad_request(
@@ -21525,10 +21683,14 @@ def test_update_crypto_key_primary_version_rest_interceptors(null_interceptor):
         "post_update_crypto_key_primary_version",
     ) as post, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor,
+        "post_update_crypto_key_primary_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
         "pre_update_crypto_key_primary_version",
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.UpdateCryptoKeyPrimaryVersionRequest.pb(
             service.UpdateCryptoKeyPrimaryVersionRequest()
         )
@@ -21552,6 +21714,7 @@ def test_update_crypto_key_primary_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKey()
+        post_with_metadata.return_value = resources.CryptoKey(), metadata
 
         client.update_crypto_key_primary_version(
             request,
@@ -21563,6 +21726,7 @@ def test_update_crypto_key_primary_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_destroy_crypto_key_version_rest_bad_request(
@@ -21677,10 +21841,14 @@ def test_destroy_crypto_key_version_rest_interceptors(null_interceptor):
         transports.KeyManagementServiceRestInterceptor,
         "post_destroy_crypto_key_version",
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_destroy_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_destroy_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.DestroyCryptoKeyVersionRequest.pb(
             service.DestroyCryptoKeyVersionRequest()
         )
@@ -21704,6 +21872,7 @@ def test_destroy_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.destroy_crypto_key_version(
             request,
@@ -21715,6 +21884,7 @@ def test_destroy_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_restore_crypto_key_version_rest_bad_request(
@@ -21829,10 +21999,14 @@ def test_restore_crypto_key_version_rest_interceptors(null_interceptor):
         transports.KeyManagementServiceRestInterceptor,
         "post_restore_crypto_key_version",
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_restore_crypto_key_version_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_restore_crypto_key_version"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.RestoreCryptoKeyVersionRequest.pb(
             service.RestoreCryptoKeyVersionRequest()
         )
@@ -21856,6 +22030,7 @@ def test_restore_crypto_key_version_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = resources.CryptoKeyVersion()
+        post_with_metadata.return_value = resources.CryptoKeyVersion(), metadata
 
         client.restore_crypto_key_version(
             request,
@@ -21867,6 +22042,7 @@ def test_restore_crypto_key_version_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_encrypt_rest_bad_request(request_type=service.EncryptRequest):
@@ -21961,10 +22137,13 @@ def test_encrypt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_encrypt"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_encrypt_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_encrypt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.EncryptRequest.pb(service.EncryptRequest())
         transcode.return_value = {
             "method": "post",
@@ -21986,6 +22165,7 @@ def test_encrypt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.EncryptResponse()
+        post_with_metadata.return_value = service.EncryptResponse(), metadata
 
         client.encrypt(
             request,
@@ -21997,6 +22177,7 @@ def test_encrypt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_decrypt_rest_bad_request(request_type=service.DecryptRequest):
@@ -22087,10 +22268,13 @@ def test_decrypt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_decrypt"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_decrypt_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_decrypt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.DecryptRequest.pb(service.DecryptRequest())
         transcode.return_value = {
             "method": "post",
@@ -22112,6 +22296,7 @@ def test_decrypt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.DecryptResponse()
+        post_with_metadata.return_value = service.DecryptResponse(), metadata
 
         client.decrypt(
             request,
@@ -22123,6 +22308,7 @@ def test_decrypt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_raw_encrypt_rest_bad_request(request_type=service.RawEncryptRequest):
@@ -22223,10 +22409,13 @@ def test_raw_encrypt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_raw_encrypt"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_raw_encrypt_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_raw_encrypt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.RawEncryptRequest.pb(service.RawEncryptRequest())
         transcode.return_value = {
             "method": "post",
@@ -22248,6 +22437,7 @@ def test_raw_encrypt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.RawEncryptResponse()
+        post_with_metadata.return_value = service.RawEncryptResponse(), metadata
 
         client.raw_encrypt(
             request,
@@ -22259,6 +22449,7 @@ def test_raw_encrypt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_raw_decrypt_rest_bad_request(request_type=service.RawDecryptRequest):
@@ -22353,10 +22544,13 @@ def test_raw_decrypt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_raw_decrypt"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_raw_decrypt_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_raw_decrypt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.RawDecryptRequest.pb(service.RawDecryptRequest())
         transcode.return_value = {
             "method": "post",
@@ -22378,6 +22572,7 @@ def test_raw_decrypt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.RawDecryptResponse()
+        post_with_metadata.return_value = service.RawDecryptResponse(), metadata
 
         client.raw_decrypt(
             request,
@@ -22389,6 +22584,7 @@ def test_raw_decrypt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_asymmetric_sign_rest_bad_request(request_type=service.AsymmetricSignRequest):
@@ -22483,10 +22679,14 @@ def test_asymmetric_sign_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_asymmetric_sign"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_asymmetric_sign_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_asymmetric_sign"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.AsymmetricSignRequest.pb(service.AsymmetricSignRequest())
         transcode.return_value = {
             "method": "post",
@@ -22510,6 +22710,7 @@ def test_asymmetric_sign_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.AsymmetricSignResponse()
+        post_with_metadata.return_value = service.AsymmetricSignResponse(), metadata
 
         client.asymmetric_sign(
             request,
@@ -22521,6 +22722,7 @@ def test_asymmetric_sign_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_asymmetric_decrypt_rest_bad_request(
@@ -22613,10 +22815,14 @@ def test_asymmetric_decrypt_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_asymmetric_decrypt"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_asymmetric_decrypt_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_asymmetric_decrypt"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.AsymmetricDecryptRequest.pb(
             service.AsymmetricDecryptRequest()
         )
@@ -22642,6 +22848,7 @@ def test_asymmetric_decrypt_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.AsymmetricDecryptResponse()
+        post_with_metadata.return_value = service.AsymmetricDecryptResponse(), metadata
 
         client.asymmetric_decrypt(
             request,
@@ -22653,6 +22860,7 @@ def test_asymmetric_decrypt_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_mac_sign_rest_bad_request(request_type=service.MacSignRequest):
@@ -22745,10 +22953,13 @@ def test_mac_sign_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_mac_sign"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_mac_sign_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_mac_sign"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.MacSignRequest.pb(service.MacSignRequest())
         transcode.return_value = {
             "method": "post",
@@ -22770,6 +22981,7 @@ def test_mac_sign_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.MacSignResponse()
+        post_with_metadata.return_value = service.MacSignResponse(), metadata
 
         client.mac_sign(
             request,
@@ -22781,6 +22993,7 @@ def test_mac_sign_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_mac_verify_rest_bad_request(request_type=service.MacVerifyRequest):
@@ -22877,10 +23090,13 @@ def test_mac_verify_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_mac_verify"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor, "post_mac_verify_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_mac_verify"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.MacVerifyRequest.pb(service.MacVerifyRequest())
         transcode.return_value = {
             "method": "post",
@@ -22902,6 +23118,7 @@ def test_mac_verify_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.MacVerifyResponse()
+        post_with_metadata.return_value = service.MacVerifyResponse(), metadata
 
         client.mac_verify(
             request,
@@ -22913,6 +23130,7 @@ def test_mac_verify_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_generate_random_bytes_rest_bad_request(
@@ -22997,10 +23215,14 @@ def test_generate_random_bytes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "post_generate_random_bytes"
     ) as post, mock.patch.object(
+        transports.KeyManagementServiceRestInterceptor,
+        "post_generate_random_bytes_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.KeyManagementServiceRestInterceptor, "pre_generate_random_bytes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = service.GenerateRandomBytesRequest.pb(
             service.GenerateRandomBytesRequest()
         )
@@ -23026,6 +23248,10 @@ def test_generate_random_bytes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = service.GenerateRandomBytesResponse()
+        post_with_metadata.return_value = (
+            service.GenerateRandomBytesResponse(),
+            metadata,
+        )
 
         client.generate_random_bytes(
             request,
@@ -23037,6 +23263,7 @@ def test_generate_random_bytes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):

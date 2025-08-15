@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,13 @@ from google.cloud.speech_v2.services.speech import (
     transports,
 )
 from google.cloud.speech_v2.types import cloud_speech
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -294,6 +301,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         SpeechClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = SpeechClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = SpeechClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -15173,6 +15223,10 @@ def test_create_recognizer_rest_call_success(request_type):
                 ]
             },
             "translation_config": {"target_language": "target_language_value"},
+            "denoiser_config": {
+                "denoise_audio": True,
+                "snr_threshold": 0.14070000000000002,
+            },
         },
         "annotations": {},
         "state": 2,
@@ -15289,10 +15343,13 @@ def test_create_recognizer_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_create_recognizer"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_create_recognizer_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_create_recognizer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.CreateRecognizerRequest.pb(
             cloud_speech.CreateRecognizerRequest()
         )
@@ -15316,6 +15373,7 @@ def test_create_recognizer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_recognizer(
             request,
@@ -15327,6 +15385,7 @@ def test_create_recognizer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_recognizers_rest_bad_request(
@@ -15409,10 +15468,13 @@ def test_list_recognizers_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_list_recognizers"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_list_recognizers_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_list_recognizers"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.ListRecognizersRequest.pb(
             cloud_speech.ListRecognizersRequest()
         )
@@ -15438,6 +15500,10 @@ def test_list_recognizers_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.ListRecognizersResponse()
+        post_with_metadata.return_value = (
+            cloud_speech.ListRecognizersResponse(),
+            metadata,
+        )
 
         client.list_recognizers(
             request,
@@ -15449,6 +15515,7 @@ def test_list_recognizers_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_recognizer_rest_bad_request(
@@ -15549,10 +15616,13 @@ def test_get_recognizer_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_get_recognizer"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_get_recognizer_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_get_recognizer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.GetRecognizerRequest.pb(
             cloud_speech.GetRecognizerRequest()
         )
@@ -15576,6 +15646,7 @@ def test_get_recognizer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.Recognizer()
+        post_with_metadata.return_value = cloud_speech.Recognizer(), metadata
 
         client.get_recognizer(
             request,
@@ -15587,6 +15658,7 @@ def test_get_recognizer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_recognizer_rest_bad_request(
@@ -15713,6 +15785,10 @@ def test_update_recognizer_rest_call_success(request_type):
                 ]
             },
             "translation_config": {"target_language": "target_language_value"},
+            "denoiser_config": {
+                "denoise_audio": True,
+                "snr_threshold": 0.14070000000000002,
+            },
         },
         "annotations": {},
         "state": 2,
@@ -15829,10 +15905,13 @@ def test_update_recognizer_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_update_recognizer"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_update_recognizer_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_update_recognizer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UpdateRecognizerRequest.pb(
             cloud_speech.UpdateRecognizerRequest()
         )
@@ -15856,6 +15935,7 @@ def test_update_recognizer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_recognizer(
             request,
@@ -15867,6 +15947,7 @@ def test_update_recognizer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_recognizer_rest_bad_request(
@@ -15945,10 +16026,13 @@ def test_delete_recognizer_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_delete_recognizer"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_delete_recognizer_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_delete_recognizer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.DeleteRecognizerRequest.pb(
             cloud_speech.DeleteRecognizerRequest()
         )
@@ -15972,6 +16056,7 @@ def test_delete_recognizer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_recognizer(
             request,
@@ -15983,6 +16068,7 @@ def test_delete_recognizer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_undelete_recognizer_rest_bad_request(
@@ -16061,10 +16147,13 @@ def test_undelete_recognizer_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_undelete_recognizer"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_undelete_recognizer_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_undelete_recognizer"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UndeleteRecognizerRequest.pb(
             cloud_speech.UndeleteRecognizerRequest()
         )
@@ -16088,6 +16177,7 @@ def test_undelete_recognizer_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.undelete_recognizer(
             request,
@@ -16099,6 +16189,7 @@ def test_undelete_recognizer_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_recognize_rest_bad_request(request_type=cloud_speech.RecognizeRequest):
@@ -16180,10 +16271,13 @@ def test_recognize_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_recognize"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_recognize_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_recognize"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.RecognizeRequest.pb(cloud_speech.RecognizeRequest())
         transcode.return_value = {
             "method": "post",
@@ -16207,6 +16301,7 @@ def test_recognize_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.RecognizeResponse()
+        post_with_metadata.return_value = cloud_speech.RecognizeResponse(), metadata
 
         client.recognize(
             request,
@@ -16218,6 +16313,7 @@ def test_recognize_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_streaming_recognize_rest_error():
@@ -16312,10 +16408,13 @@ def test_batch_recognize_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_batch_recognize"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_batch_recognize_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_batch_recognize"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.BatchRecognizeRequest.pb(
             cloud_speech.BatchRecognizeRequest()
         )
@@ -16339,6 +16438,7 @@ def test_batch_recognize_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.batch_recognize(
             request,
@@ -16350,6 +16450,7 @@ def test_batch_recognize_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_config_rest_bad_request(request_type=cloud_speech.GetConfigRequest):
@@ -16432,10 +16533,13 @@ def test_get_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_get_config"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_get_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_get_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.GetConfigRequest.pb(cloud_speech.GetConfigRequest())
         transcode.return_value = {
             "method": "post",
@@ -16457,6 +16561,7 @@ def test_get_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.Config()
+        post_with_metadata.return_value = cloud_speech.Config(), metadata
 
         client.get_config(
             request,
@@ -16468,6 +16573,7 @@ def test_get_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_config_rest_bad_request(request_type=cloud_speech.UpdateConfigRequest):
@@ -16622,10 +16728,13 @@ def test_update_config_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_update_config"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_update_config_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_update_config"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UpdateConfigRequest.pb(
             cloud_speech.UpdateConfigRequest()
         )
@@ -16649,6 +16758,7 @@ def test_update_config_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.Config()
+        post_with_metadata.return_value = cloud_speech.Config(), metadata
 
         client.update_config(
             request,
@@ -16660,6 +16770,7 @@ def test_update_config_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_custom_class_rest_bad_request(
@@ -16821,10 +16932,13 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_create_custom_class"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_create_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_create_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.CreateCustomClassRequest.pb(
             cloud_speech.CreateCustomClassRequest()
         )
@@ -16848,6 +16962,7 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_custom_class(
             request,
@@ -16859,6 +16974,7 @@ def test_create_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_custom_classes_rest_bad_request(
@@ -16941,10 +17057,13 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_list_custom_classes"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_list_custom_classes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_list_custom_classes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.ListCustomClassesRequest.pb(
             cloud_speech.ListCustomClassesRequest()
         )
@@ -16970,6 +17089,10 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.ListCustomClassesResponse()
+        post_with_metadata.return_value = (
+            cloud_speech.ListCustomClassesResponse(),
+            metadata,
+        )
 
         client.list_custom_classes(
             request,
@@ -16981,6 +17104,7 @@ def test_list_custom_classes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_custom_class_rest_bad_request(
@@ -17077,10 +17201,13 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_get_custom_class"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_get_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_get_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.GetCustomClassRequest.pb(
             cloud_speech.GetCustomClassRequest()
         )
@@ -17104,6 +17231,7 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.CustomClass()
+        post_with_metadata.return_value = cloud_speech.CustomClass(), metadata
 
         client.get_custom_class(
             request,
@@ -17115,6 +17243,7 @@ def test_get_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_custom_class_rest_bad_request(
@@ -17284,10 +17413,13 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_update_custom_class"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_update_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_update_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UpdateCustomClassRequest.pb(
             cloud_speech.UpdateCustomClassRequest()
         )
@@ -17311,6 +17443,7 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_custom_class(
             request,
@@ -17322,6 +17455,7 @@ def test_update_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_custom_class_rest_bad_request(
@@ -17400,10 +17534,13 @@ def test_delete_custom_class_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_delete_custom_class"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_delete_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_delete_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.DeleteCustomClassRequest.pb(
             cloud_speech.DeleteCustomClassRequest()
         )
@@ -17427,6 +17564,7 @@ def test_delete_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_custom_class(
             request,
@@ -17438,6 +17576,7 @@ def test_delete_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_undelete_custom_class_rest_bad_request(
@@ -17516,10 +17655,13 @@ def test_undelete_custom_class_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_undelete_custom_class"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_undelete_custom_class_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_undelete_custom_class"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UndeleteCustomClassRequest.pb(
             cloud_speech.UndeleteCustomClassRequest()
         )
@@ -17543,6 +17685,7 @@ def test_undelete_custom_class_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.undelete_custom_class(
             request,
@@ -17554,6 +17697,7 @@ def test_undelete_custom_class_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_phrase_set_rest_bad_request(
@@ -17716,10 +17860,13 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_create_phrase_set"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_create_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_create_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.CreatePhraseSetRequest.pb(
             cloud_speech.CreatePhraseSetRequest()
         )
@@ -17743,6 +17890,7 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_phrase_set(
             request,
@@ -17754,6 +17902,7 @@ def test_create_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_phrase_sets_rest_bad_request(
@@ -17836,10 +17985,13 @@ def test_list_phrase_sets_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_list_phrase_sets"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_list_phrase_sets_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_list_phrase_sets"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.ListPhraseSetsRequest.pb(
             cloud_speech.ListPhraseSetsRequest()
         )
@@ -17865,6 +18017,10 @@ def test_list_phrase_sets_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.ListPhraseSetsResponse()
+        post_with_metadata.return_value = (
+            cloud_speech.ListPhraseSetsResponse(),
+            metadata,
+        )
 
         client.list_phrase_sets(
             request,
@@ -17876,6 +18032,7 @@ def test_list_phrase_sets_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_phrase_set_rest_bad_request(request_type=cloud_speech.GetPhraseSetRequest):
@@ -17972,10 +18129,13 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_get_phrase_set"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_get_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_get_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.GetPhraseSetRequest.pb(
             cloud_speech.GetPhraseSetRequest()
         )
@@ -17999,6 +18159,7 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.PhraseSet()
+        post_with_metadata.return_value = cloud_speech.PhraseSet(), metadata
 
         client.get_phrase_set(
             request,
@@ -18010,6 +18171,7 @@ def test_get_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_phrase_set_rest_bad_request(
@@ -18176,10 +18338,13 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_update_phrase_set"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_update_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_update_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UpdatePhraseSetRequest.pb(
             cloud_speech.UpdatePhraseSetRequest()
         )
@@ -18203,6 +18368,7 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_phrase_set(
             request,
@@ -18214,6 +18380,7 @@ def test_update_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_phrase_set_rest_bad_request(
@@ -18292,10 +18459,13 @@ def test_delete_phrase_set_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_delete_phrase_set"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_delete_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_delete_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.DeletePhraseSetRequest.pb(
             cloud_speech.DeletePhraseSetRequest()
         )
@@ -18319,6 +18489,7 @@ def test_delete_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_phrase_set(
             request,
@@ -18330,6 +18501,7 @@ def test_delete_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_undelete_phrase_set_rest_bad_request(
@@ -18408,10 +18580,13 @@ def test_undelete_phrase_set_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_undelete_phrase_set"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_undelete_phrase_set_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_undelete_phrase_set"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.UndeletePhraseSetRequest.pb(
             cloud_speech.UndeletePhraseSetRequest()
         )
@@ -18435,6 +18610,7 @@ def test_undelete_phrase_set_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.undelete_phrase_set(
             request,
@@ -18446,6 +18622,7 @@ def test_undelete_phrase_set_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):

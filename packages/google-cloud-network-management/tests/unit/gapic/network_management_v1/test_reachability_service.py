@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,6 +82,13 @@ from google.cloud.network_management_v1.types import (
     reachability,
     trace,
 )
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -354,6 +361,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ReachabilityServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = ReachabilityServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = ReachabilityServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -5083,10 +5133,14 @@ def test_list_connectivity_tests_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_list_connectivity_tests"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_list_connectivity_tests_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_list_connectivity_tests"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.ListConnectivityTestsRequest.pb(
             reachability.ListConnectivityTestsRequest()
         )
@@ -5112,6 +5166,10 @@ def test_list_connectivity_tests_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = reachability.ListConnectivityTestsResponse()
+        post_with_metadata.return_value = (
+            reachability.ListConnectivityTestsResponse(),
+            metadata,
+        )
 
         client.list_connectivity_tests(
             request,
@@ -5123,6 +5181,7 @@ def test_list_connectivity_tests_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_connectivity_test_rest_bad_request(
@@ -5223,10 +5282,14 @@ def test_get_connectivity_test_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_get_connectivity_test"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_get_connectivity_test_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_get_connectivity_test"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.GetConnectivityTestRequest.pb(
             reachability.GetConnectivityTestRequest()
         )
@@ -5252,6 +5315,7 @@ def test_get_connectivity_test_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = connectivity_test.ConnectivityTest()
+        post_with_metadata.return_value = connectivity_test.ConnectivityTest(), metadata
 
         client.get_connectivity_test(
             request,
@@ -5263,6 +5327,7 @@ def test_get_connectivity_test_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_connectivity_test_rest_bad_request(
@@ -5322,7 +5387,10 @@ def test_create_connectivity_test_rest_call_success(request_type):
             "redis_cluster": "redis_cluster_value",
             "cloud_function": {"uri": "uri_value"},
             "app_engine_version": {"uri": "uri_value"},
-            "cloud_run_revision": {"uri": "uri_value"},
+            "cloud_run_revision": {
+                "uri": "uri_value",
+                "service_uri": "service_uri_value",
+            },
             "network": "network_value",
             "network_type": 1,
             "project_id": "project_id_value",
@@ -5427,6 +5495,11 @@ def test_create_connectivity_test_rest_call_success(request_type):
                                 "ncc_spoke_uri": "ncc_spoke_uri_value",
                                 "advertised_route_source_router_uri": "advertised_route_source_router_uri_value",
                                 "advertised_route_next_hop_uri": "advertised_route_next_hop_uri_value",
+                                "next_hop_uri": "next_hop_uri_value",
+                                "next_hop_network_uri": "next_hop_network_uri_value",
+                                "originating_route_uri": "originating_route_uri_value",
+                                "originating_route_display_name": "originating_route_display_name_value",
+                                "ncc_hub_route_uri": "ncc_hub_route_uri_value",
                             },
                             "endpoint": {},
                             "google_service": {
@@ -5469,6 +5542,16 @@ def test_create_connectivity_test_rest_call_success(request_type):
                                 "display_name": "display_name_value",
                                 "uri": "uri_value",
                                 "location": "location_value",
+                            },
+                            "direct_vpc_egress_connection": {
+                                "network_uri": "network_uri_value",
+                                "subnetwork_uri": "subnetwork_uri_value",
+                                "selected_ip_range": "selected_ip_range_value",
+                                "selected_ip_address": "selected_ip_address_value",
+                                "region": "region_value",
+                            },
+                            "serverless_external_connection": {
+                                "selected_ip_address": "selected_ip_address_value"
                             },
                             "deliver": {
                                 "target": 1,
@@ -5748,10 +5831,14 @@ def test_create_connectivity_test_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_create_connectivity_test"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_create_connectivity_test_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_create_connectivity_test"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.CreateConnectivityTestRequest.pb(
             reachability.CreateConnectivityTestRequest()
         )
@@ -5775,6 +5862,7 @@ def test_create_connectivity_test_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_connectivity_test(
             request,
@@ -5786,6 +5874,7 @@ def test_create_connectivity_test_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_connectivity_test_rest_bad_request(
@@ -5853,7 +5942,10 @@ def test_update_connectivity_test_rest_call_success(request_type):
             "redis_cluster": "redis_cluster_value",
             "cloud_function": {"uri": "uri_value"},
             "app_engine_version": {"uri": "uri_value"},
-            "cloud_run_revision": {"uri": "uri_value"},
+            "cloud_run_revision": {
+                "uri": "uri_value",
+                "service_uri": "service_uri_value",
+            },
             "network": "network_value",
             "network_type": 1,
             "project_id": "project_id_value",
@@ -5958,6 +6050,11 @@ def test_update_connectivity_test_rest_call_success(request_type):
                                 "ncc_spoke_uri": "ncc_spoke_uri_value",
                                 "advertised_route_source_router_uri": "advertised_route_source_router_uri_value",
                                 "advertised_route_next_hop_uri": "advertised_route_next_hop_uri_value",
+                                "next_hop_uri": "next_hop_uri_value",
+                                "next_hop_network_uri": "next_hop_network_uri_value",
+                                "originating_route_uri": "originating_route_uri_value",
+                                "originating_route_display_name": "originating_route_display_name_value",
+                                "ncc_hub_route_uri": "ncc_hub_route_uri_value",
                             },
                             "endpoint": {},
                             "google_service": {
@@ -6000,6 +6097,16 @@ def test_update_connectivity_test_rest_call_success(request_type):
                                 "display_name": "display_name_value",
                                 "uri": "uri_value",
                                 "location": "location_value",
+                            },
+                            "direct_vpc_egress_connection": {
+                                "network_uri": "network_uri_value",
+                                "subnetwork_uri": "subnetwork_uri_value",
+                                "selected_ip_range": "selected_ip_range_value",
+                                "selected_ip_address": "selected_ip_address_value",
+                                "region": "region_value",
+                            },
+                            "serverless_external_connection": {
+                                "selected_ip_address": "selected_ip_address_value"
                             },
                             "deliver": {
                                 "target": 1,
@@ -6279,10 +6386,14 @@ def test_update_connectivity_test_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_update_connectivity_test"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_update_connectivity_test_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_update_connectivity_test"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.UpdateConnectivityTestRequest.pb(
             reachability.UpdateConnectivityTestRequest()
         )
@@ -6306,6 +6417,7 @@ def test_update_connectivity_test_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_connectivity_test(
             request,
@@ -6317,6 +6429,7 @@ def test_update_connectivity_test_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_rerun_connectivity_test_rest_bad_request(
@@ -6401,10 +6514,14 @@ def test_rerun_connectivity_test_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_rerun_connectivity_test"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_rerun_connectivity_test_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_rerun_connectivity_test"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.RerunConnectivityTestRequest.pb(
             reachability.RerunConnectivityTestRequest()
         )
@@ -6428,6 +6545,7 @@ def test_rerun_connectivity_test_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.rerun_connectivity_test(
             request,
@@ -6439,6 +6557,7 @@ def test_rerun_connectivity_test_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_connectivity_test_rest_bad_request(
@@ -6523,10 +6642,14 @@ def test_delete_connectivity_test_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "post_delete_connectivity_test"
     ) as post, mock.patch.object(
+        transports.ReachabilityServiceRestInterceptor,
+        "post_delete_connectivity_test_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReachabilityServiceRestInterceptor, "pre_delete_connectivity_test"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = reachability.DeleteConnectivityTestRequest.pb(
             reachability.DeleteConnectivityTestRequest()
         )
@@ -6550,6 +6673,7 @@ def test_delete_connectivity_test_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_connectivity_test(
             request,
@@ -6561,6 +6685,7 @@ def test_delete_connectivity_test_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from .types.productinputs import (
     DeleteProductInputRequest,
     InsertProductInputRequest,
     ProductInput,
+    UpdateProductInputRequest,
 )
 from .types.products import (
     GetProductRequest,
@@ -36,6 +37,7 @@ from .types.products import (
 )
 from .types.products_common import (
     Attributes,
+    AutomatedDiscounts,
     Certification,
     CloudExportAdditionalProperties,
     FreeShippingThreshold,
@@ -47,6 +49,7 @@ from .types.products_common import (
     ProductStatus,
     ProductStructuredDescription,
     ProductStructuredTitle,
+    ProductSustainabilityIncentive,
     ProductWeight,
     Shipping,
     ShippingDimension,
@@ -62,6 +65,7 @@ __all__ = (
     "ProductInputsServiceAsyncClient",
     "ProductsServiceAsyncClient",
     "Attributes",
+    "AutomatedDiscounts",
     "Certification",
     "CloudExportAdditionalProperties",
     "DeleteProductInputRequest",
@@ -81,6 +85,7 @@ __all__ = (
     "ProductStatus",
     "ProductStructuredDescription",
     "ProductStructuredTitle",
+    "ProductSustainabilityIncentive",
     "ProductWeight",
     "ProductsServiceClient",
     "Shipping",
@@ -91,4 +96,5 @@ __all__ = (
     "Tax",
     "UnitPricingBaseMeasure",
     "UnitPricingMeasure",
+    "UpdateProductInputRequest",
 )

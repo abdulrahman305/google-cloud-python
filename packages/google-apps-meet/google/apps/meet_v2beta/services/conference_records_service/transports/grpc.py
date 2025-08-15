@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,12 +69,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.apps.meet.v2beta.ConferenceRecordsService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -326,8 +325,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetConferenceRecordRequest], resource.ConferenceRecord]:
         r"""Return a callable for the get conference record method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a conference record by conference ID.
 
         Returns:
@@ -356,10 +353,8 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ]:
         r"""Return a callable for the list conference records method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the conference records by start time and in descending
-        order.
+        Lists the conference records. By default, ordered by
+        start time and in descending order.
 
         Returns:
             Callable[[~.ListConferenceRecordsRequest],
@@ -385,8 +380,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetParticipantRequest], resource.Participant]:
         r"""Return a callable for the get participant method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a participant by participant ID.
 
         Returns:
@@ -413,9 +406,7 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.ListParticipantsRequest], service.ListParticipantsResponse]:
         r"""Return a callable for the list participants method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the participants in a conference record, by default
+        Lists the participants in a conference record. By default,
         ordered by join time and in descending order. This API supports
         ``fields`` as standard parameters like every other API. However,
         when the ``fields`` request parameter is omitted, this API
@@ -445,8 +436,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetParticipantSessionRequest], resource.ParticipantSession]:
         r"""Return a callable for the get participant session method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a participant session by participant session ID.
 
         Returns:
@@ -476,13 +465,11 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ]:
         r"""Return a callable for the list participant sessions method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Lists the participant sessions of a participant in a conference
-        record, by default ordered by join time and in descending order.
-        This API supports ``fields`` as standard parameters like every
-        other API. However, when the ``fields`` request parameter is
-        omitted this API defaults to
+        record. By default, ordered by join time and in descending
+        order. This API supports ``fields`` as standard parameters like
+        every other API. However, when the ``fields`` request parameter
+        is omitted this API defaults to
         ``'participantsessions/*, next_page_token'``.
 
         Returns:
@@ -509,8 +496,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetRecordingRequest], resource.Recording]:
         r"""Return a callable for the get recording method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a recording by recording ID.
 
         Returns:
@@ -537,9 +522,9 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.ListRecordingsRequest], service.ListRecordingsResponse]:
         r"""Return a callable for the list recordings method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the recording resources from the conference record.
+        Lists the recording resources from the conference
+        record. By default, ordered by start time and in
+        ascending order.
 
         Returns:
             Callable[[~.ListRecordingsRequest],
@@ -565,8 +550,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetTranscriptRequest], resource.Transcript]:
         r"""Return a callable for the get transcript method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a transcript by transcript ID.
 
         Returns:
@@ -593,9 +576,9 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.ListTranscriptsRequest], service.ListTranscriptsResponse]:
         r"""Return a callable for the list transcripts method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the set of transcripts from the conference record.
+        Lists the set of transcripts from the conference
+        record. By default, ordered by start time and in
+        ascending order.
 
         Returns:
             Callable[[~.ListTranscriptsRequest],
@@ -621,8 +604,6 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ) -> Callable[[service.GetTranscriptEntryRequest], resource.TranscriptEntry]:
         r"""Return a callable for the get transcript entry method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
         Gets a ``TranscriptEntry`` resource by entry ID.
 
         Note: The transcript entries returned by the Google Meet API
@@ -656,15 +637,15 @@ class ConferenceRecordsServiceGrpcTransport(ConferenceRecordsServiceTransport):
     ]:
         r"""Return a callable for the list transcript entries method over gRPC.
 
-        `Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the structured transcript entries per transcript. By
-        default, ordered by start time and in ascending order.
+        Lists the structured transcript entries per
+        transcript. By default, ordered by start time and in
+        ascending order.
 
-        Note: The transcript entries returned by the Google Meet API
-        might not match the transcription found in the Google Docs
-        transcript file. This can occur when the Google Docs transcript
-        file is modified after generation.
+        Note: The transcript entries returned by the Google Meet
+        API might not match the transcription found in the
+        Google Docs transcript file. This can occur when the
+        Google Docs transcript file is modified after
+        generation.
 
         Returns:
             Callable[[~.ListTranscriptEntriesRequest],

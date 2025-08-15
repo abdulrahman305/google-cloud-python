@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -292,6 +292,9 @@ class Trip(proto.Message):
         view (google.maps.fleetengine_v1.types.TripView):
             The subset of Trip fields that are populated
             and how they should be interpreted.
+        attributes (MutableSequence[google.maps.fleetengine_v1.types.TripAttribute]):
+            A list of custom Trip attributes. Each
+            attribute must have a unique key.
     """
 
     name: str = proto.Field(
@@ -460,6 +463,11 @@ class Trip(proto.Message):
         proto.ENUM,
         number=31,
         enum="TripView",
+    )
+    attributes: MutableSequence[fleetengine.TripAttribute] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=35,
+        message=fleetengine.TripAttribute,
     )
 
 

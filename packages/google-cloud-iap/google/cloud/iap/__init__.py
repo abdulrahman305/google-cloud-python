@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,12 +57,16 @@ from google.cloud.iap_v1.types.service import (
     ListIdentityAwareProxyClientsResponse,
     ListTunnelDestGroupsRequest,
     ListTunnelDestGroupsResponse,
+    OAuth2,
     OAuthSettings,
     ReauthSettings,
     ResetIdentityAwareProxyClientSecretRequest,
     TunnelDestGroup,
     UpdateIapSettingsRequest,
     UpdateTunnelDestGroupRequest,
+    ValidateIapAttributeExpressionRequest,
+    ValidateIapAttributeExpressionResponse,
+    WorkforceIdentitySettings,
 )
 
 __all__ = (
@@ -96,10 +100,14 @@ __all__ = (
     "ListIdentityAwareProxyClientsResponse",
     "ListTunnelDestGroupsRequest",
     "ListTunnelDestGroupsResponse",
+    "OAuth2",
     "OAuthSettings",
     "ReauthSettings",
     "ResetIdentityAwareProxyClientSecretRequest",
     "TunnelDestGroup",
     "UpdateIapSettingsRequest",
     "UpdateTunnelDestGroupRequest",
+    "ValidateIapAttributeExpressionRequest",
+    "ValidateIapAttributeExpressionResponse",
+    "WorkforceIdentitySettings",
 )

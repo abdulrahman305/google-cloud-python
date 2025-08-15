@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,9 +40,7 @@ def sample_update_gateway():
 
     # Initialize request argument(s)
     gateway = network_services_v1.Gateway()
-    gateway.name = "name_value"
     gateway.ports = [569, 570]
-    gateway.scope = "scope_value"
 
     request = network_services_v1.UpdateGatewayRequest(
         gateway=gateway,

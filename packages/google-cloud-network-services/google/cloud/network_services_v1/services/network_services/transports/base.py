@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.network_services_v1 import gapic_version as package_version
 from google.cloud.network_services_v1.types import (
@@ -35,7 +36,11 @@ from google.cloud.network_services_v1.types import (
 from google.cloud.network_services_v1.types import (
     service_binding as gcn_service_binding,
 )
+from google.cloud.network_services_v1.types import (
+    service_lb_policy as gcn_service_lb_policy,
+)
 from google.cloud.network_services_v1.types import endpoint_policy
+from google.cloud.network_services_v1.types import extensibility
 from google.cloud.network_services_v1.types import gateway
 from google.cloud.network_services_v1.types import gateway as gcn_gateway
 from google.cloud.network_services_v1.types import grpc_route
@@ -44,7 +49,9 @@ from google.cloud.network_services_v1.types import http_route
 from google.cloud.network_services_v1.types import http_route as gcn_http_route
 from google.cloud.network_services_v1.types import mesh
 from google.cloud.network_services_v1.types import mesh as gcn_mesh
+from google.cloud.network_services_v1.types import route_view
 from google.cloud.network_services_v1.types import service_binding
+from google.cloud.network_services_v1.types import service_lb_policy
 from google.cloud.network_services_v1.types import tcp_route
 from google.cloud.network_services_v1.types import tcp_route as gcn_tcp_route
 from google.cloud.network_services_v1.types import tls_route
@@ -53,6 +60,9 @@ from google.cloud.network_services_v1.types import tls_route as gcn_tls_route
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class NetworkServicesTransport(abc.ABC):
@@ -173,6 +183,51 @@ class NetworkServicesTransport(abc.ABC):
             ),
             self.delete_endpoint_policy: gapic_v1.method.wrap_method(
                 self.delete_endpoint_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_wasm_plugin_versions: gapic_v1.method.wrap_method(
+                self.list_wasm_plugin_versions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_wasm_plugin_version: gapic_v1.method.wrap_method(
+                self.get_wasm_plugin_version,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_wasm_plugin_version: gapic_v1.method.wrap_method(
+                self.create_wasm_plugin_version,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_wasm_plugin_version: gapic_v1.method.wrap_method(
+                self.delete_wasm_plugin_version,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_wasm_plugins: gapic_v1.method.wrap_method(
+                self.list_wasm_plugins,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_wasm_plugin: gapic_v1.method.wrap_method(
+                self.get_wasm_plugin,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_wasm_plugin: gapic_v1.method.wrap_method(
+                self.create_wasm_plugin,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_wasm_plugin: gapic_v1.method.wrap_method(
+                self.update_wasm_plugin,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_wasm_plugin: gapic_v1.method.wrap_method(
+                self.delete_wasm_plugin,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -316,6 +371,11 @@ class NetworkServicesTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.update_service_binding: gapic_v1.method.wrap_method(
+                self.update_service_binding,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.delete_service_binding: gapic_v1.method.wrap_method(
                 self.delete_service_binding,
                 default_timeout=None,
@@ -343,6 +403,51 @@ class NetworkServicesTransport(abc.ABC):
             ),
             self.delete_mesh: gapic_v1.method.wrap_method(
                 self.delete_mesh,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_service_lb_policies: gapic_v1.method.wrap_method(
+                self.list_service_lb_policies,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_service_lb_policy: gapic_v1.method.wrap_method(
+                self.get_service_lb_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_service_lb_policy: gapic_v1.method.wrap_method(
+                self.create_service_lb_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_service_lb_policy: gapic_v1.method.wrap_method(
+                self.update_service_lb_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_service_lb_policy: gapic_v1.method.wrap_method(
+                self.delete_service_lb_policy,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_gateway_route_view: gapic_v1.method.wrap_method(
+                self.get_gateway_route_view,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_mesh_route_view: gapic_v1.method.wrap_method(
+                self.get_mesh_route_view,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_gateway_route_views: gapic_v1.method.wrap_method(
+                self.list_gateway_route_views,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_mesh_route_views: gapic_v1.method.wrap_method(
+                self.list_mesh_route_views,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -453,6 +558,95 @@ class NetworkServicesTransport(abc.ABC):
         self,
     ) -> Callable[
         [endpoint_policy.DeleteEndpointPolicyRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_wasm_plugin_versions(
+        self,
+    ) -> Callable[
+        [extensibility.ListWasmPluginVersionsRequest],
+        Union[
+            extensibility.ListWasmPluginVersionsResponse,
+            Awaitable[extensibility.ListWasmPluginVersionsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_wasm_plugin_version(
+        self,
+    ) -> Callable[
+        [extensibility.GetWasmPluginVersionRequest],
+        Union[
+            extensibility.WasmPluginVersion, Awaitable[extensibility.WasmPluginVersion]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_wasm_plugin_version(
+        self,
+    ) -> Callable[
+        [extensibility.CreateWasmPluginVersionRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_wasm_plugin_version(
+        self,
+    ) -> Callable[
+        [extensibility.DeleteWasmPluginVersionRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_wasm_plugins(
+        self,
+    ) -> Callable[
+        [extensibility.ListWasmPluginsRequest],
+        Union[
+            extensibility.ListWasmPluginsResponse,
+            Awaitable[extensibility.ListWasmPluginsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_wasm_plugin(
+        self,
+    ) -> Callable[
+        [extensibility.GetWasmPluginRequest],
+        Union[extensibility.WasmPlugin, Awaitable[extensibility.WasmPlugin]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_wasm_plugin(
+        self,
+    ) -> Callable[
+        [extensibility.CreateWasmPluginRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_wasm_plugin(
+        self,
+    ) -> Callable[
+        [extensibility.UpdateWasmPluginRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_wasm_plugin(
+        self,
+    ) -> Callable[
+        [extensibility.DeleteWasmPluginRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
@@ -724,6 +918,15 @@ class NetworkServicesTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def update_service_binding(
+        self,
+    ) -> Callable[
+        [gcn_service_binding.UpdateServiceBindingRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def delete_service_binding(
         self,
     ) -> Callable[
@@ -771,6 +974,99 @@ class NetworkServicesTransport(abc.ABC):
     ) -> Callable[
         [mesh.DeleteMeshRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_service_lb_policies(
+        self,
+    ) -> Callable[
+        [service_lb_policy.ListServiceLbPoliciesRequest],
+        Union[
+            service_lb_policy.ListServiceLbPoliciesResponse,
+            Awaitable[service_lb_policy.ListServiceLbPoliciesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_service_lb_policy(
+        self,
+    ) -> Callable[
+        [service_lb_policy.GetServiceLbPolicyRequest],
+        Union[
+            service_lb_policy.ServiceLbPolicy,
+            Awaitable[service_lb_policy.ServiceLbPolicy],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_service_lb_policy(
+        self,
+    ) -> Callable[
+        [gcn_service_lb_policy.CreateServiceLbPolicyRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_service_lb_policy(
+        self,
+    ) -> Callable[
+        [gcn_service_lb_policy.UpdateServiceLbPolicyRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_service_lb_policy(
+        self,
+    ) -> Callable[
+        [service_lb_policy.DeleteServiceLbPolicyRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_gateway_route_view(
+        self,
+    ) -> Callable[
+        [route_view.GetGatewayRouteViewRequest],
+        Union[route_view.GatewayRouteView, Awaitable[route_view.GatewayRouteView]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_mesh_route_view(
+        self,
+    ) -> Callable[
+        [route_view.GetMeshRouteViewRequest],
+        Union[route_view.MeshRouteView, Awaitable[route_view.MeshRouteView]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_gateway_route_views(
+        self,
+    ) -> Callable[
+        [route_view.ListGatewayRouteViewsRequest],
+        Union[
+            route_view.ListGatewayRouteViewsResponse,
+            Awaitable[route_view.ListGatewayRouteViewsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_mesh_route_views(
+        self,
+    ) -> Callable[
+        [route_view.ListMeshRouteViewsRequest],
+        Union[
+            route_view.ListMeshRouteViewsResponse,
+            Awaitable[route_view.ListMeshRouteViewsResponse],
+        ],
     ]:
         raise NotImplementedError()
 

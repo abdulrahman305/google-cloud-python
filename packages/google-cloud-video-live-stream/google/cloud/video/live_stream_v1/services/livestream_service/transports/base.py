@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.video.live_stream_v1 import gapic_version as package_version
@@ -33,6 +34,9 @@ from google.cloud.video.live_stream_v1.types import resources, service
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class LivestreamServiceTransport(abc.ABC):
@@ -267,12 +271,30 @@ class LivestreamServiceTransport(abc.ABC):
             ),
             self.list_clips: gapic_v1.method.wrap_method(
                 self.list_clips,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.get_clip: gapic_v1.method.wrap_method(
                 self.get_clip,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.create_clip: gapic_v1.method.wrap_method(
@@ -282,6 +304,31 @@ class LivestreamServiceTransport(abc.ABC):
             ),
             self.delete_clip: gapic_v1.method.wrap_method(
                 self.delete_clip,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_dvr_session: gapic_v1.method.wrap_method(
+                self.create_dvr_session,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_dvr_sessions: gapic_v1.method.wrap_method(
+                self.list_dvr_sessions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_dvr_session: gapic_v1.method.wrap_method(
+                self.get_dvr_session,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_dvr_session: gapic_v1.method.wrap_method(
+                self.delete_dvr_session,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_dvr_session: gapic_v1.method.wrap_method(
+                self.update_dvr_session,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -297,17 +344,44 @@ class LivestreamServiceTransport(abc.ABC):
             ),
             self.get_asset: gapic_v1.method.wrap_method(
                 self.get_asset,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.list_assets: gapic_v1.method.wrap_method(
                 self.list_assets,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.get_pool: gapic_v1.method.wrap_method(
                 self.get_pool,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.update_pool: gapic_v1.method.wrap_method(
@@ -532,6 +606,53 @@ class LivestreamServiceTransport(abc.ABC):
         self,
     ) -> Callable[
         [service.DeleteClipRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_dvr_session(
+        self,
+    ) -> Callable[
+        [service.CreateDvrSessionRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_dvr_sessions(
+        self,
+    ) -> Callable[
+        [service.ListDvrSessionsRequest],
+        Union[
+            service.ListDvrSessionsResponse, Awaitable[service.ListDvrSessionsResponse]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_dvr_session(
+        self,
+    ) -> Callable[
+        [service.GetDvrSessionRequest],
+        Union[resources.DvrSession, Awaitable[resources.DvrSession]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_dvr_session(
+        self,
+    ) -> Callable[
+        [service.DeleteDvrSessionRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_dvr_session(
+        self,
+    ) -> Callable[
+        [service.UpdateDvrSessionRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

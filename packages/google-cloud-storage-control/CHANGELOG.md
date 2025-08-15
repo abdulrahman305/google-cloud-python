@@ -1,5 +1,54 @@
 # Changelog
 
+## [1.6.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.6.0...google-cloud-storage-control-v1.6.1) (2025-07-23)
+
+
+### Documentation
+
+* Set API shortname storagecontrol to storage ([dd531aa](https://github.com/googleapis/google-cloud-python/commit/dd531aaf1a6afcfa5b6f4b02b6758e8c639ad72e))
+
+## [1.6.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.5.0...google-cloud-storage-control-v1.6.0) (2025-07-02)
+
+
+### Features
+
+* [google-cloud-storage-control] Support REST transport for all clients ([#14029](https://github.com/googleapis/google-cloud-python/issues/14029)) ([3c3722b](https://github.com/googleapis/google-cloud-python/commit/3c3722bc960ca8f97ad204737088fa71dd4d2e45))
+
+## [1.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.4.0...google-cloud-storage-control-v1.5.0) (2025-05-15)
+
+
+### Features
+
+* Add Client Libraries Storage IntelligenceConfig ([2fe4678](https://github.com/googleapis/google-cloud-python/commit/2fe4678e19f728412ce970732328f1481aeaf02d))
+
+## [1.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.3.1...google-cloud-storage-control-v1.4.0) (2025-05-08)
+
+
+### Features
+
+* Add Anywhere cache control APIs ([b47ef05](https://github.com/googleapis/google-cloud-python/commit/b47ef056e2796ce8706391b29b65132f26be7040))
+
+
+### Documentation
+
+* Added comments for Anywhere cache messages ([b47ef05](https://github.com/googleapis/google-cloud-python/commit/b47ef056e2796ce8706391b29b65132f26be7040))
+
+## [1.3.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.3.0...google-cloud-storage-control-v1.3.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* Allow Protobuf 6.x ([#13651](https://github.com/googleapis/google-cloud-python/issues/13651)) ([1b8080e](https://github.com/googleapis/google-cloud-python/commit/1b8080e7069c9d0776e293bab06db54adf157aef))
+
+## [1.3.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.2.0...google-cloud-storage-control-v1.3.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [1.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-control-v1.1.1...google-cloud-storage-control-v1.2.0) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -274,7 +274,7 @@ class BargeInConfig(proto.Message):
 
     The client provides this configuration in terms of the durations of
     those two phases. The durations are measured in terms of the audio
-    length from the the start of the input audio.
+    length from the start of the input audio.
 
     No-speech event is a response with END_OF_UTTERANCE without any
     transcript following up.

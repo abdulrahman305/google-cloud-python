@@ -5,6 +5,58 @@
 [1]: https://pypi.org/project/google-cloud-translate/#history
 
 
+## [3.21.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.21.0...google-cloud-translate-v3.21.1) (2025-07-02)
+
+
+### Documentation
+
+* [google-cloud-translate] minor formatting ([#14035](https://github.com/googleapis/google-cloud-python/issues/14035)) ([bf121c4](https://github.com/googleapis/google-cloud-python/commit/bf121c44586c1dbb80b8e67c18018db75749e669))
+
+## [3.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.20.3...google-cloud-translate-v3.21.0) (2025-06-23)
+
+
+### Features
+
+* add google.cloud.location.Locations API ([b1831f5](https://github.com/googleapis/google-cloud-python/commit/b1831f5b40061c3939bcee7274cf70a7348a7fea))
+* add google.iam.v1.IAMPolicy API ([b1831f5](https://github.com/googleapis/google-cloud-python/commit/b1831f5b40061c3939bcee7274cf70a7348a7fea))
+* add google.longrunning.Operations API ([b1831f5](https://github.com/googleapis/google-cloud-python/commit/b1831f5b40061c3939bcee7274cf70a7348a7fea))
+
+
+### Documentation
+
+* minor formatting ([b1831f5](https://github.com/googleapis/google-cloud-python/commit/b1831f5b40061c3939bcee7274cf70a7348a7fea))
+* Update hyperlink to the supported languages documentation page ([b1831f5](https://github.com/googleapis/google-cloud-python/commit/b1831f5b40061c3939bcee7274cf70a7348a7fea))
+
+## [3.20.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.20.2...google-cloud-translate-v3.20.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [3.20.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.20.1...google-cloud-translate-v3.20.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.20.0...google-cloud-translate-v3.20.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [3.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.19.0...google-cloud-translate-v3.20.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [3.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-translate-v3.18.0...google-cloud-translate-v3.19.0) (2024-12-12)
 
 

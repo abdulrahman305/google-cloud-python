@@ -4,6 +4,52 @@
 
 [1]: https://pypi.org/project/google-cloud-securitycenter/#history
 
+## [1.39.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.38.1...google-cloud-securitycenter-v1.39.0) (2025-07-02)
+
+
+### Features
+
+* Add AffectedResources proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+* Add AiModel proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+* Add ChokePoint proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+* Add IpRules proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+* Add Job proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+* Add Network proto ([62bb44c](https://github.com/googleapis/google-cloud-python/commit/62bb44c6ed45c1933fc08e299031c936de8e17f2))
+
+## [1.38.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.38.0...google-cloud-securitycenter-v1.38.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.38.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.37.0...google-cloud-securitycenter-v1.38.0) (2025-02-18)
+
+
+### Features
+
+* added data access event fields to finding proto ([7fb3f49](https://github.com/googleapis/google-cloud-python/commit/7fb3f49a1531b4da24771c4ce8380be98980fe8b))
+* added more information about DDoS attack in cloud armor proto ([7fb3f49](https://github.com/googleapis/google-cloud-python/commit/7fb3f49a1531b4da24771c4ce8380be98980fe8b))
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+
+### Documentation
+
+* Clarified comments for tag_values field in resource_value_config to make it clear that field represents tag value ids, not tag values ([7fb3f49](https://github.com/googleapis/google-cloud-python/commit/7fb3f49a1531b4da24771c4ce8380be98980fe8b))
+
+## [1.37.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.36.0...google-cloud-securitycenter-v1.37.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [1.36.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securitycenter-v1.35.1...google-cloud-securitycenter-v1.36.0) (2024-12-12)
 
 

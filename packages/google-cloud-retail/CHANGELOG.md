@@ -1,5 +1,91 @@
 # Changelog
 
+## [2.5.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v2.4.0...google-cloud-retail-v2.5.0) (2025-07-26)
+
+
+### Features
+
+* **v2alpha:** add new fields in conversational search public SDK ([#14156](https://github.com/googleapis/google-cloud-python/issues/14156)) ([848d823](https://github.com/googleapis/google-cloud-python/commit/848d82340281340679bb68979db799d2583a4a12))
+
+## [2.4.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v2.3.0...google-cloud-retail-v2.4.0) (2025-07-23)
+
+
+### Features
+
+* [google-cloud-retail] add experiment_id in the SearchRequest proto ([#14127](https://github.com/googleapis/google-cloud-python/issues/14127)) ([195684e](https://github.com/googleapis/google-cloud-python/commit/195684e739f0ec7480abd349a23b6122fbc02d61))
+
+## [2.3.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v2.2.0...google-cloud-retail-v2.3.0) (2025-07-02)
+
+
+### Features
+
+* add a model_scores field in SearchResponse.results to expose model quality signals ([cdfb4a3](https://github.com/googleapis/google-cloud-python/commit/cdfb4a337fa96b482f4db0e6e4691dc58d0f79c2))
+* add a user_attributes field in SearchRequest that can be used for personalization ([cdfb4a3](https://github.com/googleapis/google-cloud-python/commit/cdfb4a337fa96b482f4db0e6e4691dc58d0f79c2))
+
+## [2.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v2.1.0...google-cloud-retail-v2.2.0) (2025-05-29)
+
+
+### Features
+
+* add a model_scores field in SearchResponse.results to expose model quality signals ([3eb9d24](https://github.com/googleapis/google-cloud-python/commit/3eb9d240d80df37241b59813726947b1b7429e1c))
+* add a user_attributes field in SearchRequest that can be used for personalization ([3eb9d24](https://github.com/googleapis/google-cloud-python/commit/3eb9d240d80df37241b59813726947b1b7429e1c))
+* data_source_id replaces primary_feed_id in MerchantCenterFeedFilter ([3eb9d24](https://github.com/googleapis/google-cloud-python/commit/3eb9d240d80df37241b59813726947b1b7429e1c))
+
+## [2.1.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v2.0.0...google-cloud-retail-v2.1.0) (2025-04-29)
+
+
+### Features
+
+* add conversational search API ([4fea9f8](https://github.com/googleapis/google-cloud-python/commit/4fea9f8c052d77834534505332961cebce61a9c8))
+* add language_code, region_code and place_id to SearchRequest ([4fea9f8](https://github.com/googleapis/google-cloud-python/commit/4fea9f8c052d77834534505332961cebce61a9c8))
+* add pin_control_metadata to SearchResponse ([4fea9f8](https://github.com/googleapis/google-cloud-python/commit/4fea9f8c052d77834534505332961cebce61a9c8))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([4fea9f8](https://github.com/googleapis/google-cloud-python/commit/4fea9f8c052d77834534505332961cebce61a9c8))
+
+## [2.0.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.25.1...google-cloud-retail-v2.0.0) (2025-04-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* An existing message `LlmEmbeddingConfig` is removed.
+* An existing field `llm_embedding_config` is removed from message `.google.cloud.retail.v2alpha.Model`
+
+### Features
+
+* add availability field to Localnventory ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+* add new fields including language_code, region_code and place_id to SearchRequest. ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+* add pin_control_metadata to SearchResponse. ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+
+
+### Bug Fixes
+
+* An existing field `llm_embedding_config` is removed from message `.google.cloud.retail.v2alpha.Model` ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+* An existing message `LlmEmbeddingConfig` is removed. ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+
+
+### Documentation
+
+* keep the API doc up-to-date with recent changes ([4e07ac3](https://github.com/googleapis/google-cloud-python/commit/4e07ac3b5e3e5f28e7c583e67b6d576c8c24987f))
+
+## [1.25.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.25.0...google-cloud-retail-v1.25.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.24.0...google-cloud-retail-v1.25.0) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
 ## [1.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-retail-v1.23.1...google-cloud-retail-v1.24.0) (2024-12-12)
 
 

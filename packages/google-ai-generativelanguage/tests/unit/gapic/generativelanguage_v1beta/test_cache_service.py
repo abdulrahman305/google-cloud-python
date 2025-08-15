@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,13 @@ from google.ai.generativelanguage_v1beta.types import (
 from google.ai.generativelanguage_v1beta.types import cache_service
 from google.ai.generativelanguage_v1beta.types import cached_content
 from google.ai.generativelanguage_v1beta.types import content
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -311,6 +318,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         CacheServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = CacheServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = CacheServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -4077,10 +4127,14 @@ def test_list_cached_contents_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CacheServiceRestInterceptor, "post_list_cached_contents"
     ) as post, mock.patch.object(
+        transports.CacheServiceRestInterceptor,
+        "post_list_cached_contents_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.CacheServiceRestInterceptor, "pre_list_cached_contents"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cache_service.ListCachedContentsRequest.pb(
             cache_service.ListCachedContentsRequest()
         )
@@ -4106,6 +4160,10 @@ def test_list_cached_contents_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cache_service.ListCachedContentsResponse()
+        post_with_metadata.return_value = (
+            cache_service.ListCachedContentsResponse(),
+            metadata,
+        )
 
         client.list_cached_contents(
             request,
@@ -4117,6 +4175,7 @@ def test_list_cached_contents_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_cached_content_rest_bad_request(
@@ -4172,14 +4231,23 @@ def test_create_cached_content_rest_call_success(request_type):
                         "mime_type": "mime_type_value",
                         "data": b"data_blob",
                     },
-                    "function_call": {"name": "name_value", "args": {"fields": {}}},
-                    "function_response": {"name": "name_value", "response": {}},
+                    "function_call": {
+                        "id": "id_value",
+                        "name": "name_value",
+                        "args": {"fields": {}},
+                    },
+                    "function_response": {
+                        "id": "id_value",
+                        "name": "name_value",
+                        "response": {},
+                    },
                     "file_data": {
                         "mime_type": "mime_type_value",
                         "file_uri": "file_uri_value",
                     },
                     "executable_code": {"language": 1, "code": "code_value"},
                     "code_execution_result": {"outcome": 1, "output": "output_value"},
+                    "thought": True,
                 }
             ],
             "role": "role_value",
@@ -4194,6 +4262,7 @@ def test_create_cached_content_rest_call_success(request_type):
                         "parameters": {
                             "type_": 1,
                             "format_": "format__value",
+                            "title": "title_value",
                             "description": "description_value",
                             "nullable": True,
                             "enum": ["enum_value1", "enum_value2"],
@@ -4202,13 +4271,30 @@ def test_create_cached_content_rest_call_success(request_type):
                             "min_items": 965,
                             "properties": {},
                             "required": ["required_value1", "required_value2"],
+                            "minimum": 0.764,
+                            "maximum": 0.766,
+                            "any_of": {},
+                            "property_ordering": [
+                                "property_ordering_value1",
+                                "property_ordering_value2",
+                            ],
+                            "default": {
+                                "null_value": 0,
+                                "number_value": 0.1285,
+                                "string_value": "string_value_value",
+                                "bool_value": True,
+                                "struct_value": {},
+                                "list_value": {"values": {}},
+                            },
                         },
+                        "response": {},
                     }
                 ],
                 "google_search_retrieval": {
                     "dynamic_retrieval_config": {"mode": 1, "dynamic_threshold": 0.1809}
                 },
                 "code_execution": {},
+                "google_search": {},
             }
         ],
         "tool_config": {
@@ -4338,10 +4424,14 @@ def test_create_cached_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CacheServiceRestInterceptor, "post_create_cached_content"
     ) as post, mock.patch.object(
+        transports.CacheServiceRestInterceptor,
+        "post_create_cached_content_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.CacheServiceRestInterceptor, "pre_create_cached_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cache_service.CreateCachedContentRequest.pb(
             cache_service.CreateCachedContentRequest()
         )
@@ -4367,6 +4457,7 @@ def test_create_cached_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gag_cached_content.CachedContent()
+        post_with_metadata.return_value = gag_cached_content.CachedContent(), metadata
 
         client.create_cached_content(
             request,
@@ -4378,6 +4469,7 @@ def test_create_cached_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_cached_content_rest_bad_request(
@@ -4466,10 +4558,13 @@ def test_get_cached_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CacheServiceRestInterceptor, "post_get_cached_content"
     ) as post, mock.patch.object(
+        transports.CacheServiceRestInterceptor, "post_get_cached_content_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.CacheServiceRestInterceptor, "pre_get_cached_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cache_service.GetCachedContentRequest.pb(
             cache_service.GetCachedContentRequest()
         )
@@ -4495,6 +4590,7 @@ def test_get_cached_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cached_content.CachedContent()
+        post_with_metadata.return_value = cached_content.CachedContent(), metadata
 
         client.get_cached_content(
             request,
@@ -4506,6 +4602,7 @@ def test_get_cached_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_cached_content_rest_bad_request(
@@ -4561,14 +4658,23 @@ def test_update_cached_content_rest_call_success(request_type):
                         "mime_type": "mime_type_value",
                         "data": b"data_blob",
                     },
-                    "function_call": {"name": "name_value", "args": {"fields": {}}},
-                    "function_response": {"name": "name_value", "response": {}},
+                    "function_call": {
+                        "id": "id_value",
+                        "name": "name_value",
+                        "args": {"fields": {}},
+                    },
+                    "function_response": {
+                        "id": "id_value",
+                        "name": "name_value",
+                        "response": {},
+                    },
                     "file_data": {
                         "mime_type": "mime_type_value",
                         "file_uri": "file_uri_value",
                     },
                     "executable_code": {"language": 1, "code": "code_value"},
                     "code_execution_result": {"outcome": 1, "output": "output_value"},
+                    "thought": True,
                 }
             ],
             "role": "role_value",
@@ -4583,6 +4689,7 @@ def test_update_cached_content_rest_call_success(request_type):
                         "parameters": {
                             "type_": 1,
                             "format_": "format__value",
+                            "title": "title_value",
                             "description": "description_value",
                             "nullable": True,
                             "enum": ["enum_value1", "enum_value2"],
@@ -4591,13 +4698,30 @@ def test_update_cached_content_rest_call_success(request_type):
                             "min_items": 965,
                             "properties": {},
                             "required": ["required_value1", "required_value2"],
+                            "minimum": 0.764,
+                            "maximum": 0.766,
+                            "any_of": {},
+                            "property_ordering": [
+                                "property_ordering_value1",
+                                "property_ordering_value2",
+                            ],
+                            "default": {
+                                "null_value": 0,
+                                "number_value": 0.1285,
+                                "string_value": "string_value_value",
+                                "bool_value": True,
+                                "struct_value": {},
+                                "list_value": {"values": {}},
+                            },
                         },
+                        "response": {},
                     }
                 ],
                 "google_search_retrieval": {
                     "dynamic_retrieval_config": {"mode": 1, "dynamic_threshold": 0.1809}
                 },
                 "code_execution": {},
+                "google_search": {},
             }
         ],
         "tool_config": {
@@ -4727,10 +4851,14 @@ def test_update_cached_content_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.CacheServiceRestInterceptor, "post_update_cached_content"
     ) as post, mock.patch.object(
+        transports.CacheServiceRestInterceptor,
+        "post_update_cached_content_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.CacheServiceRestInterceptor, "pre_update_cached_content"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cache_service.UpdateCachedContentRequest.pb(
             cache_service.UpdateCachedContentRequest()
         )
@@ -4756,6 +4884,7 @@ def test_update_cached_content_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gag_cached_content.CachedContent()
+        post_with_metadata.return_value = gag_cached_content.CachedContent(), metadata
 
         client.update_cached_content(
             request,
@@ -4767,6 +4896,7 @@ def test_update_cached_content_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_cached_content_rest_bad_request(

@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.13...google-cloud-datacatalog-lineage-v0.3.14) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([3d5bc37](https://github.com/googleapis/google-cloud-python/commit/3d5bc3782da6b37742ae83802de8a8b6db96fe29))
+
+## [0.3.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.12...google-cloud-datacatalog-lineage-v0.3.13) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+
+## [0.3.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.11...google-cloud-datacatalog-lineage-v0.3.12) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [0.3.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-lineage-v0.3.10...google-cloud-datacatalog-lineage-v0.3.11) (2024-12-12)
 
 

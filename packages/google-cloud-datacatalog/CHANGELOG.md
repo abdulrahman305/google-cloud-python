@@ -4,6 +4,62 @@
 
 [1]: https://pypi.org/project/google-cloud-datacatalog/#history
 
+## [3.27.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.27.0...google-cloud-datacatalog-v3.27.1) (2025-05-08)
+
+
+### Documentation
+
+* [google-cloud-datacatalog] update documentation URL ([#13853](https://github.com/googleapis/google-cloud-python/issues/13853)) ([5c1d1a7](https://github.com/googleapis/google-cloud-python/commit/5c1d1a77cd7dc2611dff8715a1c79be0c3f8970c))
+
+## [3.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.26.1...google-cloud-datacatalog-v3.27.0) (2025-04-23)
+
+
+### Features
+
+* [google-cloud-datacatalog] add field `template_migration_enabled_time` to `.google.cloud.datacatalog.v1.MigrationConfig` ([#13823](https://github.com/googleapis/google-cloud-python/issues/13823)) ([e2b8039](https://github.com/googleapis/google-cloud-python/commit/e2b80394d320a95036931e4c4c897700f42c370f))
+
+## [3.26.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.26.0...google-cloud-datacatalog-v3.26.1) (2025-04-12)
+
+
+### Documentation
+
+* clarify sql variant in comment for `v1.LookupEntryRequest.sql_resource` ([2c0c1c8](https://github.com/googleapis/google-cloud-python/commit/2c0c1c8e0f4bc213dd7f714cdc2cd7ac330e98c9))
+* clarify sql variant in comment for `v1beta1.LookupEntryRequest.sql_resource` ([2c0c1c8](https://github.com/googleapis/google-cloud-python/commit/2c0c1c8e0f4bc213dd7f714cdc2cd7ac330e98c9))
+
+## [3.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.25.1...google-cloud-datacatalog-v3.26.0) (2025-03-15)
+
+
+### Features
+
+* [google-cloud-datacatalog] mark DataCatalog service deprecated, use Dataplex Catalog instead ([#13642](https://github.com/googleapis/google-cloud-python/issues/13642)) ([cc49cd3](https://github.com/googleapis/google-cloud-python/commit/cc49cd3b29b1a6ed73eb765978bb59ef65b247f0))
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+
+### Documentation
+
+* [google-cloud-datacatalog] Mark DataCatalog v1beta1 service and ([cc49cd3](https://github.com/googleapis/google-cloud-python/commit/cc49cd3b29b1a6ed73eb765978bb59ef65b247f0))
+* fix a few typos ([cc49cd3](https://github.com/googleapis/google-cloud-python/commit/cc49cd3b29b1a6ed73eb765978bb59ef65b247f0))
+
+## [3.25.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.25.0...google-cloud-datacatalog-v3.25.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [3.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.24.1...google-cloud-datacatalog-v3.25.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [3.24.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-datacatalog-v3.24.0...google-cloud-datacatalog-v3.24.1) (2024-12-18)
 
 

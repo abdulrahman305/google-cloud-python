@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.tpu_v2alpha1 import gapic_version as package_version
 from google.cloud.tpu_v2alpha1.types import cloud_tpu
@@ -32,6 +33,9 @@ from google.cloud.tpu_v2alpha1.types import cloud_tpu
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class TpuTransport(abc.ABC):
@@ -165,6 +169,11 @@ class TpuTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.perform_maintenance: gapic_v1.method.wrap_method(
+                self.perform_maintenance,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.list_queued_resources: gapic_v1.method.wrap_method(
                 self.list_queued_resources,
                 default_timeout=None,
@@ -187,6 +196,11 @@ class TpuTransport(abc.ABC):
             ),
             self.reset_queued_resource: gapic_v1.method.wrap_method(
                 self.reset_queued_resource,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.perform_maintenance_queued_resource: gapic_v1.method.wrap_method(
+                self.perform_maintenance_queued_resource,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -217,6 +231,11 @@ class TpuTransport(abc.ABC):
             ),
             self.get_guest_attributes: gapic_v1.method.wrap_method(
                 self.get_guest_attributes,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_reservations: gapic_v1.method.wrap_method(
+                self.list_reservations,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -334,6 +353,15 @@ class TpuTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def perform_maintenance(
+        self,
+    ) -> Callable[
+        [cloud_tpu.PerformMaintenanceRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def list_queued_resources(
         self,
     ) -> Callable[
@@ -377,6 +405,15 @@ class TpuTransport(abc.ABC):
         self,
     ) -> Callable[
         [cloud_tpu.ResetQueuedResourceRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def perform_maintenance_queued_resource(
+        self,
+    ) -> Callable[
+        [cloud_tpu.PerformMaintenanceQueuedResourceRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
@@ -443,6 +480,18 @@ class TpuTransport(abc.ABC):
         Union[
             cloud_tpu.GetGuestAttributesResponse,
             Awaitable[cloud_tpu.GetGuestAttributesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_reservations(
+        self,
+    ) -> Callable[
+        [cloud_tpu.ListReservationsRequest],
+        Union[
+            cloud_tpu.ListReservationsResponse,
+            Awaitable[cloud_tpu.ListReservationsResponse],
         ],
     ]:
         raise NotImplementedError()

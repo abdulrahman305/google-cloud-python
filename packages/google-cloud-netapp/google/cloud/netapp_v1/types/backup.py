@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -78,6 +78,20 @@ class Backup(proto.Message):
             Output only. Total size of all backups in a
             chain in bytes = baseline backup size +
             sum(incremental backup size)
+        satisfies_pzs (bool):
+            Output only. Reserved for future use
+        satisfies_pzi (bool):
+            Output only. Reserved for future use
+        volume_region (str):
+            Output only. Region of the volume from which the backup was
+            created. Format:
+            ``projects/{project_id}/locations/{location}``
+        backup_region (str):
+            Output only. Region in which backup is stored. Format:
+            ``projects/{project_id}/locations/{location}``
+        enforced_retention_end_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. The time until which the backup
+            is not deletable.
     """
 
     class State(proto.Enum):
@@ -173,6 +187,27 @@ class Backup(proto.Message):
     chain_storage_bytes: int = proto.Field(
         proto.INT64,
         number=10,
+    )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=11,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=12,
+    )
+    volume_region: str = proto.Field(
+        proto.STRING,
+        number=13,
+    )
+    backup_region: str = proto.Field(
+        proto.STRING,
+        number=14,
+    )
+    enforced_retention_end_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=15,
+        message=timestamp_pb2.Timestamp,
     )
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,12 +22,17 @@ from .services.lfp_inventory_service import (
     LfpInventoryServiceAsyncClient,
     LfpInventoryServiceClient,
 )
+from .services.lfp_merchant_state_service import (
+    LfpMerchantStateServiceAsyncClient,
+    LfpMerchantStateServiceClient,
+)
 from .services.lfp_sale_service import LfpSaleServiceAsyncClient, LfpSaleServiceClient
 from .services.lfp_store_service import (
     LfpStoreServiceAsyncClient,
     LfpStoreServiceClient,
 )
 from .types.lfpinventory import InsertLfpInventoryRequest, LfpInventory
+from .types.lfpmerchantstate import GetLfpMerchantStateRequest, LfpMerchantState
 from .types.lfpsale import InsertLfpSaleRequest, LfpSale
 from .types.lfpstore import (
     DeleteLfpStoreRequest,
@@ -40,15 +45,19 @@ from .types.lfpstore import (
 
 __all__ = (
     "LfpInventoryServiceAsyncClient",
+    "LfpMerchantStateServiceAsyncClient",
     "LfpSaleServiceAsyncClient",
     "LfpStoreServiceAsyncClient",
     "DeleteLfpStoreRequest",
+    "GetLfpMerchantStateRequest",
     "GetLfpStoreRequest",
     "InsertLfpInventoryRequest",
     "InsertLfpSaleRequest",
     "InsertLfpStoreRequest",
     "LfpInventory",
     "LfpInventoryServiceClient",
+    "LfpMerchantState",
+    "LfpMerchantStateServiceClient",
     "LfpSale",
     "LfpSaleServiceClient",
     "LfpStore",

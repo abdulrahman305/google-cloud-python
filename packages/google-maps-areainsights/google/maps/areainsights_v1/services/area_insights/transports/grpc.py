@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,12 +69,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.maps.areainsights.v1.AreaInsights",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -111,7 +110,7 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class AreaInsightsGrpcTransport(AreaInsightsTransport):
     """gRPC backend transport for AreaInsights.
 
-    Service definition for the Places Insights API.
+    Service definition for the Places Aggregate RPC.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
@@ -329,10 +328,8 @@ class AreaInsightsGrpcTransport(AreaInsightsTransport):
     ]:
         r"""Return a callable for the compute insights method over gRPC.
 
-        Compute Insights RPC
-
         This method lets you retrieve insights about areas using a
-        variaty of filter such as: area, place type, operating status,
+        variety of filter such as: area, place type, operating status,
         price level and ratings. Currently "count" and "places" insights
         are supported. With "count" insights you can answer questions
         such as "How many restaurant are located in California that are

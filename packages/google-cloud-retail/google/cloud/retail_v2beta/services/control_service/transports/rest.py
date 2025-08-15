@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -56,6 +57,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ControlServiceRestInterceptor:
@@ -132,11 +136,34 @@ class ControlServiceRestInterceptor:
     def post_create_control(self, response: gcr_control.Control) -> gcr_control.Control:
         """Post-rpc interceptor for create_control
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_control_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ControlService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_control` interceptor runs
+        before the `post_create_control_with_metadata` interceptor.
         """
         return response
+
+    def post_create_control_with_metadata(
+        self,
+        response: gcr_control.Control,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcr_control.Control, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_control
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ControlService server but before it is returned to user code.
+
+        We recommend only using this `post_create_control_with_metadata`
+        interceptor in new development instead of the `post_create_control` interceptor.
+        When both interceptors are used, this `post_create_control_with_metadata` interceptor runs after the
+        `post_create_control` interceptor. The (possibly modified) response returned by
+        `post_create_control` will be passed to
+        `post_create_control_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_control(
         self,
@@ -169,11 +196,34 @@ class ControlServiceRestInterceptor:
     def post_get_control(self, response: control.Control) -> control.Control:
         """Post-rpc interceptor for get_control
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_control_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ControlService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_control` interceptor runs
+        before the `post_get_control_with_metadata` interceptor.
         """
         return response
+
+    def post_get_control_with_metadata(
+        self,
+        response: control.Control,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[control.Control, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_control
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ControlService server but before it is returned to user code.
+
+        We recommend only using this `post_get_control_with_metadata`
+        interceptor in new development instead of the `post_get_control` interceptor.
+        When both interceptors are used, this `post_get_control_with_metadata` interceptor runs after the
+        `post_get_control` interceptor. The (possibly modified) response returned by
+        `post_get_control` will be passed to
+        `post_get_control_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_controls(
         self,
@@ -194,11 +244,36 @@ class ControlServiceRestInterceptor:
     ) -> control_service.ListControlsResponse:
         """Post-rpc interceptor for list_controls
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_controls_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ControlService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_controls` interceptor runs
+        before the `post_list_controls_with_metadata` interceptor.
         """
         return response
+
+    def post_list_controls_with_metadata(
+        self,
+        response: control_service.ListControlsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        control_service.ListControlsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_controls
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ControlService server but before it is returned to user code.
+
+        We recommend only using this `post_list_controls_with_metadata`
+        interceptor in new development instead of the `post_list_controls` interceptor.
+        When both interceptors are used, this `post_list_controls_with_metadata` interceptor runs after the
+        `post_list_controls` interceptor. The (possibly modified) response returned by
+        `post_list_controls` will be passed to
+        `post_list_controls_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_control(
         self,
@@ -217,11 +292,34 @@ class ControlServiceRestInterceptor:
     def post_update_control(self, response: gcr_control.Control) -> gcr_control.Control:
         """Post-rpc interceptor for update_control
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_control_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ControlService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_control` interceptor runs
+        before the `post_update_control_with_metadata` interceptor.
         """
         return response
+
+    def post_update_control_with_metadata(
+        self,
+        response: gcr_control.Control,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcr_control.Control, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_control
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ControlService server but before it is returned to user code.
+
+        We recommend only using this `post_update_control_with_metadata`
+        interceptor in new development instead of the `post_update_control` interceptor.
+        When both interceptors are used, this `post_update_control_with_metadata` interceptor runs after the
+        `post_update_control` interceptor. The (possibly modified) response returned by
+        `post_update_control` will be passed to
+        `post_update_control_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -487,6 +585,10 @@ class ControlServiceRestTransport(_BaseControlServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_control(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_control_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -739,6 +841,10 @@ class ControlServiceRestTransport(_BaseControlServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_control(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_control_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -879,6 +985,10 @@ class ControlServiceRestTransport(_BaseControlServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_controls(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_controls_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1031,6 +1141,10 @@ class ControlServiceRestTransport(_BaseControlServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_control(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_control_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -74,12 +74,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.dataplex.v1.CatalogService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -841,11 +840,6 @@ class CatalogServiceGrpcTransport(CatalogServiceTransport):
 
         Gets an Entry.
 
-        **Caution**: The BigQuery metadata that is stored in Dataplex
-        Catalog is changing. For more information, see `Changes to
-        BigQuery metadata stored in Dataplex
-        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
-
         Returns:
             Callable[[~.GetEntryRequest],
                     ~.Entry]:
@@ -868,13 +862,8 @@ class CatalogServiceGrpcTransport(CatalogServiceTransport):
     def lookup_entry(self) -> Callable[[catalog.LookupEntryRequest], catalog.Entry]:
         r"""Return a callable for the lookup entry method over gRPC.
 
-        Looks up a single Entry by name using the permission on the
+        Looks up an entry by name using the permission on the
         source system.
-
-        **Caution**: The BigQuery metadata that is stored in Dataplex
-        Catalog is changing. For more information, see `Changes to
-        BigQuery metadata stored in Dataplex
-        Catalog <https://cloud.google.com/dataplex/docs/biqquery-metadata-changes>`__.
 
         Returns:
             Callable[[~.LookupEntryRequest],

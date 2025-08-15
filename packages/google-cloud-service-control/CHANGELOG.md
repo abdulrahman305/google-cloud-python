@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-control-v1.15.1...google-cloud-service-control-v1.16.0) (2025-07-23)
+
+
+### Features
+
+* [google-cloud-service-control] ServiceController V2 APIs are out of private preview ([#14123](https://github.com/googleapis/google-cloud-python/issues/14123)) ([2ce745c](https://github.com/googleapis/google-cloud-python/commit/2ce745c15d7483cd5e268abb58271c26258bdfe7))
+
+## [1.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-control-v1.15.0...google-cloud-service-control-v1.15.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-control-v1.14.0...google-cloud-service-control-v1.15.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-service-control-v1.13.1...google-cloud-service-control-v1.14.0) (2024-12-12)
 
 

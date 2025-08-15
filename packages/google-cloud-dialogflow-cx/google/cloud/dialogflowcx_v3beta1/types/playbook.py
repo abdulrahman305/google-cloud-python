@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,10 +22,11 @@ from google.protobuf import timestamp_pb2  # type: ignore
 import proto  # type: ignore
 
 from google.cloud.dialogflowcx_v3beta1.types import (
-    example,
     generative_settings,
     parameter_definition,
 )
+from google.cloud.dialogflowcx_v3beta1.types import fulfillment as gcdc_fulfillment
+from google.cloud.dialogflowcx_v3beta1.types import advanced_settings, example
 
 __protobuf__ = proto.module(
     package="google.cloud.dialogflow.cx.v3beta1",
@@ -43,6 +44,7 @@ __protobuf__ = proto.module(
         "ListPlaybookVersionsRequest",
         "ListPlaybookVersionsResponse",
         "DeletePlaybookVersionRequest",
+        "Handler",
     },
 )
 
@@ -207,7 +209,9 @@ class Playbook(proto.Message):
             playbook, unique within an agent.
         goal (str):
             Required. High level description of the goal
-            the playbook intend to accomplish.
+            the playbook intend to accomplish. A goal should
+            be concise since it's visible to other playbooks
+            that may reference this playbook.
         input_parameter_definitions (MutableSequence[google.cloud.dialogflowcx_v3beta1.types.ParameterDefinition]):
             Optional. Defined structured input parameters
             for this playbook.
@@ -242,6 +246,12 @@ class Playbook(proto.Message):
         llm_model_settings (google.cloud.dialogflowcx_v3beta1.types.LlmModelSettings):
             Optional. Llm model settings for the
             playbook.
+        speech_settings (google.cloud.dialogflowcx_v3beta1.types.AdvancedSettings.SpeechSettings):
+            Optional. Playbook level Settings for speech
+            to text detection.
+        handlers (MutableSequence[google.cloud.dialogflowcx_v3beta1.types.Handler]):
+            Optional. A list of registered handlers to
+            execute based on the specified triggers.
     """
 
     class Step(proto.Message):
@@ -274,11 +284,21 @@ class Playbook(proto.Message):
         r"""Message of the Instruction of the playbook.
 
         Attributes:
+            guidelines (str):
+                General guidelines for the playbook. These
+                are unstructured instructions that are not
+                directly part of the goal, e.g. "Always be
+                polite". It's valid for this text to be long and
+                used instead of steps altogether.
             steps (MutableSequence[google.cloud.dialogflowcx_v3beta1.types.Playbook.Step]):
                 Ordered list of step by step execution
                 instructions to accomplish target goal.
         """
 
+        guidelines: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
         steps: MutableSequence["Playbook.Step"] = proto.RepeatedField(
             proto.MESSAGE,
             number=2,
@@ -346,6 +366,16 @@ class Playbook(proto.Message):
         proto.MESSAGE,
         number=14,
         message=generative_settings.LlmModelSettings,
+    )
+    speech_settings: advanced_settings.AdvancedSettings.SpeechSettings = proto.Field(
+        proto.MESSAGE,
+        number=20,
+        message=advanced_settings.AdvancedSettings.SpeechSettings,
+    )
+    handlers: MutableSequence["Handler"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=16,
+        message="Handler",
     )
 
 
@@ -511,6 +541,108 @@ class DeletePlaybookVersionRequest(proto.Message):
     name: str = proto.Field(
         proto.STRING,
         number=1,
+    )
+
+
+class Handler(proto.Message):
+    r"""Handler can be used to define custom logic to be executed
+    based on the user-specified triggers.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        event_handler (google.cloud.dialogflowcx_v3beta1.types.Handler.EventHandler):
+            A handler triggered by event.
+
+            This field is a member of `oneof`_ ``handler``.
+        lifecycle_handler (google.cloud.dialogflowcx_v3beta1.types.Handler.LifecycleHandler):
+            A handler triggered during specific lifecycle
+            of the playbook execution.
+
+            This field is a member of `oneof`_ ``handler``.
+    """
+
+    class EventHandler(proto.Message):
+        r"""A handler that is triggered by the specified
+        [event][google.cloud.dialogflow.cx.v3beta1.Handler.EventHandler.event].
+
+        Attributes:
+            event (str):
+                Required. The name of the event that triggers
+                this handler.
+            condition (str):
+                Optional. The condition that must be
+                satisfied to trigger this handler.
+            fulfillment (google.cloud.dialogflowcx_v3beta1.types.Fulfillment):
+                Required. The fulfillment to call when the
+                event occurs.
+        """
+
+        event: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        condition: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        fulfillment: gcdc_fulfillment.Fulfillment = proto.Field(
+            proto.MESSAGE,
+            number=2,
+            message=gcdc_fulfillment.Fulfillment,
+        )
+
+    class LifecycleHandler(proto.Message):
+        r"""A handler that is triggered on the specific
+        [lifecycle_stage][google.cloud.dialogflow.cx.v3beta1.Handler.LifecycleHandler.lifecycle_stage]
+        of the playbook execution.
+
+        Attributes:
+            lifecycle_stage (str):
+                Required. The name of the lifecycle stage that triggers this
+                handler. Supported values:
+
+                -  ``playbook-start``
+                -  ``pre-action-selection``
+                -  ``pre-action-execution``
+            condition (str):
+                Optional. The condition that must be
+                satisfied to trigger this handler.
+            fulfillment (google.cloud.dialogflowcx_v3beta1.types.Fulfillment):
+                Required. The fulfillment to call when this
+                handler is triggered.
+        """
+
+        lifecycle_stage: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        condition: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        fulfillment: gcdc_fulfillment.Fulfillment = proto.Field(
+            proto.MESSAGE,
+            number=3,
+            message=gcdc_fulfillment.Fulfillment,
+        )
+
+    event_handler: EventHandler = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        oneof="handler",
+        message=EventHandler,
+    )
+    lifecycle_handler: LifecycleHandler = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        oneof="handler",
+        message=LifecycleHandler,
     )
 
 

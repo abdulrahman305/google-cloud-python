@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.4.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.18...google-cloud-bigquery-analyticshub-v0.4.19) (2025-05-15)
+
+
+### Features
+
+* Add support for Analytics Hub & Marketplace Integration ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+* Adding allow_only_metadata_sharing to Listing resource ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+* Adding CommercialInfo message to the Listing and Subscription resources ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+* Adding delete_commercial and revoke_commercial to DeleteListingRequest and RevokeSubscriptionRequest ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+* Adding DestinationDataset to the Subscription resource ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+* Adding routine field to the SharedResource message ([d875d05](https://github.com/googleapis/google-cloud-python/commit/d875d053acb170e1491dd774c93506b339524d45))
+
+## [0.4.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.17...google-cloud-bigquery-analyticshub-v0.4.18) (2025-03-27)
+
+
+### Features
+
+* [google-cloud-bigquery-analyticshub] Support new feature Sharing Cloud Pubsub Streams via AH (GA) and Subscriber Email logging feature ([#13713](https://github.com/googleapis/google-cloud-python/issues/13713)) ([f6a55e3](https://github.com/googleapis/google-cloud-python/commit/f6a55e35fcfd5f58d3268fb3f7a46ffd761c7db3))
+
+## [0.4.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.16...google-cloud-bigquery-analyticshub-v0.4.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.4.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.15...google-cloud-bigquery-analyticshub-v0.4.16) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.4.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.14...google-cloud-bigquery-analyticshub-v0.4.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [0.4.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-analyticshub-v0.4.13...google-cloud-bigquery-analyticshub-v0.4.14) (2024-12-12)
 
 

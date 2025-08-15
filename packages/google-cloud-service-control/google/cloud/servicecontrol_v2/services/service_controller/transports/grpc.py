@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,12 +69,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.api.servicecontrol.v2.ServiceController",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -113,9 +112,6 @@ class ServiceControllerGrpcTransport(ServiceControllerTransport):
 
     `Service Control API
     v2 <https://cloud.google.com/service-infrastructure/docs/service-control/access-control>`__
-
-    Private Preview. This feature is only available for approved
-    services.
 
     This API provides admission control and telemetry reporting for
     services that are integrated with `Service
@@ -334,9 +330,6 @@ class ServiceControllerGrpcTransport(ServiceControllerTransport):
     ) -> Callable[[service_controller.CheckRequest], service_controller.CheckResponse]:
         r"""Return a callable for the check method over gRPC.
 
-        Private Preview. This feature is only available for approved
-        services.
-
         This method provides admission control for services that are
         integrated with `Service
         Infrastructure <https://cloud.google.com/service-infrastructure>`__.
@@ -385,9 +378,6 @@ class ServiceControllerGrpcTransport(ServiceControllerTransport):
     ]:
         r"""Return a callable for the report method over gRPC.
 
-        Private Preview. This feature is only available for approved
-        services.
-
         This method provides telemetry reporting for services that are
         integrated with `Service
         Infrastructure <https://cloud.google.com/service-infrastructure>`__.
@@ -396,9 +386,8 @@ class ServiceControllerGrpcTransport(ServiceControllerTransport):
         more information, see `Telemetry
         Reporting <https://cloud.google.com/service-infrastructure/docs/telemetry-reporting>`__.
 
-        NOTE: The telemetry reporting has a hard limit of 1000
-        operations and 1MB per Report call. It is recommended to have no
-        more than 100 operations per call.
+        NOTE: The telemetry reporting has a hard limit of 100 operations
+        and 1MB per Report call.
 
         This method requires the ``servicemanagement.services.report``
         permission on the specified service. For more information, see

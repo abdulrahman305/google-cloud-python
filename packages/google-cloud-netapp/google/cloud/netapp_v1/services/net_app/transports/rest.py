@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -38,6 +39,8 @@ from google.cloud.netapp_v1.types import backup_policy as gcn_backup_policy
 from google.cloud.netapp_v1.types import backup_vault
 from google.cloud.netapp_v1.types import backup_vault as gcn_backup_vault
 from google.cloud.netapp_v1.types import kms
+from google.cloud.netapp_v1.types import quota_rule
+from google.cloud.netapp_v1.types import quota_rule as gcn_quota_rule
 from google.cloud.netapp_v1.types import replication
 from google.cloud.netapp_v1.types import replication as gcn_replication
 from google.cloud.netapp_v1.types import snapshot
@@ -69,6 +72,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class NetAppRestInterceptor:
@@ -123,6 +129,14 @@ class NetAppRestInterceptor:
                 return request, metadata
 
             def post_create_kms_config(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_create_quota_rule(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_quota_rule(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -195,6 +209,14 @@ class NetAppRestInterceptor:
                 return request, metadata
 
             def post_delete_kms_config(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_delete_quota_rule(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_delete_quota_rule(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -286,6 +308,14 @@ class NetAppRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_quota_rule(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_quota_rule(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_replication(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -355,6 +385,14 @@ class NetAppRestInterceptor:
                 return request, metadata
 
             def post_list_kms_configs(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_quota_rules(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_quota_rules(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -478,6 +516,14 @@ class NetAppRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_update_quota_rule(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_quota_rule(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_update_replication(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -507,6 +553,14 @@ class NetAppRestInterceptor:
                 return request, metadata
 
             def post_update_volume(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_validate_directory_service(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_validate_directory_service(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -544,11 +598,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_active_directory
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_active_directory_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_active_directory` interceptor runs
+        before the `post_create_active_directory_with_metadata` interceptor.
         """
         return response
+
+    def post_create_active_directory_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_active_directory
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_active_directory_with_metadata`
+        interceptor in new development instead of the `post_create_active_directory` interceptor.
+        When both interceptors are used, this `post_create_active_directory_with_metadata` interceptor runs after the
+        `post_create_active_directory` interceptor. The (possibly modified) response returned by
+        `post_create_active_directory` will be passed to
+        `post_create_active_directory_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_backup(
         self,
@@ -567,11 +644,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup` interceptor runs
+        before the `post_create_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_with_metadata`
+        interceptor in new development instead of the `post_create_backup` interceptor.
+        When both interceptors are used, this `post_create_backup_with_metadata` interceptor runs after the
+        `post_create_backup` interceptor. The (possibly modified) response returned by
+        `post_create_backup` will be passed to
+        `post_create_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_backup_policy(
         self,
@@ -593,11 +693,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup_policy` interceptor runs
+        before the `post_create_backup_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_policy_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_policy_with_metadata`
+        interceptor in new development instead of the `post_create_backup_policy` interceptor.
+        When both interceptors are used, this `post_create_backup_policy_with_metadata` interceptor runs after the
+        `post_create_backup_policy` interceptor. The (possibly modified) response returned by
+        `post_create_backup_policy` will be passed to
+        `post_create_backup_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_backup_vault(
         self,
@@ -619,11 +742,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup_vault
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_vault_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup_vault` interceptor runs
+        before the `post_create_backup_vault_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_vault_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup_vault
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_vault_with_metadata`
+        interceptor in new development instead of the `post_create_backup_vault` interceptor.
+        When both interceptors are used, this `post_create_backup_vault_with_metadata` interceptor runs after the
+        `post_create_backup_vault` interceptor. The (possibly modified) response returned by
+        `post_create_backup_vault` will be passed to
+        `post_create_backup_vault_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_kms_config(
         self,
@@ -642,11 +788,82 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_kms_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_kms_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_kms_config` interceptor runs
+        before the `post_create_kms_config_with_metadata` interceptor.
         """
         return response
+
+    def post_create_kms_config_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_kms_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_kms_config_with_metadata`
+        interceptor in new development instead of the `post_create_kms_config` interceptor.
+        When both interceptors are used, this `post_create_kms_config_with_metadata` interceptor runs after the
+        `post_create_kms_config` interceptor. The (possibly modified) response returned by
+        `post_create_kms_config` will be passed to
+        `post_create_kms_config_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_quota_rule(
+        self,
+        request: gcn_quota_rule.CreateQuotaRuleRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcn_quota_rule.CreateQuotaRuleRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_quota_rule
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_create_quota_rule(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for create_quota_rule
+
+        DEPRECATED. Please use the `post_create_quota_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_create_quota_rule` interceptor runs
+        before the `post_create_quota_rule_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_quota_rule_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_quota_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_quota_rule_with_metadata`
+        interceptor in new development instead of the `post_create_quota_rule` interceptor.
+        When both interceptors are used, this `post_create_quota_rule_with_metadata` interceptor runs after the
+        `post_create_quota_rule` interceptor. The (possibly modified) response returned by
+        `post_create_quota_rule` will be passed to
+        `post_create_quota_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_replication(
         self,
@@ -668,11 +885,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_replication` interceptor runs
+        before the `post_create_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_create_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_replication_with_metadata`
+        interceptor in new development instead of the `post_create_replication` interceptor.
+        When both interceptors are used, this `post_create_replication_with_metadata` interceptor runs after the
+        `post_create_replication` interceptor. The (possibly modified) response returned by
+        `post_create_replication` will be passed to
+        `post_create_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_snapshot(
         self,
@@ -693,11 +933,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_snapshot` interceptor runs
+        before the `post_create_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_create_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_snapshot_with_metadata`
+        interceptor in new development instead of the `post_create_snapshot` interceptor.
+        When both interceptors are used, this `post_create_snapshot_with_metadata` interceptor runs after the
+        `post_create_snapshot` interceptor. The (possibly modified) response returned by
+        `post_create_snapshot` will be passed to
+        `post_create_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_storage_pool(
         self,
@@ -719,11 +982,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_storage_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_storage_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_storage_pool` interceptor runs
+        before the `post_create_storage_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_create_storage_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_storage_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_storage_pool_with_metadata`
+        interceptor in new development instead of the `post_create_storage_pool` interceptor.
+        When both interceptors are used, this `post_create_storage_pool_with_metadata` interceptor runs after the
+        `post_create_storage_pool` interceptor. The (possibly modified) response returned by
+        `post_create_storage_pool` will be passed to
+        `post_create_storage_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_volume(
         self,
@@ -742,11 +1028,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_volume
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_volume_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_volume` interceptor runs
+        before the `post_create_volume_with_metadata` interceptor.
         """
         return response
+
+    def post_create_volume_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_volume
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_create_volume_with_metadata`
+        interceptor in new development instead of the `post_create_volume` interceptor.
+        When both interceptors are used, this `post_create_volume_with_metadata` interceptor runs after the
+        `post_create_volume` interceptor. The (possibly modified) response returned by
+        `post_create_volume` will be passed to
+        `post_create_volume_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_active_directory(
         self,
@@ -768,11 +1077,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_active_directory
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_active_directory_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_active_directory` interceptor runs
+        before the `post_delete_active_directory_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_active_directory_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_active_directory
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_active_directory_with_metadata`
+        interceptor in new development instead of the `post_delete_active_directory` interceptor.
+        When both interceptors are used, this `post_delete_active_directory_with_metadata` interceptor runs after the
+        `post_delete_active_directory` interceptor. The (possibly modified) response returned by
+        `post_delete_active_directory` will be passed to
+        `post_delete_active_directory_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup(
         self,
@@ -791,11 +1123,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup` interceptor runs
+        before the `post_delete_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_with_metadata`
+        interceptor in new development instead of the `post_delete_backup` interceptor.
+        When both interceptors are used, this `post_delete_backup_with_metadata` interceptor runs after the
+        `post_delete_backup` interceptor. The (possibly modified) response returned by
+        `post_delete_backup` will be passed to
+        `post_delete_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup_policy(
         self,
@@ -816,11 +1171,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup_policy` interceptor runs
+        before the `post_delete_backup_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_policy_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_policy_with_metadata`
+        interceptor in new development instead of the `post_delete_backup_policy` interceptor.
+        When both interceptors are used, this `post_delete_backup_policy_with_metadata` interceptor runs after the
+        `post_delete_backup_policy` interceptor. The (possibly modified) response returned by
+        `post_delete_backup_policy` will be passed to
+        `post_delete_backup_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup_vault(
         self,
@@ -841,11 +1219,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup_vault
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_vault_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup_vault` interceptor runs
+        before the `post_delete_backup_vault_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_vault_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup_vault
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_vault_with_metadata`
+        interceptor in new development instead of the `post_delete_backup_vault` interceptor.
+        When both interceptors are used, this `post_delete_backup_vault_with_metadata` interceptor runs after the
+        `post_delete_backup_vault` interceptor. The (possibly modified) response returned by
+        `post_delete_backup_vault` will be passed to
+        `post_delete_backup_vault_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_kms_config(
         self,
@@ -864,11 +1265,82 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_kms_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_kms_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_kms_config` interceptor runs
+        before the `post_delete_kms_config_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_kms_config_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_kms_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_kms_config_with_metadata`
+        interceptor in new development instead of the `post_delete_kms_config` interceptor.
+        When both interceptors are used, this `post_delete_kms_config_with_metadata` interceptor runs after the
+        `post_delete_kms_config` interceptor. The (possibly modified) response returned by
+        `post_delete_kms_config` will be passed to
+        `post_delete_kms_config_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_quota_rule(
+        self,
+        request: quota_rule.DeleteQuotaRuleRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        quota_rule.DeleteQuotaRuleRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for delete_quota_rule
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_delete_quota_rule(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for delete_quota_rule
+
+        DEPRECATED. Please use the `post_delete_quota_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_delete_quota_rule` interceptor runs
+        before the `post_delete_quota_rule_with_metadata` interceptor.
+        """
+        return response
+
+    def post_delete_quota_rule_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_quota_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_quota_rule_with_metadata`
+        interceptor in new development instead of the `post_delete_quota_rule` interceptor.
+        When both interceptors are used, this `post_delete_quota_rule_with_metadata` interceptor runs after the
+        `post_delete_quota_rule` interceptor. The (possibly modified) response returned by
+        `post_delete_quota_rule` will be passed to
+        `post_delete_quota_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_replication(
         self,
@@ -889,11 +1361,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_replication` interceptor runs
+        before the `post_delete_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_replication_with_metadata`
+        interceptor in new development instead of the `post_delete_replication` interceptor.
+        When both interceptors are used, this `post_delete_replication_with_metadata` interceptor runs after the
+        `post_delete_replication` interceptor. The (possibly modified) response returned by
+        `post_delete_replication` will be passed to
+        `post_delete_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_snapshot(
         self,
@@ -912,11 +1407,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_snapshot` interceptor runs
+        before the `post_delete_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_snapshot_with_metadata`
+        interceptor in new development instead of the `post_delete_snapshot` interceptor.
+        When both interceptors are used, this `post_delete_snapshot_with_metadata` interceptor runs after the
+        `post_delete_snapshot` interceptor. The (possibly modified) response returned by
+        `post_delete_snapshot` will be passed to
+        `post_delete_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_storage_pool(
         self,
@@ -937,11 +1455,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_storage_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_storage_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_storage_pool` interceptor runs
+        before the `post_delete_storage_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_storage_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_storage_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_storage_pool_with_metadata`
+        interceptor in new development instead of the `post_delete_storage_pool` interceptor.
+        When both interceptors are used, this `post_delete_storage_pool_with_metadata` interceptor runs after the
+        `post_delete_storage_pool` interceptor. The (possibly modified) response returned by
+        `post_delete_storage_pool` will be passed to
+        `post_delete_storage_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_volume(
         self,
@@ -960,11 +1501,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_volume
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_volume_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_volume` interceptor runs
+        before the `post_delete_volume_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_volume_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_volume
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_delete_volume_with_metadata`
+        interceptor in new development instead of the `post_delete_volume` interceptor.
+        When both interceptors are used, this `post_delete_volume_with_metadata` interceptor runs after the
+        `post_delete_volume` interceptor. The (possibly modified) response returned by
+        `post_delete_volume` will be passed to
+        `post_delete_volume_with_metadata`.
+        """
+        return response, metadata
 
     def pre_encrypt_volumes(
         self,
@@ -983,11 +1547,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for encrypt_volumes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_encrypt_volumes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_encrypt_volumes` interceptor runs
+        before the `post_encrypt_volumes_with_metadata` interceptor.
         """
         return response
+
+    def post_encrypt_volumes_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for encrypt_volumes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_encrypt_volumes_with_metadata`
+        interceptor in new development instead of the `post_encrypt_volumes` interceptor.
+        When both interceptors are used, this `post_encrypt_volumes_with_metadata` interceptor runs after the
+        `post_encrypt_volumes` interceptor. The (possibly modified) response returned by
+        `post_encrypt_volumes` will be passed to
+        `post_encrypt_volumes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_establish_peering(
         self,
@@ -1008,11 +1595,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for establish_peering
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_establish_peering_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_establish_peering` interceptor runs
+        before the `post_establish_peering_with_metadata` interceptor.
         """
         return response
+
+    def post_establish_peering_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for establish_peering
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_establish_peering_with_metadata`
+        interceptor in new development instead of the `post_establish_peering` interceptor.
+        When both interceptors are used, this `post_establish_peering_with_metadata` interceptor runs after the
+        `post_establish_peering` interceptor. The (possibly modified) response returned by
+        `post_establish_peering` will be passed to
+        `post_establish_peering_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_active_directory(
         self,
@@ -1034,11 +1644,36 @@ class NetAppRestInterceptor:
     ) -> active_directory.ActiveDirectory:
         """Post-rpc interceptor for get_active_directory
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_active_directory_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_active_directory` interceptor runs
+        before the `post_get_active_directory_with_metadata` interceptor.
         """
         return response
+
+    def post_get_active_directory_with_metadata(
+        self,
+        response: active_directory.ActiveDirectory,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        active_directory.ActiveDirectory, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_active_directory
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_active_directory_with_metadata`
+        interceptor in new development instead of the `post_get_active_directory` interceptor.
+        When both interceptors are used, this `post_get_active_directory_with_metadata` interceptor runs after the
+        `post_get_active_directory` interceptor. The (possibly modified) response returned by
+        `post_get_active_directory` will be passed to
+        `post_get_active_directory_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup(
         self,
@@ -1055,11 +1690,32 @@ class NetAppRestInterceptor:
     def post_get_backup(self, response: backup.Backup) -> backup.Backup:
         """Post-rpc interceptor for get_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup` interceptor runs
+        before the `post_get_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_with_metadata(
+        self, response: backup.Backup, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[backup.Backup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_with_metadata`
+        interceptor in new development instead of the `post_get_backup` interceptor.
+        When both interceptors are used, this `post_get_backup_with_metadata` interceptor runs after the
+        `post_get_backup` interceptor. The (possibly modified) response returned by
+        `post_get_backup` will be passed to
+        `post_get_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup_policy(
         self,
@@ -1080,11 +1736,34 @@ class NetAppRestInterceptor:
     ) -> backup_policy.BackupPolicy:
         """Post-rpc interceptor for get_backup_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup_policy` interceptor runs
+        before the `post_get_backup_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_policy_with_metadata(
+        self,
+        response: backup_policy.BackupPolicy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[backup_policy.BackupPolicy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_policy_with_metadata`
+        interceptor in new development instead of the `post_get_backup_policy` interceptor.
+        When both interceptors are used, this `post_get_backup_policy_with_metadata` interceptor runs after the
+        `post_get_backup_policy` interceptor. The (possibly modified) response returned by
+        `post_get_backup_policy` will be passed to
+        `post_get_backup_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup_vault(
         self,
@@ -1105,11 +1784,34 @@ class NetAppRestInterceptor:
     ) -> backup_vault.BackupVault:
         """Post-rpc interceptor for get_backup_vault
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_vault_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup_vault` interceptor runs
+        before the `post_get_backup_vault_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_vault_with_metadata(
+        self,
+        response: backup_vault.BackupVault,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[backup_vault.BackupVault, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup_vault
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_vault_with_metadata`
+        interceptor in new development instead of the `post_get_backup_vault` interceptor.
+        When both interceptors are used, this `post_get_backup_vault_with_metadata` interceptor runs after the
+        `post_get_backup_vault` interceptor. The (possibly modified) response returned by
+        `post_get_backup_vault` will be passed to
+        `post_get_backup_vault_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_kms_config(
         self,
@@ -1126,11 +1828,78 @@ class NetAppRestInterceptor:
     def post_get_kms_config(self, response: kms.KmsConfig) -> kms.KmsConfig:
         """Post-rpc interceptor for get_kms_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_kms_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_kms_config` interceptor runs
+        before the `post_get_kms_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_kms_config_with_metadata(
+        self, response: kms.KmsConfig, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[kms.KmsConfig, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_kms_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_kms_config_with_metadata`
+        interceptor in new development instead of the `post_get_kms_config` interceptor.
+        When both interceptors are used, this `post_get_kms_config_with_metadata` interceptor runs after the
+        `post_get_kms_config` interceptor. The (possibly modified) response returned by
+        `post_get_kms_config` will be passed to
+        `post_get_kms_config_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_quota_rule(
+        self,
+        request: quota_rule.GetQuotaRuleRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[quota_rule.GetQuotaRuleRequest, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Pre-rpc interceptor for get_quota_rule
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_get_quota_rule(
+        self, response: quota_rule.QuotaRule
+    ) -> quota_rule.QuotaRule:
+        """Post-rpc interceptor for get_quota_rule
+
+        DEPRECATED. Please use the `post_get_quota_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_get_quota_rule` interceptor runs
+        before the `post_get_quota_rule_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_quota_rule_with_metadata(
+        self,
+        response: quota_rule.QuotaRule,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[quota_rule.QuotaRule, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_quota_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_quota_rule_with_metadata`
+        interceptor in new development instead of the `post_get_quota_rule` interceptor.
+        When both interceptors are used, this `post_get_quota_rule_with_metadata` interceptor runs after the
+        `post_get_quota_rule` interceptor. The (possibly modified) response returned by
+        `post_get_quota_rule` will be passed to
+        `post_get_quota_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_replication(
         self,
@@ -1151,11 +1920,34 @@ class NetAppRestInterceptor:
     ) -> replication.Replication:
         """Post-rpc interceptor for get_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_replication` interceptor runs
+        before the `post_get_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_get_replication_with_metadata(
+        self,
+        response: replication.Replication,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[replication.Replication, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_replication_with_metadata`
+        interceptor in new development instead of the `post_get_replication` interceptor.
+        When both interceptors are used, this `post_get_replication_with_metadata` interceptor runs after the
+        `post_get_replication` interceptor. The (possibly modified) response returned by
+        `post_get_replication` will be passed to
+        `post_get_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_snapshot(
         self,
@@ -1172,11 +1964,34 @@ class NetAppRestInterceptor:
     def post_get_snapshot(self, response: snapshot.Snapshot) -> snapshot.Snapshot:
         """Post-rpc interceptor for get_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_snapshot` interceptor runs
+        before the `post_get_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_get_snapshot_with_metadata(
+        self,
+        response: snapshot.Snapshot,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[snapshot.Snapshot, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_snapshot_with_metadata`
+        interceptor in new development instead of the `post_get_snapshot` interceptor.
+        When both interceptors are used, this `post_get_snapshot_with_metadata` interceptor runs after the
+        `post_get_snapshot` interceptor. The (possibly modified) response returned by
+        `post_get_snapshot` will be passed to
+        `post_get_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_storage_pool(
         self,
@@ -1197,11 +2012,34 @@ class NetAppRestInterceptor:
     ) -> storage_pool.StoragePool:
         """Post-rpc interceptor for get_storage_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_storage_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_storage_pool` interceptor runs
+        before the `post_get_storage_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_get_storage_pool_with_metadata(
+        self,
+        response: storage_pool.StoragePool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[storage_pool.StoragePool, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_storage_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_storage_pool_with_metadata`
+        interceptor in new development instead of the `post_get_storage_pool` interceptor.
+        When both interceptors are used, this `post_get_storage_pool_with_metadata` interceptor runs after the
+        `post_get_storage_pool` interceptor. The (possibly modified) response returned by
+        `post_get_storage_pool` will be passed to
+        `post_get_storage_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_volume(
         self,
@@ -1218,11 +2056,32 @@ class NetAppRestInterceptor:
     def post_get_volume(self, response: volume.Volume) -> volume.Volume:
         """Post-rpc interceptor for get_volume
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_volume_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_volume` interceptor runs
+        before the `post_get_volume_with_metadata` interceptor.
         """
         return response
+
+    def post_get_volume_with_metadata(
+        self, response: volume.Volume, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[volume.Volume, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_volume
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_get_volume_with_metadata`
+        interceptor in new development instead of the `post_get_volume` interceptor.
+        When both interceptors are used, this `post_get_volume_with_metadata` interceptor runs after the
+        `post_get_volume` interceptor. The (possibly modified) response returned by
+        `post_get_volume` will be passed to
+        `post_get_volume_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_active_directories(
         self,
@@ -1244,11 +2103,37 @@ class NetAppRestInterceptor:
     ) -> active_directory.ListActiveDirectoriesResponse:
         """Post-rpc interceptor for list_active_directories
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_active_directories_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_active_directories` interceptor runs
+        before the `post_list_active_directories_with_metadata` interceptor.
         """
         return response
+
+    def post_list_active_directories_with_metadata(
+        self,
+        response: active_directory.ListActiveDirectoriesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        active_directory.ListActiveDirectoriesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_active_directories
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_active_directories_with_metadata`
+        interceptor in new development instead of the `post_list_active_directories` interceptor.
+        When both interceptors are used, this `post_list_active_directories_with_metadata` interceptor runs after the
+        `post_list_active_directories` interceptor. The (possibly modified) response returned by
+        `post_list_active_directories` will be passed to
+        `post_list_active_directories_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backup_policies(
         self,
@@ -1269,11 +2154,37 @@ class NetAppRestInterceptor:
     ) -> backup_policy.ListBackupPoliciesResponse:
         """Post-rpc interceptor for list_backup_policies
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backup_policies_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backup_policies` interceptor runs
+        before the `post_list_backup_policies_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backup_policies_with_metadata(
+        self,
+        response: backup_policy.ListBackupPoliciesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        backup_policy.ListBackupPoliciesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_backup_policies
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_backup_policies_with_metadata`
+        interceptor in new development instead of the `post_list_backup_policies` interceptor.
+        When both interceptors are used, this `post_list_backup_policies_with_metadata` interceptor runs after the
+        `post_list_backup_policies` interceptor. The (possibly modified) response returned by
+        `post_list_backup_policies` will be passed to
+        `post_list_backup_policies_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backups(
         self,
@@ -1292,11 +2203,34 @@ class NetAppRestInterceptor:
     ) -> backup.ListBackupsResponse:
         """Post-rpc interceptor for list_backups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backups` interceptor runs
+        before the `post_list_backups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backups_with_metadata(
+        self,
+        response: backup.ListBackupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[backup.ListBackupsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_backups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_backups_with_metadata`
+        interceptor in new development instead of the `post_list_backups` interceptor.
+        When both interceptors are used, this `post_list_backups_with_metadata` interceptor runs after the
+        `post_list_backups` interceptor. The (possibly modified) response returned by
+        `post_list_backups` will be passed to
+        `post_list_backups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backup_vaults(
         self,
@@ -1317,11 +2251,36 @@ class NetAppRestInterceptor:
     ) -> backup_vault.ListBackupVaultsResponse:
         """Post-rpc interceptor for list_backup_vaults
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backup_vaults_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backup_vaults` interceptor runs
+        before the `post_list_backup_vaults_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backup_vaults_with_metadata(
+        self,
+        response: backup_vault.ListBackupVaultsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        backup_vault.ListBackupVaultsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_backup_vaults
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_backup_vaults_with_metadata`
+        interceptor in new development instead of the `post_list_backup_vaults` interceptor.
+        When both interceptors are used, this `post_list_backup_vaults_with_metadata` interceptor runs after the
+        `post_list_backup_vaults` interceptor. The (possibly modified) response returned by
+        `post_list_backup_vaults` will be passed to
+        `post_list_backup_vaults_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_kms_configs(
         self,
@@ -1340,11 +2299,84 @@ class NetAppRestInterceptor:
     ) -> kms.ListKmsConfigsResponse:
         """Post-rpc interceptor for list_kms_configs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_kms_configs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_kms_configs` interceptor runs
+        before the `post_list_kms_configs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_kms_configs_with_metadata(
+        self,
+        response: kms.ListKmsConfigsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[kms.ListKmsConfigsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_kms_configs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_kms_configs_with_metadata`
+        interceptor in new development instead of the `post_list_kms_configs` interceptor.
+        When both interceptors are used, this `post_list_kms_configs_with_metadata` interceptor runs after the
+        `post_list_kms_configs` interceptor. The (possibly modified) response returned by
+        `post_list_kms_configs` will be passed to
+        `post_list_kms_configs_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_quota_rules(
+        self,
+        request: quota_rule.ListQuotaRulesRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        quota_rule.ListQuotaRulesRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_quota_rules
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_list_quota_rules(
+        self, response: quota_rule.ListQuotaRulesResponse
+    ) -> quota_rule.ListQuotaRulesResponse:
+        """Post-rpc interceptor for list_quota_rules
+
+        DEPRECATED. Please use the `post_list_quota_rules_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_list_quota_rules` interceptor runs
+        before the `post_list_quota_rules_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_quota_rules_with_metadata(
+        self,
+        response: quota_rule.ListQuotaRulesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        quota_rule.ListQuotaRulesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_quota_rules
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_quota_rules_with_metadata`
+        interceptor in new development instead of the `post_list_quota_rules` interceptor.
+        When both interceptors are used, this `post_list_quota_rules_with_metadata` interceptor runs after the
+        `post_list_quota_rules` interceptor. The (possibly modified) response returned by
+        `post_list_quota_rules` will be passed to
+        `post_list_quota_rules_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_replications(
         self,
@@ -1365,11 +2397,36 @@ class NetAppRestInterceptor:
     ) -> replication.ListReplicationsResponse:
         """Post-rpc interceptor for list_replications
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_replications_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_replications` interceptor runs
+        before the `post_list_replications_with_metadata` interceptor.
         """
         return response
+
+    def post_list_replications_with_metadata(
+        self,
+        response: replication.ListReplicationsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        replication.ListReplicationsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_replications
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_replications_with_metadata`
+        interceptor in new development instead of the `post_list_replications` interceptor.
+        When both interceptors are used, this `post_list_replications_with_metadata` interceptor runs after the
+        `post_list_replications` interceptor. The (possibly modified) response returned by
+        `post_list_replications` will be passed to
+        `post_list_replications_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_snapshots(
         self,
@@ -1388,11 +2445,34 @@ class NetAppRestInterceptor:
     ) -> snapshot.ListSnapshotsResponse:
         """Post-rpc interceptor for list_snapshots
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_snapshots_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_snapshots` interceptor runs
+        before the `post_list_snapshots_with_metadata` interceptor.
         """
         return response
+
+    def post_list_snapshots_with_metadata(
+        self,
+        response: snapshot.ListSnapshotsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[snapshot.ListSnapshotsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_snapshots
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_snapshots_with_metadata`
+        interceptor in new development instead of the `post_list_snapshots` interceptor.
+        When both interceptors are used, this `post_list_snapshots_with_metadata` interceptor runs after the
+        `post_list_snapshots` interceptor. The (possibly modified) response returned by
+        `post_list_snapshots` will be passed to
+        `post_list_snapshots_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_storage_pools(
         self,
@@ -1413,11 +2493,36 @@ class NetAppRestInterceptor:
     ) -> storage_pool.ListStoragePoolsResponse:
         """Post-rpc interceptor for list_storage_pools
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_storage_pools_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_storage_pools` interceptor runs
+        before the `post_list_storage_pools_with_metadata` interceptor.
         """
         return response
+
+    def post_list_storage_pools_with_metadata(
+        self,
+        response: storage_pool.ListStoragePoolsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        storage_pool.ListStoragePoolsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_storage_pools
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_storage_pools_with_metadata`
+        interceptor in new development instead of the `post_list_storage_pools` interceptor.
+        When both interceptors are used, this `post_list_storage_pools_with_metadata` interceptor runs after the
+        `post_list_storage_pools` interceptor. The (possibly modified) response returned by
+        `post_list_storage_pools` will be passed to
+        `post_list_storage_pools_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_volumes(
         self,
@@ -1436,11 +2541,34 @@ class NetAppRestInterceptor:
     ) -> volume.ListVolumesResponse:
         """Post-rpc interceptor for list_volumes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_volumes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_volumes` interceptor runs
+        before the `post_list_volumes_with_metadata` interceptor.
         """
         return response
+
+    def post_list_volumes_with_metadata(
+        self,
+        response: volume.ListVolumesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[volume.ListVolumesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_volumes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_list_volumes_with_metadata`
+        interceptor in new development instead of the `post_list_volumes` interceptor.
+        When both interceptors are used, this `post_list_volumes_with_metadata` interceptor runs after the
+        `post_list_volumes` interceptor. The (possibly modified) response returned by
+        `post_list_volumes` will be passed to
+        `post_list_volumes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_resume_replication(
         self,
@@ -1461,11 +2589,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for resume_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_resume_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_resume_replication` interceptor runs
+        before the `post_resume_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_resume_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for resume_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_resume_replication_with_metadata`
+        interceptor in new development instead of the `post_resume_replication` interceptor.
+        When both interceptors are used, this `post_resume_replication_with_metadata` interceptor runs after the
+        `post_resume_replication` interceptor. The (possibly modified) response returned by
+        `post_resume_replication` will be passed to
+        `post_resume_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_reverse_replication_direction(
         self,
@@ -1487,11 +2638,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for reverse_replication_direction
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_reverse_replication_direction_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_reverse_replication_direction` interceptor runs
+        before the `post_reverse_replication_direction_with_metadata` interceptor.
         """
         return response
+
+    def post_reverse_replication_direction_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for reverse_replication_direction
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_reverse_replication_direction_with_metadata`
+        interceptor in new development instead of the `post_reverse_replication_direction` interceptor.
+        When both interceptors are used, this `post_reverse_replication_direction_with_metadata` interceptor runs after the
+        `post_reverse_replication_direction` interceptor. The (possibly modified) response returned by
+        `post_reverse_replication_direction` will be passed to
+        `post_reverse_replication_direction_with_metadata`.
+        """
+        return response, metadata
 
     def pre_revert_volume(
         self,
@@ -1510,11 +2684,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for revert_volume
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_revert_volume_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_revert_volume` interceptor runs
+        before the `post_revert_volume_with_metadata` interceptor.
         """
         return response
+
+    def post_revert_volume_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for revert_volume
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_revert_volume_with_metadata`
+        interceptor in new development instead of the `post_revert_volume` interceptor.
+        When both interceptors are used, this `post_revert_volume_with_metadata` interceptor runs after the
+        `post_revert_volume` interceptor. The (possibly modified) response returned by
+        `post_revert_volume` will be passed to
+        `post_revert_volume_with_metadata`.
+        """
+        return response, metadata
 
     def pre_stop_replication(
         self,
@@ -1535,11 +2732,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for stop_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_stop_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_stop_replication` interceptor runs
+        before the `post_stop_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_stop_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for stop_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_stop_replication_with_metadata`
+        interceptor in new development instead of the `post_stop_replication` interceptor.
+        When both interceptors are used, this `post_stop_replication_with_metadata` interceptor runs after the
+        `post_stop_replication` interceptor. The (possibly modified) response returned by
+        `post_stop_replication` will be passed to
+        `post_stop_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_switch_active_replica_zone(
         self,
@@ -1561,11 +2781,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for switch_active_replica_zone
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_switch_active_replica_zone_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_switch_active_replica_zone` interceptor runs
+        before the `post_switch_active_replica_zone_with_metadata` interceptor.
         """
         return response
+
+    def post_switch_active_replica_zone_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for switch_active_replica_zone
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_switch_active_replica_zone_with_metadata`
+        interceptor in new development instead of the `post_switch_active_replica_zone` interceptor.
+        When both interceptors are used, this `post_switch_active_replica_zone_with_metadata` interceptor runs after the
+        `post_switch_active_replica_zone` interceptor. The (possibly modified) response returned by
+        `post_switch_active_replica_zone` will be passed to
+        `post_switch_active_replica_zone_with_metadata`.
+        """
+        return response, metadata
 
     def pre_sync_replication(
         self,
@@ -1586,11 +2829,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for sync_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_sync_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_sync_replication` interceptor runs
+        before the `post_sync_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_sync_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for sync_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_sync_replication_with_metadata`
+        interceptor in new development instead of the `post_sync_replication` interceptor.
+        When both interceptors are used, this `post_sync_replication_with_metadata` interceptor runs after the
+        `post_sync_replication` interceptor. The (possibly modified) response returned by
+        `post_sync_replication` will be passed to
+        `post_sync_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_active_directory(
         self,
@@ -1612,11 +2878,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_active_directory
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_active_directory_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_active_directory` interceptor runs
+        before the `post_update_active_directory_with_metadata` interceptor.
         """
         return response
+
+    def post_update_active_directory_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_active_directory
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_active_directory_with_metadata`
+        interceptor in new development instead of the `post_update_active_directory` interceptor.
+        When both interceptors are used, this `post_update_active_directory_with_metadata` interceptor runs after the
+        `post_update_active_directory` interceptor. The (possibly modified) response returned by
+        `post_update_active_directory` will be passed to
+        `post_update_active_directory_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup(
         self,
@@ -1635,11 +2924,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup` interceptor runs
+        before the `post_update_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_with_metadata`
+        interceptor in new development instead of the `post_update_backup` interceptor.
+        When both interceptors are used, this `post_update_backup_with_metadata` interceptor runs after the
+        `post_update_backup` interceptor. The (possibly modified) response returned by
+        `post_update_backup` will be passed to
+        `post_update_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup_policy(
         self,
@@ -1661,11 +2973,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup_policy` interceptor runs
+        before the `post_update_backup_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_policy_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_policy_with_metadata`
+        interceptor in new development instead of the `post_update_backup_policy` interceptor.
+        When both interceptors are used, this `post_update_backup_policy_with_metadata` interceptor runs after the
+        `post_update_backup_policy` interceptor. The (possibly modified) response returned by
+        `post_update_backup_policy` will be passed to
+        `post_update_backup_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup_vault(
         self,
@@ -1687,11 +3022,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup_vault
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_vault_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup_vault` interceptor runs
+        before the `post_update_backup_vault_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_vault_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup_vault
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_vault_with_metadata`
+        interceptor in new development instead of the `post_update_backup_vault` interceptor.
+        When both interceptors are used, this `post_update_backup_vault_with_metadata` interceptor runs after the
+        `post_update_backup_vault` interceptor. The (possibly modified) response returned by
+        `post_update_backup_vault` will be passed to
+        `post_update_backup_vault_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_kms_config(
         self,
@@ -1710,11 +3068,82 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_kms_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_kms_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_kms_config` interceptor runs
+        before the `post_update_kms_config_with_metadata` interceptor.
         """
         return response
+
+    def post_update_kms_config_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_kms_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_kms_config_with_metadata`
+        interceptor in new development instead of the `post_update_kms_config` interceptor.
+        When both interceptors are used, this `post_update_kms_config_with_metadata` interceptor runs after the
+        `post_update_kms_config` interceptor. The (possibly modified) response returned by
+        `post_update_kms_config` will be passed to
+        `post_update_kms_config_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_quota_rule(
+        self,
+        request: gcn_quota_rule.UpdateQuotaRuleRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcn_quota_rule.UpdateQuotaRuleRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for update_quota_rule
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_update_quota_rule(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for update_quota_rule
+
+        DEPRECATED. Please use the `post_update_quota_rule_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_update_quota_rule` interceptor runs
+        before the `post_update_quota_rule_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_quota_rule_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_quota_rule
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_quota_rule_with_metadata`
+        interceptor in new development instead of the `post_update_quota_rule` interceptor.
+        When both interceptors are used, this `post_update_quota_rule_with_metadata` interceptor runs after the
+        `post_update_quota_rule` interceptor. The (possibly modified) response returned by
+        `post_update_quota_rule` will be passed to
+        `post_update_quota_rule_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_replication(
         self,
@@ -1736,11 +3165,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_replication
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_replication_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_replication` interceptor runs
+        before the `post_update_replication_with_metadata` interceptor.
         """
         return response
+
+    def post_update_replication_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_replication
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_replication_with_metadata`
+        interceptor in new development instead of the `post_update_replication` interceptor.
+        When both interceptors are used, this `post_update_replication_with_metadata` interceptor runs after the
+        `post_update_replication` interceptor. The (possibly modified) response returned by
+        `post_update_replication` will be passed to
+        `post_update_replication_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_snapshot(
         self,
@@ -1761,11 +3213,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_snapshot
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_snapshot_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_snapshot` interceptor runs
+        before the `post_update_snapshot_with_metadata` interceptor.
         """
         return response
+
+    def post_update_snapshot_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_snapshot
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_snapshot_with_metadata`
+        interceptor in new development instead of the `post_update_snapshot` interceptor.
+        When both interceptors are used, this `post_update_snapshot_with_metadata` interceptor runs after the
+        `post_update_snapshot` interceptor. The (possibly modified) response returned by
+        `post_update_snapshot` will be passed to
+        `post_update_snapshot_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_storage_pool(
         self,
@@ -1787,11 +3262,34 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_storage_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_storage_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_storage_pool` interceptor runs
+        before the `post_update_storage_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_update_storage_pool_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_storage_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_storage_pool_with_metadata`
+        interceptor in new development instead of the `post_update_storage_pool` interceptor.
+        When both interceptors are used, this `post_update_storage_pool_with_metadata` interceptor runs after the
+        `post_update_storage_pool` interceptor. The (possibly modified) response returned by
+        `post_update_storage_pool` will be passed to
+        `post_update_storage_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_volume(
         self,
@@ -1810,11 +3308,83 @@ class NetAppRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_volume
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_volume_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_volume` interceptor runs
+        before the `post_update_volume_with_metadata` interceptor.
         """
         return response
+
+    def post_update_volume_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_volume
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_update_volume_with_metadata`
+        interceptor in new development instead of the `post_update_volume` interceptor.
+        When both interceptors are used, this `post_update_volume_with_metadata` interceptor runs after the
+        `post_update_volume` interceptor. The (possibly modified) response returned by
+        `post_update_volume` will be passed to
+        `post_update_volume_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_validate_directory_service(
+        self,
+        request: storage_pool.ValidateDirectoryServiceRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        storage_pool.ValidateDirectoryServiceRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for validate_directory_service
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the NetApp server.
+        """
+        return request, metadata
+
+    def post_validate_directory_service(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for validate_directory_service
+
+        DEPRECATED. Please use the `post_validate_directory_service_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the NetApp server but before
+        it is returned to user code. This `post_validate_directory_service` interceptor runs
+        before the `post_validate_directory_service_with_metadata` interceptor.
+        """
+        return response
+
+    def post_validate_directory_service_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for validate_directory_service
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_validate_directory_service_with_metadata`
+        interceptor in new development instead of the `post_validate_directory_service` interceptor.
+        When both interceptors are used, this `post_validate_directory_service_with_metadata` interceptor runs after the
+        `post_validate_directory_service` interceptor. The (possibly modified) response returned by
+        `post_validate_directory_service` will be passed to
+        `post_validate_directory_service_with_metadata`.
+        """
+        return response, metadata
 
     def pre_verify_kms_config(
         self,
@@ -1833,11 +3403,34 @@ class NetAppRestInterceptor:
     ) -> kms.VerifyKmsConfigResponse:
         """Post-rpc interceptor for verify_kms_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_verify_kms_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the NetApp server but before
-        it is returned to user code.
+        it is returned to user code. This `post_verify_kms_config` interceptor runs
+        before the `post_verify_kms_config_with_metadata` interceptor.
         """
         return response
+
+    def post_verify_kms_config_with_metadata(
+        self,
+        response: kms.VerifyKmsConfigResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[kms.VerifyKmsConfigResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for verify_kms_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the NetApp server but before it is returned to user code.
+
+        We recommend only using this `post_verify_kms_config_with_metadata`
+        interceptor in new development instead of the `post_verify_kms_config` interceptor.
+        When both interceptors are used, this `post_verify_kms_config_with_metadata` interceptor runs after the
+        `post_verify_kms_config` interceptor. The (possibly modified) response returned by
+        `post_verify_kms_config` will be passed to
+        `post_verify_kms_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -2253,6 +3846,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_active_directory(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_active_directory_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2402,6 +3999,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2556,6 +4157,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2712,6 +4317,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup_vault(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_vault_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2866,6 +4475,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_kms_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_kms_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2883,6 +4496,164 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "CreateKmsConfig",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateQuotaRule(
+        _BaseNetAppRestTransport._BaseCreateQuotaRule, NetAppRestStub
+    ):
+        def __hash__(self):
+            return hash("NetAppRestTransport.CreateQuotaRule")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gcn_quota_rule.CreateQuotaRuleRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the create quota rule method over HTTP.
+
+            Args:
+                request (~.gcn_quota_rule.CreateQuotaRuleRequest):
+                    The request object. CreateQuotaRuleRequest for creating a
+                quota rule.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseCreateQuotaRule._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_quota_rule(
+                request, metadata
+            )
+            transcoded_request = (
+                _BaseNetAppRestTransport._BaseCreateQuotaRule._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            body = _BaseNetAppRestTransport._BaseCreateQuotaRule._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseNetAppRestTransport._BaseCreateQuotaRule._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.CreateQuotaRule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "CreateQuotaRule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._CreateQuotaRule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_quota_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_quota_rule_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.create_quota_rule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "CreateQuotaRule",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3022,6 +4793,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3172,6 +4947,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3328,6 +5107,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_storage_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_storage_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3477,6 +5260,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_volume(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_volume_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3621,6 +5408,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_active_directory(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_active_directory_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3764,6 +5555,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3910,6 +5705,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4058,6 +5857,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup_vault(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_vault_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4206,6 +6009,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_kms_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_kms_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4223,6 +6030,158 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "DeleteKmsConfig",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _DeleteQuotaRule(
+        _BaseNetAppRestTransport._BaseDeleteQuotaRule, NetAppRestStub
+    ):
+        def __hash__(self):
+            return hash("NetAppRestTransport.DeleteQuotaRule")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: quota_rule.DeleteQuotaRuleRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the delete quota rule method over HTTP.
+
+            Args:
+                request (~.quota_rule.DeleteQuotaRuleRequest):
+                    The request object. DeleteQuotaRuleRequest for deleting a
+                single quota rule.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseDeleteQuotaRule._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_quota_rule(
+                request, metadata
+            )
+            transcoded_request = (
+                _BaseNetAppRestTransport._BaseDeleteQuotaRule._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseNetAppRestTransport._BaseDeleteQuotaRule._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.DeleteQuotaRule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "DeleteQuotaRule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._DeleteQuotaRule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_delete_quota_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_quota_rule_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.delete_quota_rule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "DeleteQuotaRule",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -4354,6 +6313,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4498,6 +6461,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4646,6 +6613,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_storage_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_storage_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4789,6 +6760,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_volume(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_volume_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4939,6 +6914,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_encrypt_volumes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_encrypt_volumes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5096,6 +7075,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_establish_peering(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_establish_peering_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5244,6 +7227,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_active_directory(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_active_directory_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5387,6 +7374,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5534,6 +7525,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5679,6 +7674,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup_vault(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_vault_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5824,6 +7823,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_kms_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_kms_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -5841,6 +7844,157 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "GetKmsConfig",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetQuotaRule(_BaseNetAppRestTransport._BaseGetQuotaRule, NetAppRestStub):
+        def __hash__(self):
+            return hash("NetAppRestTransport.GetQuotaRule")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: quota_rule.GetQuotaRuleRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> quota_rule.QuotaRule:
+            r"""Call the get quota rule method over HTTP.
+
+            Args:
+                request (~.quota_rule.GetQuotaRuleRequest):
+                    The request object. GetQuotaRuleRequest for getting a
+                quota rule.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.quota_rule.QuotaRule:
+                    QuotaRule specifies the maximum disk
+                space a user or group can use within a
+                volume. They can be used for creating
+                default and individual quota rules.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseGetQuotaRule._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_quota_rule(request, metadata)
+            transcoded_request = (
+                _BaseNetAppRestTransport._BaseGetQuotaRule._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseNetAppRestTransport._BaseGetQuotaRule._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.GetQuotaRule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "GetQuotaRule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._GetQuotaRule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = quota_rule.QuotaRule()
+            pb_resp = quota_rule.QuotaRule.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_quota_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_quota_rule_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = quota_rule.QuotaRule.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.get_quota_rule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "GetQuotaRule",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -5971,6 +8125,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6114,6 +8272,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6265,6 +8427,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_storage_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_storage_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6407,6 +8573,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_volume(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_volume_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6553,6 +8723,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_active_directories(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_active_directories_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6702,6 +8876,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backup_policies(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backup_policies_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6846,6 +9024,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -6995,6 +9177,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backup_vaults(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backup_vaults_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7144,6 +9330,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_kms_configs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_kms_configs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7161,6 +9351,159 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "ListKmsConfigs",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListQuotaRules(_BaseNetAppRestTransport._BaseListQuotaRules, NetAppRestStub):
+        def __hash__(self):
+            return hash("NetAppRestTransport.ListQuotaRules")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: quota_rule.ListQuotaRulesRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> quota_rule.ListQuotaRulesResponse:
+            r"""Call the list quota rules method over HTTP.
+
+            Args:
+                request (~.quota_rule.ListQuotaRulesRequest):
+                    The request object. ListQuotaRulesRequest for listing
+                quota rules.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.quota_rule.ListQuotaRulesResponse:
+                    ListQuotaRulesResponse is the
+                response to a ListQuotaRulesRequest.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseListQuotaRules._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_quota_rules(
+                request, metadata
+            )
+            transcoded_request = (
+                _BaseNetAppRestTransport._BaseListQuotaRules._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseNetAppRestTransport._BaseListQuotaRules._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.ListQuotaRules",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "ListQuotaRules",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._ListQuotaRules._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = quota_rule.ListQuotaRulesResponse()
+            pb_resp = quota_rule.ListQuotaRulesResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_quota_rules(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_quota_rules_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = quota_rule.ListQuotaRulesResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.list_quota_rules",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "ListQuotaRules",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -7292,6 +9635,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_replications(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_replications_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7438,6 +9785,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_snapshots(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_snapshots_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7587,6 +9938,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_storage_pools(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_storage_pools_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7732,6 +10087,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_volumes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_volumes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -7888,6 +10247,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_resume_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_resume_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8041,6 +10404,13 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_reverse_replication_direction(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_reverse_replication_direction_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8191,6 +10561,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_revert_volume(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_revert_volume_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8345,6 +10719,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_stop_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_stop_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8497,6 +10875,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_switch_active_replica_zone(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_switch_active_replica_zone_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8651,6 +11033,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_sync_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_sync_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8801,6 +11187,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_active_directory(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_active_directory_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -8951,6 +11341,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9105,6 +11499,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9262,6 +11660,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup_vault(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_vault_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9416,6 +11818,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_kms_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_kms_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9433,6 +11839,164 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "UpdateKmsConfig",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateQuotaRule(
+        _BaseNetAppRestTransport._BaseUpdateQuotaRule, NetAppRestStub
+    ):
+        def __hash__(self):
+            return hash("NetAppRestTransport.UpdateQuotaRule")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gcn_quota_rule.UpdateQuotaRuleRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the update quota rule method over HTTP.
+
+            Args:
+                request (~.gcn_quota_rule.UpdateQuotaRuleRequest):
+                    The request object. UpdateQuotaRuleRequest for updating a
+                quota rule.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseUpdateQuotaRule._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_quota_rule(
+                request, metadata
+            )
+            transcoded_request = (
+                _BaseNetAppRestTransport._BaseUpdateQuotaRule._get_transcoded_request(
+                    http_options, request
+                )
+            )
+
+            body = _BaseNetAppRestTransport._BaseUpdateQuotaRule._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = (
+                _BaseNetAppRestTransport._BaseUpdateQuotaRule._get_query_params_json(
+                    transcoded_request
+                )
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.UpdateQuotaRule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "UpdateQuotaRule",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._UpdateQuotaRule._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_quota_rule(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_quota_rule_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.update_quota_rule",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "UpdateQuotaRule",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -9573,6 +12137,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_replication(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_replication_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9724,6 +12292,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_snapshot(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_snapshot_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -9880,6 +12452,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_storage_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_storage_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -10029,6 +12605,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_volume(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_volume_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -10046,6 +12626,162 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
                     extra={
                         "serviceName": "google.cloud.netapp.v1.NetApp",
                         "rpcName": "UpdateVolume",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ValidateDirectoryService(
+        _BaseNetAppRestTransport._BaseValidateDirectoryService, NetAppRestStub
+    ):
+        def __hash__(self):
+            return hash("NetAppRestTransport.ValidateDirectoryService")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: storage_pool.ValidateDirectoryServiceRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the validate directory
+            service method over HTTP.
+
+                Args:
+                    request (~.storage_pool.ValidateDirectoryServiceRequest):
+                        The request object. ValidateDirectoryServiceRequest
+                    validates the directory service policy
+                    attached to the storage pool.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.operations_pb2.Operation:
+                        This resource represents a
+                    long-running operation that is the
+                    result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseNetAppRestTransport._BaseValidateDirectoryService._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_validate_directory_service(
+                request, metadata
+            )
+            transcoded_request = _BaseNetAppRestTransport._BaseValidateDirectoryService._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseNetAppRestTransport._BaseValidateDirectoryService._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseNetAppRestTransport._BaseValidateDirectoryService._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.netapp_v1.NetAppClient.ValidateDirectoryService",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "ValidateDirectoryService",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = NetAppRestTransport._ValidateDirectoryService._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_validate_directory_service(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_validate_directory_service_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.netapp_v1.NetAppClient.validate_directory_service",
+                    extra={
+                        "serviceName": "google.cloud.netapp.v1.NetApp",
+                        "rpcName": "ValidateDirectoryService",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -10185,6 +12921,10 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_verify_kms_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_verify_kms_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -10253,6 +12993,14 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._CreateKmsConfig(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def create_quota_rule(
+        self,
+    ) -> Callable[[gcn_quota_rule.CreateQuotaRuleRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateQuotaRule(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def create_replication(
@@ -10329,6 +13077,14 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._DeleteKmsConfig(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def delete_quota_rule(
+        self,
+    ) -> Callable[[quota_rule.DeleteQuotaRuleRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteQuotaRule(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def delete_replication(
@@ -10417,6 +13173,14 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         return self._GetKmsConfig(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_quota_rule(
+        self,
+    ) -> Callable[[quota_rule.GetQuotaRuleRequest], quota_rule.QuotaRule]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetQuotaRule(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_replication(
         self,
     ) -> Callable[[replication.GetReplicationRequest], replication.Replication]:
@@ -10493,6 +13257,16 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListKmsConfigs(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_quota_rules(
+        self,
+    ) -> Callable[
+        [quota_rule.ListQuotaRulesRequest], quota_rule.ListQuotaRulesResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListQuotaRules(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_replications(
@@ -10629,6 +13403,14 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         return self._UpdateKmsConfig(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def update_quota_rule(
+        self,
+    ) -> Callable[[gcn_quota_rule.UpdateQuotaRuleRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateQuotaRule(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def update_replication(
         self,
     ) -> Callable[[gcn_replication.UpdateReplicationRequest], operations_pb2.Operation]:
@@ -10661,6 +13443,16 @@ class NetAppRestTransport(_BaseNetAppRestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateVolume(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def validate_directory_service(
+        self,
+    ) -> Callable[
+        [storage_pool.ValidateDirectoryServiceRequest], operations_pb2.Operation
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ValidateDirectoryService(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def verify_kms_config(

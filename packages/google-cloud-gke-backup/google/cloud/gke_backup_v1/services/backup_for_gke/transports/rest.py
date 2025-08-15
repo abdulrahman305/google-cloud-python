@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,15 +28,20 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
 from google.cloud.gke_backup_v1.types import (
     backup,
+    backup_channel,
     backup_plan,
+    backup_plan_binding,
     gkebackup,
     restore,
+    restore_channel,
     restore_plan,
+    restore_plan_binding,
     volume,
 )
 
@@ -63,6 +68,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     rest_version=f"requests@{requests_version}",
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
+
 
 class BackupForGKERestInterceptor:
     """Interceptor for BackupForGKE.
@@ -87,6 +95,14 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_create_backup_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_backup_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_create_backup_plan(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -100,6 +116,14 @@ class BackupForGKERestInterceptor:
                 return request, metadata
 
             def post_create_restore(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_create_restore_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_create_restore_channel(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -119,6 +143,14 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_delete_backup_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_delete_backup_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_delete_backup_plan(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -132,6 +164,14 @@ class BackupForGKERestInterceptor:
                 return request, metadata
 
             def post_delete_restore(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_delete_restore_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_delete_restore_channel(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -151,6 +191,14 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_backup_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_backup_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_backup_index_download_url(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -167,6 +215,14 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_backup_plan_binding(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_backup_plan_binding(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_restore(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -175,11 +231,27 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_get_restore_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_restore_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_get_restore_plan(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
 
             def post_get_restore_plan(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_get_restore_plan_binding(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_get_restore_plan_binding(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -199,6 +271,22 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_list_backup_channels(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_backup_channels(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_backup_plan_bindings(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_backup_plan_bindings(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_list_backup_plans(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -212,6 +300,22 @@ class BackupForGKERestInterceptor:
                 return request, metadata
 
             def post_list_backups(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_restore_channels(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_restore_channels(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_list_restore_plan_bindings(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_list_restore_plan_bindings(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -255,6 +359,14 @@ class BackupForGKERestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_update_backup_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_backup_channel(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
             def pre_update_backup_plan(self, request, metadata):
                 logging.log(f"Received request: {request}")
                 return request, metadata
@@ -268,6 +380,14 @@ class BackupForGKERestInterceptor:
                 return request, metadata
 
             def post_update_restore(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
+            def pre_update_restore_channel(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_update_restore_channel(self, response):
                 logging.log(f"Received response: {response}")
                 return response
 
@@ -302,11 +422,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup` interceptor runs
+        before the `post_create_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_with_metadata`
+        interceptor in new development instead of the `post_create_backup` interceptor.
+        When both interceptors are used, this `post_create_backup_with_metadata` interceptor runs after the
+        `post_create_backup` interceptor. The (possibly modified) response returned by
+        `post_create_backup` will be passed to
+        `post_create_backup_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_backup_channel(
+        self,
+        request: gkebackup.CreateBackupChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.CreateBackupChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_backup_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_create_backup_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for create_backup_channel
+
+        DEPRECATED. Please use the `post_create_backup_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_create_backup_channel` interceptor runs
+        before the `post_create_backup_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_backup_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_channel_with_metadata`
+        interceptor in new development instead of the `post_create_backup_channel` interceptor.
+        When both interceptors are used, this `post_create_backup_channel_with_metadata` interceptor runs after the
+        `post_create_backup_channel` interceptor. The (possibly modified) response returned by
+        `post_create_backup_channel` will be passed to
+        `post_create_backup_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_backup_plan(
         self,
@@ -327,11 +518,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_backup_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_backup_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_backup_plan` interceptor runs
+        before the `post_create_backup_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_create_backup_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_backup_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_backup_plan_with_metadata`
+        interceptor in new development instead of the `post_create_backup_plan` interceptor.
+        When both interceptors are used, this `post_create_backup_plan_with_metadata` interceptor runs after the
+        `post_create_backup_plan` interceptor. The (possibly modified) response returned by
+        `post_create_backup_plan` will be passed to
+        `post_create_backup_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_restore(
         self,
@@ -350,11 +564,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_restore
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_restore_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_restore` interceptor runs
+        before the `post_create_restore_with_metadata` interceptor.
         """
         return response
+
+    def post_create_restore_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_restore
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_restore_with_metadata`
+        interceptor in new development instead of the `post_create_restore` interceptor.
+        When both interceptors are used, this `post_create_restore_with_metadata` interceptor runs after the
+        `post_create_restore` interceptor. The (possibly modified) response returned by
+        `post_create_restore` will be passed to
+        `post_create_restore_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_create_restore_channel(
+        self,
+        request: gkebackup.CreateRestoreChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.CreateRestoreChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for create_restore_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_create_restore_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for create_restore_channel
+
+        DEPRECATED. Please use the `post_create_restore_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_create_restore_channel` interceptor runs
+        before the `post_create_restore_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_create_restore_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_restore_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_restore_channel_with_metadata`
+        interceptor in new development instead of the `post_create_restore_channel` interceptor.
+        When both interceptors are used, this `post_create_restore_channel_with_metadata` interceptor runs after the
+        `post_create_restore_channel` interceptor. The (possibly modified) response returned by
+        `post_create_restore_channel` will be passed to
+        `post_create_restore_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_restore_plan(
         self,
@@ -375,11 +660,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_restore_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_restore_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_restore_plan` interceptor runs
+        before the `post_create_restore_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_create_restore_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_restore_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_create_restore_plan_with_metadata`
+        interceptor in new development instead of the `post_create_restore_plan` interceptor.
+        When both interceptors are used, this `post_create_restore_plan_with_metadata` interceptor runs after the
+        `post_create_restore_plan` interceptor. The (possibly modified) response returned by
+        `post_create_restore_plan` will be passed to
+        `post_create_restore_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup(
         self,
@@ -398,11 +706,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup` interceptor runs
+        before the `post_delete_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_with_metadata`
+        interceptor in new development instead of the `post_delete_backup` interceptor.
+        When both interceptors are used, this `post_delete_backup_with_metadata` interceptor runs after the
+        `post_delete_backup` interceptor. The (possibly modified) response returned by
+        `post_delete_backup` will be passed to
+        `post_delete_backup_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_backup_channel(
+        self,
+        request: gkebackup.DeleteBackupChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.DeleteBackupChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for delete_backup_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_delete_backup_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for delete_backup_channel
+
+        DEPRECATED. Please use the `post_delete_backup_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_delete_backup_channel` interceptor runs
+        before the `post_delete_backup_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_delete_backup_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_channel_with_metadata`
+        interceptor in new development instead of the `post_delete_backup_channel` interceptor.
+        When both interceptors are used, this `post_delete_backup_channel_with_metadata` interceptor runs after the
+        `post_delete_backup_channel` interceptor. The (possibly modified) response returned by
+        `post_delete_backup_channel` will be passed to
+        `post_delete_backup_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_backup_plan(
         self,
@@ -423,11 +802,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_backup_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_backup_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_backup_plan` interceptor runs
+        before the `post_delete_backup_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_backup_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_backup_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_backup_plan_with_metadata`
+        interceptor in new development instead of the `post_delete_backup_plan` interceptor.
+        When both interceptors are used, this `post_delete_backup_plan_with_metadata` interceptor runs after the
+        `post_delete_backup_plan` interceptor. The (possibly modified) response returned by
+        `post_delete_backup_plan` will be passed to
+        `post_delete_backup_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_restore(
         self,
@@ -446,11 +848,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_restore
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_restore_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_restore` interceptor runs
+        before the `post_delete_restore_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_restore_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_restore
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_restore_with_metadata`
+        interceptor in new development instead of the `post_delete_restore` interceptor.
+        When both interceptors are used, this `post_delete_restore_with_metadata` interceptor runs after the
+        `post_delete_restore` interceptor. The (possibly modified) response returned by
+        `post_delete_restore` will be passed to
+        `post_delete_restore_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_delete_restore_channel(
+        self,
+        request: gkebackup.DeleteRestoreChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.DeleteRestoreChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for delete_restore_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_delete_restore_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for delete_restore_channel
+
+        DEPRECATED. Please use the `post_delete_restore_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_delete_restore_channel` interceptor runs
+        before the `post_delete_restore_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_delete_restore_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_restore_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_restore_channel_with_metadata`
+        interceptor in new development instead of the `post_delete_restore_channel` interceptor.
+        When both interceptors are used, this `post_delete_restore_channel_with_metadata` interceptor runs after the
+        `post_delete_restore_channel` interceptor. The (possibly modified) response returned by
+        `post_delete_restore_channel` will be passed to
+        `post_delete_restore_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_restore_plan(
         self,
@@ -471,11 +944,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_restore_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_restore_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_restore_plan` interceptor runs
+        before the `post_delete_restore_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_restore_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_restore_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_delete_restore_plan_with_metadata`
+        interceptor in new development instead of the `post_delete_restore_plan` interceptor.
+        When both interceptors are used, this `post_delete_restore_plan_with_metadata` interceptor runs after the
+        `post_delete_restore_plan` interceptor. The (possibly modified) response returned by
+        `post_delete_restore_plan` will be passed to
+        `post_delete_restore_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup(
         self,
@@ -492,11 +988,80 @@ class BackupForGKERestInterceptor:
     def post_get_backup(self, response: backup.Backup) -> backup.Backup:
         """Post-rpc interceptor for get_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup` interceptor runs
+        before the `post_get_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_with_metadata(
+        self, response: backup.Backup, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[backup.Backup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_with_metadata`
+        interceptor in new development instead of the `post_get_backup` interceptor.
+        When both interceptors are used, this `post_get_backup_with_metadata` interceptor runs after the
+        `post_get_backup` interceptor. The (possibly modified) response returned by
+        `post_get_backup` will be passed to
+        `post_get_backup_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_backup_channel(
+        self,
+        request: gkebackup.GetBackupChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.GetBackupChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_backup_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_get_backup_channel(
+        self, response: backup_channel.BackupChannel
+    ) -> backup_channel.BackupChannel:
+        """Post-rpc interceptor for get_backup_channel
+
+        DEPRECATED. Please use the `post_get_backup_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_get_backup_channel` interceptor runs
+        before the `post_get_backup_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_backup_channel_with_metadata(
+        self,
+        response: backup_channel.BackupChannel,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[backup_channel.BackupChannel, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_channel_with_metadata`
+        interceptor in new development instead of the `post_get_backup_channel` interceptor.
+        When both interceptors are used, this `post_get_backup_channel_with_metadata` interceptor runs after the
+        `post_get_backup_channel` interceptor. The (possibly modified) response returned by
+        `post_get_backup_channel` will be passed to
+        `post_get_backup_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup_index_download_url(
         self,
@@ -518,11 +1083,37 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.GetBackupIndexDownloadUrlResponse:
         """Post-rpc interceptor for get_backup_index_download_url
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_index_download_url_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup_index_download_url` interceptor runs
+        before the `post_get_backup_index_download_url_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_index_download_url_with_metadata(
+        self,
+        response: gkebackup.GetBackupIndexDownloadUrlResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.GetBackupIndexDownloadUrlResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_backup_index_download_url
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_index_download_url_with_metadata`
+        interceptor in new development instead of the `post_get_backup_index_download_url` interceptor.
+        When both interceptors are used, this `post_get_backup_index_download_url_with_metadata` interceptor runs after the
+        `post_get_backup_index_download_url` interceptor. The (possibly modified) response returned by
+        `post_get_backup_index_download_url` will be passed to
+        `post_get_backup_index_download_url_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_backup_plan(
         self,
@@ -541,11 +1132,84 @@ class BackupForGKERestInterceptor:
     ) -> backup_plan.BackupPlan:
         """Post-rpc interceptor for get_backup_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_backup_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_backup_plan` interceptor runs
+        before the `post_get_backup_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_get_backup_plan_with_metadata(
+        self,
+        response: backup_plan.BackupPlan,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[backup_plan.BackupPlan, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_backup_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_plan_with_metadata`
+        interceptor in new development instead of the `post_get_backup_plan` interceptor.
+        When both interceptors are used, this `post_get_backup_plan_with_metadata` interceptor runs after the
+        `post_get_backup_plan` interceptor. The (possibly modified) response returned by
+        `post_get_backup_plan` will be passed to
+        `post_get_backup_plan_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_backup_plan_binding(
+        self,
+        request: gkebackup.GetBackupPlanBindingRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.GetBackupPlanBindingRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_backup_plan_binding
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_get_backup_plan_binding(
+        self, response: backup_plan_binding.BackupPlanBinding
+    ) -> backup_plan_binding.BackupPlanBinding:
+        """Post-rpc interceptor for get_backup_plan_binding
+
+        DEPRECATED. Please use the `post_get_backup_plan_binding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_get_backup_plan_binding` interceptor runs
+        before the `post_get_backup_plan_binding_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_backup_plan_binding_with_metadata(
+        self,
+        response: backup_plan_binding.BackupPlanBinding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        backup_plan_binding.BackupPlanBinding, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_backup_plan_binding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_backup_plan_binding_with_metadata`
+        interceptor in new development instead of the `post_get_backup_plan_binding` interceptor.
+        When both interceptors are used, this `post_get_backup_plan_binding_with_metadata` interceptor runs after the
+        `post_get_backup_plan_binding` interceptor. The (possibly modified) response returned by
+        `post_get_backup_plan_binding` will be passed to
+        `post_get_backup_plan_binding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_restore(
         self,
@@ -562,11 +1226,82 @@ class BackupForGKERestInterceptor:
     def post_get_restore(self, response: restore.Restore) -> restore.Restore:
         """Post-rpc interceptor for get_restore
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_restore_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_restore` interceptor runs
+        before the `post_get_restore_with_metadata` interceptor.
         """
         return response
+
+    def post_get_restore_with_metadata(
+        self,
+        response: restore.Restore,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[restore.Restore, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_restore
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_restore_with_metadata`
+        interceptor in new development instead of the `post_get_restore` interceptor.
+        When both interceptors are used, this `post_get_restore_with_metadata` interceptor runs after the
+        `post_get_restore` interceptor. The (possibly modified) response returned by
+        `post_get_restore` will be passed to
+        `post_get_restore_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_restore_channel(
+        self,
+        request: gkebackup.GetRestoreChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.GetRestoreChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_restore_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_get_restore_channel(
+        self, response: restore_channel.RestoreChannel
+    ) -> restore_channel.RestoreChannel:
+        """Post-rpc interceptor for get_restore_channel
+
+        DEPRECATED. Please use the `post_get_restore_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_get_restore_channel` interceptor runs
+        before the `post_get_restore_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_restore_channel_with_metadata(
+        self,
+        response: restore_channel.RestoreChannel,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[restore_channel.RestoreChannel, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_restore_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_restore_channel_with_metadata`
+        interceptor in new development instead of the `post_get_restore_channel` interceptor.
+        When both interceptors are used, this `post_get_restore_channel_with_metadata` interceptor runs after the
+        `post_get_restore_channel` interceptor. The (possibly modified) response returned by
+        `post_get_restore_channel` will be passed to
+        `post_get_restore_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_restore_plan(
         self,
@@ -587,11 +1322,84 @@ class BackupForGKERestInterceptor:
     ) -> restore_plan.RestorePlan:
         """Post-rpc interceptor for get_restore_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_restore_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_restore_plan` interceptor runs
+        before the `post_get_restore_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_get_restore_plan_with_metadata(
+        self,
+        response: restore_plan.RestorePlan,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[restore_plan.RestorePlan, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_restore_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_restore_plan_with_metadata`
+        interceptor in new development instead of the `post_get_restore_plan` interceptor.
+        When both interceptors are used, this `post_get_restore_plan_with_metadata` interceptor runs after the
+        `post_get_restore_plan` interceptor. The (possibly modified) response returned by
+        `post_get_restore_plan` will be passed to
+        `post_get_restore_plan_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_get_restore_plan_binding(
+        self,
+        request: gkebackup.GetRestorePlanBindingRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.GetRestorePlanBindingRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for get_restore_plan_binding
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_get_restore_plan_binding(
+        self, response: restore_plan_binding.RestorePlanBinding
+    ) -> restore_plan_binding.RestorePlanBinding:
+        """Post-rpc interceptor for get_restore_plan_binding
+
+        DEPRECATED. Please use the `post_get_restore_plan_binding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_get_restore_plan_binding` interceptor runs
+        before the `post_get_restore_plan_binding_with_metadata` interceptor.
+        """
+        return response
+
+    def post_get_restore_plan_binding_with_metadata(
+        self,
+        response: restore_plan_binding.RestorePlanBinding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        restore_plan_binding.RestorePlanBinding, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_restore_plan_binding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_restore_plan_binding_with_metadata`
+        interceptor in new development instead of the `post_get_restore_plan_binding` interceptor.
+        When both interceptors are used, this `post_get_restore_plan_binding_with_metadata` interceptor runs after the
+        `post_get_restore_plan_binding` interceptor. The (possibly modified) response returned by
+        `post_get_restore_plan_binding` will be passed to
+        `post_get_restore_plan_binding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_volume_backup(
         self,
@@ -612,11 +1420,34 @@ class BackupForGKERestInterceptor:
     ) -> volume.VolumeBackup:
         """Post-rpc interceptor for get_volume_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_volume_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_volume_backup` interceptor runs
+        before the `post_get_volume_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_get_volume_backup_with_metadata(
+        self,
+        response: volume.VolumeBackup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[volume.VolumeBackup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_volume_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_volume_backup_with_metadata`
+        interceptor in new development instead of the `post_get_volume_backup` interceptor.
+        When both interceptors are used, this `post_get_volume_backup_with_metadata` interceptor runs after the
+        `post_get_volume_backup` interceptor. The (possibly modified) response returned by
+        `post_get_volume_backup` will be passed to
+        `post_get_volume_backup_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_volume_restore(
         self,
@@ -637,11 +1468,135 @@ class BackupForGKERestInterceptor:
     ) -> volume.VolumeRestore:
         """Post-rpc interceptor for get_volume_restore
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_volume_restore_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_volume_restore` interceptor runs
+        before the `post_get_volume_restore_with_metadata` interceptor.
         """
         return response
+
+    def post_get_volume_restore_with_metadata(
+        self,
+        response: volume.VolumeRestore,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[volume.VolumeRestore, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_volume_restore
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_get_volume_restore_with_metadata`
+        interceptor in new development instead of the `post_get_volume_restore` interceptor.
+        When both interceptors are used, this `post_get_volume_restore_with_metadata` interceptor runs after the
+        `post_get_volume_restore` interceptor. The (possibly modified) response returned by
+        `post_get_volume_restore` will be passed to
+        `post_get_volume_restore_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_backup_channels(
+        self,
+        request: gkebackup.ListBackupChannelsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListBackupChannelsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_backup_channels
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_list_backup_channels(
+        self, response: gkebackup.ListBackupChannelsResponse
+    ) -> gkebackup.ListBackupChannelsResponse:
+        """Post-rpc interceptor for list_backup_channels
+
+        DEPRECATED. Please use the `post_list_backup_channels_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_list_backup_channels` interceptor runs
+        before the `post_list_backup_channels_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_backup_channels_with_metadata(
+        self,
+        response: gkebackup.ListBackupChannelsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListBackupChannelsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_backup_channels
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_backup_channels_with_metadata`
+        interceptor in new development instead of the `post_list_backup_channels` interceptor.
+        When both interceptors are used, this `post_list_backup_channels_with_metadata` interceptor runs after the
+        `post_list_backup_channels` interceptor. The (possibly modified) response returned by
+        `post_list_backup_channels` will be passed to
+        `post_list_backup_channels_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_backup_plan_bindings(
+        self,
+        request: gkebackup.ListBackupPlanBindingsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListBackupPlanBindingsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_backup_plan_bindings
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_list_backup_plan_bindings(
+        self, response: gkebackup.ListBackupPlanBindingsResponse
+    ) -> gkebackup.ListBackupPlanBindingsResponse:
+        """Post-rpc interceptor for list_backup_plan_bindings
+
+        DEPRECATED. Please use the `post_list_backup_plan_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_list_backup_plan_bindings` interceptor runs
+        before the `post_list_backup_plan_bindings_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_backup_plan_bindings_with_metadata(
+        self,
+        response: gkebackup.ListBackupPlanBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListBackupPlanBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_backup_plan_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_backup_plan_bindings_with_metadata`
+        interceptor in new development instead of the `post_list_backup_plan_bindings` interceptor.
+        When both interceptors are used, this `post_list_backup_plan_bindings_with_metadata` interceptor runs after the
+        `post_list_backup_plan_bindings` interceptor. The (possibly modified) response returned by
+        `post_list_backup_plan_bindings` will be passed to
+        `post_list_backup_plan_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backup_plans(
         self,
@@ -662,11 +1617,36 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListBackupPlansResponse:
         """Post-rpc interceptor for list_backup_plans
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backup_plans_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backup_plans` interceptor runs
+        before the `post_list_backup_plans_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backup_plans_with_metadata(
+        self,
+        response: gkebackup.ListBackupPlansResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListBackupPlansResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_backup_plans
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_backup_plans_with_metadata`
+        interceptor in new development instead of the `post_list_backup_plans` interceptor.
+        When both interceptors are used, this `post_list_backup_plans_with_metadata` interceptor runs after the
+        `post_list_backup_plans` interceptor. The (possibly modified) response returned by
+        `post_list_backup_plans` will be passed to
+        `post_list_backup_plans_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_backups(
         self,
@@ -685,11 +1665,136 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListBackupsResponse:
         """Post-rpc interceptor for list_backups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_backups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_backups` interceptor runs
+        before the `post_list_backups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_backups_with_metadata(
+        self,
+        response: gkebackup.ListBackupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gkebackup.ListBackupsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_backups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_backups_with_metadata`
+        interceptor in new development instead of the `post_list_backups` interceptor.
+        When both interceptors are used, this `post_list_backups_with_metadata` interceptor runs after the
+        `post_list_backups` interceptor. The (possibly modified) response returned by
+        `post_list_backups` will be passed to
+        `post_list_backups_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_restore_channels(
+        self,
+        request: gkebackup.ListRestoreChannelsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListRestoreChannelsRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for list_restore_channels
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_list_restore_channels(
+        self, response: gkebackup.ListRestoreChannelsResponse
+    ) -> gkebackup.ListRestoreChannelsResponse:
+        """Post-rpc interceptor for list_restore_channels
+
+        DEPRECATED. Please use the `post_list_restore_channels_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_list_restore_channels` interceptor runs
+        before the `post_list_restore_channels_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_restore_channels_with_metadata(
+        self,
+        response: gkebackup.ListRestoreChannelsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListRestoreChannelsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_restore_channels
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_restore_channels_with_metadata`
+        interceptor in new development instead of the `post_list_restore_channels` interceptor.
+        When both interceptors are used, this `post_list_restore_channels_with_metadata` interceptor runs after the
+        `post_list_restore_channels` interceptor. The (possibly modified) response returned by
+        `post_list_restore_channels` will be passed to
+        `post_list_restore_channels_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_list_restore_plan_bindings(
+        self,
+        request: gkebackup.ListRestorePlanBindingsRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListRestorePlanBindingsRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for list_restore_plan_bindings
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_list_restore_plan_bindings(
+        self, response: gkebackup.ListRestorePlanBindingsResponse
+    ) -> gkebackup.ListRestorePlanBindingsResponse:
+        """Post-rpc interceptor for list_restore_plan_bindings
+
+        DEPRECATED. Please use the `post_list_restore_plan_bindings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_list_restore_plan_bindings` interceptor runs
+        before the `post_list_restore_plan_bindings_with_metadata` interceptor.
+        """
+        return response
+
+    def post_list_restore_plan_bindings_with_metadata(
+        self,
+        response: gkebackup.ListRestorePlanBindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListRestorePlanBindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_restore_plan_bindings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_restore_plan_bindings_with_metadata`
+        interceptor in new development instead of the `post_list_restore_plan_bindings` interceptor.
+        When both interceptors are used, this `post_list_restore_plan_bindings_with_metadata` interceptor runs after the
+        `post_list_restore_plan_bindings` interceptor. The (possibly modified) response returned by
+        `post_list_restore_plan_bindings` will be passed to
+        `post_list_restore_plan_bindings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_restore_plans(
         self,
@@ -710,11 +1815,36 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListRestorePlansResponse:
         """Post-rpc interceptor for list_restore_plans
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_restore_plans_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_restore_plans` interceptor runs
+        before the `post_list_restore_plans_with_metadata` interceptor.
         """
         return response
+
+    def post_list_restore_plans_with_metadata(
+        self,
+        response: gkebackup.ListRestorePlansResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListRestorePlansResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_restore_plans
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_restore_plans_with_metadata`
+        interceptor in new development instead of the `post_list_restore_plans` interceptor.
+        When both interceptors are used, this `post_list_restore_plans_with_metadata` interceptor runs after the
+        `post_list_restore_plans` interceptor. The (possibly modified) response returned by
+        `post_list_restore_plans` will be passed to
+        `post_list_restore_plans_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_restores(
         self,
@@ -733,11 +1863,34 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListRestoresResponse:
         """Post-rpc interceptor for list_restores
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_restores_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_restores` interceptor runs
+        before the `post_list_restores_with_metadata` interceptor.
         """
         return response
+
+    def post_list_restores_with_metadata(
+        self,
+        response: gkebackup.ListRestoresResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gkebackup.ListRestoresResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_restores
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_restores_with_metadata`
+        interceptor in new development instead of the `post_list_restores` interceptor.
+        When both interceptors are used, this `post_list_restores_with_metadata` interceptor runs after the
+        `post_list_restores` interceptor. The (possibly modified) response returned by
+        `post_list_restores` will be passed to
+        `post_list_restores_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_volume_backups(
         self,
@@ -758,11 +1911,36 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListVolumeBackupsResponse:
         """Post-rpc interceptor for list_volume_backups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_volume_backups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_volume_backups` interceptor runs
+        before the `post_list_volume_backups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_volume_backups_with_metadata(
+        self,
+        response: gkebackup.ListVolumeBackupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListVolumeBackupsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_volume_backups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_volume_backups_with_metadata`
+        interceptor in new development instead of the `post_list_volume_backups` interceptor.
+        When both interceptors are used, this `post_list_volume_backups_with_metadata` interceptor runs after the
+        `post_list_volume_backups` interceptor. The (possibly modified) response returned by
+        `post_list_volume_backups` will be passed to
+        `post_list_volume_backups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_volume_restores(
         self,
@@ -783,11 +1961,36 @@ class BackupForGKERestInterceptor:
     ) -> gkebackup.ListVolumeRestoresResponse:
         """Post-rpc interceptor for list_volume_restores
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_volume_restores_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_volume_restores` interceptor runs
+        before the `post_list_volume_restores_with_metadata` interceptor.
         """
         return response
+
+    def post_list_volume_restores_with_metadata(
+        self,
+        response: gkebackup.ListVolumeRestoresResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.ListVolumeRestoresResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_volume_restores
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_list_volume_restores_with_metadata`
+        interceptor in new development instead of the `post_list_volume_restores` interceptor.
+        When both interceptors are used, this `post_list_volume_restores_with_metadata` interceptor runs after the
+        `post_list_volume_restores` interceptor. The (possibly modified) response returned by
+        `post_list_volume_restores` will be passed to
+        `post_list_volume_restores_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup(
         self,
@@ -806,11 +2009,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup` interceptor runs
+        before the `post_update_backup_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_with_metadata`
+        interceptor in new development instead of the `post_update_backup` interceptor.
+        When both interceptors are used, this `post_update_backup_with_metadata` interceptor runs after the
+        `post_update_backup` interceptor. The (possibly modified) response returned by
+        `post_update_backup` will be passed to
+        `post_update_backup_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_backup_channel(
+        self,
+        request: gkebackup.UpdateBackupChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.UpdateBackupChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for update_backup_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_update_backup_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for update_backup_channel
+
+        DEPRECATED. Please use the `post_update_backup_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_update_backup_channel` interceptor runs
+        before the `post_update_backup_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_backup_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_channel_with_metadata`
+        interceptor in new development instead of the `post_update_backup_channel` interceptor.
+        When both interceptors are used, this `post_update_backup_channel_with_metadata` interceptor runs after the
+        `post_update_backup_channel` interceptor. The (possibly modified) response returned by
+        `post_update_backup_channel` will be passed to
+        `post_update_backup_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_backup_plan(
         self,
@@ -831,11 +2105,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_backup_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_backup_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_backup_plan` interceptor runs
+        before the `post_update_backup_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_update_backup_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_backup_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_backup_plan_with_metadata`
+        interceptor in new development instead of the `post_update_backup_plan` interceptor.
+        When both interceptors are used, this `post_update_backup_plan_with_metadata` interceptor runs after the
+        `post_update_backup_plan` interceptor. The (possibly modified) response returned by
+        `post_update_backup_plan` will be passed to
+        `post_update_backup_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_restore(
         self,
@@ -854,11 +2151,82 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_restore
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_restore_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_restore` interceptor runs
+        before the `post_update_restore_with_metadata` interceptor.
         """
         return response
+
+    def post_update_restore_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_restore
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_restore_with_metadata`
+        interceptor in new development instead of the `post_update_restore` interceptor.
+        When both interceptors are used, this `post_update_restore_with_metadata` interceptor runs after the
+        `post_update_restore` interceptor. The (possibly modified) response returned by
+        `post_update_restore` will be passed to
+        `post_update_restore_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_update_restore_channel(
+        self,
+        request: gkebackup.UpdateRestoreChannelRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gkebackup.UpdateRestoreChannelRequest, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Pre-rpc interceptor for update_restore_channel
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the BackupForGKE server.
+        """
+        return request, metadata
+
+    def post_update_restore_channel(
+        self, response: operations_pb2.Operation
+    ) -> operations_pb2.Operation:
+        """Post-rpc interceptor for update_restore_channel
+
+        DEPRECATED. Please use the `post_update_restore_channel_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the BackupForGKE server but before
+        it is returned to user code. This `post_update_restore_channel` interceptor runs
+        before the `post_update_restore_channel_with_metadata` interceptor.
+        """
+        return response
+
+    def post_update_restore_channel_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_restore_channel
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_restore_channel_with_metadata`
+        interceptor in new development instead of the `post_update_restore_channel` interceptor.
+        When both interceptors are used, this `post_update_restore_channel_with_metadata` interceptor runs after the
+        `post_update_restore_channel` interceptor. The (possibly modified) response returned by
+        `post_update_restore_channel` will be passed to
+        `post_update_restore_channel_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_restore_plan(
         self,
@@ -879,11 +2247,34 @@ class BackupForGKERestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_restore_plan
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_restore_plan_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BackupForGKE server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_restore_plan` interceptor runs
+        before the `post_update_restore_plan_with_metadata` interceptor.
         """
         return response
+
+    def post_update_restore_plan_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_restore_plan
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BackupForGKE server but before it is returned to user code.
+
+        We recommend only using this `post_update_restore_plan_with_metadata`
+        interceptor in new development instead of the `post_update_restore_plan` interceptor.
+        When both interceptors are used, this `post_update_restore_plan_with_metadata` interceptor runs after the
+        `post_update_restore_plan` interceptor. The (possibly modified) response returned by
+        `post_update_restore_plan` will be passed to
+        `post_update_restore_plan_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -1374,6 +2765,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1391,6 +2786,160 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "CreateBackup",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateBackupChannel(
+        _BaseBackupForGKERestTransport._BaseCreateBackupChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.CreateBackupChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.CreateBackupChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the create backup channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.CreateBackupChannelRequest):
+                    The request object. Request message for
+                CreateBackupChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseCreateBackupChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_backup_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseCreateBackupChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseBackupForGKERestTransport._BaseCreateBackupChannel._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseCreateBackupChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.CreateBackupChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "CreateBackupChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._CreateBackupChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_backup_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.create_backup_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "CreateBackupChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -1523,6 +3072,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_backup_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_backup_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1670,6 +3223,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_restore(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_restore_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1687,6 +3244,160 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "CreateRestore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _CreateRestoreChannel(
+        _BaseBackupForGKERestTransport._BaseCreateRestoreChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.CreateRestoreChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.CreateRestoreChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the create restore channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.CreateRestoreChannelRequest):
+                    The request object. Request message for
+                CreateRestoreChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseCreateRestoreChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_create_restore_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseCreateRestoreChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseBackupForGKERestTransport._BaseCreateRestoreChannel._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseCreateRestoreChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.CreateRestoreChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "CreateRestoreChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._CreateRestoreChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_create_restore_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_restore_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.create_restore_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "CreateRestoreChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -1820,6 +3531,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_restore_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_restore_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1963,6 +3678,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1980,6 +3699,154 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "DeleteBackup",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _DeleteBackupChannel(
+        _BaseBackupForGKERestTransport._BaseDeleteBackupChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.DeleteBackupChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.DeleteBackupChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the delete backup channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.DeleteBackupChannelRequest):
+                    The request object. Request message for
+                DeleteBackupChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseDeleteBackupChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_backup_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseDeleteBackupChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseDeleteBackupChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.DeleteBackupChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "DeleteBackupChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._DeleteBackupChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_delete_backup_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.delete_backup_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "DeleteBackupChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2106,6 +3973,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_backup_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_backup_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2247,6 +4118,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_restore(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_restore_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2264,6 +4139,154 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "DeleteRestore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _DeleteRestoreChannel(
+        _BaseBackupForGKERestTransport._BaseDeleteRestoreChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.DeleteRestoreChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.DeleteRestoreChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the delete restore channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.DeleteRestoreChannelRequest):
+                    The request object. Request message for
+                DeleteRestoreChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseDeleteRestoreChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_delete_restore_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseDeleteRestoreChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseDeleteRestoreChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.DeleteRestoreChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "DeleteRestoreChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._DeleteRestoreChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_delete_restore_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_restore_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.delete_restore_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "DeleteRestoreChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2391,6 +4414,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_restore_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_restore_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2542,6 +4569,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2559,6 +4590,156 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "GetBackup",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetBackupChannel(
+        _BaseBackupForGKERestTransport._BaseGetBackupChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.GetBackupChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.GetBackupChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> backup_channel.BackupChannel:
+            r"""Call the get backup channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.GetBackupChannelRequest):
+                    The request object. Request message for GetBackupChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.backup_channel.BackupChannel:
+                    A BackupChannel imposes constraints on where clusters
+                can be backed up. The BackupChannel should be in the
+                same project and region as the cluster being backed up.
+                The backup can be created only in destination_project.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseGetBackupChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_backup_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseGetBackupChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseGetBackupChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.GetBackupChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetBackupChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._GetBackupChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = backup_channel.BackupChannel()
+            pb_resp = backup_channel.BackupChannel.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_backup_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = backup_channel.BackupChannel.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.get_backup_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetBackupChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2691,6 +4872,13 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup_index_download_url(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_backup_index_download_url_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2835,6 +5023,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_backup_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2852,6 +5044,163 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "GetBackupPlan",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetBackupPlanBinding(
+        _BaseBackupForGKERestTransport._BaseGetBackupPlanBinding, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.GetBackupPlanBinding")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.GetBackupPlanBindingRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> backup_plan_binding.BackupPlanBinding:
+            r"""Call the get backup plan binding method over HTTP.
+
+            Args:
+                request (~.gkebackup.GetBackupPlanBindingRequest):
+                    The request object. Request message for
+                GetBackupPlanBinding.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.backup_plan_binding.BackupPlanBinding:
+                    A BackupPlanBinding binds a
+                BackupPlan with a BackupChannel. This
+                resource is created automatically when a
+                BackupPlan is created using a
+                BackupChannel. This also serves as a
+                holder for cross-project fields that
+                need to be displayed in the current
+                project.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseGetBackupPlanBinding._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_backup_plan_binding(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseGetBackupPlanBinding._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseGetBackupPlanBinding._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.GetBackupPlanBinding",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetBackupPlanBinding",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._GetBackupPlanBinding._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = backup_plan_binding.BackupPlanBinding()
+            pb_resp = backup_plan_binding.BackupPlanBinding.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_backup_plan_binding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_backup_plan_binding_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = backup_plan_binding.BackupPlanBinding.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.get_backup_plan_binding",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetBackupPlanBinding",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2983,6 +5332,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_restore(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_restore_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3000,6 +5353,157 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "GetRestore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetRestoreChannel(
+        _BaseBackupForGKERestTransport._BaseGetRestoreChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.GetRestoreChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.GetRestoreChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> restore_channel.RestoreChannel:
+            r"""Call the get restore channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.GetRestoreChannelRequest):
+                    The request object. Request message for
+                GetRestoreChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.restore_channel.RestoreChannel:
+                    A RestoreChannel imposes constraints on where backups
+                can be restored. The RestoreChannel should be in the
+                same project and region as the backups. The backups can
+                only be restored in the ``destination_project``.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseGetRestoreChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_restore_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseGetRestoreChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseGetRestoreChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.GetRestoreChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetRestoreChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._GetRestoreChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = restore_channel.RestoreChannel()
+            pb_resp = restore_channel.RestoreChannel.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_restore_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_restore_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = restore_channel.RestoreChannel.to_json(response)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.get_restore_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetRestoreChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3129,6 +5633,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_restore_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_restore_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3146,6 +5654,163 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "GetRestorePlan",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _GetRestorePlanBinding(
+        _BaseBackupForGKERestTransport._BaseGetRestorePlanBinding, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.GetRestorePlanBinding")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.GetRestorePlanBindingRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> restore_plan_binding.RestorePlanBinding:
+            r"""Call the get restore plan binding method over HTTP.
+
+            Args:
+                request (~.gkebackup.GetRestorePlanBindingRequest):
+                    The request object. Request message for
+                GetRestorePlanBinding.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.restore_plan_binding.RestorePlanBinding:
+                    A RestorePlanBinding binds a
+                RestorePlan with a RestoreChannel. This
+                resource is created automatically when a
+                RestorePlan is created using a
+                RestoreChannel. This also serves as a
+                holder for cross-project fields that
+                need to be displayed in the current
+                project.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseGetRestorePlanBinding._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_get_restore_plan_binding(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseGetRestorePlanBinding._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseGetRestorePlanBinding._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.GetRestorePlanBinding",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetRestorePlanBinding",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._GetRestorePlanBinding._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = restore_plan_binding.RestorePlanBinding()
+            pb_resp = restore_plan_binding.RestorePlanBinding.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_get_restore_plan_binding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_restore_plan_binding_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = restore_plan_binding.RestorePlanBinding.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.get_restore_plan_binding",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "GetRestorePlanBinding",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3276,6 +5941,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_volume_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_volume_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3420,6 +6089,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_volume_restore(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_volume_restore_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3437,6 +6110,308 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "GetVolumeRestore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListBackupChannels(
+        _BaseBackupForGKERestTransport._BaseListBackupChannels, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.ListBackupChannels")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.ListBackupChannelsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> gkebackup.ListBackupChannelsResponse:
+            r"""Call the list backup channels method over HTTP.
+
+            Args:
+                request (~.gkebackup.ListBackupChannelsRequest):
+                    The request object. Request message for
+                ListBackupChannels.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.gkebackup.ListBackupChannelsResponse:
+                    Response message for
+                ListBackupChannels.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseListBackupChannels._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_backup_channels(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseListBackupChannels._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseListBackupChannels._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.ListBackupChannels",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListBackupChannels",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._ListBackupChannels._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = gkebackup.ListBackupChannelsResponse()
+            pb_resp = gkebackup.ListBackupChannelsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_backup_channels(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backup_channels_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = gkebackup.ListBackupChannelsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.list_backup_channels",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListBackupChannels",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListBackupPlanBindings(
+        _BaseBackupForGKERestTransport._BaseListBackupPlanBindings, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.ListBackupPlanBindings")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.ListBackupPlanBindingsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> gkebackup.ListBackupPlanBindingsResponse:
+            r"""Call the list backup plan bindings method over HTTP.
+
+            Args:
+                request (~.gkebackup.ListBackupPlanBindingsRequest):
+                    The request object. Request message for
+                ListBackupPlanBindings.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.gkebackup.ListBackupPlanBindingsResponse:
+                    Response message for
+                ListBackupPlanBindings.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseListBackupPlanBindings._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_backup_plan_bindings(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseListBackupPlanBindings._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseListBackupPlanBindings._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.ListBackupPlanBindings",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListBackupPlanBindings",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._ListBackupPlanBindings._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = gkebackup.ListBackupPlanBindingsResponse()
+            pb_resp = gkebackup.ListBackupPlanBindingsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_backup_plan_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backup_plan_bindings_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = gkebackup.ListBackupPlanBindingsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.list_backup_plan_bindings",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListBackupPlanBindings",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3562,6 +6537,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backup_plans(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backup_plans_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3708,6 +6687,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_backups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_backups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3725,6 +6708,310 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "ListBackups",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListRestoreChannels(
+        _BaseBackupForGKERestTransport._BaseListRestoreChannels, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.ListRestoreChannels")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.ListRestoreChannelsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> gkebackup.ListRestoreChannelsResponse:
+            r"""Call the list restore channels method over HTTP.
+
+            Args:
+                request (~.gkebackup.ListRestoreChannelsRequest):
+                    The request object. Request message for
+                ListRestoreChannels.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.gkebackup.ListRestoreChannelsResponse:
+                    Response message for
+                ListRestoreChannels.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseListRestoreChannels._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_restore_channels(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseListRestoreChannels._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseListRestoreChannels._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.ListRestoreChannels",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListRestoreChannels",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._ListRestoreChannels._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = gkebackup.ListRestoreChannelsResponse()
+            pb_resp = gkebackup.ListRestoreChannelsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_restore_channels(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_restore_channels_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = gkebackup.ListRestoreChannelsResponse.to_json(
+                        response
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.list_restore_channels",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListRestoreChannels",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ListRestorePlanBindings(
+        _BaseBackupForGKERestTransport._BaseListRestorePlanBindings,
+        BackupForGKERestStub,
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.ListRestorePlanBindings")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.ListRestorePlanBindingsRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> gkebackup.ListRestorePlanBindingsResponse:
+            r"""Call the list restore plan
+            bindings method over HTTP.
+
+                Args:
+                    request (~.gkebackup.ListRestorePlanBindingsRequest):
+                        The request object. Request message for
+                    ListRestorePlanBindings.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.gkebackup.ListRestorePlanBindingsResponse:
+                        Response message for
+                    ListRestorePlanBindings.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseListRestorePlanBindings._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_list_restore_plan_bindings(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseListRestorePlanBindings._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseListRestorePlanBindings._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.ListRestorePlanBindings",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListRestorePlanBindings",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._ListRestorePlanBindings._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = gkebackup.ListRestorePlanBindingsResponse()
+            pb_resp = gkebackup.ListRestorePlanBindingsResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_list_restore_plan_bindings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_restore_plan_bindings_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        gkebackup.ListRestorePlanBindingsResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.list_restore_plan_bindings",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "ListRestorePlanBindings",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -3852,6 +7139,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_restore_plans(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_restore_plans_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3996,6 +7287,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_restores(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_restores_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4141,6 +7436,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_volume_backups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_volume_backups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4288,6 +7587,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_volume_restores(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_volume_restores_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4441,6 +7744,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4458,6 +7765,160 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "UpdateBackup",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateBackupChannel(
+        _BaseBackupForGKERestTransport._BaseUpdateBackupChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.UpdateBackupChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.UpdateBackupChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the update backup channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.UpdateBackupChannelRequest):
+                    The request object. Request message for
+                UpdateBackupChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseUpdateBackupChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_backup_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseUpdateBackupChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseBackupForGKERestTransport._BaseUpdateBackupChannel._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseUpdateBackupChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.UpdateBackupChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "UpdateBackupChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._UpdateBackupChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_backup_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.update_backup_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "UpdateBackupChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -4590,6 +8051,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_backup_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_backup_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4737,6 +8202,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_restore(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_restore_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4754,6 +8223,160 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
                     extra={
                         "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
                         "rpcName": "UpdateRestore",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _UpdateRestoreChannel(
+        _BaseBackupForGKERestTransport._BaseUpdateRestoreChannel, BackupForGKERestStub
+    ):
+        def __hash__(self):
+            return hash("BackupForGKERestTransport.UpdateRestoreChannel")
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+                data=body,
+            )
+            return response
+
+        def __call__(
+            self,
+            request: gkebackup.UpdateRestoreChannelRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> operations_pb2.Operation:
+            r"""Call the update restore channel method over HTTP.
+
+            Args:
+                request (~.gkebackup.UpdateRestoreChannelRequest):
+                    The request object. Request message for
+                UpdateRestoreChannel.
+                retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                    should be retried.
+                timeout (float): The timeout for this request.
+                metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                    sent along with the request as metadata. Normally, each value must be of type `str`,
+                    but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                    be of type `bytes`.
+
+            Returns:
+                ~.operations_pb2.Operation:
+                    This resource represents a
+                long-running operation that is the
+                result of a network API call.
+
+            """
+
+            http_options = (
+                _BaseBackupForGKERestTransport._BaseUpdateRestoreChannel._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_update_restore_channel(
+                request, metadata
+            )
+            transcoded_request = _BaseBackupForGKERestTransport._BaseUpdateRestoreChannel._get_transcoded_request(
+                http_options, request
+            )
+
+            body = _BaseBackupForGKERestTransport._BaseUpdateRestoreChannel._get_request_body_json(
+                transcoded_request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseBackupForGKERestTransport._BaseUpdateRestoreChannel._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = json_format.MessageToJson(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.gkebackup_v1.BackupForGKEClient.UpdateRestoreChannel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "UpdateRestoreChannel",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = BackupForGKERestTransport._UpdateRestoreChannel._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+                body,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = operations_pb2.Operation()
+            json_format.Parse(response.content, resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_update_restore_channel(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_restore_channel_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = json_format.MessageToJson(resp)
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.gkebackup_v1.BackupForGKEClient.update_restore_channel",
+                    extra={
+                        "serviceName": "google.cloud.gkebackup.v1.BackupForGKE",
+                        "rpcName": "UpdateRestoreChannel",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -4887,6 +8510,10 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_restore_plan(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_restore_plan_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4919,6 +8546,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._CreateBackup(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def create_backup_channel(
+        self,
+    ) -> Callable[[gkebackup.CreateBackupChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateBackupChannel(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def create_backup_plan(
         self,
     ) -> Callable[[gkebackup.CreateBackupPlanRequest], operations_pb2.Operation]:
@@ -4933,6 +8568,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._CreateRestore(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def create_restore_channel(
+        self,
+    ) -> Callable[[gkebackup.CreateRestoreChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._CreateRestoreChannel(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def create_restore_plan(
@@ -4951,6 +8594,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._DeleteBackup(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def delete_backup_channel(
+        self,
+    ) -> Callable[[gkebackup.DeleteBackupChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteBackupChannel(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def delete_backup_plan(
         self,
     ) -> Callable[[gkebackup.DeleteBackupPlanRequest], operations_pb2.Operation]:
@@ -4967,6 +8618,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._DeleteRestore(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def delete_restore_channel(
+        self,
+    ) -> Callable[[gkebackup.DeleteRestoreChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._DeleteRestoreChannel(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def delete_restore_plan(
         self,
     ) -> Callable[[gkebackup.DeleteRestorePlanRequest], operations_pb2.Operation]:
@@ -4979,6 +8638,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetBackup(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_backup_channel(
+        self,
+    ) -> Callable[[gkebackup.GetBackupChannelRequest], backup_channel.BackupChannel]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetBackupChannel(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_backup_index_download_url(
@@ -5000,10 +8667,28 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._GetBackupPlan(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def get_backup_plan_binding(
+        self,
+    ) -> Callable[
+        [gkebackup.GetBackupPlanBindingRequest], backup_plan_binding.BackupPlanBinding
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetBackupPlanBinding(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def get_restore(self) -> Callable[[gkebackup.GetRestoreRequest], restore.Restore]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetRestore(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_restore_channel(
+        self,
+    ) -> Callable[[gkebackup.GetRestoreChannelRequest], restore_channel.RestoreChannel]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetRestoreChannel(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_restore_plan(
@@ -5012,6 +8697,17 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetRestorePlan(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def get_restore_plan_binding(
+        self,
+    ) -> Callable[
+        [gkebackup.GetRestorePlanBindingRequest],
+        restore_plan_binding.RestorePlanBinding,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._GetRestorePlanBinding(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def get_volume_backup(
@@ -5030,6 +8726,27 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._GetVolumeRestore(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def list_backup_channels(
+        self,
+    ) -> Callable[
+        [gkebackup.ListBackupChannelsRequest], gkebackup.ListBackupChannelsResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListBackupChannels(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_backup_plan_bindings(
+        self,
+    ) -> Callable[
+        [gkebackup.ListBackupPlanBindingsRequest],
+        gkebackup.ListBackupPlanBindingsResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListBackupPlanBindings(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def list_backup_plans(
         self,
     ) -> Callable[
@@ -5046,6 +8763,27 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._ListBackups(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_restore_channels(
+        self,
+    ) -> Callable[
+        [gkebackup.ListRestoreChannelsRequest], gkebackup.ListRestoreChannelsResponse
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListRestoreChannels(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def list_restore_plan_bindings(
+        self,
+    ) -> Callable[
+        [gkebackup.ListRestorePlanBindingsRequest],
+        gkebackup.ListRestorePlanBindingsResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ListRestorePlanBindings(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def list_restore_plans(
@@ -5094,6 +8832,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         return self._UpdateBackup(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
+    def update_backup_channel(
+        self,
+    ) -> Callable[[gkebackup.UpdateBackupChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateBackupChannel(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
     def update_backup_plan(
         self,
     ) -> Callable[[gkebackup.UpdateBackupPlanRequest], operations_pb2.Operation]:
@@ -5108,6 +8854,14 @@ class BackupForGKERestTransport(_BaseBackupForGKERestTransport):
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateRestore(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def update_restore_channel(
+        self,
+    ) -> Callable[[gkebackup.UpdateRestoreChannelRequest], operations_pb2.Operation]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._UpdateRestoreChannel(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def update_restore_plan(

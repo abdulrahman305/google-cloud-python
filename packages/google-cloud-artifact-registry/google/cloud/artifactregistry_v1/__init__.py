@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,8 @@ from .types.file import (
     UpdateFileRequest,
 )
 from .types.generic import GenericArtifact
+from .types.go import GoModule
+from .types.kfp_artifact import KfpArtifact
 from .types.package import (
     DeletePackageRequest,
     GetPackageRequest,
@@ -175,6 +177,7 @@ __all__ = (
     "GetTagRequest",
     "GetVPCSCConfigRequest",
     "GetVersionRequest",
+    "GoModule",
     "Hash",
     "ImportAptArtifactsErrorInfo",
     "ImportAptArtifactsGcsSource",
@@ -186,6 +189,7 @@ __all__ = (
     "ImportYumArtifactsMetadata",
     "ImportYumArtifactsRequest",
     "ImportYumArtifactsResponse",
+    "KfpArtifact",
     "ListAttachmentsRequest",
     "ListAttachmentsResponse",
     "ListDockerImagesRequest",

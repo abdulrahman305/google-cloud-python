@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,14 +17,20 @@ from collections import OrderedDict
 from typing import Dict, Type
 
 from .base import OracleDatabaseTransport
+from .grpc import OracleDatabaseGrpcTransport
+from .grpc_asyncio import OracleDatabaseGrpcAsyncIOTransport
 from .rest import OracleDatabaseRestInterceptor, OracleDatabaseRestTransport
 
 # Compile a registry of transports.
 _transport_registry = OrderedDict()  # type: Dict[str, Type[OracleDatabaseTransport]]
+_transport_registry["grpc"] = OracleDatabaseGrpcTransport
+_transport_registry["grpc_asyncio"] = OracleDatabaseGrpcAsyncIOTransport
 _transport_registry["rest"] = OracleDatabaseRestTransport
 
 __all__ = (
     "OracleDatabaseTransport",
+    "OracleDatabaseGrpcTransport",
+    "OracleDatabaseGrpcAsyncIOTransport",
     "OracleDatabaseRestTransport",
     "OracleDatabaseRestInterceptor",
 )

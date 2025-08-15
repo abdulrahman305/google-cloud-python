@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.16](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.15...google-maps-routing-v0.6.16) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.6.15](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.14...google-maps-routing-v0.6.15) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.13...google-maps-routing-v0.6.14) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.6.13](https://github.com/googleapis/google-cloud-python/compare/google-maps-routing-v0.6.12...google-maps-routing-v0.6.13) (2024-12-12)
 
 

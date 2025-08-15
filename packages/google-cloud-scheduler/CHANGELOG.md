@@ -4,6 +4,30 @@
 
 [1]: https://pypi.org/project/google-cloud-scheduler/#history
 
+## [2.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-scheduler-v2.16.0...google-cloud-scheduler-v2.16.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-scheduler-v2.15.1...google-cloud-scheduler-v2.16.0) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
+## [2.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-scheduler-v2.15.0...google-cloud-scheduler-v2.15.1) (2025-01-27)
+
+
+### Documentation
+
+* annotate output-only fields as such ([6707477](https://github.com/googleapis/google-cloud-python/commit/6707477f8b97de7163303f6bdd56e191b0037a38))
+* update comments ([6707477](https://github.com/googleapis/google-cloud-python/commit/6707477f8b97de7163303f6bdd56e191b0037a38))
+
 ## [2.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-scheduler-v2.14.1...google-cloud-scheduler-v2.15.0) (2024-12-12)
 
 

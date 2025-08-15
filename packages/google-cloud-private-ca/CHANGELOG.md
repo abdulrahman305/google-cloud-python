@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-private-ca-v1.14.3...google-cloud-private-ca-v1.15.0) (2025-07-10)
+
+
+### Features
+
+* add backdate duration ([c28164a](https://github.com/googleapis/google-cloud-python/commit/c28164ad7a90516348c40331685d0332cbbb36f6))
+* add RDN sequence ([c28164a](https://github.com/googleapis/google-cloud-python/commit/c28164ad7a90516348c40331685d0332cbbb36f6))
+* add User Defined Access URLs ([c28164a](https://github.com/googleapis/google-cloud-python/commit/c28164ad7a90516348c40331685d0332cbbb36f6))
+* adds tbs_certificate_digest to CertificateDescription ([c28164a](https://github.com/googleapis/google-cloud-python/commit/c28164ad7a90516348c40331685d0332cbbb36f6))
+
+## [1.14.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-private-ca-v1.14.2...google-cloud-private-ca-v1.14.3) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [1.14.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-private-ca-v1.14.1...google-cloud-private-ca-v1.14.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-private-ca-v1.14.0...google-cloud-private-ca-v1.14.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
 ## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-private-ca-v1.13.1...google-cloud-private-ca-v1.14.0) (2024-12-12)
 
 

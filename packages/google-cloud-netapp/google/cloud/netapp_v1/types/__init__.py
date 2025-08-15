@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,7 +50,13 @@ from .backup_vault import (
     UpdateBackupVaultRequest,
 )
 from .cloud_netapp_service import OperationMetadata
-from .common import EncryptionType, LocationMetadata, ServiceLevel
+from .common import (
+    DirectoryServiceType,
+    EncryptionType,
+    FlexPerformance,
+    LocationMetadata,
+    ServiceLevel,
+)
 from .kms import (
     CreateKmsConfigRequest,
     DeleteKmsConfigRequest,
@@ -62,6 +68,15 @@ from .kms import (
     UpdateKmsConfigRequest,
     VerifyKmsConfigRequest,
     VerifyKmsConfigResponse,
+)
+from .quota_rule import (
+    CreateQuotaRuleRequest,
+    DeleteQuotaRuleRequest,
+    GetQuotaRuleRequest,
+    ListQuotaRulesRequest,
+    ListQuotaRulesResponse,
+    QuotaRule,
+    UpdateQuotaRuleRequest,
 )
 from .replication import (
     CreateReplicationRequest,
@@ -98,6 +113,7 @@ from .storage_pool import (
     StoragePool,
     SwitchActiveReplicaZoneRequest,
     UpdateStoragePoolRequest,
+    ValidateDirectoryServiceRequest,
 )
 from .volume import (
     AccessType,
@@ -158,7 +174,9 @@ __all__ = (
     "UpdateBackupVaultRequest",
     "OperationMetadata",
     "LocationMetadata",
+    "DirectoryServiceType",
     "EncryptionType",
+    "FlexPerformance",
     "ServiceLevel",
     "CreateKmsConfigRequest",
     "DeleteKmsConfigRequest",
@@ -170,6 +188,13 @@ __all__ = (
     "UpdateKmsConfigRequest",
     "VerifyKmsConfigRequest",
     "VerifyKmsConfigResponse",
+    "CreateQuotaRuleRequest",
+    "DeleteQuotaRuleRequest",
+    "GetQuotaRuleRequest",
+    "ListQuotaRulesRequest",
+    "ListQuotaRulesResponse",
+    "QuotaRule",
+    "UpdateQuotaRuleRequest",
     "CreateReplicationRequest",
     "DeleteReplicationRequest",
     "DestinationVolumeParameters",
@@ -200,6 +225,7 @@ __all__ = (
     "StoragePool",
     "SwitchActiveReplicaZoneRequest",
     "UpdateStoragePoolRequest",
+    "ValidateDirectoryServiceRequest",
     "BackupConfig",
     "CreateVolumeRequest",
     "DailySchedule",

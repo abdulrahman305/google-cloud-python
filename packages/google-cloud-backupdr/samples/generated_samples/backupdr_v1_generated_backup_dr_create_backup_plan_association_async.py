@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ async def sample_create_backup_plan_association():
 
     # Initialize request argument(s)
     backup_plan_association = backupdr_v1.BackupPlanAssociation()
+    backup_plan_association.resource_type = "resource_type_value"
     backup_plan_association.resource = "resource_value"
     backup_plan_association.backup_plan = "backup_plan_value"
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,13 @@ from google.cloud.compute_v1.services.region_commitments import (
     transports,
 )
 from google.cloud.compute_v1.types import compute
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -326,6 +333,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         RegionCommitmentsClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = RegionCommitmentsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = RegionCommitmentsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -2702,10 +2752,14 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "post_aggregated_list"
     ) as post, mock.patch.object(
+        transports.RegionCommitmentsRestInterceptor,
+        "post_aggregated_list_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "pre_aggregated_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AggregatedListRegionCommitmentsRequest.pb(
             compute.AggregatedListRegionCommitmentsRequest()
         )
@@ -2731,6 +2785,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.CommitmentAggregatedList()
+        post_with_metadata.return_value = compute.CommitmentAggregatedList(), metadata
 
         client.aggregated_list(
             request,
@@ -2742,6 +2797,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_rest_bad_request(request_type=compute.GetRegionCommitmentRequest):
@@ -2860,10 +2916,13 @@ def test_get_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "post_get"
     ) as post, mock.patch.object(
+        transports.RegionCommitmentsRestInterceptor, "post_get_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "pre_get"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetRegionCommitmentRequest.pb(
             compute.GetRegionCommitmentRequest()
         )
@@ -2887,6 +2946,7 @@ def test_get_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Commitment()
+        post_with_metadata.return_value = compute.Commitment(), metadata
 
         client.get(
             request,
@@ -2898,6 +2958,7 @@ def test_get_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_insert_rest_bad_request(request_type=compute.InsertRegionCommitmentRequest):
@@ -2964,6 +3025,9 @@ def test_insert_rest_call_success(request_type):
         "region": "region_value",
         "reservations": [
             {
+                "advanced_deployment_control": {
+                    "reservation_operational_mode": "reservation_operational_mode_value"
+                },
                 "aggregate_reservation": {
                     "in_use_resources": [
                         {
@@ -2979,17 +3043,58 @@ def test_insert_rest_call_success(request_type):
                 },
                 "commitment": "commitment_value",
                 "creation_timestamp": "creation_timestamp_value",
+                "delete_after_duration": {"nanos": 543, "seconds": 751},
+                "delete_at_time": "delete_at_time_value",
+                "deployment_type": "deployment_type_value",
                 "description": "description_value",
+                "enable_emergent_maintenance": True,
                 "id": 205,
                 "kind": "kind_value",
+                "linked_commitments": [
+                    "linked_commitments_value1",
+                    "linked_commitments_value2",
+                ],
                 "name": "name_value",
+                "reservation_sharing_policy": {
+                    "service_share_type": "service_share_type_value"
+                },
                 "resource_policies": {},
                 "resource_status": {
+                    "health_info": {
+                        "degraded_block_count": 2082,
+                        "health_status": "health_status_value",
+                        "healthy_block_count": 2017,
+                    },
+                    "reservation_block_count": 2468,
+                    "reservation_maintenance": {
+                        "instance_maintenance_ongoing_count": 3599,
+                        "instance_maintenance_pending_count": 3587,
+                        "maintenance_ongoing_count": 2651,
+                        "maintenance_pending_count": 2639,
+                        "scheduling_type": "scheduling_type_value",
+                        "subblock_infra_maintenance_ongoing_count": 4222,
+                        "subblock_infra_maintenance_pending_count": 4210,
+                        "upcoming_group_maintenance": {
+                            "can_reschedule": True,
+                            "latest_window_start_time": "latest_window_start_time_value",
+                            "maintenance_on_shutdown": True,
+                            "maintenance_reasons": [
+                                "maintenance_reasons_value1",
+                                "maintenance_reasons_value2",
+                            ],
+                            "maintenance_status": "maintenance_status_value",
+                            "type_": "type__value",
+                            "window_end_time": "window_end_time_value",
+                            "window_start_time": "window_start_time_value",
+                        },
+                    },
                     "specific_sku_allocation": {
-                        "source_instance_template_id": "source_instance_template_id_value"
-                    }
+                        "source_instance_template_id": "source_instance_template_id_value",
+                        "utilizations": {},
+                    },
                 },
                 "satisfies_pzs": True,
+                "scheduling_type": "scheduling_type_value",
                 "self_link": "self_link_value",
                 "share_settings": {"project_map": {}, "share_type": "share_type_value"},
                 "specific_reservation": {
@@ -3188,10 +3293,13 @@ def test_insert_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "post_insert"
     ) as post, mock.patch.object(
+        transports.RegionCommitmentsRestInterceptor, "post_insert_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "pre_insert"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.InsertRegionCommitmentRequest.pb(
             compute.InsertRegionCommitmentRequest()
         )
@@ -3215,6 +3323,7 @@ def test_insert_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.insert(
             request,
@@ -3226,6 +3335,7 @@ def test_insert_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_rest_bad_request(request_type=compute.ListRegionCommitmentsRequest):
@@ -3314,10 +3424,13 @@ def test_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "post_list"
     ) as post, mock.patch.object(
+        transports.RegionCommitmentsRestInterceptor, "post_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "pre_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ListRegionCommitmentsRequest.pb(
             compute.ListRegionCommitmentsRequest()
         )
@@ -3341,6 +3454,7 @@ def test_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.CommitmentList()
+        post_with_metadata.return_value = compute.CommitmentList(), metadata
 
         client.list(
             request,
@@ -3352,6 +3466,7 @@ def test_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_rest_bad_request(request_type=compute.UpdateRegionCommitmentRequest):
@@ -3418,6 +3533,9 @@ def test_update_rest_call_success(request_type):
         "region": "region_value",
         "reservations": [
             {
+                "advanced_deployment_control": {
+                    "reservation_operational_mode": "reservation_operational_mode_value"
+                },
                 "aggregate_reservation": {
                     "in_use_resources": [
                         {
@@ -3433,17 +3551,58 @@ def test_update_rest_call_success(request_type):
                 },
                 "commitment": "commitment_value",
                 "creation_timestamp": "creation_timestamp_value",
+                "delete_after_duration": {"nanos": 543, "seconds": 751},
+                "delete_at_time": "delete_at_time_value",
+                "deployment_type": "deployment_type_value",
                 "description": "description_value",
+                "enable_emergent_maintenance": True,
                 "id": 205,
                 "kind": "kind_value",
+                "linked_commitments": [
+                    "linked_commitments_value1",
+                    "linked_commitments_value2",
+                ],
                 "name": "name_value",
+                "reservation_sharing_policy": {
+                    "service_share_type": "service_share_type_value"
+                },
                 "resource_policies": {},
                 "resource_status": {
+                    "health_info": {
+                        "degraded_block_count": 2082,
+                        "health_status": "health_status_value",
+                        "healthy_block_count": 2017,
+                    },
+                    "reservation_block_count": 2468,
+                    "reservation_maintenance": {
+                        "instance_maintenance_ongoing_count": 3599,
+                        "instance_maintenance_pending_count": 3587,
+                        "maintenance_ongoing_count": 2651,
+                        "maintenance_pending_count": 2639,
+                        "scheduling_type": "scheduling_type_value",
+                        "subblock_infra_maintenance_ongoing_count": 4222,
+                        "subblock_infra_maintenance_pending_count": 4210,
+                        "upcoming_group_maintenance": {
+                            "can_reschedule": True,
+                            "latest_window_start_time": "latest_window_start_time_value",
+                            "maintenance_on_shutdown": True,
+                            "maintenance_reasons": [
+                                "maintenance_reasons_value1",
+                                "maintenance_reasons_value2",
+                            ],
+                            "maintenance_status": "maintenance_status_value",
+                            "type_": "type__value",
+                            "window_end_time": "window_end_time_value",
+                            "window_start_time": "window_start_time_value",
+                        },
+                    },
                     "specific_sku_allocation": {
-                        "source_instance_template_id": "source_instance_template_id_value"
-                    }
+                        "source_instance_template_id": "source_instance_template_id_value",
+                        "utilizations": {},
+                    },
                 },
                 "satisfies_pzs": True,
+                "scheduling_type": "scheduling_type_value",
                 "self_link": "self_link_value",
                 "share_settings": {"project_map": {}, "share_type": "share_type_value"},
                 "specific_reservation": {
@@ -3642,10 +3801,13 @@ def test_update_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "post_update"
     ) as post, mock.patch.object(
+        transports.RegionCommitmentsRestInterceptor, "post_update_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.RegionCommitmentsRestInterceptor, "pre_update"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateRegionCommitmentRequest.pb(
             compute.UpdateRegionCommitmentRequest()
         )
@@ -3669,6 +3831,7 @@ def test_update_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update(
             request,
@@ -3680,6 +3843,7 @@ def test_update_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():

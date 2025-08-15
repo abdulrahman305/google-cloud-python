@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,12 +39,8 @@ def sample_create_tunnel_dest_group():
     client = iap_v1.IdentityAwareProxyAdminServiceClient()
 
     # Initialize request argument(s)
-    tunnel_dest_group = iap_v1.TunnelDestGroup()
-    tunnel_dest_group.name = "name_value"
-
     request = iap_v1.CreateTunnelDestGroupRequest(
         parent="parent_value",
-        tunnel_dest_group=tunnel_dest_group,
         tunnel_dest_group_id="tunnel_dest_group_id_value",
     )
 

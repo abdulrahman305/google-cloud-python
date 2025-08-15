@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ from __future__ import annotations
 
 from typing import MutableMapping, MutableSequence
 
+from google.protobuf import duration_pb2  # type: ignore
+from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 import proto  # type: ignore
 
@@ -41,6 +43,24 @@ __protobuf__ = proto.module(
         "DeleteManagedFolderRequest",
         "ListManagedFoldersRequest",
         "ListManagedFoldersResponse",
+        "CreateAnywhereCacheMetadata",
+        "UpdateAnywhereCacheMetadata",
+        "AnywhereCache",
+        "CreateAnywhereCacheRequest",
+        "UpdateAnywhereCacheRequest",
+        "DisableAnywhereCacheRequest",
+        "PauseAnywhereCacheRequest",
+        "ResumeAnywhereCacheRequest",
+        "GetAnywhereCacheRequest",
+        "ListAnywhereCachesRequest",
+        "ListAnywhereCachesResponse",
+        "IntelligenceConfig",
+        "UpdateOrganizationIntelligenceConfigRequest",
+        "UpdateFolderIntelligenceConfigRequest",
+        "UpdateProjectIntelligenceConfigRequest",
+        "GetOrganizationIntelligenceConfigRequest",
+        "GetFolderIntelligenceConfigRequest",
+        "GetProjectIntelligenceConfigRequest",
     },
 )
 
@@ -540,7 +560,7 @@ class StorageLayout(proto.Message):
         r"""Configuration for Custom Dual Regions. It should specify precisely
         two eligible regions within the same Multiregion. More information
         on regions may be found
-        [https://cloud.google.com/storage/docs/locations][here].
+        `here <https://cloud.google.com/storage/docs/locations>`__.
 
         Attributes:
             data_locations (MutableSequence[str]):
@@ -878,6 +898,876 @@ class ListManagedFoldersResponse(proto.Message):
     next_page_token: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+
+
+class CreateAnywhereCacheMetadata(proto.Message):
+    r"""Message returned in the metadata field of the Operation
+    resource for CreateAnywhereCache operations.
+
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        common_metadata (google.cloud.storage_control_v2.types.CommonLongRunningOperationMetadata):
+            Generic metadata for the long running
+            operation.
+        anywhere_cache_id (str):
+            Anywhere Cache ID.
+
+            This field is a member of `oneof`_ ``_anywhere_cache_id``.
+        zone (str):
+            The zone in which the cache instance is
+            running. For example, us-central1-a.
+
+            This field is a member of `oneof`_ ``_zone``.
+        ttl (google.protobuf.duration_pb2.Duration):
+            Anywhere Cache entry's TTL. A cache-level
+            config that is applied to all new cache entries
+            on admission. Default ttl value (24hrs) is
+            applied if not specified in the create request.
+
+            This field is a member of `oneof`_ ``_ttl``.
+        admission_policy (str):
+            Anywhere Cache entry Admission Policy in
+            kebab-case (e.g., "admit-on-first-miss").
+            Default admission policy (admit-on-first-miss)
+            is applied if not specified in the create
+            request.
+
+            This field is a member of `oneof`_ ``_admission_policy``.
+    """
+
+    common_metadata: "CommonLongRunningOperationMetadata" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="CommonLongRunningOperationMetadata",
+    )
+    anywhere_cache_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+        optional=True,
+    )
+    zone: str = proto.Field(
+        proto.STRING,
+        number=6,
+        optional=True,
+    )
+    ttl: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        optional=True,
+        message=duration_pb2.Duration,
+    )
+    admission_policy: str = proto.Field(
+        proto.STRING,
+        number=5,
+        optional=True,
+    )
+
+
+class UpdateAnywhereCacheMetadata(proto.Message):
+    r"""Message returned in the metadata field of the Operation
+    resource for UpdateAnywhereCache operation.
+
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        common_metadata (google.cloud.storage_control_v2.types.CommonLongRunningOperationMetadata):
+            Generic metadata for the long running
+            operation.
+        anywhere_cache_id (str):
+            Anywhere Cache ID.
+
+            This field is a member of `oneof`_ ``_anywhere_cache_id``.
+        zone (str):
+            The zone in which the cache instance is
+            running. For example, us-central1-a.
+
+            This field is a member of `oneof`_ ``_zone``.
+        ttl (google.protobuf.duration_pb2.Duration):
+            Anywhere Cache entry's TTL between 1h and 7days. A
+            cache-level config that is applied to all new cache entries
+            on admission. If ``ttl`` is pending update, this field
+            equals to the new value specified in the Update request.
+
+            This field is a member of `oneof`_ ``_ttl``.
+        admission_policy (str):
+            L4 Cache entry Admission Policy in kebab-case (e.g.,
+            "admit-on-first-miss"). If ``admission_policy`` is pending
+            update, this field equals to the new value specified in the
+            Update request.
+
+            This field is a member of `oneof`_ ``_admission_policy``.
+    """
+
+    common_metadata: "CommonLongRunningOperationMetadata" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="CommonLongRunningOperationMetadata",
+    )
+    anywhere_cache_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+        optional=True,
+    )
+    zone: str = proto.Field(
+        proto.STRING,
+        number=5,
+        optional=True,
+    )
+    ttl: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        optional=True,
+        message=duration_pb2.Duration,
+    )
+    admission_policy: str = proto.Field(
+        proto.STRING,
+        number=4,
+        optional=True,
+    )
+
+
+class AnywhereCache(proto.Message):
+    r"""An Anywhere Cache Instance.
+
+    Attributes:
+        name (str):
+            Immutable. The resource name of this AnywhereCache. Format:
+            ``projects/{project}/buckets/{bucket}/anywhereCaches/{anywhere_cache}``
+        zone (str):
+            Immutable. The zone in which the cache
+            instance is running. For example, us-central1-a.
+        ttl (google.protobuf.duration_pb2.Duration):
+            Cache entry TTL (ranges between 1h to 7d).
+            This is a cache-level config that defines how
+            long a cache entry can live. Default ttl value
+            (24hrs) is applied if not specified in the
+            create request. TTL must be in whole seconds.
+        admission_policy (str):
+            Cache admission policy. Valid policies includes:
+            ``admit-on-first-miss`` and ``admit-on-second-miss``.
+            Defaults to ``admit-on-first-miss``. Default value is
+            applied if not specified in the create request.
+        state (str):
+            Output only. Cache state including RUNNING,
+            CREATING, DISABLED and PAUSED.
+        create_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Time when Anywhere cache
+            instance is allocated.
+        update_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Time when Anywhere cache
+            instance is last updated, including creation.
+        pending_update (bool):
+            Output only. True if there is an active
+            update operation against this cache instance.
+            Subsequential update requests will be rejected
+            if this field is true. Output only.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    zone: str = proto.Field(
+        proto.STRING,
+        number=10,
+    )
+    ttl: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=duration_pb2.Duration,
+    )
+    admission_policy: str = proto.Field(
+        proto.STRING,
+        number=9,
+    )
+    state: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    create_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        message=timestamp_pb2.Timestamp,
+    )
+    update_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        message=timestamp_pb2.Timestamp,
+    )
+    pending_update: bool = proto.Field(
+        proto.BOOL,
+        number=8,
+    )
+
+
+class CreateAnywhereCacheRequest(proto.Message):
+    r"""Request message for CreateAnywhereCache.
+
+    Attributes:
+        parent (str):
+            Required. The bucket to which this cache belongs. Format:
+            ``projects/{project}/buckets/{bucket}``
+        anywhere_cache (google.cloud.storage_control_v2.types.AnywhereCache):
+            Required. Properties of the Anywhere Cache instance being
+            created. The parent bucket name is specified in the
+            ``parent`` field. Server uses the default value of ``ttl``
+            or ``admission_policy`` if not specified in request.
+        request_id (str):
+            Optional. A unique identifier for this request. UUID is the
+            recommended format, but other formats are still accepted.
+            This request is only idempotent if a ``request_id`` is
+            provided.
+    """
+
+    parent: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    anywhere_cache: "AnywhereCache" = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message="AnywhereCache",
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+
+
+class UpdateAnywhereCacheRequest(proto.Message):
+    r"""Request message for UpdateAnywhereCache.
+
+    Attributes:
+        anywhere_cache (google.cloud.storage_control_v2.types.AnywhereCache):
+            Required. The Anywhere Cache instance to be
+            updated.
+        update_mask (google.protobuf.field_mask_pb2.FieldMask):
+            Required. List of fields to be updated. Mutable fields of
+            AnywhereCache include ``ttl`` and ``admission_policy``.
+
+            To specify ALL fields, specify a single field with the value
+            ``*``. Note: We recommend against doing this. If a new field
+            is introduced at a later time, an older client updating with
+            the ``*`` may accidentally reset the new field's value.
+
+            Not specifying any fields is an error.
+        request_id (str):
+            Optional. A unique identifier for this request. UUID is the
+            recommended format, but other formats are still accepted.
+            This request is only idempotent if a ``request_id`` is
+            provided.
+    """
+
+    anywhere_cache: "AnywhereCache" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="AnywhereCache",
+    )
+    update_mask: field_mask_pb2.FieldMask = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=field_mask_pb2.FieldMask,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class DisableAnywhereCacheRequest(proto.Message):
+    r"""Request message for DisableAnywhereCache.
+
+    Attributes:
+        name (str):
+            Required. The name field in the request should be:
+            ``projects/{project}/buckets/{bucket}/anywhereCaches/{anywhere_cache}``
+        request_id (str):
+            Optional. A unique identifier for this request. UUID is the
+            recommended format, but other formats are still accepted.
+            This request is only idempotent if a ``request_id`` is
+            provided.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class PauseAnywhereCacheRequest(proto.Message):
+    r"""Request message for PauseAnywhereCache.
+
+    Attributes:
+        name (str):
+            Required. The name field in the request should be:
+            ``projects/{project}/buckets/{bucket}/anywhereCaches/{anywhere_cache}``
+        request_id (str):
+            Optional. A unique identifier for this request. UUID is the
+            recommended format, but other formats are still accepted.
+            This request is only idempotent if a ``request_id`` is
+            provided.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class ResumeAnywhereCacheRequest(proto.Message):
+    r"""Request message for ResumeAnywhereCache.
+
+    Attributes:
+        name (str):
+            Required. The name field in the request should be:
+            ``projects/{project}/buckets/{bucket}/anywhereCaches/{anywhere_cache}``
+        request_id (str):
+            Optional. A unique identifier for this request. UUID is the
+            recommended format, but other formats are still accepted.
+            This request is only idempotent if a ``request_id`` is
+            provided.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class GetAnywhereCacheRequest(proto.Message):
+    r"""Request message for GetAnywhereCache.
+
+    Attributes:
+        name (str):
+            Required. The name field in the request should be:
+            ``projects/{project}/buckets/{bucket}/anywhereCaches/{anywhere_cache}``
+        request_id (str):
+            Optional. A unique identifier for this
+            request. UUID is the recommended format, but
+            other formats are still accepted.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class ListAnywhereCachesRequest(proto.Message):
+    r"""Request message for ListAnywhereCaches.
+
+    Attributes:
+        parent (str):
+            Required. The bucket to which this cache
+            belongs.
+        page_size (int):
+            Maximum number of caches to return in a
+            single response. The service will use this
+            parameter or 1,000 items, whichever is smaller.
+        page_token (str):
+            A previously-returned page token representing
+            part of the larger set of results to view.
+        request_id (str):
+            Optional. A unique identifier for this
+            request. UUID is the recommended format, but
+            other formats are still accepted.
+    """
+
+    parent: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    page_size: int = proto.Field(
+        proto.INT32,
+        number=2,
+    )
+    page_token: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+
+
+class ListAnywhereCachesResponse(proto.Message):
+    r"""Response message for ListAnywhereCaches.
+
+    Attributes:
+        anywhere_caches (MutableSequence[google.cloud.storage_control_v2.types.AnywhereCache]):
+            The list of items.
+        next_page_token (str):
+            A token, which can be sent as ``page_token`` to retrieve the
+            next page. If this field is omitted, there are no subsequent
+            pages.
+    """
+
+    @property
+    def raw_page(self):
+        return self
+
+    anywhere_caches: MutableSequence["AnywhereCache"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="AnywhereCache",
+    )
+    next_page_token: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+
+
+class IntelligenceConfig(proto.Message):
+    r"""The ``IntelligenceConfig`` resource associated with your
+    organization, folder, or project.
+
+    Attributes:
+        name (str):
+            Identifier. The name of the ``IntelligenceConfig`` resource
+            associated with your organization, folder, or project.
+
+            The name format varies based on the GCP resource hierarchy
+            as follows:
+
+            -  For project:
+               ``projects/{project_number}/locations/global/intelligenceConfig``
+            -  For organization:
+               ``organizations/{org_id}/locations/global/intelligenceConfig``
+            -  For folder:
+               ``folders/{folder_id}/locations/global/intelligenceConfig``
+        edition_config (google.cloud.storage_control_v2.types.IntelligenceConfig.EditionConfig):
+            Optional. The edition configuration of the
+            ``IntelligenceConfig`` resource.
+        update_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. The time at which the ``IntelligenceConfig``
+            resource is last updated.
+        filter (google.cloud.storage_control_v2.types.IntelligenceConfig.Filter):
+            Optional. Filter over location and bucket.
+        effective_intelligence_config (google.cloud.storage_control_v2.types.IntelligenceConfig.EffectiveIntelligenceConfig):
+            Output only. The ``IntelligenceConfig`` resource that is
+            applicable for the resource.
+        trial_config (google.cloud.storage_control_v2.types.IntelligenceConfig.TrialConfig):
+            The trial configuration of the ``IntelligenceConfig``
+            resource.
+    """
+
+    class EditionConfig(proto.Enum):
+        r"""The edition configuration of the ``IntelligenceConfig`` resource.
+        This signifies the edition used for configuring the
+        ``IntelligenceConfig`` resource and can only take the following
+        values: ``EDITION_CONFIG_UNSPECIFIED``, ``INHERIT``, ``DISABLED``,
+        ``STANDARD`` and ``TRIAL``.
+
+        Values:
+            EDITION_CONFIG_UNSPECIFIED (0):
+                This is an unknown edition of the resource.
+            INHERIT (1):
+                The inherited edition from the parent and filters. This is
+                the default edition when there is no ``IntelligenceConfig``
+                setup for a GCP resource.
+            DISABLED (2):
+                The edition configuration is disabled for the
+                ``IntelligenceConfig`` resource and its children. Filters
+                are not applicable.
+            STANDARD (3):
+                The ``IntelligenceConfig`` resource is of STANDARD edition.
+            TRIAL (5):
+                The ``IntelligenceConfig`` resource is available in
+                ``TRIAL`` edition. During the trial period, Cloud Storage
+                does not charge for Storage Intelligence usage. You can
+                specify the buckets to include in the trial period by using
+                filters. At the end of the trial period, the
+                ``IntelligenceConfig`` resource is upgraded to ``STANDARD``
+                edition.
+        """
+        EDITION_CONFIG_UNSPECIFIED = 0
+        INHERIT = 1
+        DISABLED = 2
+        STANDARD = 3
+        TRIAL = 5
+
+    class Filter(proto.Message):
+        r"""Filter over location and bucket using include or exclude
+        semantics. Resources that match the include or exclude filter
+        are exclusively included or excluded from the Storage
+        Intelligence plan.
+
+        This message has `oneof`_ fields (mutually exclusive fields).
+        For each oneof, at most one member field can be set at the same time.
+        Setting any member of the oneof automatically clears all other
+        members.
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+        Attributes:
+            included_cloud_storage_locations (google.cloud.storage_control_v2.types.IntelligenceConfig.Filter.CloudStorageLocations):
+                Bucket locations to include.
+
+                This field is a member of `oneof`_ ``cloud_storage_locations``.
+            excluded_cloud_storage_locations (google.cloud.storage_control_v2.types.IntelligenceConfig.Filter.CloudStorageLocations):
+                Bucket locations to exclude.
+
+                This field is a member of `oneof`_ ``cloud_storage_locations``.
+            included_cloud_storage_buckets (google.cloud.storage_control_v2.types.IntelligenceConfig.Filter.CloudStorageBuckets):
+                Buckets to include.
+
+                This field is a member of `oneof`_ ``cloud_storage_buckets``.
+            excluded_cloud_storage_buckets (google.cloud.storage_control_v2.types.IntelligenceConfig.Filter.CloudStorageBuckets):
+                Buckets to exclude.
+
+                This field is a member of `oneof`_ ``cloud_storage_buckets``.
+        """
+
+        class CloudStorageLocations(proto.Message):
+            r"""Collection of bucket locations.
+
+            Attributes:
+                locations (MutableSequence[str]):
+                    Optional. Bucket locations. Location can be any of the Cloud
+                    Storage regions specified in lower case format. For example,
+                    ``us-east1``, ``us-west1``.
+            """
+
+            locations: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=1,
+            )
+
+        class CloudStorageBuckets(proto.Message):
+            r"""Collection of buckets.
+
+            Attributes:
+                bucket_id_regexes (MutableSequence[str]):
+                    Optional. A regex pattern for matching bucket names. Regex
+                    should follow the syntax specified in
+                    `google/re2 <https://github.com/google/re2>`__. For example,
+                    ``^sample_.*`` matches all buckets of the form
+                    ``gs://sample_bucket-1``, ``gs://sample_bucket-2``,
+                    ``gs://sample_bucket-n`` but not
+                    ``gs://test_sample_bucket``. If you want to match a single
+                    bucket, say ``gs://sample_bucket``, use ``sample_bucket``.
+            """
+
+            bucket_id_regexes: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=1,
+            )
+
+        included_cloud_storage_locations: "IntelligenceConfig.Filter.CloudStorageLocations" = proto.Field(
+            proto.MESSAGE,
+            number=1,
+            oneof="cloud_storage_locations",
+            message="IntelligenceConfig.Filter.CloudStorageLocations",
+        )
+        excluded_cloud_storage_locations: "IntelligenceConfig.Filter.CloudStorageLocations" = proto.Field(
+            proto.MESSAGE,
+            number=2,
+            oneof="cloud_storage_locations",
+            message="IntelligenceConfig.Filter.CloudStorageLocations",
+        )
+        included_cloud_storage_buckets: "IntelligenceConfig.Filter.CloudStorageBuckets" = proto.Field(
+            proto.MESSAGE,
+            number=3,
+            oneof="cloud_storage_buckets",
+            message="IntelligenceConfig.Filter.CloudStorageBuckets",
+        )
+        excluded_cloud_storage_buckets: "IntelligenceConfig.Filter.CloudStorageBuckets" = proto.Field(
+            proto.MESSAGE,
+            number=4,
+            oneof="cloud_storage_buckets",
+            message="IntelligenceConfig.Filter.CloudStorageBuckets",
+        )
+
+    class EffectiveIntelligenceConfig(proto.Message):
+        r"""The effective ``IntelligenceConfig`` for the resource.
+
+        Attributes:
+            effective_edition (google.cloud.storage_control_v2.types.IntelligenceConfig.EffectiveIntelligenceConfig.EffectiveEdition):
+                Output only. The ``IntelligenceConfig`` edition that is
+                applicable for the resource.
+            intelligence_config (str):
+                Output only. The ``IntelligenceConfig`` resource that is
+                applied for the target resource. Format:
+                ``{organizations|folders|projects}/{id}/locations/{location}/intelligenceConfig``
+        """
+
+        class EffectiveEdition(proto.Enum):
+            r"""The effective edition of the ``IntelligenceConfig`` resource.
+
+            Values:
+                EFFECTIVE_EDITION_UNSPECIFIED (0):
+                    This is an unknown edition of the resource.
+                NONE (1):
+                    No edition.
+                STANDARD (2):
+                    The ``IntelligenceConfig`` resource is of STANDARD edition.
+            """
+            EFFECTIVE_EDITION_UNSPECIFIED = 0
+            NONE = 1
+            STANDARD = 2
+
+        effective_edition: "IntelligenceConfig.EffectiveIntelligenceConfig.EffectiveEdition" = proto.Field(
+            proto.ENUM,
+            number=1,
+            enum="IntelligenceConfig.EffectiveIntelligenceConfig.EffectiveEdition",
+        )
+        intelligence_config: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    class TrialConfig(proto.Message):
+        r"""The trial configuration of the ``IntelligenceConfig`` resource.
+
+        Attributes:
+            expire_time (google.protobuf.timestamp_pb2.Timestamp):
+                Output only. The time at which the trial
+                expires.
+        """
+
+        expire_time: timestamp_pb2.Timestamp = proto.Field(
+            proto.MESSAGE,
+            number=3,
+            message=timestamp_pb2.Timestamp,
+        )
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    edition_config: EditionConfig = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum=EditionConfig,
+    )
+    update_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=timestamp_pb2.Timestamp,
+    )
+    filter: Filter = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        message=Filter,
+    )
+    effective_intelligence_config: EffectiveIntelligenceConfig = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        message=EffectiveIntelligenceConfig,
+    )
+    trial_config: TrialConfig = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        message=TrialConfig,
+    )
+
+
+class UpdateOrganizationIntelligenceConfigRequest(proto.Message):
+    r"""Request message to update the ``IntelligenceConfig`` resource
+    associated with your organization.
+
+    **IAM Permissions**:
+
+    Requires ``storage.intelligenceConfigs.update``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the organization.
+
+    Attributes:
+        intelligence_config (google.cloud.storage_control_v2.types.IntelligenceConfig):
+            Required. The ``IntelligenceConfig`` resource to be updated.
+        update_mask (google.protobuf.field_mask_pb2.FieldMask):
+            Required. The ``update_mask`` that specifies the fields
+            within the ``IntelligenceConfig`` resource that should be
+            modified by this update. Only the listed fields are updated.
+        request_id (str):
+            Optional. The ID that uniquely identifies the
+            request, preventing duplicate processing.
+    """
+
+    intelligence_config: "IntelligenceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="IntelligenceConfig",
+    )
+    update_mask: field_mask_pb2.FieldMask = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=field_mask_pb2.FieldMask,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class UpdateFolderIntelligenceConfigRequest(proto.Message):
+    r"""Request message to update the ``IntelligenceConfig`` resource
+    associated with your folder.
+
+    **IAM Permissions**:
+
+    Requires ``storage.intelligenceConfigs.update``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the folder.
+
+    Attributes:
+        intelligence_config (google.cloud.storage_control_v2.types.IntelligenceConfig):
+            Required. The ``IntelligenceConfig`` resource to be updated.
+        update_mask (google.protobuf.field_mask_pb2.FieldMask):
+            Required. The ``update_mask`` that specifies the fields
+            within the ``IntelligenceConfig`` resource that should be
+            modified by this update. Only the listed fields are updated.
+        request_id (str):
+            Optional. The ID that uniquely identifies the
+            request, preventing duplicate processing.
+    """
+
+    intelligence_config: "IntelligenceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="IntelligenceConfig",
+    )
+    update_mask: field_mask_pb2.FieldMask = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=field_mask_pb2.FieldMask,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class UpdateProjectIntelligenceConfigRequest(proto.Message):
+    r"""Request message to update the ``IntelligenceConfig`` resource
+    associated with your project.
+
+    **IAM Permissions**:
+
+    Requires ``storage.intelligenceConfigs.update``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the folder.
+
+    Attributes:
+        intelligence_config (google.cloud.storage_control_v2.types.IntelligenceConfig):
+            Required. The ``IntelligenceConfig`` resource to be updated.
+        update_mask (google.protobuf.field_mask_pb2.FieldMask):
+            Required. The ``update_mask`` that specifies the fields
+            within the ``IntelligenceConfig`` resource that should be
+            modified by this update. Only the listed fields are updated.
+        request_id (str):
+            Optional. The ID that uniquely identifies the
+            request, preventing duplicate processing.
+    """
+
+    intelligence_config: "IntelligenceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="IntelligenceConfig",
+    )
+    update_mask: field_mask_pb2.FieldMask = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=field_mask_pb2.FieldMask,
+    )
+    request_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class GetOrganizationIntelligenceConfigRequest(proto.Message):
+    r"""Request message to get the ``IntelligenceConfig`` resource
+    associated with your organization.
+
+    **IAM Permissions**
+
+    Requires ``storage.intelligenceConfigs.get``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the organization.
+
+    Attributes:
+        name (str):
+            Required. The name of the ``IntelligenceConfig`` resource
+            associated with your organization.
+
+            Format:
+            ``organizations/{org_id}/locations/global/intelligenceConfig``
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class GetFolderIntelligenceConfigRequest(proto.Message):
+    r"""Request message to get the ``IntelligenceConfig`` resource
+    associated with your folder.
+
+    **IAM Permissions**
+
+    Requires ``storage.intelligenceConfigs.get``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the folder.
+
+    Attributes:
+        name (str):
+            Required. The name of the ``IntelligenceConfig`` resource
+            associated with your folder.
+
+            Format: ``folders/{id}/locations/global/intelligenceConfig``
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class GetProjectIntelligenceConfigRequest(proto.Message):
+    r"""Request message to get the ``IntelligenceConfig`` resource
+    associated with your project.
+
+    **IAM Permissions**:
+
+    Requires ``storage.intelligenceConfigs.get``
+    `IAM <https://cloud.google.com/iam/docs/overview#permissions>`__
+    permission on the project.
+
+    Attributes:
+        name (str):
+            Required. The name of the ``IntelligenceConfig`` resource
+            associated with your project.
+
+            Format:
+            ``projects/{id}/locations/global/intelligenceConfig``
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
     )
 
 

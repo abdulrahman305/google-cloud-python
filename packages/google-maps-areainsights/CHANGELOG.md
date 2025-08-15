@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.7...google-maps-areainsights-v0.1.8) (2025-04-24)
+
+
+### Documentation
+
+* [google-maps-areainsights] A comment for service `AreaInsights` is changed ([#13830](https://github.com/googleapis/google-cloud-python/issues/13830)) ([dd4a1dc](https://github.com/googleapis/google-cloud-python/commit/dd4a1dc8caa2f01f6475975eb39b08d3d3322d0e))
+* A comment for method `ComputeInsights` in service `AreaInsights` ([dd4a1dc](https://github.com/googleapis/google-cloud-python/commit/dd4a1dc8caa2f01f6475975eb39b08d3d3322d0e))
+* A comment for service AreaInsights is changed ([dd4a1dc](https://github.com/googleapis/google-cloud-python/commit/dd4a1dc8caa2f01f6475975eb39b08d3d3322d0e))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.6...google-maps-areainsights-v0.1.7) (2025-04-23)
+
+
+### Documentation
+
+* clarifications of comments ([31b3cc8](https://github.com/googleapis/google-cloud-python/commit/31b3cc82071330347b4212d5192b7700672e9123))
+* sample requests rewritten as JSON ([31b3cc8](https://github.com/googleapis/google-cloud-python/commit/31b3cc82071330347b4212d5192b7700672e9123))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.5...google-maps-areainsights-v0.1.6) (2025-04-17)
+
+
+### Documentation
+
+* A comment for field `place` in message `.google.maps.areainsights.v1.LocationFilter` is changed ([afd8e5b](https://github.com/googleapis/google-cloud-python/commit/afd8e5bd3751669be857d7538ce10c04a9ba1ee0))
+* A comment for field `place` in message `.google.maps.areainsights.v1.PlaceInsight` is changed ([afd8e5b](https://github.com/googleapis/google-cloud-python/commit/afd8e5bd3751669be857d7538ce10c04a9ba1ee0))
+
+## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.4...google-maps-areainsights-v0.1.5) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.1.4](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.3...google-maps-areainsights-v0.1.4) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.1.3](https://github.com/googleapis/google-cloud-python/compare/google-maps-areainsights-v0.1.2...google-maps-areainsights-v0.1.3) (2024-12-12)
 
 

@@ -4,6 +4,73 @@
 
 [1]: https://pypi.org/project/google-cloud-dlp/#history
 
+## [3.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.30.0...google-cloud-dlp-v3.31.0) (2025-06-19)
+
+
+### Features
+
+* add SaveToGcsFindingsOutput ([b568ff5](https://github.com/googleapis/google-cloud-python/commit/b568ff5d1b0ac5b8a2fd65cac97e495cd80f5981))
+
+
+### Documentation
+
+* minor doc revision ([b568ff5](https://github.com/googleapis/google-cloud-python/commit/b568ff5d1b0ac5b8a2fd65cac97e495cd80f5981))
+
+## [3.30.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.29.0...google-cloud-dlp-v3.30.0) (2025-05-29)
+
+
+### Features
+
+* add a project ID to table reference so that org parents can create single table discovery configs. ([f92f4eb](https://github.com/googleapis/google-cloud-python/commit/f92f4eb2cea860c46e19ee0c5b55a27db6699e55))
+* add Dataplex Catalog action for discovery configs ([f92f4eb](https://github.com/googleapis/google-cloud-python/commit/f92f4eb2cea860c46e19ee0c5b55a27db6699e55))
+* new fields for data profile finding. ([f92f4eb](https://github.com/googleapis/google-cloud-python/commit/f92f4eb2cea860c46e19ee0c5b55a27db6699e55))
+
+
+### Documentation
+
+* various doc revisions ([f92f4eb](https://github.com/googleapis/google-cloud-python/commit/f92f4eb2cea860c46e19ee0c5b55a27db6699e55))
+
+## [3.29.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.28.1...google-cloud-dlp-v3.29.0) (2025-03-19)
+
+
+### Features
+
+* add sample findings for data profiles ([7a7e679](https://github.com/googleapis/google-cloud-python/commit/7a7e6795deed2761892174e15992d808225c657f))
+* list tags on resources for data profiles ([7a7e679](https://github.com/googleapis/google-cloud-python/commit/7a7e6795deed2761892174e15992d808225c657f))
+
+
+### Documentation
+
+* updated documentation for various fields and messages ([7a7e679](https://github.com/googleapis/google-cloud-python/commit/7a7e6795deed2761892174e15992d808225c657f))
+
+## [3.28.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.28.0...google-cloud-dlp-v3.28.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.28.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.27.0...google-cloud-dlp-v3.28.0) (2025-02-24)
+
+
+### Features
+
+* [google-cloud-dlp] discovery of Vertex AI datasets ([#13540](https://github.com/googleapis/google-cloud-python/issues/13540)) ([2913199](https://github.com/googleapis/google-cloud-python/commit/291319932e87fdde66c7a1672a128352820306a9))
+
+
+### Documentation
+
+* documentation revisions for data profiles ([2913199](https://github.com/googleapis/google-cloud-python/commit/291319932e87fdde66c7a1672a128352820306a9))
+
+## [3.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.26.0...google-cloud-dlp-v3.27.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [3.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dlp-v3.25.1...google-cloud-dlp-v3.26.0) (2024-12-12)
 
 

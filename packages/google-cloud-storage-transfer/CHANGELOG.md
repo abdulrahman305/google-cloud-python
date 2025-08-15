@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.16.1...google-cloud-storage-transfer-v1.17.0) (2025-05-26)
+
+
+### Features
+
+* support Azure federated identity ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+* support BYOSA ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+
+
+### Documentation
+
+* A comment for enum value `COPY` in enum `LoggableAction` is changed ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+* A comment for field `end_time_of_day` in message `.google.storagetransfer.v1.Schedule` is changed ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+* A comment for field `list_url` in message `.google.storagetransfer.v1.HttpData` is changed ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+* A comment for field `overwrite_objects_already_existing_in_sink` in message `.google.storagetransfer.v1.TransferOptions` is changed ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+* A comment for message `ObjectConditions` is changed ([4b52aac](https://github.com/googleapis/google-cloud-python/commit/4b52aacb8dbc12467dcdb76de47d522ba1d55d6d))
+
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.16.0...google-cloud-storage-transfer-v1.16.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.15.0...google-cloud-storage-transfer-v1.16.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storage-transfer-v1.14.0...google-cloud-storage-transfer-v1.15.0) (2024-12-18)
 
 

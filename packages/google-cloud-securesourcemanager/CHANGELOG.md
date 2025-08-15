@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.16...google-cloud-securesourcemanager-v0.1.17) (2025-08-06)
+
+
+### Features
+
+* add a FooBar API ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* add the VeoTuningSpec ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* Remove private preview label from Model Armor protos ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+
+### Documentation
+
+* update comments for rpc BatchCreatePullRequestComments, ResolvePullRequestComments and UnresolvePullRequestComments ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.15...google-cloud-securesourcemanager-v0.1.16) (2025-07-26)
+
+
+### Features
+
+* add new UpdateRepository API ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* add support for new API resources - Issues, IssueComments, PullRequests, PullRequestComments, Blobs ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* add support for workforce identity federation in instance ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+
+
+### Documentation
+
+* `ca_pool` in message `.google.cloud.securesourcemanager.v1.Instance` is Optional ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* A comment for field `requested_cancellation` in message `.google.cloud.securesourcemanager.v1.OperationMetadata` is changed ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* fix typo in `BranchRule` comment ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* remove mention of DataPlane from `CreateRepository` endpoint ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* remove mention of DataPlane from `DeleteRepository` endpoint ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* remove mention of DataPlane from `GetRepository` endpont ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+* remove mention of DataPlane from `ListRepositories` endpoint ([1569c8d](https://github.com/googleapis/google-cloud-python/commit/1569c8d0ef4a7005416d03ec5ad0a85fe17ed8cd))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.14...google-cloud-securesourcemanager-v0.1.15) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.13...google-cloud-securesourcemanager-v0.1.14) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.12...google-cloud-securesourcemanager-v0.1.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-securesourcemanager-v0.1.11...google-cloud-securesourcemanager-v0.1.12) (2024-12-12)
 
 

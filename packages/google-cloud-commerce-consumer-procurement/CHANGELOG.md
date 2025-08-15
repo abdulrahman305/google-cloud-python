@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.13...google-cloud-commerce-consumer-procurement-v0.2.0) (2025-05-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* [google-cloud-commerce-consumer-procurement] An existing google.api.http annotation `http_uri` is changed for method `UpdateLicensePool` in service `LicenseManagementService` ([#13940](https://github.com/googleapis/google-cloud-python/issues/13940))
+
+### Bug Fixes
+
+* [google-cloud-commerce-consumer-procurement] An existing google.api.http annotation `http_uri` is changed for method `UpdateLicensePool` in service `LicenseManagementService` ([#13940](https://github.com/googleapis/google-cloud-python/issues/13940)) ([3e9594a](https://github.com/googleapis/google-cloud-python/commit/3e9594a149b33dd101cdd5712362681165924b76))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.12...google-cloud-commerce-consumer-procurement-v0.1.13) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.11...google-cloud-commerce-consumer-procurement-v0.1.12) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-commerce-consumer-procurement-v0.1.10...google-cloud-commerce-consumer-procurement-v0.1.11) (2024-12-12)
 
 

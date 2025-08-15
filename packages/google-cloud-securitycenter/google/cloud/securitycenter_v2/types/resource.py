@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class CloudProvider(proto.Enum):
         CLOUD_PROVIDER_UNSPECIFIED (0):
             The cloud provider is unspecified.
         GOOGLE_CLOUD_PLATFORM (1):
-            The cloud provider is Google Cloud Platform.
+            The cloud provider is Google Cloud.
         AMAZON_WEB_SERVICES (2):
             The cloud provider is Amazon Web Services.
         MICROSOFT_AZURE (3):
@@ -164,8 +164,8 @@ class Resource(proto.Message):
 
 
 class GcpMetadata(proto.Message):
-    r"""GCP metadata associated with the resource, only applicable if
-    the finding's cloud provider is Google Cloud Platform.
+    r"""Google Cloud metadata associated with the resource. Only
+    applicable if the finding's cloud provider is Google Cloud.
 
     Attributes:
         project (str):
@@ -331,6 +331,9 @@ class AzureMetadata(proto.Message):
         resource_group (google.cloud.securitycenter_v2.types.AzureMetadata.AzureResourceGroup):
             The Azure resource group associated with the
             resource.
+        tenant (google.cloud.securitycenter_v2.types.AzureMetadata.AzureTenant):
+            The Azure Entra tenant associated with the
+            resource.
     """
 
     class AzureManagementGroup(proto.Message):
@@ -378,14 +381,40 @@ class AzureMetadata(proto.Message):
         r"""Represents an Azure resource group.
 
         Attributes:
+            id (str):
+                The ID of the Azure resource group.
             name (str):
                 The name of the Azure resource group. This is
                 not a UUID.
         """
 
+        id: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
         name: str = proto.Field(
             proto.STRING,
             number=1,
+        )
+
+    class AzureTenant(proto.Message):
+        r"""Represents a Microsoft Entra tenant.
+
+        Attributes:
+            id (str):
+                The ID of the Microsoft Entra tenant, for
+                example, "a11aaa11-aa11-1aa1-11aa-1aaa11a".
+            display_name (str):
+                The display name of the Azure tenant.
+        """
+
+        id: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        display_name: str = proto.Field(
+            proto.STRING,
+            number=2,
         )
 
     management_groups: MutableSequence[AzureManagementGroup] = proto.RepeatedField(
@@ -402,6 +431,11 @@ class AzureMetadata(proto.Message):
         proto.MESSAGE,
         number=3,
         message=AzureResourceGroup,
+    )
+    tenant: AzureTenant = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        message=AzureTenant,
     )
 
 

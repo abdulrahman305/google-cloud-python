@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -54,6 +55,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class LicenseManagementServiceRestInterceptor:
@@ -137,11 +141,37 @@ class LicenseManagementServiceRestInterceptor:
     ) -> license_management_service.AssignResponse:
         """Post-rpc interceptor for assign
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_assign_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LicenseManagementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_assign` interceptor runs
+        before the `post_assign_with_metadata` interceptor.
         """
         return response
+
+    def post_assign_with_metadata(
+        self,
+        response: license_management_service.AssignResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        license_management_service.AssignResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for assign
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LicenseManagementService server but before it is returned to user code.
+
+        We recommend only using this `post_assign_with_metadata`
+        interceptor in new development instead of the `post_assign` interceptor.
+        When both interceptors are used, this `post_assign_with_metadata` interceptor runs after the
+        `post_assign` interceptor. The (possibly modified) response returned by
+        `post_assign` will be passed to
+        `post_assign_with_metadata`.
+        """
+        return response, metadata
 
     def pre_enumerate_licensed_users(
         self,
@@ -163,11 +193,37 @@ class LicenseManagementServiceRestInterceptor:
     ) -> license_management_service.EnumerateLicensedUsersResponse:
         """Post-rpc interceptor for enumerate_licensed_users
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_enumerate_licensed_users_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LicenseManagementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_enumerate_licensed_users` interceptor runs
+        before the `post_enumerate_licensed_users_with_metadata` interceptor.
         """
         return response
+
+    def post_enumerate_licensed_users_with_metadata(
+        self,
+        response: license_management_service.EnumerateLicensedUsersResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        license_management_service.EnumerateLicensedUsersResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for enumerate_licensed_users
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LicenseManagementService server but before it is returned to user code.
+
+        We recommend only using this `post_enumerate_licensed_users_with_metadata`
+        interceptor in new development instead of the `post_enumerate_licensed_users` interceptor.
+        When both interceptors are used, this `post_enumerate_licensed_users_with_metadata` interceptor runs after the
+        `post_enumerate_licensed_users` interceptor. The (possibly modified) response returned by
+        `post_enumerate_licensed_users` will be passed to
+        `post_enumerate_licensed_users_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_license_pool(
         self,
@@ -189,11 +245,36 @@ class LicenseManagementServiceRestInterceptor:
     ) -> license_management_service.LicensePool:
         """Post-rpc interceptor for get_license_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_license_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LicenseManagementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_license_pool` interceptor runs
+        before the `post_get_license_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_get_license_pool_with_metadata(
+        self,
+        response: license_management_service.LicensePool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        license_management_service.LicensePool, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_license_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LicenseManagementService server but before it is returned to user code.
+
+        We recommend only using this `post_get_license_pool_with_metadata`
+        interceptor in new development instead of the `post_get_license_pool` interceptor.
+        When both interceptors are used, this `post_get_license_pool_with_metadata` interceptor runs after the
+        `post_get_license_pool` interceptor. The (possibly modified) response returned by
+        `post_get_license_pool` will be passed to
+        `post_get_license_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_unassign(
         self,
@@ -215,11 +296,37 @@ class LicenseManagementServiceRestInterceptor:
     ) -> license_management_service.UnassignResponse:
         """Post-rpc interceptor for unassign
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_unassign_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LicenseManagementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_unassign` interceptor runs
+        before the `post_unassign_with_metadata` interceptor.
         """
         return response
+
+    def post_unassign_with_metadata(
+        self,
+        response: license_management_service.UnassignResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        license_management_service.UnassignResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for unassign
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LicenseManagementService server but before it is returned to user code.
+
+        We recommend only using this `post_unassign_with_metadata`
+        interceptor in new development instead of the `post_unassign` interceptor.
+        When both interceptors are used, this `post_unassign_with_metadata` interceptor runs after the
+        `post_unassign` interceptor. The (possibly modified) response returned by
+        `post_unassign` will be passed to
+        `post_unassign_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_license_pool(
         self,
@@ -241,11 +348,36 @@ class LicenseManagementServiceRestInterceptor:
     ) -> license_management_service.LicensePool:
         """Post-rpc interceptor for update_license_pool
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_license_pool_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the LicenseManagementService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_license_pool` interceptor runs
+        before the `post_update_license_pool_with_metadata` interceptor.
         """
         return response
+
+    def post_update_license_pool_with_metadata(
+        self,
+        response: license_management_service.LicensePool,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        license_management_service.LicensePool, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_license_pool
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the LicenseManagementService server but before it is returned to user code.
+
+        We recommend only using this `post_update_license_pool_with_metadata`
+        interceptor in new development instead of the `post_update_license_pool` interceptor.
+        When both interceptors are used, this `post_update_license_pool_with_metadata` interceptor runs after the
+        `post_update_license_pool` interceptor. The (possibly modified) response returned by
+        `post_update_license_pool` will be passed to
+        `post_update_license_pool_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -486,6 +618,10 @@ class LicenseManagementServiceRestTransport(_BaseLicenseManagementServiceRestTra
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_assign(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_assign_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -634,6 +770,10 @@ class LicenseManagementServiceRestTransport(_BaseLicenseManagementServiceRestTra
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_enumerate_licensed_users(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_enumerate_licensed_users_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -784,6 +924,10 @@ class LicenseManagementServiceRestTransport(_BaseLicenseManagementServiceRestTra
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_license_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_license_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -936,6 +1080,10 @@ class LicenseManagementServiceRestTransport(_BaseLicenseManagementServiceRestTra
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_unassign(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_unassign_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1092,6 +1240,10 @@ class LicenseManagementServiceRestTransport(_BaseLicenseManagementServiceRestTra
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_license_pool(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_license_pool_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

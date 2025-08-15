@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ from google.maps.fleetengine_delivery_v1.types.delivery_api import (
     BatchCreateTasksResponse,
     CreateDeliveryVehicleRequest,
     CreateTaskRequest,
+    DeleteDeliveryVehicleRequest,
+    DeleteTaskRequest,
     GetDeliveryVehicleRequest,
     GetTaskRequest,
     GetTaskTrackingInfoRequest,
@@ -72,6 +74,8 @@ __all__ = (
     "BatchCreateTasksResponse",
     "CreateDeliveryVehicleRequest",
     "CreateTaskRequest",
+    "DeleteDeliveryVehicleRequest",
+    "DeleteTaskRequest",
     "GetDeliveryVehicleRequest",
     "GetTaskRequest",
     "GetTaskTrackingInfoRequest",

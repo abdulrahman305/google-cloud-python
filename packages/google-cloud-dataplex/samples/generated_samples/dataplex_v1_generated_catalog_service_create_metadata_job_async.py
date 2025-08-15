@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,9 +42,9 @@ async def sample_create_metadata_job():
     metadata_job = dataplex_v1.MetadataJob()
     metadata_job.import_spec.scope.entry_groups = ['entry_groups_value1', 'entry_groups_value2']
     metadata_job.import_spec.scope.entry_types = ['entry_types_value1', 'entry_types_value2']
-    metadata_job.import_spec.entry_sync_mode = "INCREMENTAL"
-    metadata_job.import_spec.aspect_sync_mode = "INCREMENTAL"
-    metadata_job.type_ = "IMPORT"
+    metadata_job.import_spec.entry_sync_mode = "NONE"
+    metadata_job.import_spec.aspect_sync_mode = "NONE"
+    metadata_job.type_ = "EXPORT"
 
     request = dataplex_v1.CreateMetadataJobRequest(
         parent="parent_value",

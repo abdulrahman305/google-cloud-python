@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@ __protobuf__ = proto.module(
         "Interval",
         "CustomAttribute",
         "UserInfo",
+        "DoubleList",
+        "Principal",
+        "HealthcareFhirConfig",
+        "SearchLinkPromotion",
     },
 )
 
@@ -256,6 +260,9 @@ class UserInfo(proto.Message):
             or if
             [UserEvent.direct_user_request][google.cloud.discoveryengine.v1.UserEvent.direct_user_request]
             is set.
+        time_zone (str):
+            Optional. IANA time zone, e.g.
+            Europe/Budapest.
     """
 
     user_id: str = proto.Field(
@@ -265,6 +272,160 @@ class UserInfo(proto.Message):
     user_agent: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+    time_zone: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class DoubleList(proto.Message):
+    r"""Double list.
+
+    Attributes:
+        values (MutableSequence[float]):
+            Double values.
+    """
+
+    values: MutableSequence[float] = proto.RepeatedField(
+        proto.DOUBLE,
+        number=1,
+    )
+
+
+class Principal(proto.Message):
+    r"""Principal identifier of a user or a group.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        user_id (str):
+            User identifier. For Google Workspace user account, user_id
+            should be the google workspace user email. For non-google
+            identity provider user account, user_id is the mapped user
+            identifier configured during the workforcepool config.
+
+            This field is a member of `oneof`_ ``principal``.
+        group_id (str):
+            Group identifier. For Google Workspace user account,
+            group_id should be the google workspace group email. For
+            non-google identity provider user account, group_id is the
+            mapped group identifier configured during the workforcepool
+            config.
+
+            This field is a member of `oneof`_ ``principal``.
+        external_entity_id (str):
+            For 3P application identities which are not
+            present in the customer identity provider.
+
+            This field is a member of `oneof`_ ``principal``.
+    """
+
+    user_id: str = proto.Field(
+        proto.STRING,
+        number=1,
+        oneof="principal",
+    )
+    group_id: str = proto.Field(
+        proto.STRING,
+        number=2,
+        oneof="principal",
+    )
+    external_entity_id: str = proto.Field(
+        proto.STRING,
+        number=3,
+        oneof="principal",
+    )
+
+
+class HealthcareFhirConfig(proto.Message):
+    r"""Config to data store for ``HEALTHCARE_FHIR`` vertical.
+
+    Attributes:
+        enable_configurable_schema (bool):
+            Whether to enable configurable schema for
+            ``HEALTHCARE_FHIR`` vertical.
+
+            If set to ``true``, the predefined healthcare fhir schema
+            can be extended for more customized searching and filtering.
+        enable_static_indexing_for_batch_ingestion (bool):
+            Whether to enable static indexing for ``HEALTHCARE_FHIR``
+            batch ingestion.
+
+            If set to ``true``, the batch ingestion will be processed in
+            a static indexing mode which is slower but more capable of
+            handling larger volume.
+    """
+
+    enable_configurable_schema: bool = proto.Field(
+        proto.BOOL,
+        number=1,
+    )
+    enable_static_indexing_for_batch_ingestion: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
+
+
+class SearchLinkPromotion(proto.Message):
+    r"""Promotion proto includes uri and other helping information to
+    display the promotion.
+
+    Attributes:
+        title (str):
+            Required. The title of the promotion.
+            Maximum length: 160 characters.
+        uri (str):
+            Optional. The URL for the page the user wants
+            to promote. Must be set for site search. For
+            other verticals, this is optional.
+        document (str):
+            Optional. The
+            [Document][google.cloud.discoveryengine.v1.Document] the
+            user wants to promote. For site search, leave unset and only
+            populate uri. Can be set along with uri.
+        image_uri (str):
+            Optional. The promotion thumbnail image url.
+        description (str):
+            Optional. The Promotion description.
+            Maximum length: 200 characters.
+        enabled (bool):
+            Optional. The enabled promotion will be
+            returned for any serving configs associated with
+            the parent of the control this promotion is
+            attached to.
+
+            This flag is used for basic site search only.
+    """
+
+    title: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    uri: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    document: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
+    image_uri: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    description: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    enabled: bool = proto.Field(
+        proto.BOOL,
+        number=5,
     )
 
 

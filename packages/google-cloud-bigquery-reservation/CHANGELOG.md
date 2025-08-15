@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-reservation-v1.17.1...google-cloud-bigquery-reservation-v1.17.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-reservation-v1.17.0...google-cloud-bigquery-reservation-v1.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-reservation-v1.16.0...google-cloud-bigquery-reservation-v1.17.0) (2025-02-27)
+
+
+### Features
+
+* Add a new field `enable_gemini_in_bigquery` to `.google.cloud.bigquery.reservation.v1.Assignment` that indicates if [Gemini in Bigquery](https://cloud.google.com/gemini/docs/bigquery/overview) features are enabled for the reservation assignment ([ff7c472](https://github.com/googleapis/google-cloud-python/commit/ff7c472ca3ada09a699bcf85d9a2d2880f9834f4))
+* Add a new field `replication_status` to `.google.cloud.bigquery.reservation.v1.Reservation` to provide visibility into errors that could arise during Disaster Recovery(DR) replication ([ff7c472](https://github.com/googleapis/google-cloud-python/commit/ff7c472ca3ada09a699bcf85d9a2d2880f9834f4))
+* Add the CONTINUOUS Job type to `.google.cloud.bigquery.reservation.v1.Assignment.JobType` for continuous SQL jobs ([ff7c472](https://github.com/googleapis/google-cloud-python/commit/ff7c472ca3ada09a699bcf85d9a2d2880f9834f4))
+
+
+### Documentation
+
+* Remove the section about `EDITION_UNSPECIFIED` in the comment for `slot_capacity` in `.google.cloud.bigquery.reservation.v1.Reservation` ([ff7c472](https://github.com/googleapis/google-cloud-python/commit/ff7c472ca3ada09a699bcf85d9a2d2880f9834f4))
+* Update the `google.api.field_behavior` for the `.google.cloud.bigquery.reservation.v1.Reservation.primary_location` and `.google.cloud.bigquery.reservation.v1.Reservation.original_primary_location` fields to clarify that they are `OUTPUT_ONLY` ([ff7c472](https://github.com/googleapis/google-cloud-python/commit/ff7c472ca3ada09a699bcf85d9a2d2880f9834f4))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-reservation-v1.15.0...google-cloud-bigquery-reservation-v1.16.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-reservation-v1.14.1...google-cloud-bigquery-reservation-v1.15.0) (2024-12-12)
 
 

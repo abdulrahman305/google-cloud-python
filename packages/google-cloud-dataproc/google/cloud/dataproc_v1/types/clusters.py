@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -179,6 +179,8 @@ class ClusterConfig(proto.Message):
     r"""The cluster config.
 
     Attributes:
+        cluster_tier (google.cloud.dataproc_v1.types.ClusterConfig.ClusterTier):
+            Optional. The cluster tier.
         config_bucket (str):
             Optional. A Cloud Storage bucket used to stage job
             dependencies, config files, and job driver console output.
@@ -258,6 +260,26 @@ class ClusterConfig(proto.Message):
             Optional. The node group settings.
     """
 
+    class ClusterTier(proto.Enum):
+        r"""The cluster tier.
+
+        Values:
+            CLUSTER_TIER_UNSPECIFIED (0):
+                Not set. Works the same as CLUSTER_TIER_STANDARD.
+            CLUSTER_TIER_STANDARD (1):
+                Standard Dataproc cluster.
+            CLUSTER_TIER_PREMIUM (2):
+                Premium Dataproc cluster.
+        """
+        CLUSTER_TIER_UNSPECIFIED = 0
+        CLUSTER_TIER_STANDARD = 1
+        CLUSTER_TIER_PREMIUM = 2
+
+    cluster_tier: ClusterTier = proto.Field(
+        proto.ENUM,
+        number=29,
+        enum=ClusterTier,
+    )
     config_bucket: str = proto.Field(
         proto.STRING,
         number=1,

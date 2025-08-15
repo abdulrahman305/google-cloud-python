@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,12 +69,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.maps.places.v1.Places",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -112,9 +111,9 @@ class PlacesGrpcTransport(PlacesTransport):
     """gRPC backend transport for Places.
 
     Service definition for the Places API. Note: every request (except
-    for Autocomplete requests) requires a field mask set outside of the
-    request proto (``all/*``, is not assumed). The field mask can be set
-    via the HTTP header ``X-Goog-FieldMask``. See:
+    for Autocomplete and GetPhotoMedia requests) requires a field mask
+    set outside of the request proto (``all/*``, is not assumed). The
+    field mask can be set via the HTTP header ``X-Goog-FieldMask``. See:
     https://developers.google.com/maps/documentation/places/web-service/choose-fields
 
     This class defines the same methods as the primary client, so the

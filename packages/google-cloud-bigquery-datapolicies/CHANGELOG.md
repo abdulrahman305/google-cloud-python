@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.6.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.15...google-cloud-bigquery-datapolicies-v0.6.16) (2025-07-23)
+
+
+### Features
+
+* Add client libraries for V2 Data Policy api ([51f86b0](https://github.com/googleapis/google-cloud-python/commit/51f86b01827ecf35c5b76bbafe4d9d73083c29d5))
+* Release v2beta1 version containing Data Policy on Column ([51f86b0](https://github.com/googleapis/google-cloud-python/commit/51f86b01827ecf35c5b76bbafe4d9d73083c29d5))
+
+## [0.6.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.14...google-cloud-bigquery-datapolicies-v0.6.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.13...google-cloud-bigquery-datapolicies-v0.6.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.6.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.12...google-cloud-bigquery-datapolicies-v0.6.13) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.6.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.11...google-cloud-bigquery-datapolicies-v0.6.12) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [0.6.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-datapolicies-v0.6.10...google-cloud-bigquery-datapolicies-v0.6.11) (2024-12-12)
 
 

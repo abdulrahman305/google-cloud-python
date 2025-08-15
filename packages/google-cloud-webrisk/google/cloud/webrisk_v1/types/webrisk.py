@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -578,9 +578,8 @@ class Submission(proto.Message):
 
 
 class ThreatInfo(proto.Message):
-    r"""Context about the submission including the type of abuse found on
-    the URI and supporting details. option
-    (google.api.message_visibility).restriction = "TRUSTED_TESTER";
+    r"""Context about the submission including the type of abuse
+    found on the URI and supporting details.
 
     Attributes:
         abuse_type (google.cloud.webrisk_v1.types.ThreatInfo.AbuseType):
@@ -835,8 +834,7 @@ class SubmitUriRequest(proto.Message):
 
 
 class SubmitUriMetadata(proto.Message):
-    r"""Metadata for the Submit URI long-running operation. option
-    (google.api.message_visibility).restriction = "TRUSTED_TESTER";
+    r"""Metadata for the Submit URI long-running operation.
 
     Attributes:
         state (google.cloud.webrisk_v1.types.SubmitUriMetadata.State):

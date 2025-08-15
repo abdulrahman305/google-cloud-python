@@ -4,6 +4,29 @@
 
 [1]: https://pypi.org/project/google-cloud-oslogin/#history
 
+## [2.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.17.1...google-cloud-os-login-v2.17.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [2.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.17.0...google-cloud-os-login-v2.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.16.0...google-cloud-os-login-v2.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
 ## [2.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-os-login-v2.15.1...google-cloud-os-login-v2.16.0) (2024-12-12)
 
 

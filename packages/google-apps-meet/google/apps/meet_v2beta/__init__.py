@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ from .types.resource import (
     ConferenceRecord,
     DocsDestination,
     DriveDestination,
+    Member,
     Participant,
     ParticipantSession,
     PhoneUser,
@@ -40,9 +41,14 @@ from .types.resource import (
     TranscriptEntry,
 )
 from .types.service import (
+    ConnectActiveConferenceRequest,
+    ConnectActiveConferenceResponse,
+    CreateMemberRequest,
     CreateSpaceRequest,
+    DeleteMemberRequest,
     EndActiveConferenceRequest,
     GetConferenceRecordRequest,
+    GetMemberRequest,
     GetParticipantRequest,
     GetParticipantSessionRequest,
     GetRecordingRequest,
@@ -51,6 +57,8 @@ from .types.service import (
     GetTranscriptRequest,
     ListConferenceRecordsRequest,
     ListConferenceRecordsResponse,
+    ListMembersRequest,
+    ListMembersResponse,
     ListParticipantSessionsRequest,
     ListParticipantSessionsResponse,
     ListParticipantsRequest,
@@ -71,11 +79,16 @@ __all__ = (
     "AnonymousUser",
     "ConferenceRecord",
     "ConferenceRecordsServiceClient",
+    "ConnectActiveConferenceRequest",
+    "ConnectActiveConferenceResponse",
+    "CreateMemberRequest",
     "CreateSpaceRequest",
+    "DeleteMemberRequest",
     "DocsDestination",
     "DriveDestination",
     "EndActiveConferenceRequest",
     "GetConferenceRecordRequest",
+    "GetMemberRequest",
     "GetParticipantRequest",
     "GetParticipantSessionRequest",
     "GetRecordingRequest",
@@ -84,6 +97,8 @@ __all__ = (
     "GetTranscriptRequest",
     "ListConferenceRecordsRequest",
     "ListConferenceRecordsResponse",
+    "ListMembersRequest",
+    "ListMembersResponse",
     "ListParticipantSessionsRequest",
     "ListParticipantSessionsResponse",
     "ListParticipantsRequest",
@@ -94,6 +109,7 @@ __all__ = (
     "ListTranscriptEntriesResponse",
     "ListTranscriptsRequest",
     "ListTranscriptsResponse",
+    "Member",
     "Participant",
     "ParticipantSession",
     "PhoneUser",

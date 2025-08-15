@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,14 +41,19 @@ from .cloud_tpu import (
     ListNodesResponse,
     ListQueuedResourcesRequest,
     ListQueuedResourcesResponse,
+    ListReservationsRequest,
+    ListReservationsResponse,
     ListRuntimeVersionsRequest,
     ListRuntimeVersionsResponse,
     NetworkConfig,
     NetworkEndpoint,
     Node,
     OperationMetadata,
+    PerformMaintenanceQueuedResourceRequest,
+    PerformMaintenanceRequest,
     QueuedResource,
     QueuedResourceState,
+    Reservation,
     ResetQueuedResourceRequest,
     RuntimeVersion,
     SchedulingConfig,
@@ -59,6 +64,7 @@ from .cloud_tpu import (
     StartNodeRequest,
     StopNodeRequest,
     Symptom,
+    UpcomingMaintenance,
     UpdateNodeRequest,
 )
 
@@ -90,14 +96,19 @@ __all__ = (
     "ListNodesResponse",
     "ListQueuedResourcesRequest",
     "ListQueuedResourcesResponse",
+    "ListReservationsRequest",
+    "ListReservationsResponse",
     "ListRuntimeVersionsRequest",
     "ListRuntimeVersionsResponse",
     "NetworkConfig",
     "NetworkEndpoint",
     "Node",
     "OperationMetadata",
+    "PerformMaintenanceQueuedResourceRequest",
+    "PerformMaintenanceRequest",
     "QueuedResource",
     "QueuedResourceState",
+    "Reservation",
     "ResetQueuedResourceRequest",
     "RuntimeVersion",
     "SchedulingConfig",
@@ -108,5 +119,6 @@ __all__ = (
     "StartNodeRequest",
     "StopNodeRequest",
     "Symptom",
+    "UpcomingMaintenance",
     "UpdateNodeRequest",
 )

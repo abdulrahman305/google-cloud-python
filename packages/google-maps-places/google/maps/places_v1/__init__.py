@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ __version__ = package_version.__version__
 
 
 from .services.places import PlacesAsyncClient, PlacesClient
+from .types.address_descriptor import AddressDescriptor
 from .types.attribution import AuthorAttribution
 from .types.content_block import ContentBlock
 from .types.contextual_content import ContextualContent
@@ -50,6 +51,7 @@ from .types.travel_mode import TravelMode
 
 __all__ = (
     "PlacesAsyncClient",
+    "AddressDescriptor",
     "AuthorAttribution",
     "AutocompletePlacesRequest",
     "AutocompletePlacesResponse",

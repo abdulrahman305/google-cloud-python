@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,11 +32,11 @@ __protobuf__ = proto.module(
 
 
 class Namespaces(proto.Message):
-    r"""A list of Kubernetes Namespaces
+    r"""A list of Kubernetes Namespaces.
 
     Attributes:
         namespaces (MutableSequence[str]):
-            Optional. A list of Kubernetes Namespaces
+            Optional. A list of Kubernetes Namespaces.
     """
 
     namespaces: MutableSequence[str] = proto.RepeatedField(

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,6 +42,8 @@ class fleetengine_deliveryCallTransformer(cst.CSTTransformer):
         'batch_create_tasks': ('parent', 'requests', 'header', ),
         'create_delivery_vehicle': ('parent', 'delivery_vehicle_id', 'delivery_vehicle', 'header', ),
         'create_task': ('parent', 'task_id', 'task', 'header', ),
+        'delete_delivery_vehicle': ('name', 'header', ),
+        'delete_task': ('name', 'header', ),
         'get_delivery_vehicle': ('name', 'header', ),
         'get_task': ('name', 'header', ),
         'get_task_tracking_info': ('name', 'header', ),

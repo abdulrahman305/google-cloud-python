@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ from google.cloud.location import locations_pb2  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -55,6 +56,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class FunctionServiceRestInterceptor:
@@ -161,11 +165,34 @@ class FunctionServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_function
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_function_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_function` interceptor runs
+        before the `post_create_function_with_metadata` interceptor.
         """
         return response
+
+    def post_create_function_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_function
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_create_function_with_metadata`
+        interceptor in new development instead of the `post_create_function` interceptor.
+        When both interceptors are used, this `post_create_function_with_metadata` interceptor runs after the
+        `post_create_function` interceptor. The (possibly modified) response returned by
+        `post_create_function` will be passed to
+        `post_create_function_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_function(
         self,
@@ -186,11 +213,34 @@ class FunctionServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_function
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_function_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_function` interceptor runs
+        before the `post_delete_function_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_function_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_function
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_delete_function_with_metadata`
+        interceptor in new development instead of the `post_delete_function` interceptor.
+        When both interceptors are used, this `post_delete_function_with_metadata` interceptor runs after the
+        `post_delete_function` interceptor. The (possibly modified) response returned by
+        `post_delete_function` will be passed to
+        `post_delete_function_with_metadata`.
+        """
+        return response, metadata
 
     def pre_generate_download_url(
         self,
@@ -211,11 +261,36 @@ class FunctionServiceRestInterceptor:
     ) -> functions.GenerateDownloadUrlResponse:
         """Post-rpc interceptor for generate_download_url
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_generate_download_url_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_generate_download_url` interceptor runs
+        before the `post_generate_download_url_with_metadata` interceptor.
         """
         return response
+
+    def post_generate_download_url_with_metadata(
+        self,
+        response: functions.GenerateDownloadUrlResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        functions.GenerateDownloadUrlResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for generate_download_url
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_generate_download_url_with_metadata`
+        interceptor in new development instead of the `post_generate_download_url` interceptor.
+        When both interceptors are used, this `post_generate_download_url_with_metadata` interceptor runs after the
+        `post_generate_download_url` interceptor. The (possibly modified) response returned by
+        `post_generate_download_url` will be passed to
+        `post_generate_download_url_with_metadata`.
+        """
+        return response, metadata
 
     def pre_generate_upload_url(
         self,
@@ -236,11 +311,36 @@ class FunctionServiceRestInterceptor:
     ) -> functions.GenerateUploadUrlResponse:
         """Post-rpc interceptor for generate_upload_url
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_generate_upload_url_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_generate_upload_url` interceptor runs
+        before the `post_generate_upload_url_with_metadata` interceptor.
         """
         return response
+
+    def post_generate_upload_url_with_metadata(
+        self,
+        response: functions.GenerateUploadUrlResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        functions.GenerateUploadUrlResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for generate_upload_url
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_generate_upload_url_with_metadata`
+        interceptor in new development instead of the `post_generate_upload_url` interceptor.
+        When both interceptors are used, this `post_generate_upload_url_with_metadata` interceptor runs after the
+        `post_generate_upload_url` interceptor. The (possibly modified) response returned by
+        `post_generate_upload_url` will be passed to
+        `post_generate_upload_url_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_function(
         self,
@@ -257,11 +357,34 @@ class FunctionServiceRestInterceptor:
     def post_get_function(self, response: functions.Function) -> functions.Function:
         """Post-rpc interceptor for get_function
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_function_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_function` interceptor runs
+        before the `post_get_function_with_metadata` interceptor.
         """
         return response
+
+    def post_get_function_with_metadata(
+        self,
+        response: functions.Function,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[functions.Function, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_function
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_get_function_with_metadata`
+        interceptor in new development instead of the `post_get_function` interceptor.
+        When both interceptors are used, this `post_get_function_with_metadata` interceptor runs after the
+        `post_get_function` interceptor. The (possibly modified) response returned by
+        `post_get_function` will be passed to
+        `post_get_function_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_functions(
         self,
@@ -280,11 +403,36 @@ class FunctionServiceRestInterceptor:
     ) -> functions.ListFunctionsResponse:
         """Post-rpc interceptor for list_functions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_functions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_functions` interceptor runs
+        before the `post_list_functions_with_metadata` interceptor.
         """
         return response
+
+    def post_list_functions_with_metadata(
+        self,
+        response: functions.ListFunctionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        functions.ListFunctionsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_functions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_list_functions_with_metadata`
+        interceptor in new development instead of the `post_list_functions` interceptor.
+        When both interceptors are used, this `post_list_functions_with_metadata` interceptor runs after the
+        `post_list_functions` interceptor. The (possibly modified) response returned by
+        `post_list_functions` will be passed to
+        `post_list_functions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_runtimes(
         self,
@@ -303,11 +451,34 @@ class FunctionServiceRestInterceptor:
     ) -> functions.ListRuntimesResponse:
         """Post-rpc interceptor for list_runtimes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_runtimes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_runtimes` interceptor runs
+        before the `post_list_runtimes_with_metadata` interceptor.
         """
         return response
+
+    def post_list_runtimes_with_metadata(
+        self,
+        response: functions.ListRuntimesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[functions.ListRuntimesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_runtimes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_list_runtimes_with_metadata`
+        interceptor in new development instead of the `post_list_runtimes` interceptor.
+        When both interceptors are used, this `post_list_runtimes_with_metadata` interceptor runs after the
+        `post_list_runtimes` interceptor. The (possibly modified) response returned by
+        `post_list_runtimes` will be passed to
+        `post_list_runtimes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_function(
         self,
@@ -328,11 +499,34 @@ class FunctionServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for update_function
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_function_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the FunctionService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_function` interceptor runs
+        before the `post_update_function_with_metadata` interceptor.
         """
         return response
+
+    def post_update_function_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_function
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the FunctionService server but before it is returned to user code.
+
+        We recommend only using this `post_update_function_with_metadata`
+        interceptor in new development instead of the `post_update_function` interceptor.
+        When both interceptors are used, this `post_update_function_with_metadata` interceptor runs after the
+        `post_update_function` interceptor. The (possibly modified) response returned by
+        `post_update_function` will be passed to
+        `post_update_function_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_locations(
         self,
@@ -738,6 +932,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_function(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_function_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -879,6 +1077,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_function(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_function_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1028,6 +1230,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_generate_download_url(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_generate_download_url_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1179,6 +1385,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_generate_upload_url(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_generate_upload_url_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1325,6 +1535,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_function(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_function_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1465,6 +1679,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_functions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_functions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1605,6 +1823,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_runtimes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_runtimes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1752,6 +1974,10 @@ class FunctionServiceRestTransport(_BaseFunctionServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_function(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_function_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

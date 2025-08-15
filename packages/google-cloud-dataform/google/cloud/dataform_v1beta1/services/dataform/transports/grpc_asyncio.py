@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -342,6 +342,10 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Lists Repositories in a given project and location.
 
+        **Note:** *This method can return repositories not shown in
+        the*\ `Dataform
+        UI <https://console.cloud.google.com/bigquery/dataform>`__.
+
         Returns:
             Callable[[~.ListRepositoriesRequest],
                     Awaitable[~.ListRepositoriesResponse]]:
@@ -421,6 +425,12 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Updates a single Repository.
 
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
         Returns:
             Callable[[~.UpdateRepositoryRequest],
                     Awaitable[~.Repository]]:
@@ -469,7 +479,8 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     def commit_repository_changes(
         self,
     ) -> Callable[
-        [dataform.CommitRepositoryChangesRequest], Awaitable[empty_pb2.Empty]
+        [dataform.CommitRepositoryChangesRequest],
+        Awaitable[dataform.CommitRepositoryChangesResponse],
     ]:
         r"""Return a callable for the commit repository changes method over gRPC.
 
@@ -478,7 +489,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.CommitRepositoryChangesRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.CommitRepositoryChangesResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -490,7 +501,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["commit_repository_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CommitRepositoryChanges",
                 request_serializer=dataform.CommitRepositoryChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CommitRepositoryChangesResponse.deserialize,
             )
         return self._stubs["commit_repository_changes"]
 
@@ -789,7 +800,9 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     @property
     def pull_git_commits(
         self,
-    ) -> Callable[[dataform.PullGitCommitsRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[
+        [dataform.PullGitCommitsRequest], Awaitable[dataform.PullGitCommitsResponse]
+    ]:
         r"""Return a callable for the pull git commits method over gRPC.
 
         Pulls Git commits from the Repository's remote into a
@@ -797,7 +810,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.PullGitCommitsRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.PullGitCommitsResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -809,14 +822,16 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["pull_git_commits"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/PullGitCommits",
                 request_serializer=dataform.PullGitCommitsRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.PullGitCommitsResponse.deserialize,
             )
         return self._stubs["pull_git_commits"]
 
     @property
     def push_git_commits(
         self,
-    ) -> Callable[[dataform.PushGitCommitsRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[
+        [dataform.PushGitCommitsRequest], Awaitable[dataform.PushGitCommitsResponse]
+    ]:
         r"""Return a callable for the push git commits method over gRPC.
 
         Pushes Git commits from a Workspace to the
@@ -824,7 +839,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.PushGitCommitsRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.PushGitCommitsResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -836,7 +851,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["push_git_commits"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/PushGitCommits",
                 request_serializer=dataform.PushGitCommitsRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.PushGitCommitsResponse.deserialize,
             )
         return self._stubs["push_git_commits"]
 
@@ -901,7 +916,10 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     @property
     def commit_workspace_changes(
         self,
-    ) -> Callable[[dataform.CommitWorkspaceChangesRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[
+        [dataform.CommitWorkspaceChangesRequest],
+        Awaitable[dataform.CommitWorkspaceChangesResponse],
+    ]:
         r"""Return a callable for the commit workspace changes method over gRPC.
 
         Applies a Git commit for uncommitted files in a
@@ -909,7 +927,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.CommitWorkspaceChangesRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.CommitWorkspaceChangesResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -921,14 +939,17 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["commit_workspace_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CommitWorkspaceChanges",
                 request_serializer=dataform.CommitWorkspaceChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CommitWorkspaceChangesResponse.deserialize,
             )
         return self._stubs["commit_workspace_changes"]
 
     @property
     def reset_workspace_changes(
         self,
-    ) -> Callable[[dataform.ResetWorkspaceChangesRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[
+        [dataform.ResetWorkspaceChangesRequest],
+        Awaitable[dataform.ResetWorkspaceChangesResponse],
+    ]:
         r"""Return a callable for the reset workspace changes method over gRPC.
 
         Performs a Git reset for uncommitted files in a
@@ -936,7 +957,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.ResetWorkspaceChangesRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.ResetWorkspaceChangesResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -948,7 +969,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["reset_workspace_changes"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/ResetWorkspaceChanges",
                 request_serializer=dataform.ResetWorkspaceChangesRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.ResetWorkspaceChangesResponse.deserialize,
             )
         return self._stubs["reset_workspace_changes"]
 
@@ -1011,6 +1032,35 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
         return self._stubs["query_directory_contents"]
 
     @property
+    def search_files(
+        self,
+    ) -> Callable[
+        [dataform.SearchFilesRequest], Awaitable[dataform.SearchFilesResponse]
+    ]:
+        r"""Return a callable for the search files method over gRPC.
+
+        Finds the contents of a given Workspace directory by
+        filter.
+
+        Returns:
+            Callable[[~.SearchFilesRequest],
+                    Awaitable[~.SearchFilesResponse]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "search_files" not in self._stubs:
+            self._stubs["search_files"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/SearchFiles",
+                request_serializer=dataform.SearchFilesRequest.serialize,
+                response_deserializer=dataform.SearchFilesResponse.deserialize,
+            )
+        return self._stubs["search_files"]
+
+    @property
     def make_directory(
         self,
     ) -> Callable[
@@ -1041,7 +1091,9 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     @property
     def remove_directory(
         self,
-    ) -> Callable[[dataform.RemoveDirectoryRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[
+        [dataform.RemoveDirectoryRequest], Awaitable[dataform.RemoveDirectoryResponse]
+    ]:
         r"""Return a callable for the remove directory method over gRPC.
 
         Deletes a directory (inside a Workspace) and all of
@@ -1049,7 +1101,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.RemoveDirectoryRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.RemoveDirectoryResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1061,7 +1113,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["remove_directory"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/RemoveDirectory",
                 request_serializer=dataform.RemoveDirectoryRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.RemoveDirectoryResponse.deserialize,
             )
         return self._stubs["remove_directory"]
 
@@ -1123,14 +1175,14 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     @property
     def remove_file(
         self,
-    ) -> Callable[[dataform.RemoveFileRequest], Awaitable[empty_pb2.Empty]]:
+    ) -> Callable[[dataform.RemoveFileRequest], Awaitable[dataform.RemoveFileResponse]]:
         r"""Return a callable for the remove file method over gRPC.
 
         Deletes a file (inside a Workspace).
 
         Returns:
             Callable[[~.RemoveFileRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.RemoveFileResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1142,7 +1194,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             self._stubs["remove_file"] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/RemoveFile",
                 request_serializer=dataform.RemoveFileRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.RemoveFileResponse.deserialize,
             )
         return self._stubs["remove_file"]
 
@@ -1292,6 +1344,12 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
         r"""Return a callable for the update release config method over gRPC.
 
         Updates a single ReleaseConfig.
+
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
 
         Returns:
             Callable[[~.UpdateReleaseConfigRequest],
@@ -1551,6 +1609,12 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Updates a single WorkflowConfig.
 
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
         Returns:
             Callable[[~.UpdateWorkflowConfigRequest],
                     Awaitable[~.WorkflowConfig]]:
@@ -1718,7 +1782,8 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
     def cancel_workflow_invocation(
         self,
     ) -> Callable[
-        [dataform.CancelWorkflowInvocationRequest], Awaitable[empty_pb2.Empty]
+        [dataform.CancelWorkflowInvocationRequest],
+        Awaitable[dataform.CancelWorkflowInvocationResponse],
     ]:
         r"""Return a callable for the cancel workflow invocation method over gRPC.
 
@@ -1727,7 +1792,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
 
         Returns:
             Callable[[~.CancelWorkflowInvocationRequest],
-                    Awaitable[~.Empty]]:
+                    Awaitable[~.CancelWorkflowInvocationResponse]]:
                 A function that, when called, will call the underlying RPC
                 on the server.
         """
@@ -1741,7 +1806,7 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             ] = self._logged_channel.unary_unary(
                 "/google.cloud.dataform.v1beta1.Dataform/CancelWorkflowInvocation",
                 request_serializer=dataform.CancelWorkflowInvocationRequest.serialize,
-                response_deserializer=empty_pb2.Empty.FromString,
+                response_deserializer=dataform.CancelWorkflowInvocationResponse.deserialize,
             )
         return self._stubs["cancel_workflow_invocation"]
 
@@ -1777,6 +1842,64 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
                 response_deserializer=dataform.QueryWorkflowInvocationActionsResponse.deserialize,
             )
         return self._stubs["query_workflow_invocation_actions"]
+
+    @property
+    def get_config(
+        self,
+    ) -> Callable[[dataform.GetConfigRequest], Awaitable[dataform.Config]]:
+        r"""Return a callable for the get config method over gRPC.
+
+        Get default config for a given project and location.
+
+        Returns:
+            Callable[[~.GetConfigRequest],
+                    Awaitable[~.Config]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "get_config" not in self._stubs:
+            self._stubs["get_config"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/GetConfig",
+                request_serializer=dataform.GetConfigRequest.serialize,
+                response_deserializer=dataform.Config.deserialize,
+            )
+        return self._stubs["get_config"]
+
+    @property
+    def update_config(
+        self,
+    ) -> Callable[[dataform.UpdateConfigRequest], Awaitable[dataform.Config]]:
+        r"""Return a callable for the update config method over gRPC.
+
+        Update default config for a given project and location.
+
+        **Note:** *This method does not fully
+        implement*\ `AIP/134 <https://google.aip.dev/134>`__\ *. The
+        wildcard entry (*) is treated as a bad request, and when the
+        ``field_mask`` is omitted, the request is treated as a full
+        update on all modifiable fields.*
+
+        Returns:
+            Callable[[~.UpdateConfigRequest],
+                    Awaitable[~.Config]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "update_config" not in self._stubs:
+            self._stubs["update_config"] = self._logged_channel.unary_unary(
+                "/google.cloud.dataform.v1beta1.Dataform/UpdateConfig",
+                request_serializer=dataform.UpdateConfigRequest.serialize,
+                response_deserializer=dataform.Config.deserialize,
+            )
+        return self._stubs["update_config"]
 
     def _prep_wrapped_messages(self, client_info):
         """Precompute the wrapped methods, overriding the base class method to use async wrappers."""
@@ -1898,6 +2021,11 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             ),
             self.query_directory_contents: self._wrap_method(
                 self.query_directory_contents,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.search_files: self._wrap_method(
+                self.search_files,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -2033,6 +2161,16 @@ class DataformGrpcAsyncIOTransport(DataformTransport):
             ),
             self.query_workflow_invocation_actions: self._wrap_method(
                 self.query_workflow_invocation_actions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_config: self._wrap_method(
+                self.get_config,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_config: self._wrap_method(
+                self.update_config,
                 default_timeout=None,
                 client_info=client_info,
             ),

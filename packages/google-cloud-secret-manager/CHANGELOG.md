@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.24.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.23.3...google-cloud-secret-manager-v2.24.0) (2025-06-05)
+
+
+### Features
+
+* [google-cloud-secret-manager] update secret manager protos for tags ([#13976](https://github.com/googleapis/google-cloud-python/issues/13976)) ([998c300](https://github.com/googleapis/google-cloud-python/commit/998c300dfb93942baf80fe5dbb21365a84ce45c5))
+
+## [2.23.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.23.2...google-cloud-secret-manager-v2.23.3) (2025-04-17)
+
+
+### Documentation
+
+* [google-cloud-secret-manager] various documentation clarifications ([#13796](https://github.com/googleapis/google-cloud-python/issues/13796)) ([5f6227b](https://github.com/googleapis/google-cloud-python/commit/5f6227b047b07d7c032caca77554d9fa86bf7b7c))
+
+## [2.23.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.23.1...google-cloud-secret-manager-v2.23.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.23.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.23.0...google-cloud-secret-manager-v2.23.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [2.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.22.1...google-cloud-secret-manager-v2.23.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
+## [2.22.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.22.0...google-cloud-secret-manager-v2.22.1) (2025-01-16)
+
+
+### Documentation
+
+* fix link in Markdown comments ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+* updated comment for `customer_managed_encryption` in message `.google.cloud.secretmanager.v1.Secret` ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+* updated comment for `customer_managed_encryption` in message `.google.cloud.secretmanager.v1.SecretVersion` ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+* updated comment for `name` in message `.google.cloud.secretmanager.v1.Topic` ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+* updated comment for `Replication` ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+* updated comment for `scheduled_destroy_time` in message `.google.cloud.secretmanager.v1.SecretVersion` ([aae987b](https://github.com/googleapis/google-cloud-python/commit/aae987bccb4b6914524f963d3487f61919b0fb84))
+
 ## [2.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-secret-manager-v2.21.1...google-cloud-secret-manager-v2.22.0) (2024-12-12)
 
 

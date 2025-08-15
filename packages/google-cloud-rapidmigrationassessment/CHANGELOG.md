@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-rapidmigrationassessment-v0.1.15...google-cloud-rapidmigrationassessment-v0.1.16) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-rapidmigrationassessment-v0.1.14...google-cloud-rapidmigrationassessment-v0.1.15) (2025-03-27)
+
+
+### Documentation
+
+* [google-cloud-rapidmigrationassessment] fix typo in comment ([#13711](https://github.com/googleapis/google-cloud-python/issues/13711)) ([820415a](https://github.com/googleapis/google-cloud-python/commit/820415ae3a28914d5c64861635f009a2aeca5a6a))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-rapidmigrationassessment-v0.1.13...google-cloud-rapidmigrationassessment-v0.1.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-rapidmigrationassessment-v0.1.12...google-cloud-rapidmigrationassessment-v0.1.13) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
 ## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-rapidmigrationassessment-v0.1.11...google-cloud-rapidmigrationassessment-v0.1.12) (2024-12-12)
 
 

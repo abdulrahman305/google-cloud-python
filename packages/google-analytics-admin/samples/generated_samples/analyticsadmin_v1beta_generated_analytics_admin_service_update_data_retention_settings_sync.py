@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,12 @@ def sample_update_data_retention_settings():
     client = admin_v1beta.AnalyticsAdminServiceClient()
 
     # Initialize request argument(s)
+    data_retention_settings = admin_v1beta.DataRetentionSettings()
+    data_retention_settings.event_data_retention = "FIFTY_MONTHS"
+    data_retention_settings.user_data_retention = "FIFTY_MONTHS"
+
     request = admin_v1beta.UpdateDataRetentionSettingsRequest(
+        data_retention_settings=data_retention_settings,
     )
 
     # Make the request

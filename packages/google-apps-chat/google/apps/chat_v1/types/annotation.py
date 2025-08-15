@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ from typing import MutableMapping, MutableSequence
 
 import proto  # type: ignore
 
-from google.apps.chat_v1.types import attachment
+from google.apps.chat_v1.types import attachment, reaction
 from google.apps.chat_v1.types import user as gc_user
 
 __protobuf__ = proto.module(
@@ -30,8 +30,11 @@ __protobuf__ = proto.module(
         "UserMentionMetadata",
         "SlashCommandMetadata",
         "RichLinkMetadata",
+        "CustomEmojiMetadata",
         "DriveLinkData",
         "ChatSpaceLinkData",
+        "MeetSpaceLinkData",
+        "CalendarEventLinkData",
     },
 )
 
@@ -48,16 +51,21 @@ class AnnotationType(proto.Enum):
             A slash command is invoked.
         RICH_LINK (3):
             A rich link annotation.
+        CUSTOM_EMOJI (4):
+            A custom emoji annotation.
     """
     ANNOTATION_TYPE_UNSPECIFIED = 0
     USER_MENTION = 1
     SLASH_COMMAND = 2
     RICH_LINK = 3
+    CUSTOM_EMOJI = 4
 
 
 class Annotation(proto.Message):
-    r"""Output only. Annotations associated with the plain-text body of the
-    message. To add basic formatting to a text message, see `Format text
+    r"""Output only. Annotations can be associated with the plain-text body
+    of the message or with chips that link to Google Workspace resources
+    like Google Docs or Sheets with ``start_index`` and ``length`` of 0.
+    To add basic formatting to a text message, see `Format text
     messages <https://developers.google.com/workspace/chat/format-messages>`__.
 
     Example plain-text message body:
@@ -103,7 +111,8 @@ class Annotation(proto.Message):
             This field is a member of `oneof`_ ``_start_index``.
         length (int):
             Length of the substring in the plain-text
-            message body this annotation corresponds to.
+            message body this annotation corresponds to. If
+            not present, indicates a length of 0.
         user_mention (google.apps.chat_v1.types.UserMentionMetadata):
             The metadata of user mention.
 
@@ -114,6 +123,10 @@ class Annotation(proto.Message):
             This field is a member of `oneof`_ ``metadata``.
         rich_link_metadata (google.apps.chat_v1.types.RichLinkMetadata):
             The metadata for a rich link.
+
+            This field is a member of `oneof`_ ``metadata``.
+        custom_emoji_metadata (google.apps.chat_v1.types.CustomEmojiMetadata):
+            The metadata for a custom emoji.
 
             This field is a member of `oneof`_ ``metadata``.
     """
@@ -149,6 +162,12 @@ class Annotation(proto.Message):
         number=6,
         oneof="metadata",
         message="RichLinkMetadata",
+    )
+    custom_emoji_metadata: "CustomEmojiMetadata" = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        oneof="metadata",
+        message="CustomEmojiMetadata",
     )
 
 
@@ -246,7 +265,10 @@ class SlashCommandMetadata(proto.Message):
 
 
 class RichLinkMetadata(proto.Message):
-    r"""A rich link to a resource.
+    r"""A rich link to a resource. Rich links can be associated with the
+    plain-text body of the message or represent chips that link to
+    Google Workspace resources like Google Docs or Sheets with
+    ``start_index`` and ``length`` of 0.
 
     This message has `oneof`_ fields (mutually exclusive fields).
     For each oneof, at most one member field can be set at the same time.
@@ -268,6 +290,14 @@ class RichLinkMetadata(proto.Message):
             Data for a chat space link.
 
             This field is a member of `oneof`_ ``data``.
+        meet_space_link_data (google.apps.chat_v1.types.MeetSpaceLinkData):
+            Data for a Meet space link.
+
+            This field is a member of `oneof`_ ``data``.
+        calendar_event_link_data (google.apps.chat_v1.types.CalendarEventLinkData):
+            Data for a Calendar event link.
+
+            This field is a member of `oneof`_ ``data``.
     """
 
     class RichLinkType(proto.Enum):
@@ -281,10 +311,18 @@ class RichLinkMetadata(proto.Message):
             CHAT_SPACE (2):
                 A Chat space rich link type. For example, a
                 space smart chip.
+            MEET_SPACE (4):
+                A Meet message rich link type. For example, a
+                Meet chip.
+            CALENDAR_EVENT (5):
+                A Calendar message rich link type. For
+                example, a Calendar chip.
         """
         RICH_LINK_TYPE_UNSPECIFIED = 0
         DRIVE_FILE = 1
         CHAT_SPACE = 2
+        MEET_SPACE = 4
+        CALENDAR_EVENT = 5
 
     uri: str = proto.Field(
         proto.STRING,
@@ -306,6 +344,33 @@ class RichLinkMetadata(proto.Message):
         number=4,
         oneof="data",
         message="ChatSpaceLinkData",
+    )
+    meet_space_link_data: "MeetSpaceLinkData" = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        oneof="data",
+        message="MeetSpaceLinkData",
+    )
+    calendar_event_link_data: "CalendarEventLinkData" = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        oneof="data",
+        message="CalendarEventLinkData",
+    )
+
+
+class CustomEmojiMetadata(proto.Message):
+    r"""Annotation metadata for custom emoji.
+
+    Attributes:
+        custom_emoji (google.apps.chat_v1.types.CustomEmoji):
+            The custom emoji.
+    """
+
+    custom_emoji: reaction.CustomEmoji = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=reaction.CustomEmoji,
     )
 
 
@@ -362,6 +427,97 @@ class ChatSpaceLinkData(proto.Message):
     message: str = proto.Field(
         proto.STRING,
         number=3,
+    )
+
+
+class MeetSpaceLinkData(proto.Message):
+    r"""Data for Meet space links.
+
+    Attributes:
+        meeting_code (str):
+            Meeting code of the linked Meet space.
+        type_ (google.apps.chat_v1.types.MeetSpaceLinkData.Type):
+            Indicates the type of the Meet space.
+        huddle_status (google.apps.chat_v1.types.MeetSpaceLinkData.HuddleStatus):
+            Optional. Output only. If the Meet is a
+            Huddle, indicates the status of the huddle.
+            Otherwise, this is unset.
+    """
+
+    class Type(proto.Enum):
+        r"""The type of the Meet space.
+
+        Values:
+            TYPE_UNSPECIFIED (0):
+                Default value for the enum. Don't use.
+            MEETING (1):
+                The Meet space is a meeting.
+            HUDDLE (2):
+                The Meet space is a huddle.
+        """
+        TYPE_UNSPECIFIED = 0
+        MEETING = 1
+        HUDDLE = 2
+
+    class HuddleStatus(proto.Enum):
+        r"""The status of the huddle
+
+        Values:
+            HUDDLE_STATUS_UNSPECIFIED (0):
+                Default value for the enum. Don't use.
+            STARTED (1):
+                The huddle has started.
+            ENDED (2):
+                The huddle has ended. In this case the Meet
+                space URI and identifiers will no longer be
+                valid.
+            MISSED (3):
+                The huddle has been missed. In this case the
+                Meet space URI and identifiers will no longer be
+                valid.
+        """
+        HUDDLE_STATUS_UNSPECIFIED = 0
+        STARTED = 1
+        ENDED = 2
+        MISSED = 3
+
+    meeting_code: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    type_: Type = proto.Field(
+        proto.ENUM,
+        number=2,
+        enum=Type,
+    )
+    huddle_status: HuddleStatus = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum=HuddleStatus,
+    )
+
+
+class CalendarEventLinkData(proto.Message):
+    r"""Data for Calendar event links.
+
+    Attributes:
+        calendar_id (str):
+            The `Calendar
+            identifier <https://developers.google.com/workspace/calendar/api/v3/reference/calendars>`__
+            of the linked Calendar.
+        event_id (str):
+            The `Event
+            identifier <https://developers.google.com/workspace/calendar/api/v3/reference/events>`__
+            of the linked Calendar event.
+    """
+
+    calendar_id: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    event_id: str = proto.Field(
+        proto.STRING,
+        number=2,
     )
 
 

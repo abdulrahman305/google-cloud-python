@@ -4,6 +4,42 @@
 
 [1]: https://pypi.org/project/google-cloud-monitoring/#history
 
+## [2.27.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.27.1...google-cloud-monitoring-v2.27.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([868b006](https://github.com/googleapis/google-cloud-python/commit/868b0069baf1a4bf6705986e0b6885419b35cdcc))
+
+## [2.27.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.27.0...google-cloud-monitoring-v2.27.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.27.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.26.0...google-cloud-monitoring-v2.27.0) (2025-02-12)
+
+
+### Features
+
+* add filter field to snooze proto ([0e9d669](https://github.com/googleapis/google-cloud-python/commit/0e9d669febc3fce1a084df4846131a6f000aff1f))
+* Add REST Interceptors which support reading metadata ([0e9d669](https://github.com/googleapis/google-cloud-python/commit/0e9d669febc3fce1a084df4846131a6f000aff1f))
+* Add support for reading selective GAPIC generation methods from service YAML ([0e9d669](https://github.com/googleapis/google-cloud-python/commit/0e9d669febc3fce1a084df4846131a6f000aff1f))
+
+
+### Documentation
+
+* remove extra fenced code block markers ([0e9d669](https://github.com/googleapis/google-cloud-python/commit/0e9d669febc3fce1a084df4846131a6f000aff1f))
+
+## [2.26.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.25.0...google-cloud-monitoring-v2.26.0) (2025-01-13)
+
+
+### Features
+
+* [google-cloud-monitoring] add active_only field to ListMetricDescriptorsRequest ([#13421](https://github.com/googleapis/google-cloud-python/issues/13421)) ([5777b06](https://github.com/googleapis/google-cloud-python/commit/5777b0623e305b8757218d546534e20f0321afe8))
+
 ## [2.25.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-monitoring-v2.24.0...google-cloud-monitoring-v2.25.0) (2025-01-02)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,16 +48,19 @@ from .common import (
     ColorInfo,
     Condition,
     CustomAttribute,
+    DoubleList,
     FulfillmentInfo,
     Image,
     Interval,
     LocalInventory,
+    PinControlMetadata,
     PriceInfo,
     Rating,
     RecommendationsFilteringOption,
     Rule,
     SearchSolutionUseCase,
     SolutionType,
+    StringList,
     UserInfo,
 )
 from .completion_service import CompleteQueryRequest, CompleteQueryResponse
@@ -69,6 +72,10 @@ from .control_service import (
     ListControlsRequest,
     ListControlsResponse,
     UpdateControlRequest,
+)
+from .conversational_search_service import (
+    ConversationalSearchRequest,
+    ConversationalSearchResponse,
 )
 from .export_config import (
     BigQueryOutputResult,
@@ -189,6 +196,7 @@ from .purge_config import (
     PurgeUserEventsRequest,
     PurgeUserEventsResponse,
 )
+from .safety import HarmCategory, SafetySetting
 from .search_service import (
     ExperimentInfo,
     ProductAttributeInterval,
@@ -250,13 +258,16 @@ __all__ = (
     "ColorInfo",
     "Condition",
     "CustomAttribute",
+    "DoubleList",
     "FulfillmentInfo",
     "Image",
     "Interval",
     "LocalInventory",
+    "PinControlMetadata",
     "PriceInfo",
     "Rating",
     "Rule",
+    "StringList",
     "UserInfo",
     "AttributeConfigLevel",
     "RecommendationsFilteringOption",
@@ -271,6 +282,8 @@ __all__ = (
     "ListControlsRequest",
     "ListControlsResponse",
     "UpdateControlRequest",
+    "ConversationalSearchRequest",
+    "ConversationalSearchResponse",
     "BigQueryOutputResult",
     "ExportAnalyticsMetricsRequest",
     "ExportAnalyticsMetricsResponse",
@@ -373,6 +386,8 @@ __all__ = (
     "PurgeProductsResponse",
     "PurgeUserEventsRequest",
     "PurgeUserEventsResponse",
+    "SafetySetting",
+    "HarmCategory",
     "ExperimentInfo",
     "ProductAttributeInterval",
     "ProductAttributeValue",

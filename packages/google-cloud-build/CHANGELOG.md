@@ -4,6 +4,62 @@
 
 [1]: https://pypi.org/project/google-cloud-build/#history
 
+## [3.31.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.31.2...google-cloud-build-v3.31.3) (2025-07-26)
+
+
+### Documentation
+
+* [google-cloud-build] Updated Private Service Connect IP ranges when route_all_traffic is false ([#14149](https://github.com/googleapis/google-cloud-python/issues/14149)) ([7bbeba4](https://github.com/googleapis/google-cloud-python/commit/7bbeba477ed32257509f155c25d87631beaf4519))
+
+## [3.31.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.31.1...google-cloud-build-v3.31.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [3.31.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.31.0...google-cloud-build-v3.31.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [3.31.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.30.0...google-cloud-build-v3.31.0) (2025-02-18)
+
+
+### Features
+
+* Add option to enable fetching dependencies ([3fe8899](https://github.com/googleapis/google-cloud-python/commit/3fe88999b3f56faeae0c8f36b4fe8f750d168f18))
+* Support for git proxy setup ([3fe8899](https://github.com/googleapis/google-cloud-python/commit/3fe88999b3f56faeae0c8f36b4fe8f750d168f18))
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([3fe8899](https://github.com/googleapis/google-cloud-python/commit/3fe88999b3f56faeae0c8f36b4fe8f750d168f18))
+
+
+### Documentation
+
+* Updates to proto message comments ([3fe8899](https://github.com/googleapis/google-cloud-python/commit/3fe88999b3f56faeae0c8f36b4fe8f750d168f18))
+
+## [3.30.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.29.0...google-cloud-build-v3.30.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
+## [3.29.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.28.0...google-cloud-build-v3.29.0) (2025-01-13)
+
+
+### Features
+
+* [google-cloud-build] Add GoModule to Artifact and Results messages and new GO_MODULE_H1 hash type ([#13416](https://github.com/googleapis/google-cloud-python/issues/13416)) ([8a3a6d6](https://github.com/googleapis/google-cloud-python/commit/8a3a6d61b63ce4321e8c9e94511010a7245e3d40))
+* [google-cloud-build] Add option to enable structured logging ([#13430](https://github.com/googleapis/google-cloud-python/issues/13430)) ([dc7d7f2](https://github.com/googleapis/google-cloud-python/commit/dc7d7f21bad125dd98967a3e840e91c34d6a8a10))
+
 ## [3.28.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-build-v3.27.1...google-cloud-build-v3.28.0) (2024-12-12)
 
 

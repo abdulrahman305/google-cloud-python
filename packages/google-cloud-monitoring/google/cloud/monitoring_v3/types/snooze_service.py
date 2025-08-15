@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,10 +88,8 @@ class ListSnoozesRequest(proto.Message):
 
             ::
 
-                ```
                 interval.start_time > "2022-03-11T00:00:00-08:00" AND
-                    interval.end_time < "2022-03-12T00:00:00-08:00"
-                ```
+                    interval.end_time < "2022-03-12T00:00:00-08:00".
         page_size (int):
             Optional. The maximum number of results to return for a
             single query. The server may further constrain the maximum

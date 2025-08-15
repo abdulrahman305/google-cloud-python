@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ from .backupdr import (
     CreateManagementServerRequest,
     DeleteManagementServerRequest,
     GetManagementServerRequest,
+    InitializeServiceRequest,
+    InitializeServiceResponse,
     ListManagementServersRequest,
     ListManagementServersResponse,
     ManagementServer,
@@ -28,25 +30,33 @@ from .backupdr import (
 )
 from .backupplan import (
     BackupPlan,
+    BackupPlanRevision,
     BackupRule,
     BackupWindow,
     CreateBackupPlanRequest,
     DeleteBackupPlanRequest,
     GetBackupPlanRequest,
+    GetBackupPlanRevisionRequest,
+    ListBackupPlanRevisionsRequest,
+    ListBackupPlanRevisionsResponse,
     ListBackupPlansRequest,
     ListBackupPlansResponse,
     StandardSchedule,
+    UpdateBackupPlanRequest,
     WeekDayOfMonth,
 )
 from .backupplanassociation import (
     BackupPlanAssociation,
     CreateBackupPlanAssociationRequest,
     DeleteBackupPlanAssociationRequest,
+    FetchBackupPlanAssociationsForResourceTypeRequest,
+    FetchBackupPlanAssociationsForResourceTypeResponse,
     GetBackupPlanAssociationRequest,
     ListBackupPlanAssociationsRequest,
     ListBackupPlanAssociationsResponse,
     RuleConfigInfo,
     TriggerBackupRequest,
+    UpdateBackupPlanAssociationRequest,
 )
 from .backupvault import (
     Backup,
@@ -86,6 +96,20 @@ from .backupvault import (
     UpdateDataSourceRequest,
 )
 from .backupvault_ba import BackupApplianceBackupProperties
+from .backupvault_cloudsql import (
+    CloudSqlInstanceBackupPlanAssociationProperties,
+    CloudSqlInstanceBackupProperties,
+    CloudSqlInstanceDataSourceProperties,
+    CloudSqlInstanceDataSourceReferenceProperties,
+    CloudSqlInstanceInitializationConfig,
+)
+from .backupvault_disk import (
+    DiskBackupProperties,
+    DiskDataSourceProperties,
+    DiskRestoreProperties,
+    DiskTargetEnvironment,
+    RegionDiskTargetEnvironment,
+)
 from .backupvault_gce import (
     AcceleratorConfig,
     AccessConfig,
@@ -112,11 +136,21 @@ from .backupvault_gce import (
     ServiceAccount,
     Tags,
 )
+from .datasourcereference import (
+    DataSourceBackupConfigInfo,
+    DataSourceGcpResourceInfo,
+    DataSourceReference,
+    FetchDataSourceReferencesForResourceTypeRequest,
+    FetchDataSourceReferencesForResourceTypeResponse,
+    GetDataSourceReferenceRequest,
+)
 
 __all__ = (
     "CreateManagementServerRequest",
     "DeleteManagementServerRequest",
     "GetManagementServerRequest",
+    "InitializeServiceRequest",
+    "InitializeServiceResponse",
     "ListManagementServersRequest",
     "ListManagementServersResponse",
     "ManagementServer",
@@ -126,23 +160,31 @@ __all__ = (
     "WorkforceIdentityBasedManagementURI",
     "WorkforceIdentityBasedOAuth2ClientID",
     "BackupPlan",
+    "BackupPlanRevision",
     "BackupRule",
     "BackupWindow",
     "CreateBackupPlanRequest",
     "DeleteBackupPlanRequest",
     "GetBackupPlanRequest",
+    "GetBackupPlanRevisionRequest",
+    "ListBackupPlanRevisionsRequest",
+    "ListBackupPlanRevisionsResponse",
     "ListBackupPlansRequest",
     "ListBackupPlansResponse",
     "StandardSchedule",
+    "UpdateBackupPlanRequest",
     "WeekDayOfMonth",
     "BackupPlanAssociation",
     "CreateBackupPlanAssociationRequest",
     "DeleteBackupPlanAssociationRequest",
+    "FetchBackupPlanAssociationsForResourceTypeRequest",
+    "FetchBackupPlanAssociationsForResourceTypeResponse",
     "GetBackupPlanAssociationRequest",
     "ListBackupPlanAssociationsRequest",
     "ListBackupPlanAssociationsResponse",
     "RuleConfigInfo",
     "TriggerBackupRequest",
+    "UpdateBackupPlanAssociationRequest",
     "Backup",
     "BackupApplianceBackupConfig",
     "BackupApplianceLockInfo",
@@ -179,6 +221,16 @@ __all__ = (
     "BackupVaultView",
     "BackupView",
     "BackupApplianceBackupProperties",
+    "CloudSqlInstanceBackupPlanAssociationProperties",
+    "CloudSqlInstanceBackupProperties",
+    "CloudSqlInstanceDataSourceProperties",
+    "CloudSqlInstanceDataSourceReferenceProperties",
+    "CloudSqlInstanceInitializationConfig",
+    "DiskBackupProperties",
+    "DiskDataSourceProperties",
+    "DiskRestoreProperties",
+    "DiskTargetEnvironment",
+    "RegionDiskTargetEnvironment",
     "AcceleratorConfig",
     "AccessConfig",
     "AdvancedMachineFeatures",
@@ -203,4 +255,10 @@ __all__ = (
     "ServiceAccount",
     "Tags",
     "KeyRevocationActionType",
+    "DataSourceBackupConfigInfo",
+    "DataSourceGcpResourceInfo",
+    "DataSourceReference",
+    "FetchDataSourceReferencesForResourceTypeRequest",
+    "FetchDataSourceReferencesForResourceTypeResponse",
+    "GetDataSourceReferenceRequest",
 )

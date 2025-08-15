@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,7 +76,10 @@ from .conversation import (
     GenerateStatelessSuggestionResponse,
     GenerateStatelessSummaryRequest,
     GenerateStatelessSummaryResponse,
+    GenerateSuggestionsRequest,
     GetConversationRequest,
+    IngestContextReferencesRequest,
+    IngestContextReferencesResponse,
     ListConversationsRequest,
     ListConversationsResponse,
     ListMessagesRequest,
@@ -163,6 +166,8 @@ from .generator import (
     CreateGeneratorRequest,
     DeleteGeneratorRequest,
     FewShotExample,
+    FreeFormContext,
+    FreeFormSuggestion,
     Generator,
     GeneratorSuggestion,
     GetGeneratorRequest,
@@ -215,6 +220,7 @@ from .participant import (
     DialogflowAssistAnswer,
     DtmfParameters,
     FaqAnswer,
+    GenerateSuggestionsResponse,
     GetParticipantRequest,
     InputTextConfig,
     IntentInput,
@@ -246,6 +252,14 @@ from .participant import (
     SuggestSmartRepliesRequest,
     SuggestSmartRepliesResponse,
     UpdateParticipantRequest,
+)
+from .phone_number import (
+    DeletePhoneNumberRequest,
+    ListPhoneNumbersRequest,
+    ListPhoneNumbersResponse,
+    PhoneNumber,
+    UndeletePhoneNumberRequest,
+    UpdatePhoneNumberRequest,
 )
 from .session import (
     CloudConversationDebuggingInfo,
@@ -350,7 +364,10 @@ __all__ = (
     "GenerateStatelessSuggestionResponse",
     "GenerateStatelessSummaryRequest",
     "GenerateStatelessSummaryResponse",
+    "GenerateSuggestionsRequest",
     "GetConversationRequest",
+    "IngestContextReferencesRequest",
+    "IngestContextReferencesResponse",
     "ListConversationsRequest",
     "ListConversationsResponse",
     "ListMessagesRequest",
@@ -429,6 +446,8 @@ __all__ = (
     "CreateGeneratorRequest",
     "DeleteGeneratorRequest",
     "FewShotExample",
+    "FreeFormContext",
+    "FreeFormSuggestion",
     "Generator",
     "GeneratorSuggestion",
     "GetGeneratorRequest",
@@ -475,6 +494,7 @@ __all__ = (
     "DialogflowAssistAnswer",
     "DtmfParameters",
     "FaqAnswer",
+    "GenerateSuggestionsResponse",
     "GetParticipantRequest",
     "InputTextConfig",
     "IntentInput",
@@ -506,6 +526,12 @@ __all__ = (
     "SuggestSmartRepliesRequest",
     "SuggestSmartRepliesResponse",
     "UpdateParticipantRequest",
+    "DeletePhoneNumberRequest",
+    "ListPhoneNumbersRequest",
+    "ListPhoneNumbersResponse",
+    "PhoneNumber",
+    "UndeletePhoneNumberRequest",
+    "UpdatePhoneNumberRequest",
     "CloudConversationDebuggingInfo",
     "DetectIntentRequest",
     "DetectIntentResponse",

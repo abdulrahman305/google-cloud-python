@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ __protobuf__ = proto.module(
     manifest={
         "CreateTripRequest",
         "GetTripRequest",
+        "DeleteTripRequest",
         "ReportBillableTripRequest",
         "UpdateTripRequest",
         "SearchTripsRequest",
@@ -143,11 +144,12 @@ class GetTripRequest(proto.Message):
             the route field is not set in the response. If a minimum is
             unspecified, the route data are always retrieved.
         remaining_waypoints_version (google.protobuf.timestamp_pb2.Timestamp):
-            Indicates the minimum timestamp (exclusive) for which
-            ``Trip.remaining_waypoints`` are retrieved. If they are
-            unchanged since this timestamp, the ``remaining_waypoints``
-            are not set in the response. If this field is unspecified,
-            ``remaining_waypoints`` is always retrieved.
+            Deprecated: ``Trip.remaining_waypoints`` are always
+            retrieved. Use ``remaining_waypoints_route_version`` to
+            control when
+            ``Trip.remaining_waypoints.traffic_to_waypoint`` and
+            ``Trip.remaining_waypoints.path_to_waypoint`` data are
+            retrieved.
         route_format_type (google.maps.fleetengine_v1.types.PolylineFormatType):
             The returned current route format, ``LAT_LNG_LIST_TYPE`` (in
             ``Trip.route``), or ``ENCODED_POLYLINE_TYPE`` (in
@@ -209,6 +211,32 @@ class GetTripRequest(proto.Message):
         proto.MESSAGE,
         number=10,
         message=timestamp_pb2.Timestamp,
+    )
+
+
+class DeleteTripRequest(proto.Message):
+    r"""DeleteTrip request message.
+
+    Attributes:
+        header (google.maps.fleetengine_v1.types.RequestHeader):
+            Optional. The standard Fleet Engine request
+            header.
+        name (str):
+            Required. Must be in the format
+            ``providers/{provider}/trips/{trip}``. The provider must be
+            the Project ID (for example, ``sample-cloud-project``) of
+            the Google Cloud Project of which the service account making
+            this call is a member.
+    """
+
+    header: mf_header.RequestHeader = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=mf_header.RequestHeader,
+    )
+    name: str = proto.Field(
+        proto.STRING,
+        number=2,
     )
 
 

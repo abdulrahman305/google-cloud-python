@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class BetaAnalyticsDataRestInterceptor:
@@ -183,11 +187,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.BatchRunPivotReportsResponse:
         """Post-rpc interceptor for batch_run_pivot_reports
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_run_pivot_reports_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_run_pivot_reports` interceptor runs
+        before the `post_batch_run_pivot_reports_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_run_pivot_reports_with_metadata(
+        self,
+        response: analytics_data_api.BatchRunPivotReportsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.BatchRunPivotReportsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_run_pivot_reports
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_batch_run_pivot_reports_with_metadata`
+        interceptor in new development instead of the `post_batch_run_pivot_reports` interceptor.
+        When both interceptors are used, this `post_batch_run_pivot_reports_with_metadata` interceptor runs after the
+        `post_batch_run_pivot_reports` interceptor. The (possibly modified) response returned by
+        `post_batch_run_pivot_reports` will be passed to
+        `post_batch_run_pivot_reports_with_metadata`.
+        """
+        return response, metadata
 
     def pre_batch_run_reports(
         self,
@@ -209,11 +239,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.BatchRunReportsResponse:
         """Post-rpc interceptor for batch_run_reports
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_run_reports_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_run_reports` interceptor runs
+        before the `post_batch_run_reports_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_run_reports_with_metadata(
+        self,
+        response: analytics_data_api.BatchRunReportsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.BatchRunReportsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_run_reports
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_batch_run_reports_with_metadata`
+        interceptor in new development instead of the `post_batch_run_reports` interceptor.
+        When both interceptors are used, this `post_batch_run_reports_with_metadata` interceptor runs after the
+        `post_batch_run_reports` interceptor. The (possibly modified) response returned by
+        `post_batch_run_reports` will be passed to
+        `post_batch_run_reports_with_metadata`.
+        """
+        return response, metadata
 
     def pre_check_compatibility(
         self,
@@ -235,11 +291,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.CheckCompatibilityResponse:
         """Post-rpc interceptor for check_compatibility
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_check_compatibility_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_check_compatibility` interceptor runs
+        before the `post_check_compatibility_with_metadata` interceptor.
         """
         return response
+
+    def post_check_compatibility_with_metadata(
+        self,
+        response: analytics_data_api.CheckCompatibilityResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.CheckCompatibilityResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for check_compatibility
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_check_compatibility_with_metadata`
+        interceptor in new development instead of the `post_check_compatibility` interceptor.
+        When both interceptors are used, this `post_check_compatibility_with_metadata` interceptor runs after the
+        `post_check_compatibility` interceptor. The (possibly modified) response returned by
+        `post_check_compatibility` will be passed to
+        `post_check_compatibility_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_audience_export(
         self,
@@ -261,11 +343,34 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for create_audience_export
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_audience_export_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_audience_export` interceptor runs
+        before the `post_create_audience_export_with_metadata` interceptor.
         """
         return response
+
+    def post_create_audience_export_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_audience_export
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_create_audience_export_with_metadata`
+        interceptor in new development instead of the `post_create_audience_export` interceptor.
+        When both interceptors are used, this `post_create_audience_export_with_metadata` interceptor runs after the
+        `post_create_audience_export` interceptor. The (possibly modified) response returned by
+        `post_create_audience_export` will be passed to
+        `post_create_audience_export_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_audience_export(
         self,
@@ -287,11 +392,36 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.AudienceExport:
         """Post-rpc interceptor for get_audience_export
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_audience_export_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_audience_export` interceptor runs
+        before the `post_get_audience_export_with_metadata` interceptor.
         """
         return response
+
+    def post_get_audience_export_with_metadata(
+        self,
+        response: analytics_data_api.AudienceExport,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.AudienceExport, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_audience_export
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_audience_export_with_metadata`
+        interceptor in new development instead of the `post_get_audience_export` interceptor.
+        When both interceptors are used, this `post_get_audience_export_with_metadata` interceptor runs after the
+        `post_get_audience_export` interceptor. The (possibly modified) response returned by
+        `post_get_audience_export` will be passed to
+        `post_get_audience_export_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_metadata(
         self,
@@ -312,11 +442,34 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.Metadata:
         """Post-rpc interceptor for get_metadata
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_metadata_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_metadata` interceptor runs
+        before the `post_get_metadata_with_metadata` interceptor.
         """
         return response
+
+    def post_get_metadata_with_metadata(
+        self,
+        response: analytics_data_api.Metadata,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[analytics_data_api.Metadata, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_metadata
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_get_metadata_with_metadata`
+        interceptor in new development instead of the `post_get_metadata` interceptor.
+        When both interceptors are used, this `post_get_metadata_with_metadata` interceptor runs after the
+        `post_get_metadata` interceptor. The (possibly modified) response returned by
+        `post_get_metadata` will be passed to
+        `post_get_metadata_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_audience_exports(
         self,
@@ -338,11 +491,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.ListAudienceExportsResponse:
         """Post-rpc interceptor for list_audience_exports
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_audience_exports_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_audience_exports` interceptor runs
+        before the `post_list_audience_exports_with_metadata` interceptor.
         """
         return response
+
+    def post_list_audience_exports_with_metadata(
+        self,
+        response: analytics_data_api.ListAudienceExportsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.ListAudienceExportsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_audience_exports
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_list_audience_exports_with_metadata`
+        interceptor in new development instead of the `post_list_audience_exports` interceptor.
+        When both interceptors are used, this `post_list_audience_exports_with_metadata` interceptor runs after the
+        `post_list_audience_exports` interceptor. The (possibly modified) response returned by
+        `post_list_audience_exports` will be passed to
+        `post_list_audience_exports_with_metadata`.
+        """
+        return response, metadata
 
     def pre_query_audience_export(
         self,
@@ -364,11 +543,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.QueryAudienceExportResponse:
         """Post-rpc interceptor for query_audience_export
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_query_audience_export_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_query_audience_export` interceptor runs
+        before the `post_query_audience_export_with_metadata` interceptor.
         """
         return response
+
+    def post_query_audience_export_with_metadata(
+        self,
+        response: analytics_data_api.QueryAudienceExportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.QueryAudienceExportResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for query_audience_export
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_query_audience_export_with_metadata`
+        interceptor in new development instead of the `post_query_audience_export` interceptor.
+        When both interceptors are used, this `post_query_audience_export_with_metadata` interceptor runs after the
+        `post_query_audience_export` interceptor. The (possibly modified) response returned by
+        `post_query_audience_export` will be passed to
+        `post_query_audience_export_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_pivot_report(
         self,
@@ -390,11 +595,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RunPivotReportResponse:
         """Post-rpc interceptor for run_pivot_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_pivot_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_pivot_report` interceptor runs
+        before the `post_run_pivot_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_pivot_report_with_metadata(
+        self,
+        response: analytics_data_api.RunPivotReportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunPivotReportResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for run_pivot_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_run_pivot_report_with_metadata`
+        interceptor in new development instead of the `post_run_pivot_report` interceptor.
+        When both interceptors are used, this `post_run_pivot_report_with_metadata` interceptor runs after the
+        `post_run_pivot_report` interceptor. The (possibly modified) response returned by
+        `post_run_pivot_report` will be passed to
+        `post_run_pivot_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_realtime_report(
         self,
@@ -416,11 +647,37 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RunRealtimeReportResponse:
         """Post-rpc interceptor for run_realtime_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_realtime_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_realtime_report` interceptor runs
+        before the `post_run_realtime_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_realtime_report_with_metadata(
+        self,
+        response: analytics_data_api.RunRealtimeReportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunRealtimeReportResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for run_realtime_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_run_realtime_report_with_metadata`
+        interceptor in new development instead of the `post_run_realtime_report` interceptor.
+        When both interceptors are used, this `post_run_realtime_report_with_metadata` interceptor runs after the
+        `post_run_realtime_report` interceptor. The (possibly modified) response returned by
+        `post_run_realtime_report` will be passed to
+        `post_run_realtime_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_report(
         self,
@@ -441,11 +698,36 @@ class BetaAnalyticsDataRestInterceptor:
     ) -> analytics_data_api.RunReportResponse:
         """Post-rpc interceptor for run_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the BetaAnalyticsData server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_report` interceptor runs
+        before the `post_run_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_report_with_metadata(
+        self,
+        response: analytics_data_api.RunReportResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        analytics_data_api.RunReportResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for run_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the BetaAnalyticsData server but before it is returned to user code.
+
+        We recommend only using this `post_run_report_with_metadata`
+        interceptor in new development instead of the `post_run_report` interceptor.
+        When both interceptors are used, this `post_run_report_with_metadata` interceptor runs after the
+        `post_run_report` interceptor. The (possibly modified) response returned by
+        `post_run_report` will be passed to
+        `post_run_report_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -693,6 +975,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_run_pivot_reports(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_run_pivot_reports_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -849,6 +1135,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_run_reports(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_run_reports_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1007,6 +1297,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_check_compatibility(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_check_compatibility_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1162,6 +1456,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_audience_export(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_audience_export_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1312,6 +1610,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_audience_export(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_audience_export_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1458,6 +1760,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_metadata(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_metadata_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1606,6 +1912,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_audience_exports(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_audience_exports_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1762,6 +2072,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_query_audience_export(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_query_audience_export_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1916,6 +2230,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_pivot_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_pivot_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2070,6 +2388,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_realtime_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_realtime_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2220,6 +2542,10 @@ class BetaAnalyticsDataRestTransport(_BaseBetaAnalyticsDataRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

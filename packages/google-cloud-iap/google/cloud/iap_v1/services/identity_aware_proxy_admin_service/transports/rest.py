@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -54,6 +55,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class IdentityAwareProxyAdminServiceRestInterceptor:
@@ -147,6 +151,14 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
                 logging.log(f"Received response: {response}")
                 return response
 
+            def pre_validate_iap_attribute_expression(self, request, metadata):
+                logging.log(f"Received request: {request}")
+                return request, metadata
+
+            def post_validate_iap_attribute_expression(self, response):
+                logging.log(f"Received response: {response}")
+                return response
+
         transport = IdentityAwareProxyAdminServiceRestTransport(interceptor=MyCustomIdentityAwareProxyAdminServiceInterceptor())
         client = IdentityAwareProxyAdminServiceClient(transport=transport)
 
@@ -172,11 +184,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.TunnelDestGroup:
         """Post-rpc interceptor for create_tunnel_dest_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_tunnel_dest_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_tunnel_dest_group` interceptor runs
+        before the `post_create_tunnel_dest_group_with_metadata` interceptor.
         """
         return response
+
+    def post_create_tunnel_dest_group_with_metadata(
+        self,
+        response: service.TunnelDestGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.TunnelDestGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_tunnel_dest_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_create_tunnel_dest_group_with_metadata`
+        interceptor in new development instead of the `post_create_tunnel_dest_group` interceptor.
+        When both interceptors are used, this `post_create_tunnel_dest_group_with_metadata` interceptor runs after the
+        `post_create_tunnel_dest_group` interceptor. The (possibly modified) response returned by
+        `post_create_tunnel_dest_group` will be passed to
+        `post_create_tunnel_dest_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_tunnel_dest_group(
         self,
@@ -209,11 +244,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_iap_settings(
         self,
@@ -232,11 +290,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.IapSettings:
         """Post-rpc interceptor for get_iap_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iap_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iap_settings` interceptor runs
+        before the `post_get_iap_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iap_settings_with_metadata(
+        self,
+        response: service.IapSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.IapSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iap_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_iap_settings_with_metadata`
+        interceptor in new development instead of the `post_get_iap_settings` interceptor.
+        When both interceptors are used, this `post_get_iap_settings_with_metadata` interceptor runs after the
+        `post_get_iap_settings` interceptor. The (possibly modified) response returned by
+        `post_get_iap_settings` will be passed to
+        `post_get_iap_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_tunnel_dest_group(
         self,
@@ -257,11 +338,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.TunnelDestGroup:
         """Post-rpc interceptor for get_tunnel_dest_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_tunnel_dest_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_tunnel_dest_group` interceptor runs
+        before the `post_get_tunnel_dest_group_with_metadata` interceptor.
         """
         return response
+
+    def post_get_tunnel_dest_group_with_metadata(
+        self,
+        response: service.TunnelDestGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.TunnelDestGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_tunnel_dest_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_get_tunnel_dest_group_with_metadata`
+        interceptor in new development instead of the `post_get_tunnel_dest_group` interceptor.
+        When both interceptors are used, this `post_get_tunnel_dest_group_with_metadata` interceptor runs after the
+        `post_get_tunnel_dest_group` interceptor. The (possibly modified) response returned by
+        `post_get_tunnel_dest_group` will be passed to
+        `post_get_tunnel_dest_group_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_tunnel_dest_groups(
         self,
@@ -282,11 +386,36 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.ListTunnelDestGroupsResponse:
         """Post-rpc interceptor for list_tunnel_dest_groups
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_tunnel_dest_groups_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_tunnel_dest_groups` interceptor runs
+        before the `post_list_tunnel_dest_groups_with_metadata` interceptor.
         """
         return response
+
+    def post_list_tunnel_dest_groups_with_metadata(
+        self,
+        response: service.ListTunnelDestGroupsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ListTunnelDestGroupsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_tunnel_dest_groups
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_list_tunnel_dest_groups_with_metadata`
+        interceptor in new development instead of the `post_list_tunnel_dest_groups` interceptor.
+        When both interceptors are used, this `post_list_tunnel_dest_groups_with_metadata` interceptor runs after the
+        `post_list_tunnel_dest_groups` interceptor. The (possibly modified) response returned by
+        `post_list_tunnel_dest_groups` will be passed to
+        `post_list_tunnel_dest_groups_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -305,11 +434,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -331,11 +483,37 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_iap_settings(
         self,
@@ -356,11 +534,34 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.IapSettings:
         """Post-rpc interceptor for update_iap_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_iap_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_iap_settings` interceptor runs
+        before the `post_update_iap_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_iap_settings_with_metadata(
+        self,
+        response: service.IapSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.IapSettings, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_iap_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_iap_settings_with_metadata`
+        interceptor in new development instead of the `post_update_iap_settings` interceptor.
+        When both interceptors are used, this `post_update_iap_settings_with_metadata` interceptor runs after the
+        `post_update_iap_settings` interceptor. The (possibly modified) response returned by
+        `post_update_iap_settings` will be passed to
+        `post_update_iap_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_tunnel_dest_group(
         self,
@@ -381,11 +582,86 @@ class IdentityAwareProxyAdminServiceRestInterceptor:
     ) -> service.TunnelDestGroup:
         """Post-rpc interceptor for update_tunnel_dest_group
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_tunnel_dest_group_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the IdentityAwareProxyAdminService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_tunnel_dest_group` interceptor runs
+        before the `post_update_tunnel_dest_group_with_metadata` interceptor.
         """
         return response
+
+    def post_update_tunnel_dest_group_with_metadata(
+        self,
+        response: service.TunnelDestGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[service.TunnelDestGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_tunnel_dest_group
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_update_tunnel_dest_group_with_metadata`
+        interceptor in new development instead of the `post_update_tunnel_dest_group` interceptor.
+        When both interceptors are used, this `post_update_tunnel_dest_group_with_metadata` interceptor runs after the
+        `post_update_tunnel_dest_group` interceptor. The (possibly modified) response returned by
+        `post_update_tunnel_dest_group` will be passed to
+        `post_update_tunnel_dest_group_with_metadata`.
+        """
+        return response, metadata
+
+    def pre_validate_iap_attribute_expression(
+        self,
+        request: service.ValidateIapAttributeExpressionRequest,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ValidateIapAttributeExpressionRequest,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Pre-rpc interceptor for validate_iap_attribute_expression
+
+        Override in a subclass to manipulate the request or metadata
+        before they are sent to the IdentityAwareProxyAdminService server.
+        """
+        return request, metadata
+
+    def post_validate_iap_attribute_expression(
+        self, response: service.ValidateIapAttributeExpressionResponse
+    ) -> service.ValidateIapAttributeExpressionResponse:
+        """Post-rpc interceptor for validate_iap_attribute_expression
+
+        DEPRECATED. Please use the `post_validate_iap_attribute_expression_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
+        after it is returned by the IdentityAwareProxyAdminService server but before
+        it is returned to user code. This `post_validate_iap_attribute_expression` interceptor runs
+        before the `post_validate_iap_attribute_expression_with_metadata` interceptor.
+        """
+        return response
+
+    def post_validate_iap_attribute_expression_with_metadata(
+        self,
+        response: service.ValidateIapAttributeExpressionResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        service.ValidateIapAttributeExpressionResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for validate_iap_attribute_expression
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the IdentityAwareProxyAdminService server but before it is returned to user code.
+
+        We recommend only using this `post_validate_iap_attribute_expression_with_metadata`
+        interceptor in new development instead of the `post_validate_iap_attribute_expression` interceptor.
+        When both interceptors are used, this `post_validate_iap_attribute_expression_with_metadata` interceptor runs after the
+        `post_validate_iap_attribute_expression` interceptor. The (possibly modified) response returned by
+        `post_validate_iap_attribute_expression` will be passed to
+        `post_validate_iap_attribute_expression_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -606,6 +882,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_tunnel_dest_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_tunnel_dest_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -941,6 +1221,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1084,6 +1368,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iap_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iap_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1229,6 +1517,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_tunnel_dest_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_tunnel_dest_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1376,6 +1668,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_tunnel_dest_groups(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_tunnel_dest_groups_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1602,6 +1898,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1753,6 +2053,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1903,6 +2207,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_iap_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_iap_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2054,6 +2362,10 @@ class IdentityAwareProxyAdminServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_tunnel_dest_group(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_tunnel_dest_group_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2071,6 +2383,164 @@ class IdentityAwareProxyAdminServiceRestTransport(
                     extra={
                         "serviceName": "google.cloud.iap.v1.IdentityAwareProxyAdminService",
                         "rpcName": "UpdateTunnelDestGroup",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
+            return resp
+
+    class _ValidateIapAttributeExpression(
+        _BaseIdentityAwareProxyAdminServiceRestTransport._BaseValidateIapAttributeExpression,
+        IdentityAwareProxyAdminServiceRestStub,
+    ):
+        def __hash__(self):
+            return hash(
+                "IdentityAwareProxyAdminServiceRestTransport.ValidateIapAttributeExpression"
+            )
+
+        @staticmethod
+        def _get_response(
+            host,
+            metadata,
+            query_params,
+            session,
+            timeout,
+            transcoded_request,
+            body=None,
+        ):
+            uri = transcoded_request["uri"]
+            method = transcoded_request["method"]
+            headers = dict(metadata)
+            headers["Content-Type"] = "application/json"
+            response = getattr(session, method)(
+                "{host}{uri}".format(host=host, uri=uri),
+                timeout=timeout,
+                headers=headers,
+                params=rest_helpers.flatten_query_params(query_params, strict=True),
+            )
+            return response
+
+        def __call__(
+            self,
+            request: service.ValidateIapAttributeExpressionRequest,
+            *,
+            retry: OptionalRetry = gapic_v1.method.DEFAULT,
+            timeout: Optional[float] = None,
+            metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+        ) -> service.ValidateIapAttributeExpressionResponse:
+            r"""Call the validate iap attribute
+            expression method over HTTP.
+
+                Args:
+                    request (~.service.ValidateIapAttributeExpressionRequest):
+                        The request object. Request sent to IAP Expression Linter
+                    endpoint.
+                    retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                        should be retried.
+                    timeout (float): The timeout for this request.
+                    metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                        sent along with the request as metadata. Normally, each value must be of type `str`,
+                        but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                        be of type `bytes`.
+
+                Returns:
+                    ~.service.ValidateIapAttributeExpressionResponse:
+                        IAP Expression Linter endpoint
+                    returns empty response body.
+
+            """
+
+            http_options = (
+                _BaseIdentityAwareProxyAdminServiceRestTransport._BaseValidateIapAttributeExpression._get_http_options()
+            )
+
+            request, metadata = self._interceptor.pre_validate_iap_attribute_expression(
+                request, metadata
+            )
+            transcoded_request = _BaseIdentityAwareProxyAdminServiceRestTransport._BaseValidateIapAttributeExpression._get_transcoded_request(
+                http_options, request
+            )
+
+            # Jsonify the query params
+            query_params = _BaseIdentityAwareProxyAdminServiceRestTransport._BaseValidateIapAttributeExpression._get_query_params_json(
+                transcoded_request
+            )
+
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                request_url = "{host}{uri}".format(
+                    host=self._host, uri=transcoded_request["uri"]
+                )
+                method = transcoded_request["method"]
+                try:
+                    request_payload = type(request).to_json(request)
+                except:
+                    request_payload = None
+                http_request = {
+                    "payload": request_payload,
+                    "requestMethod": method,
+                    "requestUrl": request_url,
+                    "headers": dict(metadata),
+                }
+                _LOGGER.debug(
+                    f"Sending request for google.cloud.iap_v1.IdentityAwareProxyAdminServiceClient.ValidateIapAttributeExpression",
+                    extra={
+                        "serviceName": "google.cloud.iap.v1.IdentityAwareProxyAdminService",
+                        "rpcName": "ValidateIapAttributeExpression",
+                        "httpRequest": http_request,
+                        "metadata": http_request["headers"],
+                    },
+                )
+
+            # Send the request
+            response = IdentityAwareProxyAdminServiceRestTransport._ValidateIapAttributeExpression._get_response(
+                self._host,
+                metadata,
+                query_params,
+                self._session,
+                timeout,
+                transcoded_request,
+            )
+
+            # In case of error, raise the appropriate core_exceptions.GoogleAPICallError exception
+            # subclass.
+            if response.status_code >= 400:
+                raise core_exceptions.from_http_response(response)
+
+            # Return the response
+            resp = service.ValidateIapAttributeExpressionResponse()
+            pb_resp = service.ValidateIapAttributeExpressionResponse.pb(resp)
+
+            json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
+
+            resp = self._interceptor.post_validate_iap_attribute_expression(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_validate_iap_attribute_expression_with_metadata(
+                resp, response_metadata
+            )
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                try:
+                    response_payload = (
+                        service.ValidateIapAttributeExpressionResponse.to_json(response)
+                    )
+                except:
+                    response_payload = None
+                http_response = {
+                    "payload": response_payload,
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.iap_v1.IdentityAwareProxyAdminServiceClient.validate_iap_attribute_expression",
+                    extra={
+                        "serviceName": "google.cloud.iap.v1.IdentityAwareProxyAdminService",
+                        "rpcName": "ValidateIapAttributeExpression",
                         "metadata": http_response["headers"],
                         "httpResponse": http_response,
                     },
@@ -2161,6 +2631,17 @@ class IdentityAwareProxyAdminServiceRestTransport(
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateTunnelDestGroup(self._session, self._host, self._interceptor)  # type: ignore
+
+    @property
+    def validate_iap_attribute_expression(
+        self,
+    ) -> Callable[
+        [service.ValidateIapAttributeExpressionRequest],
+        service.ValidateIapAttributeExpressionResponse,
+    ]:
+        # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
+        # In C++ this would require a dynamic_cast
+        return self._ValidateIapAttributeExpression(self._session, self._host, self._interceptor)  # type: ignore
 
     @property
     def kind(self) -> str:

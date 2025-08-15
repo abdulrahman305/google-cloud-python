@@ -165,6 +165,11 @@
                 "create_property"
               ]
             },
+            "CreateReportingDataAnnotation": {
+              "methods": [
+                "create_reporting_data_annotation"
+              ]
+            },
             "CreateRollupProperty": {
               "methods": [
                 "create_rollup_property"
@@ -283,6 +288,11 @@
             "DeleteProperty": {
               "methods": [
                 "delete_property"
+              ]
+            },
+            "DeleteReportingDataAnnotation": {
+              "methods": [
+                "delete_reporting_data_annotation"
               ]
             },
             "DeleteRollupPropertySourceLink": {
@@ -445,6 +455,11 @@
                 "get_property"
               ]
             },
+            "GetReportingDataAnnotation": {
+              "methods": [
+                "get_reporting_data_annotation"
+              ]
+            },
             "GetRollupPropertySourceLink": {
               "methods": [
                 "get_rollup_property_source_link"
@@ -463,6 +478,11 @@
             "GetSubpropertyEventFilter": {
               "methods": [
                 "get_subproperty_event_filter"
+              ]
+            },
+            "GetSubpropertySyncConfig": {
+              "methods": [
+                "get_subproperty_sync_config"
               ]
             },
             "ListAccessBindings": {
@@ -580,6 +600,11 @@
                 "list_properties"
               ]
             },
+            "ListReportingDataAnnotations": {
+              "methods": [
+                "list_reporting_data_annotations"
+              ]
+            },
             "ListRollupPropertySourceLinks": {
               "methods": [
                 "list_rollup_property_source_links"
@@ -598,6 +623,11 @@
             "ListSubpropertyEventFilters": {
               "methods": [
                 "list_subproperty_event_filters"
+              ]
+            },
+            "ListSubpropertySyncConfigs": {
+              "methods": [
+                "list_subproperty_sync_configs"
               ]
             },
             "ProvisionAccountTicket": {
@@ -628,6 +658,11 @@
             "SetAutomatedGa4ConfigurationOptOut": {
               "methods": [
                 "set_automated_ga4_configuration_opt_out"
+              ]
+            },
+            "SubmitUserDeletion": {
+              "methods": [
+                "submit_user_deletion"
               ]
             },
             "UpdateAccessBinding": {
@@ -745,6 +780,11 @@
                 "update_property"
               ]
             },
+            "UpdateReportingDataAnnotation": {
+              "methods": [
+                "update_reporting_data_annotation"
+              ]
+            },
             "UpdateSKAdNetworkConversionValueSchema": {
               "methods": [
                 "update_sk_ad_network_conversion_value_schema"
@@ -758,6 +798,11 @@
             "UpdateSubpropertyEventFilter": {
               "methods": [
                 "update_subproperty_event_filter"
+              ]
+            },
+            "UpdateSubpropertySyncConfig": {
+              "methods": [
+                "update_subproperty_sync_config"
               ]
             }
           }
@@ -920,6 +965,11 @@
                 "create_property"
               ]
             },
+            "CreateReportingDataAnnotation": {
+              "methods": [
+                "create_reporting_data_annotation"
+              ]
+            },
             "CreateRollupProperty": {
               "methods": [
                 "create_rollup_property"
@@ -1038,6 +1088,11 @@
             "DeleteProperty": {
               "methods": [
                 "delete_property"
+              ]
+            },
+            "DeleteReportingDataAnnotation": {
+              "methods": [
+                "delete_reporting_data_annotation"
               ]
             },
             "DeleteRollupPropertySourceLink": {
@@ -1200,6 +1255,11 @@
                 "get_property"
               ]
             },
+            "GetReportingDataAnnotation": {
+              "methods": [
+                "get_reporting_data_annotation"
+              ]
+            },
             "GetRollupPropertySourceLink": {
               "methods": [
                 "get_rollup_property_source_link"
@@ -1218,6 +1278,11 @@
             "GetSubpropertyEventFilter": {
               "methods": [
                 "get_subproperty_event_filter"
+              ]
+            },
+            "GetSubpropertySyncConfig": {
+              "methods": [
+                "get_subproperty_sync_config"
               ]
             },
             "ListAccessBindings": {
@@ -1335,6 +1400,11 @@
                 "list_properties"
               ]
             },
+            "ListReportingDataAnnotations": {
+              "methods": [
+                "list_reporting_data_annotations"
+              ]
+            },
             "ListRollupPropertySourceLinks": {
               "methods": [
                 "list_rollup_property_source_links"
@@ -1353,6 +1423,11 @@
             "ListSubpropertyEventFilters": {
               "methods": [
                 "list_subproperty_event_filters"
+              ]
+            },
+            "ListSubpropertySyncConfigs": {
+              "methods": [
+                "list_subproperty_sync_configs"
               ]
             },
             "ProvisionAccountTicket": {
@@ -1383,6 +1458,11 @@
             "SetAutomatedGa4ConfigurationOptOut": {
               "methods": [
                 "set_automated_ga4_configuration_opt_out"
+              ]
+            },
+            "SubmitUserDeletion": {
+              "methods": [
+                "submit_user_deletion"
               ]
             },
             "UpdateAccessBinding": {
@@ -1500,6 +1580,11 @@
                 "update_property"
               ]
             },
+            "UpdateReportingDataAnnotation": {
+              "methods": [
+                "update_reporting_data_annotation"
+              ]
+            },
             "UpdateSKAdNetworkConversionValueSchema": {
               "methods": [
                 "update_sk_ad_network_conversion_value_schema"
@@ -1513,6 +1598,11 @@
             "UpdateSubpropertyEventFilter": {
               "methods": [
                 "update_subproperty_event_filter"
+              ]
+            },
+            "UpdateSubpropertySyncConfig": {
+              "methods": [
+                "update_subproperty_sync_config"
               ]
             }
           }
@@ -1675,6 +1765,11 @@
                 "create_property"
               ]
             },
+            "CreateReportingDataAnnotation": {
+              "methods": [
+                "create_reporting_data_annotation"
+              ]
+            },
             "CreateRollupProperty": {
               "methods": [
                 "create_rollup_property"
@@ -1793,6 +1888,11 @@
             "DeleteProperty": {
               "methods": [
                 "delete_property"
+              ]
+            },
+            "DeleteReportingDataAnnotation": {
+              "methods": [
+                "delete_reporting_data_annotation"
               ]
             },
             "DeleteRollupPropertySourceLink": {
@@ -1955,6 +2055,11 @@
                 "get_property"
               ]
             },
+            "GetReportingDataAnnotation": {
+              "methods": [
+                "get_reporting_data_annotation"
+              ]
+            },
             "GetRollupPropertySourceLink": {
               "methods": [
                 "get_rollup_property_source_link"
@@ -1973,6 +2078,11 @@
             "GetSubpropertyEventFilter": {
               "methods": [
                 "get_subproperty_event_filter"
+              ]
+            },
+            "GetSubpropertySyncConfig": {
+              "methods": [
+                "get_subproperty_sync_config"
               ]
             },
             "ListAccessBindings": {
@@ -2090,6 +2200,11 @@
                 "list_properties"
               ]
             },
+            "ListReportingDataAnnotations": {
+              "methods": [
+                "list_reporting_data_annotations"
+              ]
+            },
             "ListRollupPropertySourceLinks": {
               "methods": [
                 "list_rollup_property_source_links"
@@ -2108,6 +2223,11 @@
             "ListSubpropertyEventFilters": {
               "methods": [
                 "list_subproperty_event_filters"
+              ]
+            },
+            "ListSubpropertySyncConfigs": {
+              "methods": [
+                "list_subproperty_sync_configs"
               ]
             },
             "ProvisionAccountTicket": {
@@ -2138,6 +2258,11 @@
             "SetAutomatedGa4ConfigurationOptOut": {
               "methods": [
                 "set_automated_ga4_configuration_opt_out"
+              ]
+            },
+            "SubmitUserDeletion": {
+              "methods": [
+                "submit_user_deletion"
               ]
             },
             "UpdateAccessBinding": {
@@ -2255,6 +2380,11 @@
                 "update_property"
               ]
             },
+            "UpdateReportingDataAnnotation": {
+              "methods": [
+                "update_reporting_data_annotation"
+              ]
+            },
             "UpdateSKAdNetworkConversionValueSchema": {
               "methods": [
                 "update_sk_ad_network_conversion_value_schema"
@@ -2268,6 +2398,11 @@
             "UpdateSubpropertyEventFilter": {
               "methods": [
                 "update_subproperty_event_filter"
+              ]
+            },
+            "UpdateSubpropertySyncConfig": {
+              "methods": [
+                "update_subproperty_sync_config"
               ]
             }
           }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,13 @@ from google.cloud.compute_v1.services.reservations import (
     transports,
 )
 from google.cloud.compute_v1.types import compute
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -302,6 +309,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ReservationsClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = ReservationsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = ReservationsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -2140,14 +2190,8 @@ def test_insert_rest_flattened():
             project="project_value",
             zone="zone_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -2190,14 +2234,8 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             zone="zone_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -2362,14 +2400,8 @@ def test_insert_unary_rest_flattened():
             project="project_value",
             zone="zone_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -2412,14 +2444,8 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
             project="project_value",
             zone="zone_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -2692,6 +2718,448 @@ def test_list_rest_pager(transport: str = "rest"):
         pages = list(client.list(request=sample_request).pages)
         for page_, token in zip(pages, ["abc", "def", "ghi", ""]):
             assert page_.raw_page.next_page_token == token
+
+
+def test_perform_maintenance_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = ReservationsClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.perform_maintenance in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.perform_maintenance
+        ] = mock_rpc
+
+        request = {}
+        client.perform_maintenance(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.perform_maintenance(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_perform_maintenance_rest_required_fields(
+    request_type=compute.PerformMaintenanceReservationRequest,
+):
+    transport_class = transports.ReservationsRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["reservation"] = ""
+    request_init["zone"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).perform_maintenance._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["reservation"] = "reservation_value"
+    jsonified_request["zone"] = "zone_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).perform_maintenance._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "reservation" in jsonified_request
+    assert jsonified_request["reservation"] == "reservation_value"
+    assert "zone" in jsonified_request
+    assert jsonified_request["zone"] == "zone_value"
+
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.perform_maintenance(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_perform_maintenance_rest_unset_required_fields():
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.perform_maintenance._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "reservation",
+                "reservationsPerformMaintenanceRequestResource",
+                "zone",
+            )
+        )
+    )
+
+
+def test_perform_maintenance_rest_flattened():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "zone": "sample2",
+            "reservation": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            zone="zone_value",
+            reservation="reservation_value",
+            reservations_perform_maintenance_request_resource=compute.ReservationsPerformMaintenanceRequest(
+                maintenance_scope="maintenance_scope_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.perform_maintenance(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/zones/{zone}/reservations/{reservation}/performMaintenance"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_perform_maintenance_rest_flattened_error(transport: str = "rest"):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.perform_maintenance(
+            compute.PerformMaintenanceReservationRequest(),
+            project="project_value",
+            zone="zone_value",
+            reservation="reservation_value",
+            reservations_perform_maintenance_request_resource=compute.ReservationsPerformMaintenanceRequest(
+                maintenance_scope="maintenance_scope_value"
+            ),
+        )
+
+
+def test_perform_maintenance_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = ReservationsClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert (
+            client._transport.perform_maintenance in client._transport._wrapped_methods
+        )
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[
+            client._transport.perform_maintenance
+        ] = mock_rpc
+
+        request = {}
+        client.perform_maintenance_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.perform_maintenance_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_perform_maintenance_unary_rest_required_fields(
+    request_type=compute.PerformMaintenanceReservationRequest,
+):
+    transport_class = transports.ReservationsRestTransport
+
+    request_init = {}
+    request_init["project"] = ""
+    request_init["reservation"] = ""
+    request_init["zone"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).perform_maintenance._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+
+    jsonified_request["project"] = "project_value"
+    jsonified_request["reservation"] = "reservation_value"
+    jsonified_request["zone"] = "zone_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).perform_maintenance._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(("request_id",))
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+    assert "reservation" in jsonified_request
+    assert jsonified_request["reservation"] == "reservation_value"
+    assert "zone" in jsonified_request
+    assert jsonified_request["zone"] == "zone_value"
+
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "post",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.perform_maintenance_unary(request)
+
+            expected_params = []
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_perform_maintenance_unary_rest_unset_required_fields():
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.perform_maintenance._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(("requestId",))
+        & set(
+            (
+                "project",
+                "reservation",
+                "reservationsPerformMaintenanceRequestResource",
+                "zone",
+            )
+        )
+    )
+
+
+def test_perform_maintenance_unary_rest_flattened():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {
+            "project": "sample1",
+            "zone": "sample2",
+            "reservation": "sample3",
+        }
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            zone="zone_value",
+            reservation="reservation_value",
+            reservations_perform_maintenance_request_resource=compute.ReservationsPerformMaintenanceRequest(
+                maintenance_scope="maintenance_scope_value"
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.perform_maintenance_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/zones/{zone}/reservations/{reservation}/performMaintenance"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_perform_maintenance_unary_rest_flattened_error(transport: str = "rest"):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.perform_maintenance_unary(
+            compute.PerformMaintenanceReservationRequest(),
+            project="project_value",
+            zone="zone_value",
+            reservation="reservation_value",
+            reservations_perform_maintenance_request_resource=compute.ReservationsPerformMaintenanceRequest(
+                maintenance_scope="maintenance_scope_value"
+            ),
+        )
 
 
 def test_resize_rest_use_cached_wrapped_rpc():
@@ -3731,14 +4199,8 @@ def test_update_rest_flattened():
             zone="zone_value",
             reservation="reservation_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -3782,14 +4244,8 @@ def test_update_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             reservation="reservation_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -3976,14 +4432,8 @@ def test_update_unary_rest_flattened():
             zone="zone_value",
             reservation="reservation_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -4027,14 +4477,8 @@ def test_update_unary_rest_flattened_error(transport: str = "rest"):
             zone="zone_value",
             reservation="reservation_value",
             reservation_resource=compute.Reservation(
-                aggregate_reservation=compute.AllocationAggregateReservation(
-                    in_use_resources=[
-                        compute.AllocationAggregateReservationReservedResourceInfo(
-                            accelerator=compute.AllocationAggregateReservationReservedResourceInfoAccelerator(
-                                accelerator_count=1805
-                            )
-                        )
-                    ]
+                advanced_deployment_control=compute.ReservationAdvancedDeploymentControl(
+                    reservation_operational_mode="reservation_operational_mode_value"
                 )
             ),
         )
@@ -4212,10 +4656,13 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_aggregated_list"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_aggregated_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_aggregated_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.AggregatedListReservationsRequest.pb(
             compute.AggregatedListReservationsRequest()
         )
@@ -4241,6 +4688,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.ReservationAggregatedList()
+        post_with_metadata.return_value = compute.ReservationAggregatedList(), metadata
 
         client.aggregated_list(
             request,
@@ -4252,6 +4700,7 @@ def test_aggregated_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_rest_bad_request(request_type=compute.DeleteReservationRequest):
@@ -4376,10 +4825,13 @@ def test_delete_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_delete"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_delete_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_delete"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.DeleteReservationRequest.pb(
             compute.DeleteReservationRequest()
         )
@@ -4403,6 +4855,7 @@ def test_delete_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.delete(
             request,
@@ -4414,6 +4867,7 @@ def test_delete_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_rest_bad_request(request_type=compute.GetReservationRequest):
@@ -4461,11 +4915,16 @@ def test_get_rest_call_success(request_type):
         return_value = compute.Reservation(
             commitment="commitment_value",
             creation_timestamp="creation_timestamp_value",
+            delete_at_time="delete_at_time_value",
+            deployment_type="deployment_type_value",
             description="description_value",
+            enable_emergent_maintenance=True,
             id=205,
             kind="kind_value",
+            linked_commitments=["linked_commitments_value"],
             name="name_value",
             satisfies_pzs=True,
+            scheduling_type="scheduling_type_value",
             self_link="self_link_value",
             specific_reservation_required=True,
             status="status_value",
@@ -4488,11 +4947,16 @@ def test_get_rest_call_success(request_type):
     assert isinstance(response, compute.Reservation)
     assert response.commitment == "commitment_value"
     assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.delete_at_time == "delete_at_time_value"
+    assert response.deployment_type == "deployment_type_value"
     assert response.description == "description_value"
+    assert response.enable_emergent_maintenance is True
     assert response.id == 205
     assert response.kind == "kind_value"
+    assert response.linked_commitments == ["linked_commitments_value"]
     assert response.name == "name_value"
     assert response.satisfies_pzs is True
+    assert response.scheduling_type == "scheduling_type_value"
     assert response.self_link == "self_link_value"
     assert response.specific_reservation_required is True
     assert response.status == "status_value"
@@ -4516,10 +4980,13 @@ def test_get_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_get"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_get_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_get"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetReservationRequest.pb(compute.GetReservationRequest())
         transcode.return_value = {
             "method": "post",
@@ -4541,6 +5008,7 @@ def test_get_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Reservation()
+        post_with_metadata.return_value = compute.Reservation(), metadata
 
         client.get(
             request,
@@ -4552,6 +5020,7 @@ def test_get_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_iam_policy_rest_bad_request(
@@ -4640,10 +5109,13 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_get_iam_policy"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_get_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_get_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetIamPolicyReservationRequest.pb(
             compute.GetIamPolicyReservationRequest()
         )
@@ -4667,6 +5139,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.get_iam_policy(
             request,
@@ -4678,6 +5151,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_insert_rest_bad_request(request_type=compute.InsertReservationRequest):
@@ -4718,6 +5192,9 @@ def test_insert_rest_call_success(request_type):
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "zone": "sample2"}
     request_init["reservation_resource"] = {
+        "advanced_deployment_control": {
+            "reservation_operational_mode": "reservation_operational_mode_value"
+        },
         "aggregate_reservation": {
             "in_use_resources": [
                 {
@@ -4733,17 +5210,58 @@ def test_insert_rest_call_success(request_type):
         },
         "commitment": "commitment_value",
         "creation_timestamp": "creation_timestamp_value",
+        "delete_after_duration": {"nanos": 543, "seconds": 751},
+        "delete_at_time": "delete_at_time_value",
+        "deployment_type": "deployment_type_value",
         "description": "description_value",
+        "enable_emergent_maintenance": True,
         "id": 205,
         "kind": "kind_value",
+        "linked_commitments": [
+            "linked_commitments_value1",
+            "linked_commitments_value2",
+        ],
         "name": "name_value",
+        "reservation_sharing_policy": {
+            "service_share_type": "service_share_type_value"
+        },
         "resource_policies": {},
         "resource_status": {
+            "health_info": {
+                "degraded_block_count": 2082,
+                "health_status": "health_status_value",
+                "healthy_block_count": 2017,
+            },
+            "reservation_block_count": 2468,
+            "reservation_maintenance": {
+                "instance_maintenance_ongoing_count": 3599,
+                "instance_maintenance_pending_count": 3587,
+                "maintenance_ongoing_count": 2651,
+                "maintenance_pending_count": 2639,
+                "scheduling_type": "scheduling_type_value",
+                "subblock_infra_maintenance_ongoing_count": 4222,
+                "subblock_infra_maintenance_pending_count": 4210,
+                "upcoming_group_maintenance": {
+                    "can_reschedule": True,
+                    "latest_window_start_time": "latest_window_start_time_value",
+                    "maintenance_on_shutdown": True,
+                    "maintenance_reasons": [
+                        "maintenance_reasons_value1",
+                        "maintenance_reasons_value2",
+                    ],
+                    "maintenance_status": "maintenance_status_value",
+                    "type_": "type__value",
+                    "window_end_time": "window_end_time_value",
+                    "window_start_time": "window_start_time_value",
+                },
+            },
             "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
+                "source_instance_template_id": "source_instance_template_id_value",
+                "utilizations": {},
+            },
         },
         "satisfies_pzs": True,
+        "scheduling_type": "scheduling_type_value",
         "self_link": "self_link_value",
         "share_settings": {"project_map": {}, "share_type": "share_type_value"},
         "specific_reservation": {
@@ -4922,10 +5440,13 @@ def test_insert_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_insert"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_insert_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_insert"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.InsertReservationRequest.pb(
             compute.InsertReservationRequest()
         )
@@ -4949,6 +5470,7 @@ def test_insert_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.insert(
             request,
@@ -4960,6 +5482,7 @@ def test_insert_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_rest_bad_request(request_type=compute.ListReservationsRequest):
@@ -5048,10 +5571,13 @@ def test_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_list"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ListReservationsRequest.pb(
             compute.ListReservationsRequest()
         )
@@ -5075,6 +5601,7 @@ def test_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.ReservationList()
+        post_with_metadata.return_value = compute.ReservationList(), metadata
 
         client.list(
             request,
@@ -5086,6 +5613,261 @@ def test_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_perform_maintenance_rest_bad_request(
+    request_type=compute.PerformMaintenanceReservationRequest,
+):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.perform_maintenance(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.PerformMaintenanceReservationRequest,
+        dict,
+    ],
+)
+def test_perform_maintenance_rest_call_success(request_type):
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
+    request_init["reservations_perform_maintenance_request_resource"] = {
+        "maintenance_scope": "maintenance_scope_value"
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.PerformMaintenanceReservationRequest.meta.fields[
+        "reservations_perform_maintenance_request_resource"
+    ]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init[
+        "reservations_perform_maintenance_request_resource"
+    ].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(
+                    0,
+                    len(
+                        request_init[
+                            "reservations_perform_maintenance_request_resource"
+                        ][field]
+                    ),
+                ):
+                    del request_init[
+                        "reservations_perform_maintenance_request_resource"
+                    ][field][i][subfield]
+            else:
+                del request_init["reservations_perform_maintenance_request_resource"][
+                    field
+                ][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.perform_maintenance(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_perform_maintenance_rest_interceptors(null_interceptor):
+    transport = transports.ReservationsRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None
+        if null_interceptor
+        else transports.ReservationsRestInterceptor(),
+    )
+    client = ReservationsClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_perform_maintenance"
+    ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_perform_maintenance_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.ReservationsRestInterceptor, "pre_perform_maintenance"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = compute.PerformMaintenanceReservationRequest.pb(
+            compute.PerformMaintenanceReservationRequest()
+        )
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.PerformMaintenanceReservationRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
+
+        client.perform_maintenance(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_resize_rest_bad_request(request_type=compute.ResizeReservationRequest):
@@ -5288,10 +6070,13 @@ def test_resize_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_resize"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_resize_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_resize"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ResizeReservationRequest.pb(
             compute.ResizeReservationRequest()
         )
@@ -5315,6 +6100,7 @@ def test_resize_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.resize(
             request,
@@ -5326,6 +6112,7 @@ def test_resize_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_iam_policy_rest_bad_request(
@@ -5530,10 +6317,13 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_set_iam_policy"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_set_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_set_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetIamPolicyReservationRequest.pb(
             compute.SetIamPolicyReservationRequest()
         )
@@ -5557,6 +6347,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.set_iam_policy(
             request,
@@ -5568,6 +6359,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_test_iam_permissions_rest_bad_request(
@@ -5730,10 +6522,14 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_test_iam_permissions"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor,
+        "post_test_iam_permissions_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_test_iam_permissions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.TestIamPermissionsReservationRequest.pb(
             compute.TestIamPermissionsReservationRequest()
         )
@@ -5759,6 +6555,7 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.TestPermissionsResponse()
+        post_with_metadata.return_value = compute.TestPermissionsResponse(), metadata
 
         client.test_iam_permissions(
             request,
@@ -5770,6 +6567,7 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_rest_bad_request(request_type=compute.UpdateReservationRequest):
@@ -5810,6 +6608,9 @@ def test_update_rest_call_success(request_type):
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1", "zone": "sample2", "reservation": "sample3"}
     request_init["reservation_resource"] = {
+        "advanced_deployment_control": {
+            "reservation_operational_mode": "reservation_operational_mode_value"
+        },
         "aggregate_reservation": {
             "in_use_resources": [
                 {
@@ -5825,17 +6626,58 @@ def test_update_rest_call_success(request_type):
         },
         "commitment": "commitment_value",
         "creation_timestamp": "creation_timestamp_value",
+        "delete_after_duration": {"nanos": 543, "seconds": 751},
+        "delete_at_time": "delete_at_time_value",
+        "deployment_type": "deployment_type_value",
         "description": "description_value",
+        "enable_emergent_maintenance": True,
         "id": 205,
         "kind": "kind_value",
+        "linked_commitments": [
+            "linked_commitments_value1",
+            "linked_commitments_value2",
+        ],
         "name": "name_value",
+        "reservation_sharing_policy": {
+            "service_share_type": "service_share_type_value"
+        },
         "resource_policies": {},
         "resource_status": {
+            "health_info": {
+                "degraded_block_count": 2082,
+                "health_status": "health_status_value",
+                "healthy_block_count": 2017,
+            },
+            "reservation_block_count": 2468,
+            "reservation_maintenance": {
+                "instance_maintenance_ongoing_count": 3599,
+                "instance_maintenance_pending_count": 3587,
+                "maintenance_ongoing_count": 2651,
+                "maintenance_pending_count": 2639,
+                "scheduling_type": "scheduling_type_value",
+                "subblock_infra_maintenance_ongoing_count": 4222,
+                "subblock_infra_maintenance_pending_count": 4210,
+                "upcoming_group_maintenance": {
+                    "can_reschedule": True,
+                    "latest_window_start_time": "latest_window_start_time_value",
+                    "maintenance_on_shutdown": True,
+                    "maintenance_reasons": [
+                        "maintenance_reasons_value1",
+                        "maintenance_reasons_value2",
+                    ],
+                    "maintenance_status": "maintenance_status_value",
+                    "type_": "type__value",
+                    "window_end_time": "window_end_time_value",
+                    "window_start_time": "window_start_time_value",
+                },
+            },
             "specific_sku_allocation": {
-                "source_instance_template_id": "source_instance_template_id_value"
-            }
+                "source_instance_template_id": "source_instance_template_id_value",
+                "utilizations": {},
+            },
         },
         "satisfies_pzs": True,
+        "scheduling_type": "scheduling_type_value",
         "self_link": "self_link_value",
         "share_settings": {"project_map": {}, "share_type": "share_type_value"},
         "specific_reservation": {
@@ -6014,10 +6856,13 @@ def test_update_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ReservationsRestInterceptor, "post_update"
     ) as post, mock.patch.object(
+        transports.ReservationsRestInterceptor, "post_update_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ReservationsRestInterceptor, "pre_update"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.UpdateReservationRequest.pb(
             compute.UpdateReservationRequest()
         )
@@ -6041,6 +6886,7 @@ def test_update_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.update(
             request,
@@ -6052,6 +6898,7 @@ def test_update_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():
@@ -6183,6 +7030,28 @@ def test_list_empty_call_rest():
 
 # This test is a coverage failsafe to make sure that totally empty calls,
 # i.e. request == None and no flattened fields passed, work.
+def test_perform_maintenance_unary_empty_call_rest():
+    client = ReservationsClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(
+        type(client.transport.perform_maintenance), "__call__"
+    ) as call:
+        client.perform_maintenance_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.PerformMaintenanceReservationRequest()
+
+        assert args[0] == request_msg
+
+
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
 def test_resize_unary_empty_call_rest():
     client = ReservationsClient(
         credentials=ga_credentials.AnonymousCredentials(),
@@ -6291,6 +7160,7 @@ def test_reservations_base_transport():
         "get_iam_policy",
         "insert",
         "list",
+        "perform_maintenance",
         "resize",
         "set_iam_policy",
         "test_iam_permissions",
@@ -6449,6 +7319,9 @@ def test_reservations_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.list._session
     session2 = client2.transport.list._session
+    assert session1 != session2
+    session1 = client1.transport.perform_maintenance._session
+    session2 = client2.transport.perform_maintenance._session
     assert session1 != session2
     session1 = client1.transport.resize._session
     session2 = client2.transport.resize._session

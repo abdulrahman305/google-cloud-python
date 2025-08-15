@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-quotas-v0.1.17...google-cloud-quotas-v0.1.18) (2025-06-11)
+
+
+### Features
+
+* Added support for hierarchical enrollment in Quota Adjuster consumer API ([78428ff](https://github.com/googleapis/google-cloud-python/commit/78428ff7406d808f7ac06a9726190b732d72b5a7))
+
+
+### Documentation
+
+* Added 2 new fields in `.google.api.cloudquotas.v1beta.QuotaAdjusterSettings` ([78428ff](https://github.com/googleapis/google-cloud-python/commit/78428ff7406d808f7ac06a9726190b732d72b5a7))
+* Added inherited and inherited_from in `.google.api.cloudquotas.v1beta.QuotaAdjusterSettings` ([78428ff](https://github.com/googleapis/google-cloud-python/commit/78428ff7406d808f7ac06a9726190b732d72b5a7))
+* Added support for folder and organization level enrollment ([78428ff](https://github.com/googleapis/google-cloud-python/commit/78428ff7406d808f7ac06a9726190b732d72b5a7))
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-quotas-v0.1.16...google-cloud-quotas-v0.1.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+
+
+### Documentation
+
+* [google-cloud-quotas] improved comment clarity ([#13647](https://github.com/googleapis/google-cloud-python/issues/13647)) ([3edc52a](https://github.com/googleapis/google-cloud-python/commit/3edc52a999e96c931b126ef1be20140bb4042089))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-quotas-v0.1.15...google-cloud-quotas-v0.1.16) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+* Add support for reading selective GAPIC generation methods from service YAML ([c8e0760](https://github.com/googleapis/google-cloud-python/commit/c8e0760e8088950c62279335216ad1d17716ce59))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-quotas-v0.1.14...google-cloud-quotas-v0.1.15) (2025-01-13)
+
+
+### Features
+
+* Add v1beta client libraries for cloudquotas API ([#13408](https://github.com/googleapis/google-cloud-python/issues/13408)) ([c757c44](https://github.com/googleapis/google-cloud-python/commit/c757c441cd4f2c830062717d35595840d111a977))
+
 ## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-quotas-v0.1.13...google-cloud-quotas-v0.1.14) (2024-12-12)
 
 

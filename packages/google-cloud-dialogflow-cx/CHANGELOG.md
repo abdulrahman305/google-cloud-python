@@ -1,6 +1,70 @@
 # Changelog
 
 
+## [1.42.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.41.1...google-cloud-dialogflow-cx-v1.42.0) (2025-07-04)
+
+
+### Features
+
+* **v3:** Add support for generator settings on fulfillment ([#14054](https://github.com/googleapis/google-cloud-python/issues/14054)) ([806bd71](https://github.com/googleapis/google-cloud-python/commit/806bd717a84957789c0596a9ac4de32fdd38fbb3))
+
+## [1.41.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.41.0...google-cloud-dialogflow-cx-v1.41.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([3d5bc37](https://github.com/googleapis/google-cloud-python/commit/3d5bc3782da6b37742ae83802de8a8b6db96fe29))
+
+## [1.41.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.40.0...google-cloud-dialogflow-cx-v1.41.0) (2025-03-15)
+
+
+### Features
+
+* added support for document_processing_mode ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* Change client_secret in OAuthConfig from required to optional ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* exposed Zone Separation & Zone Isolation status of an agent ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+
+
+### Bug Fixes
+
+* [google-cloud-dialogflow-cx] Allow Protobuf 6.x ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+
+### Documentation
+
+* [google-cloud-dialogflow-cx] A comment for field `name` in message `.google.cloud.dialogflow.cx.v3beta1.Tool` is changed ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* A comment for field `cert` in message `.google.cloud.dialogflow.cx.v3beta1.Tool` is changed ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* A comment for field `client_secret` in message `.[google.cloud.dialogflow.cx](https://www.google.com/url?sa=D&q=http%3A%2F%2Fgoogle.cloud.dialogflow.cx).v3.Webhook` is changed ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* clarified wording around StreamingDetectIntentRequest ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+* clarified wording around use_timeout_based_endpointing ([3609c90](https://github.com/googleapis/google-cloud-python/commit/3609c907cf4c03bf08418de150c84c32da9dae1e))
+
+## [1.40.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.39.0...google-cloud-dialogflow-cx-v1.40.0) (2025-02-27)
+
+
+### Features
+
+* **v3:** added support for document_processing_mode ([7b2da60](https://github.com/googleapis/google-cloud-python/commit/7b2da60b07d6fab4fc46254a6c2557006df5fcba))
+* **v3beta1:** added DocumentProcessingMode & BoostSpec for data stores ([8a86dba](https://github.com/googleapis/google-cloud-python/commit/8a86dba51968c017e4576da3a1058d374bc2ebf4))
+* **v3beta1:** added support for answer feedback & latency metrics in conversation history ([8a86dba](https://github.com/googleapis/google-cloud-python/commit/8a86dba51968c017e4576da3a1058d374bc2ebf4))
+* **v3beta1:** added support for handlers ([7b2da60](https://github.com/googleapis/google-cloud-python/commit/7b2da60b07d6fab4fc46254a6c2557006df5fcba))
+* **v3beta1:** added support for playbook level speech settings ([8a86dba](https://github.com/googleapis/google-cloud-python/commit/8a86dba51968c017e4576da3a1058d374bc2ebf4))
+* **v3:** exposed Zone Separation & Zone Isolation status of an agent ([7b2da60](https://github.com/googleapis/google-cloud-python/commit/7b2da60b07d6fab4fc46254a6c2557006df5fcba))
+
+
+### Documentation
+
+* **v3:** clarified wording around StreamingDetectIntentRequest ([7b2da60](https://github.com/googleapis/google-cloud-python/commit/7b2da60b07d6fab4fc46254a6c2557006df5fcba))
+* **v3:** clarified wording around use_timeout_based_endpointing ([7b2da60](https://github.com/googleapis/google-cloud-python/commit/7b2da60b07d6fab4fc46254a6c2557006df5fcba))
+
+## [1.39.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.38.0...google-cloud-dialogflow-cx-v1.39.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [1.38.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dialogflow-cx-v1.37.0...google-cloud-dialogflow-cx-v1.38.0) (2024-12-12)
 
 

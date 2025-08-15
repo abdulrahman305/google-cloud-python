@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ from .services.serving_config_service import (
     ServingConfigServiceAsyncClient,
     ServingConfigServiceClient,
 )
+from .services.session_service import SessionServiceAsyncClient, SessionServiceClient
 from .services.site_search_engine_service import (
     SiteSearchEngineServiceAsyncClient,
     SiteSearchEngineServiceClient,
@@ -356,6 +357,7 @@ __all__ = (
     "SearchServiceAsyncClient",
     "SearchTuningServiceAsyncClient",
     "ServingConfigServiceAsyncClient",
+    "SessionServiceAsyncClient",
     "SiteSearchEngineServiceAsyncClient",
     "UserEventServiceAsyncClient",
     "AdvancedCompleteQueryRequest",
@@ -577,6 +579,7 @@ __all__ = (
     "ServingConfig",
     "ServingConfigServiceClient",
     "Session",
+    "SessionServiceClient",
     "SiteSearchEngine",
     "SiteSearchEngineServiceClient",
     "SiteVerificationInfo",

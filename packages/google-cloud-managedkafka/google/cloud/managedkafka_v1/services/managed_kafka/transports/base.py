@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.managedkafka_v1 import gapic_version as package_version
@@ -33,6 +34,9 @@ from google.cloud.managedkafka_v1.types import managed_kafka, resources
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ManagedKafkaTransport(abc.ABC):
@@ -255,6 +259,41 @@ class ManagedKafkaTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.list_acls: gapic_v1.method.wrap_method(
+                self.list_acls,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_acl: gapic_v1.method.wrap_method(
+                self.get_acl,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.create_acl: gapic_v1.method.wrap_method(
+                self.create_acl,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_acl: gapic_v1.method.wrap_method(
+                self.update_acl,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.delete_acl: gapic_v1.method.wrap_method(
+                self.delete_acl,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.add_acl_entry: gapic_v1.method.wrap_method(
+                self.add_acl_entry,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.remove_acl_entry: gapic_v1.method.wrap_method(
+                self.remove_acl_entry,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.get_location: gapic_v1.method.wrap_method(
                 self.get_location,
                 default_timeout=None,
@@ -433,6 +472,74 @@ class ManagedKafkaTransport(abc.ABC):
     ) -> Callable[
         [managed_kafka.DeleteConsumerGroupRequest],
         Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_acls(
+        self,
+    ) -> Callable[
+        [managed_kafka.ListAclsRequest],
+        Union[
+            managed_kafka.ListAclsResponse, Awaitable[managed_kafka.ListAclsResponse]
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_acl(
+        self,
+    ) -> Callable[
+        [managed_kafka.GetAclRequest], Union[resources.Acl, Awaitable[resources.Acl]]
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_acl(
+        self,
+    ) -> Callable[
+        [managed_kafka.CreateAclRequest], Union[resources.Acl, Awaitable[resources.Acl]]
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_acl(
+        self,
+    ) -> Callable[
+        [managed_kafka.UpdateAclRequest], Union[resources.Acl, Awaitable[resources.Acl]]
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def delete_acl(
+        self,
+    ) -> Callable[
+        [managed_kafka.DeleteAclRequest],
+        Union[empty_pb2.Empty, Awaitable[empty_pb2.Empty]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def add_acl_entry(
+        self,
+    ) -> Callable[
+        [managed_kafka.AddAclEntryRequest],
+        Union[
+            managed_kafka.AddAclEntryResponse,
+            Awaitable[managed_kafka.AddAclEntryResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def remove_acl_entry(
+        self,
+    ) -> Callable[
+        [managed_kafka.RemoveAclEntryRequest],
+        Union[
+            managed_kafka.RemoveAclEntryResponse,
+            Awaitable[managed_kafka.RemoveAclEntryResponse],
+        ],
     ]:
         raise NotImplementedError()
 

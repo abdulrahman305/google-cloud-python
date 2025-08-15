@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,10 +25,11 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
-from google.ads.admanager_v1.types import report_service
+from google.ads.admanager_v1.types import report_messages, report_service
 
 from .base import DEFAULT_CLIENT_INFO as BASE_DEFAULT_CLIENT_INFO
 from .rest_base import _BaseReportServiceRestTransport
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ReportServiceRestInterceptor:
@@ -138,15 +142,38 @@ class ReportServiceRestInterceptor:
         return request, metadata
 
     def post_create_report(
-        self, response: report_service.Report
-    ) -> report_service.Report:
+        self, response: report_messages.Report
+    ) -> report_messages.Report:
         """Post-rpc interceptor for create_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_report` interceptor runs
+        before the `post_create_report_with_metadata` interceptor.
         """
         return response
+
+    def post_create_report_with_metadata(
+        self,
+        response: report_messages.Report,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[report_messages.Report, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_create_report_with_metadata`
+        interceptor in new development instead of the `post_create_report` interceptor.
+        When both interceptors are used, this `post_create_report_with_metadata` interceptor runs after the
+        `post_create_report` interceptor. The (possibly modified) response returned by
+        `post_create_report` will be passed to
+        `post_create_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_fetch_report_result_rows(
         self,
@@ -168,11 +195,37 @@ class ReportServiceRestInterceptor:
     ) -> report_service.FetchReportResultRowsResponse:
         """Post-rpc interceptor for fetch_report_result_rows
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_fetch_report_result_rows_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_fetch_report_result_rows` interceptor runs
+        before the `post_fetch_report_result_rows_with_metadata` interceptor.
         """
         return response
+
+    def post_fetch_report_result_rows_with_metadata(
+        self,
+        response: report_service.FetchReportResultRowsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.FetchReportResultRowsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for fetch_report_result_rows
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_fetch_report_result_rows_with_metadata`
+        interceptor in new development instead of the `post_fetch_report_result_rows` interceptor.
+        When both interceptors are used, this `post_fetch_report_result_rows_with_metadata` interceptor runs after the
+        `post_fetch_report_result_rows` interceptor. The (possibly modified) response returned by
+        `post_fetch_report_result_rows` will be passed to
+        `post_fetch_report_result_rows_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_report(
         self,
@@ -188,14 +241,39 @@ class ReportServiceRestInterceptor:
         """
         return request, metadata
 
-    def post_get_report(self, response: report_service.Report) -> report_service.Report:
+    def post_get_report(
+        self, response: report_messages.Report
+    ) -> report_messages.Report:
         """Post-rpc interceptor for get_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_report` interceptor runs
+        before the `post_get_report_with_metadata` interceptor.
         """
         return response
+
+    def post_get_report_with_metadata(
+        self,
+        response: report_messages.Report,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[report_messages.Report, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_get_report_with_metadata`
+        interceptor in new development instead of the `post_get_report` interceptor.
+        When both interceptors are used, this `post_get_report_with_metadata` interceptor runs after the
+        `post_get_report` interceptor. The (possibly modified) response returned by
+        `post_get_report` will be passed to
+        `post_get_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_reports(
         self,
@@ -216,11 +294,36 @@ class ReportServiceRestInterceptor:
     ) -> report_service.ListReportsResponse:
         """Post-rpc interceptor for list_reports
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_reports_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_reports` interceptor runs
+        before the `post_list_reports_with_metadata` interceptor.
         """
         return response
+
+    def post_list_reports_with_metadata(
+        self,
+        response: report_service.ListReportsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        report_service.ListReportsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_reports
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_list_reports_with_metadata`
+        interceptor in new development instead of the `post_list_reports` interceptor.
+        When both interceptors are used, this `post_list_reports_with_metadata` interceptor runs after the
+        `post_list_reports` interceptor. The (possibly modified) response returned by
+        `post_list_reports` will be passed to
+        `post_list_reports_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_report(
         self,
@@ -241,11 +344,34 @@ class ReportServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for run_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_report` interceptor runs
+        before the `post_run_report_with_metadata` interceptor.
         """
         return response
+
+    def post_run_report_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for run_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_run_report_with_metadata`
+        interceptor in new development instead of the `post_run_report` interceptor.
+        When both interceptors are used, this `post_run_report_with_metadata` interceptor runs after the
+        `post_run_report` interceptor. The (possibly modified) response returned by
+        `post_run_report` will be passed to
+        `post_run_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_report(
         self,
@@ -262,15 +388,38 @@ class ReportServiceRestInterceptor:
         return request, metadata
 
     def post_update_report(
-        self, response: report_service.Report
-    ) -> report_service.Report:
+        self, response: report_messages.Report
+    ) -> report_messages.Report:
         """Post-rpc interceptor for update_report
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_report_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ReportService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_report` interceptor runs
+        before the `post_update_report_with_metadata` interceptor.
         """
         return response
+
+    def post_update_report_with_metadata(
+        self,
+        response: report_messages.Report,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[report_messages.Report, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_report
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ReportService server but before it is returned to user code.
+
+        We recommend only using this `post_update_report_with_metadata`
+        interceptor in new development instead of the `post_update_report` interceptor.
+        When both interceptors are used, this `post_update_report_with_metadata` interceptor runs after the
+        `post_update_report` interceptor. The (possibly modified) response returned by
+        `post_update_report` will be passed to
+        `post_update_report_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -400,10 +549,6 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                         "method": "get",
                         "uri": "/v1/{name=networks/*/operations/reports/runs/*}",
                     },
-                    {
-                        "method": "get",
-                        "uri": "/v1/{name=networks/*/operations/reports/exports/*}",
-                    },
                 ],
             }
 
@@ -459,7 +604,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
             metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-        ) -> report_service.Report:
+        ) -> report_messages.Report:
             r"""Call the create report method over HTTP.
 
             Args:
@@ -474,7 +619,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                     be of type `bytes`.
 
             Returns:
-                ~.report_service.Report:
+                ~.report_messages.Report:
                     The ``Report`` resource.
             """
 
@@ -540,17 +685,21 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                 raise core_exceptions.from_http_response(response)
 
             # Return the response
-            resp = report_service.Report()
-            pb_resp = report_service.Report.pb(resp)
+            resp = report_messages.Report()
+            pb_resp = report_messages.Report.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
                 try:
-                    response_payload = report_service.Report.to_json(response)
+                    response_payload = report_messages.Report.to_json(response)
                 except:
                     response_payload = None
                 http_response = {
@@ -692,6 +841,10 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_fetch_report_result_rows(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_fetch_report_result_rows_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -752,7 +905,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
             metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-        ) -> report_service.Report:
+        ) -> report_messages.Report:
             r"""Call the get report method over HTTP.
 
             Args:
@@ -767,7 +920,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                     be of type `bytes`.
 
             Returns:
-                ~.report_service.Report:
+                ~.report_messages.Report:
                     The ``Report`` resource.
             """
 
@@ -832,17 +985,21 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                 raise core_exceptions.from_http_response(response)
 
             # Return the response
-            resp = report_service.Report()
-            pb_resp = report_service.Report.pb(resp)
+            resp = report_messages.Report()
+            pb_resp = report_messages.Report.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
                 try:
-                    response_payload = report_service.Report.to_json(response)
+                    response_payload = report_messages.Report.to_json(response)
                 except:
                     response_payload = None
                 http_response = {
@@ -982,6 +1139,10 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_reports(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_reports_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1138,6 +1299,10 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1197,7 +1362,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
             retry: OptionalRetry = gapic_v1.method.DEFAULT,
             timeout: Optional[float] = None,
             metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-        ) -> report_service.Report:
+        ) -> report_messages.Report:
             r"""Call the update report method over HTTP.
 
             Args:
@@ -1212,7 +1377,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                     be of type `bytes`.
 
             Returns:
-                ~.report_service.Report:
+                ~.report_messages.Report:
                     The ``Report`` resource.
             """
 
@@ -1278,17 +1443,21 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
                 raise core_exceptions.from_http_response(response)
 
             # Return the response
-            resp = report_service.Report()
-            pb_resp = report_service.Report.pb(resp)
+            resp = report_messages.Report()
+            pb_resp = report_messages.Report.pb(resp)
 
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_report(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_report_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
                 try:
-                    response_payload = report_service.Report.to_json(response)
+                    response_payload = report_messages.Report.to_json(response)
                 except:
                     response_payload = None
                 http_response = {
@@ -1310,7 +1479,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
     @property
     def create_report(
         self,
-    ) -> Callable[[report_service.CreateReportRequest], report_service.Report]:
+    ) -> Callable[[report_service.CreateReportRequest], report_messages.Report]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._CreateReport(self._session, self._host, self._interceptor)  # type: ignore
@@ -1329,7 +1498,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
     @property
     def get_report(
         self,
-    ) -> Callable[[report_service.GetReportRequest], report_service.Report]:
+    ) -> Callable[[report_service.GetReportRequest], report_messages.Report]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._GetReport(self._session, self._host, self._interceptor)  # type: ignore
@@ -1355,7 +1524,7 @@ class ReportServiceRestTransport(_BaseReportServiceRestTransport):
     @property
     def update_report(
         self,
-    ) -> Callable[[report_service.UpdateReportRequest], report_service.Report]:
+    ) -> Callable[[report_service.UpdateReportRequest], report_messages.Report]:
         # The return type is fine, but mypy isn't sophisticated enough to determine what's going on here.
         # In C++ this would require a dynamic_cast
         return self._UpdateReport(self._session, self._host, self._interceptor)  # type: ignore

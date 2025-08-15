@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,8 +55,8 @@ class TransferStats(proto.Message):
 
     Attributes:
         transfer_bytes (int):
-            Cumulative bytes trasferred so far for the
-            replication relatinonship.
+            Cumulative bytes transferred so far for the
+            replication relationship.
 
             This field is a member of `oneof`_ ``_transfer_bytes``.
         total_transfer_duration (google.protobuf.duration_pb2.Duration):
@@ -422,6 +422,17 @@ class HybridPeeringDetails(proto.Message):
         passphrase (str):
             Optional. Temporary passphrase generated to
             accept cluster peering command.
+        peer_volume_name (str):
+            Optional. Name of the user's local source
+            volume to be peered with the destination volume.
+        peer_cluster_name (str):
+            Optional. Name of the user's local source
+            cluster to be peered with the destination
+            cluster.
+        peer_svm_name (str):
+            Optional. Name of the user's local source
+            vserver svm to be peered with the destination
+            vserver svm.
     """
 
     subnet_ip: str = proto.Field(
@@ -440,6 +451,18 @@ class HybridPeeringDetails(proto.Message):
     passphrase: str = proto.Field(
         proto.STRING,
         number=4,
+    )
+    peer_volume_name: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    peer_cluster_name: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
+    peer_svm_name: str = proto.Field(
+        proto.STRING,
+        number=7,
     )
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ from google.auth.exceptions import MutualTLSChannelError
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account
 from google.protobuf import duration_pb2  # type: ignore
+from google.protobuf import timestamp_pb2  # type: ignore
 from google.protobuf import wrappers_pb2  # type: ignore
 from google.rpc import status_pb2  # type: ignore
 
@@ -71,6 +72,13 @@ from google.cloud.speech_v1p1beta1.services.speech import (
     transports,
 )
 from google.cloud.speech_v1p1beta1.types import cloud_speech, resource
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -292,6 +300,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         SpeechClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = SpeechClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = SpeechClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1026,6 +1077,7 @@ def test_recognize(request_type, transport: str = "grpc"):
         # Designate an appropriate return value for the call.
         call.return_value = cloud_speech.RecognizeResponse(
             request_id=1077,
+            using_legacy_models=True,
         )
         response = client.recognize(request)
 
@@ -1038,6 +1090,7 @@ def test_recognize(request_type, transport: str = "grpc"):
     # Establish that the response is the type that we expect.
     assert isinstance(response, cloud_speech.RecognizeResponse)
     assert response.request_id == 1077
+    assert response.using_legacy_models is True
 
 
 def test_recognize_non_empty_request_with_auto_populated_field():
@@ -1158,6 +1211,7 @@ async def test_recognize_async(
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             cloud_speech.RecognizeResponse(
                 request_id=1077,
+                using_legacy_models=True,
             )
         )
         response = await client.recognize(request)
@@ -1171,6 +1225,7 @@ async def test_recognize_async(
     # Establish that the response is the type that we expect.
     assert isinstance(response, cloud_speech.RecognizeResponse)
     assert response.request_id == 1077
+    assert response.using_legacy_models is True
 
 
 @pytest.mark.asyncio
@@ -2316,6 +2371,7 @@ async def test_recognize_empty_call_grpc_asyncio():
         call.return_value = grpc_helpers_async.FakeUnaryUnaryCall(
             cloud_speech.RecognizeResponse(
                 request_id=1077,
+                using_legacy_models=True,
             )
         )
         await client.recognize(request=None)
@@ -2406,6 +2462,7 @@ def test_recognize_rest_call_success(request_type):
         # Designate an appropriate value for the returned response.
         return_value = cloud_speech.RecognizeResponse(
             request_id=1077,
+            using_legacy_models=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -2423,6 +2480,7 @@ def test_recognize_rest_call_success(request_type):
     # Establish that the response is the type that we expect.
     assert isinstance(response, cloud_speech.RecognizeResponse)
     assert response.request_id == 1077
+    assert response.using_legacy_models is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -2440,10 +2498,13 @@ def test_recognize_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SpeechRestInterceptor, "post_recognize"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_recognize_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_recognize"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.RecognizeRequest.pb(cloud_speech.RecognizeRequest())
         transcode.return_value = {
             "method": "post",
@@ -2467,6 +2528,7 @@ def test_recognize_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = cloud_speech.RecognizeResponse()
+        post_with_metadata.return_value = cloud_speech.RecognizeResponse(), metadata
 
         client.recognize(
             request,
@@ -2478,6 +2540,7 @@ def test_recognize_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_long_running_recognize_rest_bad_request(
@@ -2556,10 +2619,13 @@ def test_long_running_recognize_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.SpeechRestInterceptor, "post_long_running_recognize"
     ) as post, mock.patch.object(
+        transports.SpeechRestInterceptor, "post_long_running_recognize_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SpeechRestInterceptor, "pre_long_running_recognize"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = cloud_speech.LongRunningRecognizeRequest.pb(
             cloud_speech.LongRunningRecognizeRequest()
         )
@@ -2583,6 +2649,7 @@ def test_long_running_recognize_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.long_running_recognize(
             request,
@@ -2594,6 +2661,7 @@ def test_long_running_recognize_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_streaming_recognize_rest_error():
@@ -3255,10 +3323,73 @@ def test_speech_grpc_lro_async_client():
     assert transport.operations_client is transport.operations_client
 
 
-def test_custom_class_path():
+def test_crypto_key_path():
     project = "squid"
     location = "clam"
-    custom_class = "whelk"
+    key_ring = "whelk"
+    crypto_key = "octopus"
+    expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}".format(
+        project=project,
+        location=location,
+        key_ring=key_ring,
+        crypto_key=crypto_key,
+    )
+    actual = SpeechClient.crypto_key_path(project, location, key_ring, crypto_key)
+    assert expected == actual
+
+
+def test_parse_crypto_key_path():
+    expected = {
+        "project": "oyster",
+        "location": "nudibranch",
+        "key_ring": "cuttlefish",
+        "crypto_key": "mussel",
+    }
+    path = SpeechClient.crypto_key_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SpeechClient.parse_crypto_key_path(path)
+    assert expected == actual
+
+
+def test_crypto_key_version_path():
+    project = "winkle"
+    location = "nautilus"
+    key_ring = "scallop"
+    crypto_key = "abalone"
+    crypto_key_version = "squid"
+    expected = "projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{crypto_key}/cryptoKeyVersions/{crypto_key_version}".format(
+        project=project,
+        location=location,
+        key_ring=key_ring,
+        crypto_key=crypto_key,
+        crypto_key_version=crypto_key_version,
+    )
+    actual = SpeechClient.crypto_key_version_path(
+        project, location, key_ring, crypto_key, crypto_key_version
+    )
+    assert expected == actual
+
+
+def test_parse_crypto_key_version_path():
+    expected = {
+        "project": "clam",
+        "location": "whelk",
+        "key_ring": "octopus",
+        "crypto_key": "oyster",
+        "crypto_key_version": "nudibranch",
+    }
+    path = SpeechClient.crypto_key_version_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SpeechClient.parse_crypto_key_version_path(path)
+    assert expected == actual
+
+
+def test_custom_class_path():
+    project = "cuttlefish"
+    location = "mussel"
+    custom_class = "winkle"
     expected = (
         "projects/{project}/locations/{location}/customClasses/{custom_class}".format(
             project=project,
@@ -3272,9 +3403,9 @@ def test_custom_class_path():
 
 def test_parse_custom_class_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "custom_class": "nudibranch",
+        "project": "nautilus",
+        "location": "scallop",
+        "custom_class": "abalone",
     }
     path = SpeechClient.custom_class_path(**expected)
 
@@ -3284,9 +3415,9 @@ def test_parse_custom_class_path():
 
 
 def test_phrase_set_path():
-    project = "cuttlefish"
-    location = "mussel"
-    phrase_set = "winkle"
+    project = "squid"
+    location = "clam"
+    phrase_set = "whelk"
     expected = "projects/{project}/locations/{location}/phraseSets/{phrase_set}".format(
         project=project,
         location=location,
@@ -3298,9 +3429,9 @@ def test_phrase_set_path():
 
 def test_parse_phrase_set_path():
     expected = {
-        "project": "nautilus",
-        "location": "scallop",
-        "phrase_set": "abalone",
+        "project": "octopus",
+        "location": "oyster",
+        "phrase_set": "nudibranch",
     }
     path = SpeechClient.phrase_set_path(**expected)
 
@@ -3310,7 +3441,7 @@ def test_parse_phrase_set_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "squid"
+    billing_account = "cuttlefish"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -3320,7 +3451,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "clam",
+        "billing_account": "mussel",
     }
     path = SpeechClient.common_billing_account_path(**expected)
 
@@ -3330,7 +3461,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "whelk"
+    folder = "winkle"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -3340,7 +3471,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "octopus",
+        "folder": "nautilus",
     }
     path = SpeechClient.common_folder_path(**expected)
 
@@ -3350,7 +3481,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "oyster"
+    organization = "scallop"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -3360,7 +3491,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "nudibranch",
+        "organization": "abalone",
     }
     path = SpeechClient.common_organization_path(**expected)
 
@@ -3370,7 +3501,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "cuttlefish"
+    project = "squid"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -3380,7 +3511,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "mussel",
+        "project": "clam",
     }
     path = SpeechClient.common_project_path(**expected)
 
@@ -3390,8 +3521,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "winkle"
-    location = "nautilus"
+    project = "whelk"
+    location = "octopus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -3402,8 +3533,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "scallop",
-        "location": "abalone",
+        "project": "oyster",
+        "location": "nudibranch",
     }
     path = SpeechClient.common_location_path(**expected)
 

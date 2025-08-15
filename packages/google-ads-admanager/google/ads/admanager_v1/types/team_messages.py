@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,19 +35,11 @@ class Team(proto.Message):
         name (str):
             Identifier. The resource name of the ``Team``. Format:
             ``networks/{network_code}/teams/{team_id}``
-        team_id (int):
-            Output only. The unique ID of the Team. This
-            value is assigned by Google. Teams that are
-            created by Google will have negative IDs.
     """
 
     name: str = proto.Field(
         proto.STRING,
         number=1,
-    )
-    team_id: int = proto.Field(
-        proto.INT64,
-        number=2,
     )
 
 

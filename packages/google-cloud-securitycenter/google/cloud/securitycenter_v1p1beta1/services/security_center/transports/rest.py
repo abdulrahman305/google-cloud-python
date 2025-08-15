@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -70,6 +71,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class SecurityCenterRestInterceptor:
@@ -291,11 +295,34 @@ class SecurityCenterRestInterceptor:
     def post_create_finding(self, response: gcs_finding.Finding) -> gcs_finding.Finding:
         """Post-rpc interceptor for create_finding
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_finding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_finding` interceptor runs
+        before the `post_create_finding_with_metadata` interceptor.
         """
         return response
+
+    def post_create_finding_with_metadata(
+        self,
+        response: gcs_finding.Finding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_finding.Finding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_finding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_create_finding_with_metadata`
+        interceptor in new development instead of the `post_create_finding` interceptor.
+        When both interceptors are used, this `post_create_finding_with_metadata` interceptor runs after the
+        `post_create_finding` interceptor. The (possibly modified) response returned by
+        `post_create_finding` will be passed to
+        `post_create_finding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_notification_config(
         self,
@@ -317,11 +344,37 @@ class SecurityCenterRestInterceptor:
     ) -> gcs_notification_config.NotificationConfig:
         """Post-rpc interceptor for create_notification_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_notification_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_notification_config` interceptor runs
+        before the `post_create_notification_config_with_metadata` interceptor.
         """
         return response
+
+    def post_create_notification_config_with_metadata(
+        self,
+        response: gcs_notification_config.NotificationConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcs_notification_config.NotificationConfig,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_notification_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_create_notification_config_with_metadata`
+        interceptor in new development instead of the `post_create_notification_config` interceptor.
+        When both interceptors are used, this `post_create_notification_config_with_metadata` interceptor runs after the
+        `post_create_notification_config` interceptor. The (possibly modified) response returned by
+        `post_create_notification_config` will be passed to
+        `post_create_notification_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_source(
         self,
@@ -341,11 +394,34 @@ class SecurityCenterRestInterceptor:
     def post_create_source(self, response: gcs_source.Source) -> gcs_source.Source:
         """Post-rpc interceptor for create_source
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_source_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_source` interceptor runs
+        before the `post_create_source_with_metadata` interceptor.
         """
         return response
+
+    def post_create_source_with_metadata(
+        self,
+        response: gcs_source.Source,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_source.Source, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_source
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_create_source_with_metadata`
+        interceptor in new development instead of the `post_create_source` interceptor.
+        When both interceptors are used, this `post_create_source_with_metadata` interceptor runs after the
+        `post_create_source` interceptor. The (possibly modified) response returned by
+        `post_create_source` will be passed to
+        `post_create_source_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_notification_config(
         self,
@@ -379,11 +455,34 @@ class SecurityCenterRestInterceptor:
     def post_get_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for get_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_iam_policy` interceptor runs
+        before the `post_get_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_get_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_get_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_get_iam_policy` interceptor.
+        When both interceptors are used, this `post_get_iam_policy_with_metadata` interceptor runs after the
+        `post_get_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_get_iam_policy` will be passed to
+        `post_get_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_notification_config(
         self,
@@ -405,11 +504,36 @@ class SecurityCenterRestInterceptor:
     ) -> notification_config.NotificationConfig:
         """Post-rpc interceptor for get_notification_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_notification_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_notification_config` interceptor runs
+        before the `post_get_notification_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_notification_config_with_metadata(
+        self,
+        response: notification_config.NotificationConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        notification_config.NotificationConfig, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_notification_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_get_notification_config_with_metadata`
+        interceptor in new development instead of the `post_get_notification_config` interceptor.
+        When both interceptors are used, this `post_get_notification_config_with_metadata` interceptor runs after the
+        `post_get_notification_config` interceptor. The (possibly modified) response returned by
+        `post_get_notification_config` will be passed to
+        `post_get_notification_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_organization_settings(
         self,
@@ -431,11 +555,37 @@ class SecurityCenterRestInterceptor:
     ) -> organization_settings.OrganizationSettings:
         """Post-rpc interceptor for get_organization_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_organization_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_organization_settings` interceptor runs
+        before the `post_get_organization_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_get_organization_settings_with_metadata(
+        self,
+        response: organization_settings.OrganizationSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        organization_settings.OrganizationSettings,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_organization_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_get_organization_settings_with_metadata`
+        interceptor in new development instead of the `post_get_organization_settings` interceptor.
+        When both interceptors are used, this `post_get_organization_settings_with_metadata` interceptor runs after the
+        `post_get_organization_settings` interceptor. The (possibly modified) response returned by
+        `post_get_organization_settings` will be passed to
+        `post_get_organization_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_source(
         self,
@@ -454,11 +604,32 @@ class SecurityCenterRestInterceptor:
     def post_get_source(self, response: source.Source) -> source.Source:
         """Post-rpc interceptor for get_source
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_source_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_source` interceptor runs
+        before the `post_get_source_with_metadata` interceptor.
         """
         return response
+
+    def post_get_source_with_metadata(
+        self, response: source.Source, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[source.Source, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_source
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_get_source_with_metadata`
+        interceptor in new development instead of the `post_get_source` interceptor.
+        When both interceptors are used, this `post_get_source_with_metadata` interceptor runs after the
+        `post_get_source` interceptor. The (possibly modified) response returned by
+        `post_get_source` will be passed to
+        `post_get_source_with_metadata`.
+        """
+        return response, metadata
 
     def pre_group_assets(
         self,
@@ -480,11 +651,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.GroupAssetsResponse:
         """Post-rpc interceptor for group_assets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_group_assets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_group_assets` interceptor runs
+        before the `post_group_assets_with_metadata` interceptor.
         """
         return response
+
+    def post_group_assets_with_metadata(
+        self,
+        response: securitycenter_service.GroupAssetsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.GroupAssetsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for group_assets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_group_assets_with_metadata`
+        interceptor in new development instead of the `post_group_assets` interceptor.
+        When both interceptors are used, this `post_group_assets_with_metadata` interceptor runs after the
+        `post_group_assets` interceptor. The (possibly modified) response returned by
+        `post_group_assets` will be passed to
+        `post_group_assets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_group_findings(
         self,
@@ -506,11 +703,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.GroupFindingsResponse:
         """Post-rpc interceptor for group_findings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_group_findings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_group_findings` interceptor runs
+        before the `post_group_findings_with_metadata` interceptor.
         """
         return response
+
+    def post_group_findings_with_metadata(
+        self,
+        response: securitycenter_service.GroupFindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.GroupFindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for group_findings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_group_findings_with_metadata`
+        interceptor in new development instead of the `post_group_findings` interceptor.
+        When both interceptors are used, this `post_group_findings_with_metadata` interceptor runs after the
+        `post_group_findings` interceptor. The (possibly modified) response returned by
+        `post_group_findings` will be passed to
+        `post_group_findings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_assets(
         self,
@@ -532,11 +755,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.ListAssetsResponse:
         """Post-rpc interceptor for list_assets
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_assets_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_assets` interceptor runs
+        before the `post_list_assets_with_metadata` interceptor.
         """
         return response
+
+    def post_list_assets_with_metadata(
+        self,
+        response: securitycenter_service.ListAssetsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.ListAssetsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_assets
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_list_assets_with_metadata`
+        interceptor in new development instead of the `post_list_assets` interceptor.
+        When both interceptors are used, this `post_list_assets_with_metadata` interceptor runs after the
+        `post_list_assets` interceptor. The (possibly modified) response returned by
+        `post_list_assets` will be passed to
+        `post_list_assets_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_findings(
         self,
@@ -558,11 +807,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.ListFindingsResponse:
         """Post-rpc interceptor for list_findings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_findings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_findings` interceptor runs
+        before the `post_list_findings_with_metadata` interceptor.
         """
         return response
+
+    def post_list_findings_with_metadata(
+        self,
+        response: securitycenter_service.ListFindingsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.ListFindingsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_findings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_list_findings_with_metadata`
+        interceptor in new development instead of the `post_list_findings` interceptor.
+        When both interceptors are used, this `post_list_findings_with_metadata` interceptor runs after the
+        `post_list_findings` interceptor. The (possibly modified) response returned by
+        `post_list_findings` will be passed to
+        `post_list_findings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_notification_configs(
         self,
@@ -584,11 +859,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.ListNotificationConfigsResponse:
         """Post-rpc interceptor for list_notification_configs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_notification_configs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_notification_configs` interceptor runs
+        before the `post_list_notification_configs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_notification_configs_with_metadata(
+        self,
+        response: securitycenter_service.ListNotificationConfigsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.ListNotificationConfigsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_notification_configs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_list_notification_configs_with_metadata`
+        interceptor in new development instead of the `post_list_notification_configs` interceptor.
+        When both interceptors are used, this `post_list_notification_configs_with_metadata` interceptor runs after the
+        `post_list_notification_configs` interceptor. The (possibly modified) response returned by
+        `post_list_notification_configs` will be passed to
+        `post_list_notification_configs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_sources(
         self,
@@ -610,11 +911,37 @@ class SecurityCenterRestInterceptor:
     ) -> securitycenter_service.ListSourcesResponse:
         """Post-rpc interceptor for list_sources
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_sources_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_sources` interceptor runs
+        before the `post_list_sources_with_metadata` interceptor.
         """
         return response
+
+    def post_list_sources_with_metadata(
+        self,
+        response: securitycenter_service.ListSourcesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        securitycenter_service.ListSourcesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_sources
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_list_sources_with_metadata`
+        interceptor in new development instead of the `post_list_sources` interceptor.
+        When both interceptors are used, this `post_list_sources_with_metadata` interceptor runs after the
+        `post_list_sources` interceptor. The (possibly modified) response returned by
+        `post_list_sources` will be passed to
+        `post_list_sources_with_metadata`.
+        """
+        return response, metadata
 
     def pre_run_asset_discovery(
         self,
@@ -636,11 +963,34 @@ class SecurityCenterRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for run_asset_discovery
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_run_asset_discovery_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_run_asset_discovery` interceptor runs
+        before the `post_run_asset_discovery_with_metadata` interceptor.
         """
         return response
+
+    def post_run_asset_discovery_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for run_asset_discovery
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_run_asset_discovery_with_metadata`
+        interceptor in new development instead of the `post_run_asset_discovery` interceptor.
+        When both interceptors are used, this `post_run_asset_discovery_with_metadata` interceptor runs after the
+        `post_run_asset_discovery` interceptor. The (possibly modified) response returned by
+        `post_run_asset_discovery` will be passed to
+        `post_run_asset_discovery_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_finding_state(
         self,
@@ -660,11 +1010,34 @@ class SecurityCenterRestInterceptor:
     def post_set_finding_state(self, response: finding.Finding) -> finding.Finding:
         """Post-rpc interceptor for set_finding_state
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_finding_state_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_finding_state` interceptor runs
+        before the `post_set_finding_state_with_metadata` interceptor.
         """
         return response
+
+    def post_set_finding_state_with_metadata(
+        self,
+        response: finding.Finding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[finding.Finding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_finding_state
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_set_finding_state_with_metadata`
+        interceptor in new development instead of the `post_set_finding_state` interceptor.
+        When both interceptors are used, this `post_set_finding_state_with_metadata` interceptor runs after the
+        `post_set_finding_state` interceptor. The (possibly modified) response returned by
+        `post_set_finding_state` will be passed to
+        `post_set_finding_state_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_iam_policy(
         self,
@@ -683,11 +1056,34 @@ class SecurityCenterRestInterceptor:
     def post_set_iam_policy(self, response: policy_pb2.Policy) -> policy_pb2.Policy:
         """Post-rpc interceptor for set_iam_policy
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_iam_policy_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_iam_policy` interceptor runs
+        before the `post_set_iam_policy_with_metadata` interceptor.
         """
         return response
+
+    def post_set_iam_policy_with_metadata(
+        self,
+        response: policy_pb2.Policy,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[policy_pb2.Policy, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_iam_policy
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_set_iam_policy_with_metadata`
+        interceptor in new development instead of the `post_set_iam_policy` interceptor.
+        When both interceptors are used, this `post_set_iam_policy_with_metadata` interceptor runs after the
+        `post_set_iam_policy` interceptor. The (possibly modified) response returned by
+        `post_set_iam_policy` will be passed to
+        `post_set_iam_policy_with_metadata`.
+        """
+        return response, metadata
 
     def pre_test_iam_permissions(
         self,
@@ -709,11 +1105,37 @@ class SecurityCenterRestInterceptor:
     ) -> iam_policy_pb2.TestIamPermissionsResponse:
         """Post-rpc interceptor for test_iam_permissions
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_test_iam_permissions_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_test_iam_permissions` interceptor runs
+        before the `post_test_iam_permissions_with_metadata` interceptor.
         """
         return response
+
+    def post_test_iam_permissions_with_metadata(
+        self,
+        response: iam_policy_pb2.TestIamPermissionsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        iam_policy_pb2.TestIamPermissionsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for test_iam_permissions
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_test_iam_permissions_with_metadata`
+        interceptor in new development instead of the `post_test_iam_permissions` interceptor.
+        When both interceptors are used, this `post_test_iam_permissions_with_metadata` interceptor runs after the
+        `post_test_iam_permissions` interceptor. The (possibly modified) response returned by
+        `post_test_iam_permissions` will be passed to
+        `post_test_iam_permissions_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_finding(
         self,
@@ -733,11 +1155,34 @@ class SecurityCenterRestInterceptor:
     def post_update_finding(self, response: gcs_finding.Finding) -> gcs_finding.Finding:
         """Post-rpc interceptor for update_finding
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_finding_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_finding` interceptor runs
+        before the `post_update_finding_with_metadata` interceptor.
         """
         return response
+
+    def post_update_finding_with_metadata(
+        self,
+        response: gcs_finding.Finding,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_finding.Finding, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_finding
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_update_finding_with_metadata`
+        interceptor in new development instead of the `post_update_finding` interceptor.
+        When both interceptors are used, this `post_update_finding_with_metadata` interceptor runs after the
+        `post_update_finding` interceptor. The (possibly modified) response returned by
+        `post_update_finding` will be passed to
+        `post_update_finding_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_notification_config(
         self,
@@ -759,11 +1204,37 @@ class SecurityCenterRestInterceptor:
     ) -> gcs_notification_config.NotificationConfig:
         """Post-rpc interceptor for update_notification_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_notification_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_notification_config` interceptor runs
+        before the `post_update_notification_config_with_metadata` interceptor.
         """
         return response
+
+    def post_update_notification_config_with_metadata(
+        self,
+        response: gcs_notification_config.NotificationConfig,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcs_notification_config.NotificationConfig,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for update_notification_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_update_notification_config_with_metadata`
+        interceptor in new development instead of the `post_update_notification_config` interceptor.
+        When both interceptors are used, this `post_update_notification_config_with_metadata` interceptor runs after the
+        `post_update_notification_config` interceptor. The (possibly modified) response returned by
+        `post_update_notification_config` will be passed to
+        `post_update_notification_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_organization_settings(
         self,
@@ -785,11 +1256,37 @@ class SecurityCenterRestInterceptor:
     ) -> gcs_organization_settings.OrganizationSettings:
         """Post-rpc interceptor for update_organization_settings
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_organization_settings_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_organization_settings` interceptor runs
+        before the `post_update_organization_settings_with_metadata` interceptor.
         """
         return response
+
+    def post_update_organization_settings_with_metadata(
+        self,
+        response: gcs_organization_settings.OrganizationSettings,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcs_organization_settings.OrganizationSettings,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for update_organization_settings
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_update_organization_settings_with_metadata`
+        interceptor in new development instead of the `post_update_organization_settings` interceptor.
+        When both interceptors are used, this `post_update_organization_settings_with_metadata` interceptor runs after the
+        `post_update_organization_settings` interceptor. The (possibly modified) response returned by
+        `post_update_organization_settings` will be passed to
+        `post_update_organization_settings_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_security_marks(
         self,
@@ -811,11 +1308,36 @@ class SecurityCenterRestInterceptor:
     ) -> gcs_security_marks.SecurityMarks:
         """Post-rpc interceptor for update_security_marks
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_security_marks_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_security_marks` interceptor runs
+        before the `post_update_security_marks_with_metadata` interceptor.
         """
         return response
+
+    def post_update_security_marks_with_metadata(
+        self,
+        response: gcs_security_marks.SecurityMarks,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        gcs_security_marks.SecurityMarks, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for update_security_marks
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_update_security_marks_with_metadata`
+        interceptor in new development instead of the `post_update_security_marks` interceptor.
+        When both interceptors are used, this `post_update_security_marks_with_metadata` interceptor runs after the
+        `post_update_security_marks` interceptor. The (possibly modified) response returned by
+        `post_update_security_marks` will be passed to
+        `post_update_security_marks_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_source(
         self,
@@ -835,11 +1357,34 @@ class SecurityCenterRestInterceptor:
     def post_update_source(self, response: gcs_source.Source) -> gcs_source.Source:
         """Post-rpc interceptor for update_source
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_source_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the SecurityCenter server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_source` interceptor runs
+        before the `post_update_source_with_metadata` interceptor.
         """
         return response
+
+    def post_update_source_with_metadata(
+        self,
+        response: gcs_source.Source,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcs_source.Source, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_source
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the SecurityCenter server but before it is returned to user code.
+
+        We recommend only using this `post_update_source_with_metadata`
+        interceptor in new development instead of the `post_update_source` interceptor.
+        When both interceptors are used, this `post_update_source_with_metadata` interceptor runs after the
+        `post_update_source` interceptor. The (possibly modified) response returned by
+        `post_update_source` will be passed to
+        `post_update_source_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -1116,6 +1661,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_finding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_finding_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1276,6 +1825,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_notification_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_notification_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1431,6 +1984,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_source(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_source_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1765,6 +2322,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1916,6 +2477,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_notification_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_notification_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2067,6 +2632,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_organization_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_organization_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2219,6 +2788,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_source(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_source_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2368,6 +2941,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_group_assets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_group_assets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2519,6 +3096,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_group_findings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_group_findings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2663,6 +3244,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_assets(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_assets_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2807,6 +3392,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_findings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_findings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2957,6 +3546,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_notification_configs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_notification_configs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3101,6 +3694,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_sources(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_sources_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3253,6 +3850,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_run_asset_discovery(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_run_asset_discovery_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3412,6 +4013,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_finding_state(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_finding_state_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3633,6 +4238,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_iam_policy(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_iam_policy_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3781,6 +4390,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_test_iam_permissions(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_test_iam_permissions_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3938,6 +4551,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_finding(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_finding_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4098,6 +4715,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_notification_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_notification_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4256,6 +4877,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_organization_settings(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_organization_settings_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4416,6 +5041,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_security_marks(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_security_marks_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -4571,6 +5200,10 @@ class SecurityCenterRestTransport(_BaseSecurityCenterRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_source(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_source_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

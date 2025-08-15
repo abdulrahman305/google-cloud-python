@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,6 +71,13 @@ from google.cloud.dialogflowcx_v3.types import (
     session,
     session_entity_type,
 )
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -300,6 +307,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         SessionsClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = SessionsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = SessionsClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -3481,10 +3531,13 @@ def test_detect_intent_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SessionsRestInterceptor, "post_detect_intent"
     ) as post, mock.patch.object(
+        transports.SessionsRestInterceptor, "post_detect_intent_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SessionsRestInterceptor, "pre_detect_intent"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = session.DetectIntentRequest.pb(session.DetectIntentRequest())
         transcode.return_value = {
             "method": "post",
@@ -3508,6 +3561,7 @@ def test_detect_intent_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.DetectIntentResponse()
+        post_with_metadata.return_value = session.DetectIntentResponse(), metadata
 
         client.detect_intent(
             request,
@@ -3519,6 +3573,7 @@ def test_detect_intent_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_server_streaming_detect_intent_rest_bad_request(
@@ -3615,10 +3670,14 @@ def test_server_streaming_detect_intent_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SessionsRestInterceptor, "post_server_streaming_detect_intent"
     ) as post, mock.patch.object(
+        transports.SessionsRestInterceptor,
+        "post_server_streaming_detect_intent_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.SessionsRestInterceptor, "pre_server_streaming_detect_intent"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = session.DetectIntentRequest.pb(session.DetectIntentRequest())
         transcode.return_value = {
             "method": "post",
@@ -3642,6 +3701,7 @@ def test_server_streaming_detect_intent_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.DetectIntentResponse()
+        post_with_metadata.return_value = session.DetectIntentResponse(), metadata
 
         client.server_streaming_detect_intent(
             request,
@@ -3653,6 +3713,7 @@ def test_server_streaming_detect_intent_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_streaming_detect_intent_rest_error():
@@ -3748,10 +3809,13 @@ def test_match_intent_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SessionsRestInterceptor, "post_match_intent"
     ) as post, mock.patch.object(
+        transports.SessionsRestInterceptor, "post_match_intent_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SessionsRestInterceptor, "pre_match_intent"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = session.MatchIntentRequest.pb(session.MatchIntentRequest())
         transcode.return_value = {
             "method": "post",
@@ -3775,6 +3839,7 @@ def test_match_intent_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.MatchIntentResponse()
+        post_with_metadata.return_value = session.MatchIntentResponse(), metadata
 
         client.match_intent(
             request,
@@ -3786,6 +3851,7 @@ def test_match_intent_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_fulfill_intent_rest_bad_request(request_type=session.FulfillIntentRequest):
@@ -3876,10 +3942,13 @@ def test_fulfill_intent_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SessionsRestInterceptor, "post_fulfill_intent"
     ) as post, mock.patch.object(
+        transports.SessionsRestInterceptor, "post_fulfill_intent_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SessionsRestInterceptor, "pre_fulfill_intent"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = session.FulfillIntentRequest.pb(session.FulfillIntentRequest())
         transcode.return_value = {
             "method": "post",
@@ -3903,6 +3972,7 @@ def test_fulfill_intent_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.FulfillIntentResponse()
+        post_with_metadata.return_value = session.FulfillIntentResponse(), metadata
 
         client.fulfill_intent(
             request,
@@ -3914,6 +3984,7 @@ def test_fulfill_intent_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_submit_answer_feedback_rest_bad_request(
@@ -4002,10 +4073,13 @@ def test_submit_answer_feedback_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.SessionsRestInterceptor, "post_submit_answer_feedback"
     ) as post, mock.patch.object(
+        transports.SessionsRestInterceptor, "post_submit_answer_feedback_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.SessionsRestInterceptor, "pre_submit_answer_feedback"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = session.SubmitAnswerFeedbackRequest.pb(
             session.SubmitAnswerFeedbackRequest()
         )
@@ -4029,6 +4103,7 @@ def test_submit_answer_feedback_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = session.AnswerFeedback()
+        post_with_metadata.return_value = session.AnswerFeedback(), metadata
 
         client.submit_answer_feedback(
             request,
@@ -4040,6 +4115,7 @@ def test_submit_answer_feedback_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
@@ -4992,11 +5068,40 @@ def test_parse_flow_path():
     assert expected == actual
 
 
-def test_intent_path():
+def test_generator_path():
     project = "scallop"
     location = "abalone"
     agent = "squid"
-    intent = "clam"
+    generator = "clam"
+    expected = "projects/{project}/locations/{location}/agents/{agent}/generators/{generator}".format(
+        project=project,
+        location=location,
+        agent=agent,
+        generator=generator,
+    )
+    actual = SessionsClient.generator_path(project, location, agent, generator)
+    assert expected == actual
+
+
+def test_parse_generator_path():
+    expected = {
+        "project": "whelk",
+        "location": "octopus",
+        "agent": "oyster",
+        "generator": "nudibranch",
+    }
+    path = SessionsClient.generator_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = SessionsClient.parse_generator_path(path)
+    assert expected == actual
+
+
+def test_intent_path():
+    project = "cuttlefish"
+    location = "mussel"
+    agent = "winkle"
+    intent = "nautilus"
     expected = "projects/{project}/locations/{location}/agents/{agent}/intents/{intent}".format(
         project=project,
         location=location,
@@ -5009,10 +5114,10 @@ def test_intent_path():
 
 def test_parse_intent_path():
     expected = {
-        "project": "whelk",
-        "location": "octopus",
-        "agent": "oyster",
-        "intent": "nudibranch",
+        "project": "scallop",
+        "location": "abalone",
+        "agent": "squid",
+        "intent": "clam",
     }
     path = SessionsClient.intent_path(**expected)
 
@@ -5022,11 +5127,11 @@ def test_parse_intent_path():
 
 
 def test_page_path():
-    project = "cuttlefish"
-    location = "mussel"
-    agent = "winkle"
-    flow = "nautilus"
-    page = "scallop"
+    project = "whelk"
+    location = "octopus"
+    agent = "oyster"
+    flow = "nudibranch"
+    page = "cuttlefish"
     expected = "projects/{project}/locations/{location}/agents/{agent}/flows/{flow}/pages/{page}".format(
         project=project,
         location=location,
@@ -5040,11 +5145,11 @@ def test_page_path():
 
 def test_parse_page_path():
     expected = {
-        "project": "abalone",
-        "location": "squid",
-        "agent": "clam",
-        "flow": "whelk",
-        "page": "octopus",
+        "project": "mussel",
+        "location": "winkle",
+        "agent": "nautilus",
+        "flow": "scallop",
+        "page": "abalone",
     }
     path = SessionsClient.page_path(**expected)
 
@@ -5054,10 +5159,10 @@ def test_parse_page_path():
 
 
 def test_session_path():
-    project = "oyster"
-    location = "nudibranch"
-    agent = "cuttlefish"
-    session = "mussel"
+    project = "squid"
+    location = "clam"
+    agent = "whelk"
+    session = "octopus"
     expected = "projects/{project}/locations/{location}/agents/{agent}/sessions/{session}".format(
         project=project,
         location=location,
@@ -5070,10 +5175,10 @@ def test_session_path():
 
 def test_parse_session_path():
     expected = {
-        "project": "winkle",
-        "location": "nautilus",
-        "agent": "scallop",
-        "session": "abalone",
+        "project": "oyster",
+        "location": "nudibranch",
+        "agent": "cuttlefish",
+        "session": "mussel",
     }
     path = SessionsClient.session_path(**expected)
 
@@ -5083,11 +5188,11 @@ def test_parse_session_path():
 
 
 def test_session_entity_type_path():
-    project = "squid"
-    location = "clam"
-    agent = "whelk"
-    session = "octopus"
-    entity_type = "oyster"
+    project = "winkle"
+    location = "nautilus"
+    agent = "scallop"
+    session = "abalone"
+    entity_type = "squid"
     expected = "projects/{project}/locations/{location}/agents/{agent}/sessions/{session}/entityTypes/{entity_type}".format(
         project=project,
         location=location,
@@ -5103,11 +5208,11 @@ def test_session_entity_type_path():
 
 def test_parse_session_entity_type_path():
     expected = {
-        "project": "nudibranch",
-        "location": "cuttlefish",
-        "agent": "mussel",
-        "session": "winkle",
-        "entity_type": "nautilus",
+        "project": "clam",
+        "location": "whelk",
+        "agent": "octopus",
+        "session": "oyster",
+        "entity_type": "nudibranch",
     }
     path = SessionsClient.session_entity_type_path(**expected)
 
@@ -5117,11 +5222,11 @@ def test_parse_session_entity_type_path():
 
 
 def test_transition_route_group_path():
-    project = "scallop"
-    location = "abalone"
-    agent = "squid"
-    flow = "clam"
-    transition_route_group = "whelk"
+    project = "cuttlefish"
+    location = "mussel"
+    agent = "winkle"
+    flow = "nautilus"
+    transition_route_group = "scallop"
     expected = "projects/{project}/locations/{location}/agents/{agent}/flows/{flow}/transitionRouteGroups/{transition_route_group}".format(
         project=project,
         location=location,
@@ -5137,11 +5242,11 @@ def test_transition_route_group_path():
 
 def test_parse_transition_route_group_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "agent": "nudibranch",
-        "flow": "cuttlefish",
-        "transition_route_group": "mussel",
+        "project": "abalone",
+        "location": "squid",
+        "agent": "clam",
+        "flow": "whelk",
+        "transition_route_group": "octopus",
     }
     path = SessionsClient.transition_route_group_path(**expected)
 
@@ -5151,11 +5256,11 @@ def test_parse_transition_route_group_path():
 
 
 def test_version_path():
-    project = "winkle"
-    location = "nautilus"
-    agent = "scallop"
-    flow = "abalone"
-    version = "squid"
+    project = "oyster"
+    location = "nudibranch"
+    agent = "cuttlefish"
+    flow = "mussel"
+    version = "winkle"
     expected = "projects/{project}/locations/{location}/agents/{agent}/flows/{flow}/versions/{version}".format(
         project=project,
         location=location,
@@ -5169,11 +5274,11 @@ def test_version_path():
 
 def test_parse_version_path():
     expected = {
-        "project": "clam",
-        "location": "whelk",
-        "agent": "octopus",
-        "flow": "oyster",
-        "version": "nudibranch",
+        "project": "nautilus",
+        "location": "scallop",
+        "agent": "abalone",
+        "flow": "squid",
+        "version": "clam",
     }
     path = SessionsClient.version_path(**expected)
 
@@ -5183,10 +5288,10 @@ def test_parse_version_path():
 
 
 def test_webhook_path():
-    project = "cuttlefish"
-    location = "mussel"
-    agent = "winkle"
-    webhook = "nautilus"
+    project = "whelk"
+    location = "octopus"
+    agent = "oyster"
+    webhook = "nudibranch"
     expected = "projects/{project}/locations/{location}/agents/{agent}/webhooks/{webhook}".format(
         project=project,
         location=location,
@@ -5199,10 +5304,10 @@ def test_webhook_path():
 
 def test_parse_webhook_path():
     expected = {
-        "project": "scallop",
-        "location": "abalone",
-        "agent": "squid",
-        "webhook": "clam",
+        "project": "cuttlefish",
+        "location": "mussel",
+        "agent": "winkle",
+        "webhook": "nautilus",
     }
     path = SessionsClient.webhook_path(**expected)
 
@@ -5212,7 +5317,7 @@ def test_parse_webhook_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "whelk"
+    billing_account = "scallop"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -5222,7 +5327,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "octopus",
+        "billing_account": "abalone",
     }
     path = SessionsClient.common_billing_account_path(**expected)
 
@@ -5232,7 +5337,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "oyster"
+    folder = "squid"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -5242,7 +5347,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nudibranch",
+        "folder": "clam",
     }
     path = SessionsClient.common_folder_path(**expected)
 
@@ -5252,7 +5357,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "cuttlefish"
+    organization = "whelk"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -5262,7 +5367,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "mussel",
+        "organization": "octopus",
     }
     path = SessionsClient.common_organization_path(**expected)
 
@@ -5272,7 +5377,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "winkle"
+    project = "oyster"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -5282,7 +5387,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nautilus",
+        "project": "nudibranch",
     }
     path = SessionsClient.common_project_path(**expected)
 
@@ -5292,8 +5397,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "scallop"
-    location = "abalone"
+    project = "cuttlefish"
+    location = "mussel"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -5304,8 +5409,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
+        "project": "winkle",
+        "location": "nautilus",
     }
     path = SessionsClient.common_location_path(**expected)
 

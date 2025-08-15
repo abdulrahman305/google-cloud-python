@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -128,6 +128,7 @@ from google.cloud.dialogflowcx_v3.types.data_store_connection import (
     DataStoreConnection,
     DataStoreConnectionSignals,
     DataStoreType,
+    DocumentProcessingMode,
 )
 from google.cloud.dialogflowcx_v3.types.deployment import (
     Deployment,
@@ -443,6 +444,7 @@ __all__ = (
     "DataStoreConnection",
     "DataStoreConnectionSignals",
     "DataStoreType",
+    "DocumentProcessingMode",
     "Deployment",
     "GetDeploymentRequest",
     "ListDeploymentsRequest",

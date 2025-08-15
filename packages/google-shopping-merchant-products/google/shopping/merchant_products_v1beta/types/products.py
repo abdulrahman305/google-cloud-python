@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,11 +37,10 @@ class Product(proto.Message):
     r"""The processed product, built from multiple [product
     inputs][google.shopping.merchant.products.v1main.ProductInput] after
     applying rules and supplemental data sources. This processed product
-    matches what is shown in your Merchant Center account and in
-    Shopping ads and other surfaces across Google. Each product is built
-    from exactly one primary data source product input, and multiple
-    supplemental data source inputs. After inserting, updating, or
-    deleting a product input, it may take several minutes before the
+    matches what is shown in your Merchant Center account. Each product
+    is built from exactly one primary data source product input, and
+    multiple supplemental data source inputs. After inserting, updating,
+    or deleting a product input, it may take several minutes before the
     updated processed product can be retrieved.
 
     All fields in the processed product and its sub-messages match the
@@ -55,10 +54,11 @@ class Product(proto.Message):
     Attributes:
         name (str):
             The name of the product. Format:
-            ``"{product.name=accounts/{account}/products/{product}}"``
-            where the last section ``product`` consists of 4 parts:
-            channel~content_language~feed_label~offer_id example for
-            product name is "accounts/123/products/online~en~US~sku123".
+            ``accounts/{account}/products/{product}`` where the last
+            section ``product`` consists of 4 parts:
+            ``channel~content_language~feed_label~offer_id`` example for
+            product name is
+            ``accounts/123/products/online~en~US~sku123``
         channel (google.shopping.type.types.Channel.ChannelEnum):
             Output only. The
             `channel <https://support.google.com/merchants/answer/7361332>`__
@@ -76,7 +76,12 @@ class Product(proto.Message):
             639-1 <http://en.wikipedia.org/wiki/ISO_639-1>`__ language
             code for the product.
         feed_label (str):
-            Output only. The feed label for the product.
+            Output only. The feed label lets you categorize and identify
+            your products. The maximum allowed characters is 20 and the
+            supported characters are\ ``A-Z``, ``0-9``, hyphen and
+            underscore. The feed label must not include any spaces. For
+            more information, see `Using feed
+            labels <//support.google.com/merchants/answer/14994087>`__
         data_source (str):
             Output only. The primary data source of the
             product.
@@ -110,6 +115,9 @@ class Product(proto.Message):
             Output only. The status of a product, data
             validation issues, that is, information about a
             product computed asynchronously.
+        automated_discounts (google.shopping.merchant_products_v1beta.types.AutomatedDiscounts):
+            Output only. The automated discounts
+            information for the product.
     """
 
     name: str = proto.Field(
@@ -157,6 +165,11 @@ class Product(proto.Message):
         number=10,
         message=products_common.ProductStatus,
     )
+    automated_discounts: products_common.AutomatedDiscounts = proto.Field(
+        proto.MESSAGE,
+        number=12,
+        message=products_common.AutomatedDiscounts,
+    )
 
 
 class GetProductRequest(proto.Message):
@@ -167,8 +180,9 @@ class GetProductRequest(proto.Message):
             Required. The name of the product to retrieve. Format:
             ``accounts/{account}/products/{product}`` where the last
             section ``product`` consists of 4 parts:
-            channel~content_language~feed_label~offer_id example for
-            product name is "accounts/123/products/online~en~US~sku123".
+            ``channel~content_language~feed_label~offer_id`` example for
+            product name is
+            ``accounts/123/products/online~en~US~sku123``
     """
 
     name: str = proto.Field(
@@ -182,14 +196,14 @@ class ListProductsRequest(proto.Message):
 
     Attributes:
         parent (str):
-            Required. The account to list processed
-            products for. Format: accounts/{account}
+            Required. The account to list processed products for.
+            Format: ``accounts/{account}``
         page_size (int):
             The maximum number of products to return. The
             service may return fewer than this value.
-            The maximum value is 250; values above 250 will
-            be coerced to 250. If unspecified, the maximum
-            number of products will be returned.
+            The maximum value is 1000; values above 1000
+            will be coerced to 1000. If unspecified, the
+            maximum number of products will be returned.
         page_token (str):
             A page token, received from a previous ``ListProducts``
             call. Provide this to retrieve the subsequent page.

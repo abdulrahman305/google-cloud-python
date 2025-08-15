@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.networkconnectivity_v1 import gapic_version as package_version
 
@@ -331,7 +332,7 @@ class PolicyBasedRoutingServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListPolicyBasedRoutesAsyncPager:
-        r"""Lists PolicyBasedRoutes in a given project and
+        r"""Lists policy-based routes in a given project and
         location.
 
         .. code-block:: python
@@ -363,7 +364,8 @@ class PolicyBasedRoutingServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.networkconnectivity_v1.types.ListPolicyBasedRoutesRequest, dict]]):
-                The request object. Request for [PolicyBasedRouting.ListPolicyBasedRoutes][]
+                The request object. Request for
+                [PolicyBasedRoutingService.ListPolicyBasedRoutes][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.ListPolicyBasedRoutes]
                 method.
             parent (:class:`str`):
                 Required. The parent resource's name.
@@ -381,7 +383,8 @@ class PolicyBasedRoutingServiceAsyncClient:
         Returns:
             google.cloud.networkconnectivity_v1.services.policy_based_routing_service.pagers.ListPolicyBasedRoutesAsyncPager:
                 Response for
-                [PolicyBasedRouting.ListPolicyBasedRoutes][] method.
+                   [PolicyBasedRoutingService.ListPolicyBasedRoutes][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.ListPolicyBasedRoutes]
+                   method.
 
                 Iterating over this object will yield results and
                 resolve additional pages automatically.
@@ -390,7 +393,10 @@ class PolicyBasedRoutingServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -455,7 +461,7 @@ class PolicyBasedRoutingServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> policy_based_routing.PolicyBasedRoute:
-        r"""Gets details of a single PolicyBasedRoute.
+        r"""Gets details of a single policy-based route.
 
         .. code-block:: python
 
@@ -485,7 +491,8 @@ class PolicyBasedRoutingServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.networkconnectivity_v1.types.GetPolicyBasedRouteRequest, dict]]):
-                The request object. Request for [PolicyBasedRouting.GetPolicyBasedRoute][]
+                The request object. Request for
+                [PolicyBasedRoutingService.GetPolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.GetPolicyBasedRoute]
                 method.
             name (:class:`str`):
                 Required. Name of the
@@ -504,20 +511,22 @@ class PolicyBasedRoutingServiceAsyncClient:
 
         Returns:
             google.cloud.networkconnectivity_v1.types.PolicyBasedRoute:
-                Policy Based Routes (PBR) are more
-                powerful routes that allows GCP
-                customers to route their L4 network
-                traffic based on not just destination
-                IP, but also source IP, protocol and
-                more. A PBR always take precedence when
-                it conflicts with other types of routes.
-                Next id: 22
+                Policy-based routes route L4 network
+                traffic based on not just destination IP
+                address, but also source IP address,
+                protocol, and more. If a policy-based
+                route conflicts with other types of
+                routes, the policy-based route always
+                takes precedence.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -573,8 +582,8 @@ class PolicyBasedRoutingServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Creates a new PolicyBasedRoute in a given project and
-        location.
+        r"""Creates a new policy-based route in a given project
+        and location.
 
         .. code-block:: python
 
@@ -616,7 +625,8 @@ class PolicyBasedRoutingServiceAsyncClient:
         Args:
             request (Optional[Union[google.cloud.networkconnectivity_v1.types.CreatePolicyBasedRouteRequest, dict]]):
                 The request object. Request for
-                [PolicyBasedRouting.CreatePolicyBasedRoute][] method.
+                [PolicyBasedRoutingService.CreatePolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.CreatePolicyBasedRoute]
+                method.
             parent (:class:`str`):
                 Required. The parent resource's name
                 of the PolicyBasedRoute.
@@ -626,14 +636,23 @@ class PolicyBasedRoutingServiceAsyncClient:
                 should not be set.
             policy_based_route (:class:`google.cloud.networkconnectivity_v1.types.PolicyBasedRoute`):
                 Required. Initial values for a new
-                Policy Based Route.
+                policy-based route.
 
                 This corresponds to the ``policy_based_route`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             policy_based_route_id (:class:`str`):
-                Required. Unique id for the Policy
-                Based Route to create.
+                Required. Unique id for the policy-based route to
+                create. Provided by the client when the resource is
+                created. The name must comply with
+                https://google.aip.dev/122#resource-id-segments.
+                Specifically, the name must be 1-63 characters long and
+                match the regular expression
+                `a-z <[a-z0-9-]*[a-z0-9]>`__?. The first character must
+                be a lowercase letter, and all following characters
+                (except for the last character) must be a dash,
+                lowercase letter, or digit. The last character must be a
+                lowercase letter or digit.
 
                 This corresponds to the ``policy_based_route_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -650,17 +669,20 @@ class PolicyBasedRoutingServiceAsyncClient:
             google.api_core.operation_async.AsyncOperation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.cloud.networkconnectivity_v1.types.PolicyBasedRoute` Policy Based Routes (PBR) are more powerful routes that allows GCP customers
-                   to route their L4 network traffic based on not just
-                   destination IP, but also source IP, protocol and
-                   more. A PBR always take precedence when it conflicts
-                   with other types of routes. Next id: 22
+                The result type for the operation will be :class:`google.cloud.networkconnectivity_v1.types.PolicyBasedRoute` Policy-based routes route L4 network traffic based on not just destination IP
+                   address, but also source IP address, protocol, and
+                   more. If a policy-based route conflicts with other
+                   types of routes, the policy-based route always takes
+                   precedence.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, policy_based_route, policy_based_route_id])
+        flattened_params = [parent, policy_based_route, policy_based_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -726,7 +748,7 @@ class PolicyBasedRoutingServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> operation_async.AsyncOperation:
-        r"""Deletes a single PolicyBasedRoute.
+        r"""Deletes a single policy-based route.
 
         .. code-block:: python
 
@@ -761,10 +783,11 @@ class PolicyBasedRoutingServiceAsyncClient:
         Args:
             request (Optional[Union[google.cloud.networkconnectivity_v1.types.DeletePolicyBasedRouteRequest, dict]]):
                 The request object. Request for
-                [PolicyBasedRouting.DeletePolicyBasedRoute][] method.
+                [PolicyBasedRoutingService.DeletePolicyBasedRoute][google.cloud.networkconnectivity.v1.PolicyBasedRoutingService.DeletePolicyBasedRoute]
+                method.
             name (:class:`str`):
-                Required. Name of the
-                PolicyBasedRoute resource to delete.
+                Required. Name of the policy-based
+                route resource to delete.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -796,7 +819,10 @@ class PolicyBasedRoutingServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1493,6 +1519,9 @@ class PolicyBasedRoutingServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("PolicyBasedRoutingServiceAsyncClient",)

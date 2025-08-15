@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.ads.admanager_v1 import gapic_version as package_version
 
@@ -65,7 +68,7 @@ from google.protobuf import field_mask_pb2  # type: ignore
 from google.protobuf import timestamp_pb2  # type: ignore
 
 from google.ads.admanager_v1.services.report_service import pagers
-from google.ads.admanager_v1.types import report_service
+from google.ads.admanager_v1.types import report_messages, report_service
 
 from .transports.base import DEFAULT_CLIENT_INFO, ReportServiceTransport
 from .transports.rest import ReportServiceRestTransport
@@ -494,6 +497,33 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -698,7 +728,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-    ) -> report_service.Report:
+    ) -> report_messages.Report:
         r"""API to retrieve a ``Report`` object.
 
         .. code-block:: python
@@ -752,7 +782,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -860,7 +893,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -916,11 +952,11 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         request: Optional[Union[report_service.CreateReportRequest, dict]] = None,
         *,
         parent: Optional[str] = None,
-        report: Optional[report_service.Report] = None,
+        report: Optional[report_messages.Report] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-    ) -> report_service.Report:
+    ) -> report_messages.Report:
         r"""API to create a ``Report`` object.
 
         .. code-block:: python
@@ -941,7 +977,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
                 # Initialize request argument(s)
                 report = admanager_v1.Report()
                 report.report_definition.dimensions = ['CUSTOM_DIMENSION_9_VALUE']
-                report.report_definition.metrics = ['YIELD_GROUP_MEDIATION_THIRD_PARTY_ECPM']
+                report.report_definition.metrics = ['YIELD_GROUP_SUCCESSFUL_RESPONSES']
                 report.report_definition.report_type = "HISTORICAL"
 
                 request = admanager_v1.CreateReportRequest(
@@ -985,7 +1021,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, report])
+        flattened_params = [parent, report]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1031,12 +1070,12 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         self,
         request: Optional[Union[report_service.UpdateReportRequest, dict]] = None,
         *,
-        report: Optional[report_service.Report] = None,
+        report: Optional[report_messages.Report] = None,
         update_mask: Optional[field_mask_pb2.FieldMask] = None,
         retry: OptionalRetry = gapic_v1.method.DEFAULT,
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
-    ) -> report_service.Report:
+    ) -> report_messages.Report:
         r"""API to update a ``Report`` object.
 
         .. code-block:: python
@@ -1057,7 +1096,7 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
                 # Initialize request argument(s)
                 report = admanager_v1.Report()
                 report.report_definition.dimensions = ['CUSTOM_DIMENSION_9_VALUE']
-                report.report_definition.metrics = ['YIELD_GROUP_MEDIATION_THIRD_PARTY_ECPM']
+                report.report_definition.metrics = ['YIELD_GROUP_SUCCESSFUL_RESPONSES']
                 report.report_definition.report_type = "HISTORICAL"
 
                 request = admanager_v1.UpdateReportRequest(
@@ -1100,7 +1139,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([report, update_mask])
+        flattened_params = [report, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1223,7 +1265,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1345,7 +1390,10 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1453,21 +1501,27 @@ class ReportServiceClient(metaclass=ReportServiceClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("ReportServiceClient",)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ from .services.parallelstore import ParallelstoreAsyncClient, ParallelstoreClien
 from .types.parallelstore import (
     CreateInstanceRequest,
     DeleteInstanceRequest,
+    DeploymentType,
     DestinationGcsBucket,
     DestinationParallelstore,
     DirectoryStripeLevel,
@@ -40,6 +41,8 @@ from .types.parallelstore import (
     SourceGcsBucket,
     SourceParallelstore,
     TransferCounters,
+    TransferErrorLogEntry,
+    TransferErrorSummary,
     TransferOperationMetadata,
     TransferType,
     UpdateInstanceRequest,
@@ -49,6 +52,7 @@ __all__ = (
     "ParallelstoreAsyncClient",
     "CreateInstanceRequest",
     "DeleteInstanceRequest",
+    "DeploymentType",
     "DestinationGcsBucket",
     "DestinationParallelstore",
     "DirectoryStripeLevel",
@@ -68,6 +72,8 @@ __all__ = (
     "SourceGcsBucket",
     "SourceParallelstore",
     "TransferCounters",
+    "TransferErrorLogEntry",
+    "TransferErrorSummary",
     "TransferOperationMetadata",
     "TransferType",
     "UpdateInstanceRequest",

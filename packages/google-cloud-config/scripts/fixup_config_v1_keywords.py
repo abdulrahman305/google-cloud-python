@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,11 +51,15 @@ class configCallTransformer(cst.CSTTransformer):
         'get_deployment': ('name', ),
         'get_preview': ('name', ),
         'get_resource': ('name', ),
+        'get_resource_change': ('name', ),
+        'get_resource_drift': ('name', ),
         'get_revision': ('name', ),
         'get_terraform_version': ('name', ),
         'import_statefile': ('parent', 'lock_id', 'skip_draft', ),
         'list_deployments': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_previews': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'list_resource_changes': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'list_resource_drifts': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_resources': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_revisions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_terraform_versions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),

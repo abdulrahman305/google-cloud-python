@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,12 +73,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.datacatalog.v1beta1.DataCatalog",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -115,8 +114,10 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class DataCatalogGrpcTransport(DataCatalogTransport):
     """gRPC backend transport for DataCatalog.
 
-    Data Catalog API service allows clients to discover,
-    understand, and manage their data.
+    Deprecated: Please use Dataplex Catalog instead.
+
+    Data Catalog API service allows clients to discover, understand,
+    and manage their data.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation

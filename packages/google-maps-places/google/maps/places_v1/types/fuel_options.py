@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,6 +61,8 @@ class FuelOptions(proto.Message):
                     Unspecified fuel type.
                 DIESEL (1):
                     Diesel fuel.
+                DIESEL_PLUS (19):
+                    Diesel plus fuel.
                 REGULAR_UNLEADED (2):
                     Regular unleaded.
                 MIDGRADE (3):
@@ -84,11 +86,13 @@ class FuelOptions(proto.Message):
                 SP100 (12):
                     SP 100.
                 LPG (13):
-                    LPG.
+                    Liquefied Petroleum Gas.
                 E80 (14):
                     E 80.
                 E85 (15):
                     E 85.
+                E100 (20):
+                    E 100.
                 METHANE (16):
                     Methane.
                 BIO_DIESEL (17):
@@ -98,6 +102,7 @@ class FuelOptions(proto.Message):
             """
             FUEL_TYPE_UNSPECIFIED = 0
             DIESEL = 1
+            DIESEL_PLUS = 19
             REGULAR_UNLEADED = 2
             MIDGRADE = 3
             PREMIUM = 4
@@ -112,6 +117,7 @@ class FuelOptions(proto.Message):
             LPG = 13
             E80 = 14
             E85 = 15
+            E100 = 20
             METHANE = 16
             BIO_DIESEL = 17
             TRUCK_DIESEL = 18

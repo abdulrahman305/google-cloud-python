@@ -1,5 +1,72 @@
 # Changelog
 
+## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.17.0...google-cloud-iap-v1.17.1) (2025-05-29)
+
+
+### Documentation
+
+* Add clarifications on IAP CorsSettings behavior ([80c61d3](https://github.com/googleapis/google-cloud-python/commit/80c61d3fb32e124be9c02d0439a00d12f67d890a))
+* Minor updates on GcipSettings description ([80c61d3](https://github.com/googleapis/google-cloud-python/commit/80c61d3fb32e124be9c02d0439a00d12f67d890a))
+
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.16.2...google-cloud-iap-v1.17.0) (2025-04-12)
+
+
+### Features
+
+* Add fields `AccessSettings.workforce_identity_settings` and `AccessSettings.identity_sources` ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Use IAP with Workforce Identity Federation ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+
+
+### Documentation
+
+* A comment for enum `PolicyType` is changed ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* A comment for field `cidrs` in message `.google.cloud.iap.v1.TunnelDestGroup` is changed ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* A comment for field `fqdns` in message `.google.cloud.iap.v1.TunnelDestGroup` is changed ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* A comment for field `name` in message `.google.cloud.iap.v1.TunnelDestGroup` is changed ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `access_denied_page_settings` in message `.google.cloud.iap.v1.ApplicationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `access_settings` in message `.google.cloud.iap.v1.IapSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `allowed_domains_settings` in message `.google.cloud.iap.v1.AccessSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `application_settings` in message `.google.cloud.iap.v1.IapSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `attribute_propagation_settings` in message `.google.cloud.iap.v1.ApplicationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `cors_settings` in message `.google.cloud.iap.v1.AccessSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `csm_settings` in message `.google.cloud.iap.v1.ApplicationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `domains` in message `.google.cloud.iap.v1.AllowedDomainsSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `enable` in message `.google.cloud.iap.v1.AllowedDomainsSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `enable` in message `.google.cloud.iap.v1.AttributePropagationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `expression` in message `.google.cloud.iap.v1.AttributePropagationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `gcip_settings` in message `.google.cloud.iap.v1.AccessSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `max_age` in message `.google.cloud.iap.v1.ReauthSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `method` in message `.google.cloud.iap.v1.ReauthSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `oauth_settings` in message `.google.cloud.iap.v1.AccessSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `output_credentials` in message `.google.cloud.iap.v1.AttributePropagationSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `policy_type` in message `.google.cloud.iap.v1.ReauthSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `programmatic_clients` in message `.google.cloud.iap.v1.OAuthSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `reauth_settings` in message `.google.cloud.iap.v1.AccessSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+* Mark `tenant_ids` in message `.google.cloud.iap.v1.GcipSettings` as optional ([9114e1d](https://github.com/googleapis/google-cloud-python/commit/9114e1da42d7994f4050c9204538e04ee4735eff))
+
+## [1.16.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.16.1...google-cloud-iap-v1.16.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.16.0...google-cloud-iap-v1.16.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.15.0...google-cloud-iap-v1.16.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-iap-v1.14.1...google-cloud-iap-v1.15.0) (2024-12-12)
 
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.5.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgecontainer-v0.5.17...google-cloud-edgecontainer-v0.5.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [0.5.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgecontainer-v0.5.16...google-cloud-edgecontainer-v0.5.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.5.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgecontainer-v0.5.15...google-cloud-edgecontainer-v0.5.16) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [0.5.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgecontainer-v0.5.14...google-cloud-edgecontainer-v0.5.15) (2024-12-12)
 
 

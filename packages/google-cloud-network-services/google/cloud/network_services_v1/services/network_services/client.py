@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.network_services_v1 import gapic_version as package_version
 
@@ -75,8 +78,12 @@ from google.cloud.network_services_v1.types import (
 from google.cloud.network_services_v1.types import (
     service_binding as gcn_service_binding,
 )
+from google.cloud.network_services_v1.types import (
+    service_lb_policy as gcn_service_lb_policy,
+)
 from google.cloud.network_services_v1.types import common
 from google.cloud.network_services_v1.types import endpoint_policy
+from google.cloud.network_services_v1.types import extensibility
 from google.cloud.network_services_v1.types import gateway
 from google.cloud.network_services_v1.types import gateway as gcn_gateway
 from google.cloud.network_services_v1.types import grpc_route
@@ -85,7 +92,9 @@ from google.cloud.network_services_v1.types import http_route
 from google.cloud.network_services_v1.types import http_route as gcn_http_route
 from google.cloud.network_services_v1.types import mesh
 from google.cloud.network_services_v1.types import mesh as gcn_mesh
+from google.cloud.network_services_v1.types import route_view
 from google.cloud.network_services_v1.types import service_binding
+from google.cloud.network_services_v1.types import service_lb_policy
 from google.cloud.network_services_v1.types import tcp_route
 from google.cloud.network_services_v1.types import tcp_route as gcn_tcp_route
 from google.cloud.network_services_v1.types import tls_route
@@ -224,6 +233,28 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         return self._transport
 
     @staticmethod
+    def address_path(
+        project: str,
+        region: str,
+        address: str,
+    ) -> str:
+        """Returns a fully-qualified address string."""
+        return "projects/{project}/regions/{region}/addresses/{address}".format(
+            project=project,
+            region=region,
+            address=address,
+        )
+
+    @staticmethod
+    def parse_address_path(path: str) -> Dict[str, str]:
+        """Parses a address path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/regions/(?P<region>.+?)/addresses/(?P<address>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
     def authorization_policy_path(
         project: str,
         location: str,
@@ -263,6 +294,30 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         """Parses a backend_service path into its component segments."""
         m = re.match(
             r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/backendServices/(?P<backend_service>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def certificate_path(
+        project: str,
+        location: str,
+        certificate: str,
+    ) -> str:
+        """Returns a fully-qualified certificate string."""
+        return (
+            "projects/{project}/locations/{location}/certificates/{certificate}".format(
+                project=project,
+                location=location,
+                certificate=certificate,
+            )
+        )
+
+    @staticmethod
+    def parse_certificate_path(path: str) -> Dict[str, str]:
+        """Parses a certificate path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/certificates/(?P<certificate>.+?)$",
             path,
         )
         return m.groupdict() if m else {}
@@ -334,6 +389,52 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         return m.groupdict() if m else {}
 
     @staticmethod
+    def gateway_route_view_path(
+        project: str,
+        location: str,
+        gateway: str,
+        route_view: str,
+    ) -> str:
+        """Returns a fully-qualified gateway_route_view string."""
+        return "projects/{project}/locations/{location}/gateways/{gateway}/routeViews/{route_view}".format(
+            project=project,
+            location=location,
+            gateway=gateway,
+            route_view=route_view,
+        )
+
+    @staticmethod
+    def parse_gateway_route_view_path(path: str) -> Dict[str, str]:
+        """Parses a gateway_route_view path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/gateways/(?P<gateway>.+?)/routeViews/(?P<route_view>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def gateway_security_policy_path(
+        project: str,
+        location: str,
+        gateway_security_policy: str,
+    ) -> str:
+        """Returns a fully-qualified gateway_security_policy string."""
+        return "projects/{project}/locations/{location}/gatewaySecurityPolicies/{gateway_security_policy}".format(
+            project=project,
+            location=location,
+            gateway_security_policy=gateway_security_policy,
+        )
+
+    @staticmethod
+    def parse_gateway_security_policy_path(path: str) -> Dict[str, str]:
+        """Parses a gateway_security_policy path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/gatewaySecurityPolicies/(?P<gateway_security_policy>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
     def grpc_route_path(
         project: str,
         location: str,
@@ -400,6 +501,49 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         return m.groupdict() if m else {}
 
     @staticmethod
+    def mesh_route_view_path(
+        project: str,
+        location: str,
+        mesh: str,
+        route_view: str,
+    ) -> str:
+        """Returns a fully-qualified mesh_route_view string."""
+        return "projects/{project}/locations/{location}/meshes/{mesh}/routeViews/{route_view}".format(
+            project=project,
+            location=location,
+            mesh=mesh,
+            route_view=route_view,
+        )
+
+    @staticmethod
+    def parse_mesh_route_view_path(path: str) -> Dict[str, str]:
+        """Parses a mesh_route_view path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/meshes/(?P<mesh>.+?)/routeViews/(?P<route_view>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def network_path(
+        project: str,
+        network: str,
+    ) -> str:
+        """Returns a fully-qualified network string."""
+        return "projects/{project}/global/networks/{network}".format(
+            project=project,
+            network=network,
+        )
+
+    @staticmethod
+    def parse_network_path(path: str) -> Dict[str, str]:
+        """Parses a network path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/global/networks/(?P<network>.+?)$", path
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
     def server_tls_policy_path(
         project: str,
         location: str,
@@ -422,6 +566,30 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         return m.groupdict() if m else {}
 
     @staticmethod
+    def service_path(
+        project: str,
+        location: str,
+        namespace: str,
+        service: str,
+    ) -> str:
+        """Returns a fully-qualified service string."""
+        return "projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}".format(
+            project=project,
+            location=location,
+            namespace=namespace,
+            service=service,
+        )
+
+    @staticmethod
+    def parse_service_path(path: str) -> Dict[str, str]:
+        """Parses a service path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/namespaces/(?P<namespace>.+?)/services/(?P<service>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
     def service_binding_path(
         project: str,
         location: str,
@@ -439,6 +607,50 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         """Parses a service_binding path into its component segments."""
         m = re.match(
             r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/serviceBindings/(?P<service_binding>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def service_lb_policy_path(
+        project: str,
+        location: str,
+        service_lb_policy: str,
+    ) -> str:
+        """Returns a fully-qualified service_lb_policy string."""
+        return "projects/{project}/locations/{location}/serviceLbPolicies/{service_lb_policy}".format(
+            project=project,
+            location=location,
+            service_lb_policy=service_lb_policy,
+        )
+
+    @staticmethod
+    def parse_service_lb_policy_path(path: str) -> Dict[str, str]:
+        """Parses a service_lb_policy path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/serviceLbPolicies/(?P<service_lb_policy>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def subnetwork_path(
+        project: str,
+        region: str,
+        subnetwork: str,
+    ) -> str:
+        """Returns a fully-qualified subnetwork string."""
+        return "projects/{project}/regions/{region}/subnetworks/{subnetwork}".format(
+            project=project,
+            region=region,
+            subnetwork=subnetwork,
+        )
+
+    @staticmethod
+    def parse_subnetwork_path(path: str) -> Dict[str, str]:
+        """Parses a subnetwork path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/regions/(?P<region>.+?)/subnetworks/(?P<subnetwork>.+?)$",
             path,
         )
         return m.groupdict() if m else {}
@@ -483,6 +695,54 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         """Parses a tls_route path into its component segments."""
         m = re.match(
             r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/tlsRoutes/(?P<tls_route>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def wasm_plugin_path(
+        project: str,
+        location: str,
+        wasm_plugin: str,
+    ) -> str:
+        """Returns a fully-qualified wasm_plugin string."""
+        return (
+            "projects/{project}/locations/{location}/wasmPlugins/{wasm_plugin}".format(
+                project=project,
+                location=location,
+                wasm_plugin=wasm_plugin,
+            )
+        )
+
+    @staticmethod
+    def parse_wasm_plugin_path(path: str) -> Dict[str, str]:
+        """Parses a wasm_plugin path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/wasmPlugins/(?P<wasm_plugin>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def wasm_plugin_version_path(
+        project: str,
+        location: str,
+        wasm_plugin: str,
+        wasm_plugin_version: str,
+    ) -> str:
+        """Returns a fully-qualified wasm_plugin_version string."""
+        return "projects/{project}/locations/{location}/wasmPlugins/{wasm_plugin}/versions/{wasm_plugin_version}".format(
+            project=project,
+            location=location,
+            wasm_plugin=wasm_plugin,
+            wasm_plugin_version=wasm_plugin_version,
+        )
+
+    @staticmethod
+    def parse_wasm_plugin_version_path(path: str) -> Dict[str, str]:
+        """Parses a wasm_plugin_version path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/wasmPlugins/(?P<wasm_plugin>.+?)/versions/(?P<wasm_plugin_version>.+?)$",
             path,
         )
         return m.groupdict() if m else {}
@@ -756,6 +1016,33 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -1027,7 +1314,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1148,7 +1438,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1221,7 +1514,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 endpoint_policy = network_services_v1.EndpointPolicy()
-                endpoint_policy.name = "name_value"
                 endpoint_policy.type_ = "GRPC_SERVER"
 
                 request = network_services_v1.CreateEndpointPolicyRequest(
@@ -1288,7 +1580,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, endpoint_policy, endpoint_policy_id])
+        flattened_params = [parent, endpoint_policy, endpoint_policy_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1371,7 +1666,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 endpoint_policy = network_services_v1.EndpointPolicy()
-                endpoint_policy.name = "name_value"
                 endpoint_policy.type_ = "GRPC_SERVER"
 
                 request = network_services_v1.UpdateEndpointPolicyRequest(
@@ -1433,7 +1727,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([endpoint_policy, update_mask])
+        flattened_params = [endpoint_policy, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1567,7 +1864,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1586,6 +1886,1172 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
         rpc = self._transport._wrapped_methods[self._transport.delete_endpoint_policy]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            empty_pb2.Empty,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_wasm_plugin_versions(
+        self,
+        request: Optional[
+            Union[extensibility.ListWasmPluginVersionsRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListWasmPluginVersionsPager:
+        r"""Lists ``WasmPluginVersion`` resources in a given project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_list_wasm_plugin_versions():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.ListWasmPluginVersionsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_wasm_plugin_versions(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.ListWasmPluginVersionsRequest, dict]):
+                The request object. Request used with the ``ListWasmPluginVersions`` method.
+            parent (str):
+                Required. The ``WasmPlugin`` resource whose
+                ``WasmPluginVersion``\ s are listed, specified in the
+                following format:
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.services.network_services.pagers.ListWasmPluginVersionsPager:
+                Response returned by the ListWasmPluginVersions method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.ListWasmPluginVersionsRequest):
+            request = extensibility.ListWasmPluginVersionsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.list_wasm_plugin_versions
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListWasmPluginVersionsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_wasm_plugin_version(
+        self,
+        request: Optional[
+            Union[extensibility.GetWasmPluginVersionRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extensibility.WasmPluginVersion:
+        r"""Gets details of the specified ``WasmPluginVersion`` resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_get_wasm_plugin_version():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.GetWasmPluginVersionRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_wasm_plugin_version(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.GetWasmPluginVersionRequest, dict]):
+                The request object. Request used by the ``GetWasmPluginVersion`` method.
+            name (str):
+                Required. A name of the ``WasmPluginVersion`` resource
+                to get. Must be in the format
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}/versions/{wasm_plugin_version}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.types.WasmPluginVersion:
+                A single immutable version of a WasmPlugin resource.
+                   Defines the Wasm module used and optionally its
+                   runtime config.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.GetWasmPluginVersionRequest):
+            request = extensibility.GetWasmPluginVersionRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_wasm_plugin_version]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_wasm_plugin_version(
+        self,
+        request: Optional[
+            Union[extensibility.CreateWasmPluginVersionRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        wasm_plugin_version: Optional[extensibility.WasmPluginVersion] = None,
+        wasm_plugin_version_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Creates a new ``WasmPluginVersion`` resource in a given project
+        and location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_create_wasm_plugin_version():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                wasm_plugin_version = network_services_v1.WasmPluginVersion()
+                wasm_plugin_version.plugin_config_data = b'plugin_config_data_blob'
+
+                request = network_services_v1.CreateWasmPluginVersionRequest(
+                    parent="parent_value",
+                    wasm_plugin_version_id="wasm_plugin_version_id_value",
+                    wasm_plugin_version=wasm_plugin_version,
+                )
+
+                # Make the request
+                operation = client.create_wasm_plugin_version(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.CreateWasmPluginVersionRequest, dict]):
+                The request object. Request used by the ``CreateWasmPluginVersion`` method.
+            parent (str):
+                Required. The parent resource of the
+                ``WasmPluginVersion`` resource. Must be in the format
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            wasm_plugin_version (google.cloud.network_services_v1.types.WasmPluginVersion):
+                Required. ``WasmPluginVersion`` resource to be created.
+                This corresponds to the ``wasm_plugin_version`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            wasm_plugin_version_id (str):
+                Required. User-provided ID of the ``WasmPluginVersion``
+                resource to be created.
+
+                This corresponds to the ``wasm_plugin_version_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.WasmPluginVersion` A single immutable version of a WasmPlugin resource.
+                   Defines the Wasm module used and optionally its
+                   runtime config.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent, wasm_plugin_version, wasm_plugin_version_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.CreateWasmPluginVersionRequest):
+            request = extensibility.CreateWasmPluginVersionRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if wasm_plugin_version is not None:
+                request.wasm_plugin_version = wasm_plugin_version
+            if wasm_plugin_version_id is not None:
+                request.wasm_plugin_version_id = wasm_plugin_version_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.create_wasm_plugin_version
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            extensibility.WasmPluginVersion,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_wasm_plugin_version(
+        self,
+        request: Optional[
+            Union[extensibility.DeleteWasmPluginVersionRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Deletes the specified ``WasmPluginVersion`` resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_delete_wasm_plugin_version():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.DeleteWasmPluginVersionRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_wasm_plugin_version(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.DeleteWasmPluginVersionRequest, dict]):
+                The request object. Request used by the ``DeleteWasmPluginVersion`` method.
+            name (str):
+                Required. A name of the ``WasmPluginVersion`` resource
+                to delete. Must be in the format
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}/versions/{wasm_plugin_version}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.protobuf.empty_pb2.Empty` A generic empty message that you can re-use to avoid defining duplicated
+                   empty messages in your APIs. A typical example is to
+                   use it as the request or the response type of an API
+                   method. For instance:
+
+                      service Foo {
+                         rpc Bar(google.protobuf.Empty) returns
+                         (google.protobuf.Empty);
+
+                      }
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.DeleteWasmPluginVersionRequest):
+            request = extensibility.DeleteWasmPluginVersionRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.delete_wasm_plugin_version
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            empty_pb2.Empty,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_wasm_plugins(
+        self,
+        request: Optional[Union[extensibility.ListWasmPluginsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListWasmPluginsPager:
+        r"""Lists ``WasmPlugin`` resources in a given project and location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_list_wasm_plugins():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.ListWasmPluginsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_wasm_plugins(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.ListWasmPluginsRequest, dict]):
+                The request object. Request used with the ``ListWasmPlugins`` method.
+            parent (str):
+                Required. The project and location from which the
+                ``WasmPlugin`` resources are listed, specified in the
+                following format:
+                ``projects/{project}/locations/global``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.services.network_services.pagers.ListWasmPluginsPager:
+                Response returned by the ListWasmPlugins method.
+
+                Iterating over this object will yield results and
+                resolve additional pages automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.ListWasmPluginsRequest):
+            request = extensibility.ListWasmPluginsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_wasm_plugins]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListWasmPluginsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_wasm_plugin(
+        self,
+        request: Optional[Union[extensibility.GetWasmPluginRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extensibility.WasmPlugin:
+        r"""Gets details of the specified ``WasmPlugin`` resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_get_wasm_plugin():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.GetWasmPluginRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_wasm_plugin(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.GetWasmPluginRequest, dict]):
+                The request object. Request used by the ``GetWasmPlugin`` method.
+            name (str):
+                Required. A name of the ``WasmPlugin`` resource to get.
+                Must be in the format
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.types.WasmPlugin:
+                WasmPlugin is a resource representing a service executing
+                   a customer-provided Wasm module.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.GetWasmPluginRequest):
+            request = extensibility.GetWasmPluginRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_wasm_plugin]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_wasm_plugin(
+        self,
+        request: Optional[Union[extensibility.CreateWasmPluginRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        wasm_plugin: Optional[extensibility.WasmPlugin] = None,
+        wasm_plugin_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Creates a new ``WasmPlugin`` resource in a given project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_create_wasm_plugin():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.CreateWasmPluginRequest(
+                    parent="parent_value",
+                    wasm_plugin_id="wasm_plugin_id_value",
+                )
+
+                # Make the request
+                operation = client.create_wasm_plugin(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.CreateWasmPluginRequest, dict]):
+                The request object. Request used by the ``CreateWasmPlugin`` method.
+            parent (str):
+                Required. The parent resource of the ``WasmPlugin``
+                resource. Must be in the format
+                ``projects/{project}/locations/global``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            wasm_plugin (google.cloud.network_services_v1.types.WasmPlugin):
+                Required. ``WasmPlugin`` resource to be created.
+                This corresponds to the ``wasm_plugin`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            wasm_plugin_id (str):
+                Required. User-provided ID of the ``WasmPlugin``
+                resource to be created.
+
+                This corresponds to the ``wasm_plugin_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.WasmPlugin` WasmPlugin is a resource representing a service executing
+                   a customer-provided Wasm module.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent, wasm_plugin, wasm_plugin_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.CreateWasmPluginRequest):
+            request = extensibility.CreateWasmPluginRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if wasm_plugin is not None:
+                request.wasm_plugin = wasm_plugin
+            if wasm_plugin_id is not None:
+                request.wasm_plugin_id = wasm_plugin_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_wasm_plugin]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            extensibility.WasmPlugin,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_wasm_plugin(
+        self,
+        request: Optional[Union[extensibility.UpdateWasmPluginRequest, dict]] = None,
+        *,
+        wasm_plugin: Optional[extensibility.WasmPlugin] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Updates the parameters of the specified ``WasmPlugin`` resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_update_wasm_plugin():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.UpdateWasmPluginRequest(
+                )
+
+                # Make the request
+                operation = client.update_wasm_plugin(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.UpdateWasmPluginRequest, dict]):
+                The request object. Request used by the ``UpdateWasmPlugin`` method.
+            wasm_plugin (google.cloud.network_services_v1.types.WasmPlugin):
+                Required. Updated ``WasmPlugin`` resource.
+                This corresponds to the ``wasm_plugin`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. Used to specify the fields to be overwritten
+                in the ``WasmPlugin`` resource by the update. The fields
+                specified in the ``update_mask`` field are relative to
+                the resource, not the full request. An omitted
+                ``update_mask`` field is treated as an implied
+                ``update_mask`` field equivalent to all fields that are
+                populated (that have a non-empty value). The
+                ``update_mask`` field supports a special value ``*``,
+                which means that each field in the given ``WasmPlugin``
+                resource (including the empty ones) replaces the current
+                value.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.WasmPlugin` WasmPlugin is a resource representing a service executing
+                   a customer-provided Wasm module.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [wasm_plugin, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.UpdateWasmPluginRequest):
+            request = extensibility.UpdateWasmPluginRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if wasm_plugin is not None:
+                request.wasm_plugin = wasm_plugin
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_wasm_plugin]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("wasm_plugin.name", request.wasm_plugin.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            extensibility.WasmPlugin,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_wasm_plugin(
+        self,
+        request: Optional[Union[extensibility.DeleteWasmPluginRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Deletes the specified ``WasmPlugin`` resource.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_delete_wasm_plugin():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.DeleteWasmPluginRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_wasm_plugin(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.DeleteWasmPluginRequest, dict]):
+                The request object. Request used by the ``DeleteWasmPlugin`` method.
+            name (str):
+                Required. A name of the ``WasmPlugin`` resource to
+                delete. Must be in the format
+                ``projects/{project}/locations/global/wasmPlugins/{wasm_plugin}``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.protobuf.empty_pb2.Empty` A generic empty message that you can re-use to avoid defining duplicated
+                   empty messages in your APIs. A typical example is to
+                   use it as the request or the response type of an API
+                   method. For instance:
+
+                      service Foo {
+                         rpc Bar(google.protobuf.Empty) returns
+                         (google.protobuf.Empty);
+
+                      }
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, extensibility.DeleteWasmPluginRequest):
+            request = extensibility.DeleteWasmPluginRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_wasm_plugin]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1685,7 +3151,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1807,7 +3276,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1878,9 +3350,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 gateway = network_services_v1.Gateway()
-                gateway.name = "name_value"
                 gateway.ports = [569, 570]
-                gateway.scope = "scope_value"
 
                 request = network_services_v1.CreateGatewayRequest(
                     parent="parent_value",
@@ -1946,7 +3416,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, gateway, gateway_id])
+        flattened_params = [parent, gateway, gateway_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2027,9 +3500,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 gateway = network_services_v1.Gateway()
-                gateway.name = "name_value"
                 gateway.ports = [569, 570]
-                gateway.scope = "scope_value"
 
                 request = network_services_v1.UpdateGatewayRequest(
                     gateway=gateway,
@@ -2088,7 +3559,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([gateway, update_mask])
+        flattened_params = [gateway, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2219,7 +3693,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2337,7 +3814,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2454,7 +3934,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2525,7 +4008,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 grpc_route = network_services_v1.GrpcRoute()
-                grpc_route.name = "name_value"
                 grpc_route.hostnames = ['hostnames_value1', 'hostnames_value2']
 
                 request = network_services_v1.CreateGrpcRouteRequest(
@@ -2588,7 +4070,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, grpc_route, grpc_route_id])
+        flattened_params = [parent, grpc_route, grpc_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2669,7 +4154,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 grpc_route = network_services_v1.GrpcRoute()
-                grpc_route.name = "name_value"
                 grpc_route.hostnames = ['hostnames_value1', 'hostnames_value2']
 
                 request = network_services_v1.UpdateGrpcRouteRequest(
@@ -2725,7 +4209,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([grpc_route, update_mask])
+        flattened_params = [grpc_route, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2856,7 +4343,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2974,7 +4464,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3091,7 +4584,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3162,7 +4658,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 http_route = network_services_v1.HttpRoute()
-                http_route.name = "name_value"
                 http_route.hostnames = ['hostnames_value1', 'hostnames_value2']
 
                 request = network_services_v1.CreateHttpRouteRequest(
@@ -3224,7 +4719,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, http_route, http_route_id])
+        flattened_params = [parent, http_route, http_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3305,7 +4803,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 http_route = network_services_v1.HttpRoute()
-                http_route.name = "name_value"
                 http_route.hostnames = ['hostnames_value1', 'hostnames_value2']
 
                 request = network_services_v1.UpdateHttpRouteRequest(
@@ -3361,7 +4858,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([http_route, update_mask])
+        flattened_params = [http_route, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3492,7 +4992,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3610,7 +5113,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3727,7 +5233,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3797,13 +5306,9 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 client = network_services_v1.NetworkServicesClient()
 
                 # Initialize request argument(s)
-                tcp_route = network_services_v1.TcpRoute()
-                tcp_route.name = "name_value"
-
                 request = network_services_v1.CreateTcpRouteRequest(
                     parent="parent_value",
                     tcp_route_id="tcp_route_id_value",
-                    tcp_route=tcp_route,
                 )
 
                 # Make the request
@@ -3859,7 +5364,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, tcp_route, tcp_route_id])
+        flattened_params = [parent, tcp_route, tcp_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3939,11 +5447,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 client = network_services_v1.NetworkServicesClient()
 
                 # Initialize request argument(s)
-                tcp_route = network_services_v1.TcpRoute()
-                tcp_route.name = "name_value"
-
                 request = network_services_v1.UpdateTcpRouteRequest(
-                    tcp_route=tcp_route,
                 )
 
                 # Make the request
@@ -3995,7 +5499,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([tcp_route, update_mask])
+        flattened_params = [tcp_route, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4126,7 +5633,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4244,7 +5754,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4361,7 +5874,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4432,7 +5948,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 tls_route = network_services_v1.TlsRoute()
-                tls_route.name = "name_value"
                 tls_route.rules.action.destinations.service_name = "service_name_value"
 
                 request = network_services_v1.CreateTlsRouteRequest(
@@ -4494,7 +6009,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, tls_route, tls_route_id])
+        flattened_params = [parent, tls_route, tls_route_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4575,7 +6093,6 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
                 # Initialize request argument(s)
                 tls_route = network_services_v1.TlsRoute()
-                tls_route.name = "name_value"
                 tls_route.rules.action.destinations.service_name = "service_name_value"
 
                 request = network_services_v1.UpdateTlsRouteRequest(
@@ -4631,7 +6148,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([tls_route, update_mask])
+        flattened_params = [tls_route, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4762,7 +6282,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4857,7 +6380,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
             parent (str):
                 Required. The project and location from which the
                 ServiceBindings should be listed, specified in the
-                format ``projects/*/locations/global``.
+                format ``projects/*/locations/*``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -4882,7 +6405,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -4977,7 +6503,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
             name (str):
                 Required. A name of the ServiceBinding to get. Must be
                 in the format
-                ``projects/*/locations/global/serviceBindings/*``.
+                ``projects/*/locations/*/serviceBindings/*``.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -4992,15 +6518,27 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
 
         Returns:
             google.cloud.network_services_v1.types.ServiceBinding:
-                ServiceBinding is the resource that
-                defines a Service Directory Service to
-                be used in a BackendService resource.
+                ServiceBinding can be used to:
+
+                - Bind a Service Directory Service to be
+                  used in a BackendService resource.
+                  This feature will be deprecated soon.
+                - Bind a Private Service Connect
+                  producer service to be used in
+                  consumer   Cloud Service Mesh or
+                  Application Load Balancers.
+                - Bind a Cloud Run service to be used in
+                  consumer Cloud Service Mesh or
+                  Application Load Balancers.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5072,14 +6610,9 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 client = network_services_v1.NetworkServicesClient()
 
                 # Initialize request argument(s)
-                service_binding = network_services_v1.ServiceBinding()
-                service_binding.name = "name_value"
-                service_binding.service = "service_value"
-
                 request = network_services_v1.CreateServiceBindingRequest(
                     parent="parent_value",
                     service_binding_id="service_binding_id_value",
-                    service_binding=service_binding,
                 )
 
                 # Make the request
@@ -5098,7 +6631,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 method.
             parent (str):
                 Required. The parent resource of the ServiceBinding.
-                Must be in the format ``projects/*/locations/global``.
+                Must be in the format ``projects/*/locations/*``.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -5129,14 +6662,24 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
             google.api_core.operation.Operation:
                 An object representing a long-running operation.
 
-                The result type for the operation will be :class:`google.cloud.network_services_v1.types.ServiceBinding` ServiceBinding is the resource that defines a Service Directory Service to
-                   be used in a BackendService resource.
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.ServiceBinding` ServiceBinding can be used to:
+                   -  Bind a Service Directory Service to be used in a
+                      BackendService resource. This feature will be
+                      deprecated soon.
+                   -  Bind a Private Service Connect producer service to
+                      be used in consumer Cloud Service Mesh or
+                      Application Load Balancers.
+                   -  Bind a Cloud Run service to be used in consumer
+                      Cloud Service Mesh or Application Load Balancers.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, service_binding, service_binding_id])
+        flattened_params = [parent, service_binding, service_binding_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5164,6 +6707,153 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # add these here.
         metadata = tuple(metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gcn_service_binding.ServiceBinding,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_service_binding(
+        self,
+        request: Optional[
+            Union[gcn_service_binding.UpdateServiceBindingRequest, dict]
+        ] = None,
+        *,
+        service_binding: Optional[gcn_service_binding.ServiceBinding] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Updates the parameters of a single ServiceBinding.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_update_service_binding():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.UpdateServiceBindingRequest(
+                )
+
+                # Make the request
+                operation = client.update_service_binding(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.UpdateServiceBindingRequest, dict]):
+                The request object. Request used by the
+                UpdateServiceBinding method.
+            service_binding (google.cloud.network_services_v1.types.ServiceBinding):
+                Required. Updated ServiceBinding
+                resource.
+
+                This corresponds to the ``service_binding`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. Field mask is used to specify the fields to be
+                overwritten in the ServiceBinding resource by the
+                update. The fields specified in the update_mask are
+                relative to the resource, not the full request. A field
+                will be overwritten if it is in the mask. If the user
+                does not provide a mask then all fields will be
+                overwritten.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.ServiceBinding` ServiceBinding can be used to:
+                   -  Bind a Service Directory Service to be used in a
+                      BackendService resource. This feature will be
+                      deprecated soon.
+                   -  Bind a Private Service Connect producer service to
+                      be used in consumer Cloud Service Mesh or
+                      Application Load Balancers.
+                   -  Bind a Cloud Run service to be used in consumer
+                      Cloud Service Mesh or Application Load Balancers.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [service_binding, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, gcn_service_binding.UpdateServiceBindingRequest):
+            request = gcn_service_binding.UpdateServiceBindingRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if service_binding is not None:
+                request.service_binding = service_binding
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_service_binding]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("service_binding.name", request.service_binding.name),)
+            ),
         )
 
         # Validate the universe domain.
@@ -5238,7 +6928,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
             name (str):
                 Required. A name of the ServiceBinding to delete. Must
                 be in the format
-                ``projects/*/locations/global/serviceBindings/*``.
+                ``projects/*/locations/*/serviceBindings/*``.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -5270,7 +6960,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5388,7 +7081,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5507,7 +7203,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5576,13 +7275,9 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 client = network_services_v1.NetworkServicesClient()
 
                 # Initialize request argument(s)
-                mesh = network_services_v1.Mesh()
-                mesh.name = "name_value"
-
                 request = network_services_v1.CreateMeshRequest(
                     parent="parent_value",
                     mesh_id="mesh_id_value",
-                    mesh=mesh,
                 )
 
                 # Make the request
@@ -5641,7 +7336,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, mesh, mesh_id])
+        flattened_params = [parent, mesh, mesh_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5721,11 +7419,7 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
                 client = network_services_v1.NetworkServicesClient()
 
                 # Initialize request argument(s)
-                mesh = network_services_v1.Mesh()
-                mesh.name = "name_value"
-
                 request = network_services_v1.UpdateMeshRequest(
-                    mesh=mesh,
                 )
 
                 # Make the request
@@ -5779,7 +7473,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([mesh, update_mask])
+        flattened_params = [mesh, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5910,7 +7607,10 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -5953,6 +7653,1137 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
             self._transport.operations_client,
             empty_pb2.Empty,
             metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_service_lb_policies(
+        self,
+        request: Optional[
+            Union[service_lb_policy.ListServiceLbPoliciesRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListServiceLbPoliciesPager:
+        r"""Lists ServiceLbPolicies in a given project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_list_service_lb_policies():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.ListServiceLbPoliciesRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_service_lb_policies(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.ListServiceLbPoliciesRequest, dict]):
+                The request object. Request used with the
+                ListServiceLbPolicies method.
+            parent (str):
+                Required. The project and location from which the
+                ServiceLbPolicies should be listed, specified in the
+                format ``projects/{project}/locations/{location}``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.services.network_services.pagers.ListServiceLbPoliciesPager:
+                Response returned by the
+                ListServiceLbPolicies method.
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, service_lb_policy.ListServiceLbPoliciesRequest):
+            request = service_lb_policy.ListServiceLbPoliciesRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_service_lb_policies]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListServiceLbPoliciesPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_service_lb_policy(
+        self,
+        request: Optional[
+            Union[service_lb_policy.GetServiceLbPolicyRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> service_lb_policy.ServiceLbPolicy:
+        r"""Gets details of a single ServiceLbPolicy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_get_service_lb_policy():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.GetServiceLbPolicyRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_service_lb_policy(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.GetServiceLbPolicyRequest, dict]):
+                The request object. Request used by the
+                GetServiceLbPolicy method.
+            name (str):
+                Required. A name of the ServiceLbPolicy to get. Must be
+                in the format
+                ``projects/{project}/locations/{location}/serviceLbPolicies/*``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.types.ServiceLbPolicy:
+                ServiceLbPolicy holds global load
+                balancing and traffic distribution
+                configuration that can be applied to a
+                BackendService.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, service_lb_policy.GetServiceLbPolicyRequest):
+            request = service_lb_policy.GetServiceLbPolicyRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_service_lb_policy]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def create_service_lb_policy(
+        self,
+        request: Optional[
+            Union[gcn_service_lb_policy.CreateServiceLbPolicyRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        service_lb_policy: Optional[gcn_service_lb_policy.ServiceLbPolicy] = None,
+        service_lb_policy_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Creates a new ServiceLbPolicy in a given project and
+        location.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_create_service_lb_policy():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.CreateServiceLbPolicyRequest(
+                    parent="parent_value",
+                    service_lb_policy_id="service_lb_policy_id_value",
+                )
+
+                # Make the request
+                operation = client.create_service_lb_policy(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.CreateServiceLbPolicyRequest, dict]):
+                The request object. Request used by the ServiceLbPolicy
+                method.
+            parent (str):
+                Required. The parent resource of the ServiceLbPolicy.
+                Must be in the format
+                ``projects/{project}/locations/{location}``.
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            service_lb_policy (google.cloud.network_services_v1.types.ServiceLbPolicy):
+                Required. ServiceLbPolicy resource to
+                be created.
+
+                This corresponds to the ``service_lb_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            service_lb_policy_id (str):
+                Required. Short name of the ServiceLbPolicy resource to
+                be created. E.g. for resource name
+                ``projects/{project}/locations/{location}/serviceLbPolicies/{service_lb_policy_name}``.
+                the id is value of {service_lb_policy_name}
+
+                This corresponds to the ``service_lb_policy_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.ServiceLbPolicy` ServiceLbPolicy holds global load balancing and traffic distribution
+                   configuration that can be applied to a
+                   BackendService.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent, service_lb_policy, service_lb_policy_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, gcn_service_lb_policy.CreateServiceLbPolicyRequest):
+            request = gcn_service_lb_policy.CreateServiceLbPolicyRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if service_lb_policy is not None:
+                request.service_lb_policy = service_lb_policy
+            if service_lb_policy_id is not None:
+                request.service_lb_policy_id = service_lb_policy_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_service_lb_policy]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gcn_service_lb_policy.ServiceLbPolicy,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_service_lb_policy(
+        self,
+        request: Optional[
+            Union[gcn_service_lb_policy.UpdateServiceLbPolicyRequest, dict]
+        ] = None,
+        *,
+        service_lb_policy: Optional[gcn_service_lb_policy.ServiceLbPolicy] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Updates the parameters of a single ServiceLbPolicy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_update_service_lb_policy():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.UpdateServiceLbPolicyRequest(
+                )
+
+                # Make the request
+                operation = client.update_service_lb_policy(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.UpdateServiceLbPolicyRequest, dict]):
+                The request object. Request used by the
+                UpdateServiceLbPolicy method.
+            service_lb_policy (google.cloud.network_services_v1.types.ServiceLbPolicy):
+                Required. Updated ServiceLbPolicy
+                resource.
+
+                This corresponds to the ``service_lb_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. Field mask is used to specify the fields to be
+                overwritten in the ServiceLbPolicy resource by the
+                update. The fields specified in the update_mask are
+                relative to the resource, not the full request. A field
+                will be overwritten if it is in the mask. If the user
+                does not provide a mask then all fields will be
+                overwritten.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.cloud.network_services_v1.types.ServiceLbPolicy` ServiceLbPolicy holds global load balancing and traffic distribution
+                   configuration that can be applied to a
+                   BackendService.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [service_lb_policy, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, gcn_service_lb_policy.UpdateServiceLbPolicyRequest):
+            request = gcn_service_lb_policy.UpdateServiceLbPolicyRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if service_lb_policy is not None:
+                request.service_lb_policy = service_lb_policy
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_service_lb_policy]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("service_lb_policy.name", request.service_lb_policy.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            gcn_service_lb_policy.ServiceLbPolicy,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_service_lb_policy(
+        self,
+        request: Optional[
+            Union[service_lb_policy.DeleteServiceLbPolicyRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> operation.Operation:
+        r"""Deletes a single ServiceLbPolicy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_delete_service_lb_policy():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.DeleteServiceLbPolicyRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                operation = client.delete_service_lb_policy(request=request)
+
+                print("Waiting for operation to complete...")
+
+                response = operation.result()
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.DeleteServiceLbPolicyRequest, dict]):
+                The request object. Request used by the
+                DeleteServiceLbPolicy method.
+            name (str):
+                Required. A name of the ServiceLbPolicy to delete. Must
+                be in the format
+                ``projects/{project}/locations/{location}/serviceLbPolicies/*``.
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.operation.Operation:
+                An object representing a long-running operation.
+
+                The result type for the operation will be :class:`google.protobuf.empty_pb2.Empty` A generic empty message that you can re-use to avoid defining duplicated
+                   empty messages in your APIs. A typical example is to
+                   use it as the request or the response type of an API
+                   method. For instance:
+
+                      service Foo {
+                         rpc Bar(google.protobuf.Empty) returns
+                         (google.protobuf.Empty);
+
+                      }
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, service_lb_policy.DeleteServiceLbPolicyRequest):
+            request = service_lb_policy.DeleteServiceLbPolicyRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_service_lb_policy]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Wrap the response in an operation future.
+        response = operation.from_gapic(
+            response,
+            self._transport.operations_client,
+            empty_pb2.Empty,
+            metadata_type=common.OperationMetadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_gateway_route_view(
+        self,
+        request: Optional[Union[route_view.GetGatewayRouteViewRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> route_view.GatewayRouteView:
+        r"""Get a single RouteView of a Gateway.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_get_gateway_route_view():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.GetGatewayRouteViewRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_gateway_route_view(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.GetGatewayRouteViewRequest, dict]):
+                The request object. Request used with the
+                GetGatewayRouteView method.
+            name (str):
+                Required. Name of the GatewayRouteView resource.
+                Formats:
+                projects/{project}/locations/{location}/gateways/{gateway}/routeViews/{route_view}
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.types.GatewayRouteView:
+                GatewayRouteView defines view-only
+                resource for Routes to a Gateway
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, route_view.GetGatewayRouteViewRequest):
+            request = route_view.GetGatewayRouteViewRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_gateway_route_view]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_mesh_route_view(
+        self,
+        request: Optional[Union[route_view.GetMeshRouteViewRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> route_view.MeshRouteView:
+        r"""Get a single RouteView of a Mesh.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_get_mesh_route_view():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.GetMeshRouteViewRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                response = client.get_mesh_route_view(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.GetMeshRouteViewRequest, dict]):
+                The request object. Request used with the
+                GetMeshRouteView method.
+            name (str):
+                Required. Name of the MeshRouteView resource. Format:
+                projects/{project}/locations/{location}/meshes/{mesh}/routeViews/{route_view}
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.types.MeshRouteView:
+                MeshRouteView defines view-only
+                resource for Routes to a Mesh
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, route_view.GetMeshRouteViewRequest):
+            request = route_view.GetMeshRouteViewRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.get_mesh_route_view]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_gateway_route_views(
+        self,
+        request: Optional[Union[route_view.ListGatewayRouteViewsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListGatewayRouteViewsPager:
+        r"""Lists RouteViews
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_list_gateway_route_views():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.ListGatewayRouteViewsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_gateway_route_views(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.ListGatewayRouteViewsRequest, dict]):
+                The request object. Request used with the
+                ListGatewayRouteViews method.
+            parent (str):
+                Required. The Gateway to which a
+                Route is associated. Formats:
+
+                projects/{project}/locations/{location}/gateways/{gateway}
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.services.network_services.pagers.ListGatewayRouteViewsPager:
+                Response returned by the
+                ListGatewayRouteViews method.
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, route_view.ListGatewayRouteViewsRequest):
+            request = route_view.ListGatewayRouteViewsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_gateway_route_views]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListGatewayRouteViewsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def list_mesh_route_views(
+        self,
+        request: Optional[Union[route_view.ListMeshRouteViewsRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.ListMeshRouteViewsPager:
+        r"""Lists RouteViews
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import network_services_v1
+
+            def sample_list_mesh_route_views():
+                # Create a client
+                client = network_services_v1.NetworkServicesClient()
+
+                # Initialize request argument(s)
+                request = network_services_v1.ListMeshRouteViewsRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                page_result = client.list_mesh_route_views(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.network_services_v1.types.ListMeshRouteViewsRequest, dict]):
+                The request object. Request used with the
+                ListMeshRouteViews method.
+            parent (str):
+                Required. The Mesh to which a Route
+                is associated. Format:
+
+                projects/{project}/locations/{location}/meshes/{mesh}
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.network_services_v1.services.network_services.pagers.ListMeshRouteViewsPager:
+                Response returned by the
+                ListMeshRouteViews method.
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, route_view.ListMeshRouteViewsRequest):
+            request = route_view.ListMeshRouteViewsRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.list_mesh_route_views]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.ListMeshRouteViewsPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
         )
 
         # Done; return the response.
@@ -6015,16 +8846,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_operation(
         self,
@@ -6070,16 +8905,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def delete_operation(
         self,
@@ -6302,16 +9141,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_iam_policy(
         self,
@@ -6424,16 +9267,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def test_iam_permissions(
         self,
@@ -6484,16 +9331,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def get_location(
         self,
@@ -6539,16 +9390,20 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
     def list_locations(
         self,
@@ -6594,21 +9449,27 @@ class NetworkServicesClient(metaclass=NetworkServicesClientMeta):
         # Validate the universe domain.
         self._validate_universe_domain()
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        try:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
-        # Done; return the response.
-        return response
+            # Done; return the response.
+            return response
+        except core_exceptions.GoogleAPICallError as e:
+            self._add_cred_info_for_auth_errors(e)
+            raise e
 
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("NetworkServicesClient",)

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ class bigquery_analyticshubCallTransformer(cst.CSTTransformer):
         'create_data_exchange': ('parent', 'data_exchange_id', 'data_exchange', ),
         'create_listing': ('parent', 'listing_id', 'listing', ),
         'delete_data_exchange': ('name', ),
-        'delete_listing': ('name', ),
+        'delete_listing': ('name', 'delete_commercial', ),
         'delete_subscription': ('name', ),
         'get_data_exchange': ('name', ),
         'get_iam_policy': ('resource', 'options', ),
@@ -54,10 +54,10 @@ class bigquery_analyticshubCallTransformer(cst.CSTTransformer):
         'list_shared_resource_subscriptions': ('resource', 'include_deleted_subscriptions', 'page_size', 'page_token', ),
         'list_subscriptions': ('parent', 'filter', 'page_size', 'page_token', ),
         'refresh_subscription': ('name', ),
-        'revoke_subscription': ('name', ),
+        'revoke_subscription': ('name', 'revoke_commercial', ),
         'set_iam_policy': ('resource', 'policy', 'update_mask', ),
-        'subscribe_data_exchange': ('name', 'destination', 'subscription', 'subscriber_contact', ),
-        'subscribe_listing': ('name', 'destination_dataset', ),
+        'subscribe_data_exchange': ('name', 'destination', 'subscription', 'destination_dataset', 'subscriber_contact', ),
+        'subscribe_listing': ('name', 'destination_dataset', 'destination_pubsub_subscription', ),
         'test_iam_permissions': ('resource', 'permissions', ),
         'update_data_exchange': ('update_mask', 'data_exchange', ),
         'update_listing': ('update_mask', 'listing', ),

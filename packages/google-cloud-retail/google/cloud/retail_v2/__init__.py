@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,16 +75,19 @@ from .types.common import (
     ColorInfo,
     Condition,
     CustomAttribute,
+    DoubleList,
     FulfillmentInfo,
     Image,
     Interval,
     LocalInventory,
+    PinControlMetadata,
     PriceInfo,
     Rating,
     RecommendationsFilteringOption,
     Rule,
     SearchSolutionUseCase,
     SolutionType,
+    StringList,
     UserInfo,
 )
 from .types.completion_service import CompleteQueryRequest, CompleteQueryResponse
@@ -272,6 +275,7 @@ __all__ = (
     "DeleteModelRequest",
     "DeleteProductRequest",
     "DeleteServingConfigRequest",
+    "DoubleList",
     "ExperimentInfo",
     "ExportAnalyticsMetricsRequest",
     "ExportAnalyticsMetricsResponse",
@@ -320,6 +324,7 @@ __all__ = (
     "OutputConfig",
     "OutputResult",
     "PauseModelRequest",
+    "PinControlMetadata",
     "PredictRequest",
     "PredictResponse",
     "PredictionServiceClient",
@@ -367,6 +372,7 @@ __all__ = (
     "SetInventoryRequest",
     "SetInventoryResponse",
     "SolutionType",
+    "StringList",
     "Tile",
     "TuneModelMetadata",
     "TuneModelRequest",

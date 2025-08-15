@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class GrafeasRestInterceptor:
@@ -198,11 +202,36 @@ class GrafeasRestInterceptor:
     ) -> grafeas.BatchCreateNotesResponse:
         """Post-rpc interceptor for batch_create_notes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_create_notes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_create_notes` interceptor runs
+        before the `post_batch_create_notes_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_create_notes_with_metadata(
+        self,
+        response: grafeas.BatchCreateNotesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        grafeas.BatchCreateNotesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for batch_create_notes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_batch_create_notes_with_metadata`
+        interceptor in new development instead of the `post_batch_create_notes` interceptor.
+        When both interceptors are used, this `post_batch_create_notes_with_metadata` interceptor runs after the
+        `post_batch_create_notes` interceptor. The (possibly modified) response returned by
+        `post_batch_create_notes` will be passed to
+        `post_batch_create_notes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_batch_create_occurrences(
         self,
@@ -223,11 +252,36 @@ class GrafeasRestInterceptor:
     ) -> grafeas.BatchCreateOccurrencesResponse:
         """Post-rpc interceptor for batch_create_occurrences
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_create_occurrences_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_create_occurrences` interceptor runs
+        before the `post_batch_create_occurrences_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_create_occurrences_with_metadata(
+        self,
+        response: grafeas.BatchCreateOccurrencesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        grafeas.BatchCreateOccurrencesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for batch_create_occurrences
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_batch_create_occurrences_with_metadata`
+        interceptor in new development instead of the `post_batch_create_occurrences` interceptor.
+        When both interceptors are used, this `post_batch_create_occurrences_with_metadata` interceptor runs after the
+        `post_batch_create_occurrences` interceptor. The (possibly modified) response returned by
+        `post_batch_create_occurrences` will be passed to
+        `post_batch_create_occurrences_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_note(
         self,
@@ -244,11 +298,32 @@ class GrafeasRestInterceptor:
     def post_create_note(self, response: grafeas.Note) -> grafeas.Note:
         """Post-rpc interceptor for create_note
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_note_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_note` interceptor runs
+        before the `post_create_note_with_metadata` interceptor.
         """
         return response
+
+    def post_create_note_with_metadata(
+        self, response: grafeas.Note, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[grafeas.Note, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_note
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_create_note_with_metadata`
+        interceptor in new development instead of the `post_create_note` interceptor.
+        When both interceptors are used, this `post_create_note_with_metadata` interceptor runs after the
+        `post_create_note` interceptor. The (possibly modified) response returned by
+        `post_create_note` will be passed to
+        `post_create_note_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_occurrence(
         self,
@@ -269,11 +344,34 @@ class GrafeasRestInterceptor:
     ) -> grafeas.Occurrence:
         """Post-rpc interceptor for create_occurrence
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_occurrence_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_occurrence` interceptor runs
+        before the `post_create_occurrence_with_metadata` interceptor.
         """
         return response
+
+    def post_create_occurrence_with_metadata(
+        self,
+        response: grafeas.Occurrence,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[grafeas.Occurrence, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_occurrence
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_create_occurrence_with_metadata`
+        interceptor in new development instead of the `post_create_occurrence` interceptor.
+        When both interceptors are used, this `post_create_occurrence_with_metadata` interceptor runs after the
+        `post_create_occurrence` interceptor. The (possibly modified) response returned by
+        `post_create_occurrence` will be passed to
+        `post_create_occurrence_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_note(
         self,
@@ -316,11 +414,32 @@ class GrafeasRestInterceptor:
     def post_get_note(self, response: grafeas.Note) -> grafeas.Note:
         """Post-rpc interceptor for get_note
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_note_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_note` interceptor runs
+        before the `post_get_note_with_metadata` interceptor.
         """
         return response
+
+    def post_get_note_with_metadata(
+        self, response: grafeas.Note, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[grafeas.Note, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_note
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_get_note_with_metadata`
+        interceptor in new development instead of the `post_get_note` interceptor.
+        When both interceptors are used, this `post_get_note_with_metadata` interceptor runs after the
+        `post_get_note` interceptor. The (possibly modified) response returned by
+        `post_get_note` will be passed to
+        `post_get_note_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_occurrence(
         self,
@@ -337,11 +456,34 @@ class GrafeasRestInterceptor:
     def post_get_occurrence(self, response: grafeas.Occurrence) -> grafeas.Occurrence:
         """Post-rpc interceptor for get_occurrence
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_occurrence_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_occurrence` interceptor runs
+        before the `post_get_occurrence_with_metadata` interceptor.
         """
         return response
+
+    def post_get_occurrence_with_metadata(
+        self,
+        response: grafeas.Occurrence,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[grafeas.Occurrence, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_occurrence
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_get_occurrence_with_metadata`
+        interceptor in new development instead of the `post_get_occurrence` interceptor.
+        When both interceptors are used, this `post_get_occurrence_with_metadata` interceptor runs after the
+        `post_get_occurrence` interceptor. The (possibly modified) response returned by
+        `post_get_occurrence` will be passed to
+        `post_get_occurrence_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_occurrence_note(
         self,
@@ -360,11 +502,32 @@ class GrafeasRestInterceptor:
     def post_get_occurrence_note(self, response: grafeas.Note) -> grafeas.Note:
         """Post-rpc interceptor for get_occurrence_note
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_occurrence_note_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_occurrence_note` interceptor runs
+        before the `post_get_occurrence_note_with_metadata` interceptor.
         """
         return response
+
+    def post_get_occurrence_note_with_metadata(
+        self, response: grafeas.Note, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[grafeas.Note, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_occurrence_note
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_get_occurrence_note_with_metadata`
+        interceptor in new development instead of the `post_get_occurrence_note` interceptor.
+        When both interceptors are used, this `post_get_occurrence_note_with_metadata` interceptor runs after the
+        `post_get_occurrence_note` interceptor. The (possibly modified) response returned by
+        `post_get_occurrence_note` will be passed to
+        `post_get_occurrence_note_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_note_occurrences(
         self,
@@ -385,11 +548,36 @@ class GrafeasRestInterceptor:
     ) -> grafeas.ListNoteOccurrencesResponse:
         """Post-rpc interceptor for list_note_occurrences
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_note_occurrences_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_note_occurrences` interceptor runs
+        before the `post_list_note_occurrences_with_metadata` interceptor.
         """
         return response
+
+    def post_list_note_occurrences_with_metadata(
+        self,
+        response: grafeas.ListNoteOccurrencesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        grafeas.ListNoteOccurrencesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_note_occurrences
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_list_note_occurrences_with_metadata`
+        interceptor in new development instead of the `post_list_note_occurrences` interceptor.
+        When both interceptors are used, this `post_list_note_occurrences_with_metadata` interceptor runs after the
+        `post_list_note_occurrences` interceptor. The (possibly modified) response returned by
+        `post_list_note_occurrences` will be passed to
+        `post_list_note_occurrences_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_notes(
         self,
@@ -408,11 +596,34 @@ class GrafeasRestInterceptor:
     ) -> grafeas.ListNotesResponse:
         """Post-rpc interceptor for list_notes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_notes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_notes` interceptor runs
+        before the `post_list_notes_with_metadata` interceptor.
         """
         return response
+
+    def post_list_notes_with_metadata(
+        self,
+        response: grafeas.ListNotesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[grafeas.ListNotesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_notes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_list_notes_with_metadata`
+        interceptor in new development instead of the `post_list_notes` interceptor.
+        When both interceptors are used, this `post_list_notes_with_metadata` interceptor runs after the
+        `post_list_notes` interceptor. The (possibly modified) response returned by
+        `post_list_notes` will be passed to
+        `post_list_notes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_occurrences(
         self,
@@ -431,11 +642,36 @@ class GrafeasRestInterceptor:
     ) -> grafeas.ListOccurrencesResponse:
         """Post-rpc interceptor for list_occurrences
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_occurrences_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_occurrences` interceptor runs
+        before the `post_list_occurrences_with_metadata` interceptor.
         """
         return response
+
+    def post_list_occurrences_with_metadata(
+        self,
+        response: grafeas.ListOccurrencesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        grafeas.ListOccurrencesResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_occurrences
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_list_occurrences_with_metadata`
+        interceptor in new development instead of the `post_list_occurrences` interceptor.
+        When both interceptors are used, this `post_list_occurrences_with_metadata` interceptor runs after the
+        `post_list_occurrences` interceptor. The (possibly modified) response returned by
+        `post_list_occurrences` will be passed to
+        `post_list_occurrences_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_note(
         self,
@@ -452,11 +688,32 @@ class GrafeasRestInterceptor:
     def post_update_note(self, response: grafeas.Note) -> grafeas.Note:
         """Post-rpc interceptor for update_note
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_note_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_note` interceptor runs
+        before the `post_update_note_with_metadata` interceptor.
         """
         return response
+
+    def post_update_note_with_metadata(
+        self, response: grafeas.Note, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[grafeas.Note, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_note
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_update_note_with_metadata`
+        interceptor in new development instead of the `post_update_note` interceptor.
+        When both interceptors are used, this `post_update_note_with_metadata` interceptor runs after the
+        `post_update_note` interceptor. The (possibly modified) response returned by
+        `post_update_note` will be passed to
+        `post_update_note_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_occurrence(
         self,
@@ -477,11 +734,34 @@ class GrafeasRestInterceptor:
     ) -> grafeas.Occurrence:
         """Post-rpc interceptor for update_occurrence
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_occurrence_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Grafeas server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_occurrence` interceptor runs
+        before the `post_update_occurrence_with_metadata` interceptor.
         """
         return response
+
+    def post_update_occurrence_with_metadata(
+        self,
+        response: grafeas.Occurrence,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[grafeas.Occurrence, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_occurrence
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Grafeas server but before it is returned to user code.
+
+        We recommend only using this `post_update_occurrence_with_metadata`
+        interceptor in new development instead of the `post_update_occurrence` interceptor.
+        When both interceptors are used, this `post_update_occurrence_with_metadata` interceptor runs after the
+        `post_update_occurrence` interceptor. The (possibly modified) response returned by
+        `post_update_occurrence` will be passed to
+        `post_update_occurrence_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -716,6 +996,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_create_notes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_create_notes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -869,6 +1153,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_create_occurrences(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_create_occurrences_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1019,6 +1307,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_note(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_note_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1175,6 +1467,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_occurrence(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_occurrence_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1535,6 +1831,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_note(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_note_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1679,6 +1979,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_occurrence(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_occurrence_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1826,6 +2130,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_occurrence_note(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_occurrence_note_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1971,6 +2279,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_note_occurrences(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_note_occurrences_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2113,6 +2425,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_notes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_notes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2259,6 +2575,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_occurrences(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_occurrences_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2407,6 +2727,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_note(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_note_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2563,6 +2887,10 @@ class GrafeasRestTransport(_BaseGrafeasRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_occurrence(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_occurrence_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

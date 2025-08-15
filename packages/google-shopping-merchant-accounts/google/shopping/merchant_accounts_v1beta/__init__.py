@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@ from .services.autofeed_settings_service import (
     AutofeedSettingsServiceAsyncClient,
     AutofeedSettingsServiceClient,
 )
+from .services.automatic_improvements_service import (
+    AutomaticImprovementsServiceAsyncClient,
+    AutomaticImprovementsServiceClient,
+)
 from .services.business_identity_service import (
     BusinessIdentityServiceAsyncClient,
     BusinessIdentityServiceClient,
@@ -39,11 +43,27 @@ from .services.business_info_service import (
     BusinessInfoServiceAsyncClient,
     BusinessInfoServiceClient,
 )
+from .services.checkout_settings_service import (
+    CheckoutSettingsServiceAsyncClient,
+    CheckoutSettingsServiceClient,
+)
 from .services.email_preferences_service import (
     EmailPreferencesServiceAsyncClient,
     EmailPreferencesServiceClient,
 )
+from .services.gbp_accounts_service import (
+    GbpAccountsServiceAsyncClient,
+    GbpAccountsServiceClient,
+)
 from .services.homepage_service import HomepageServiceAsyncClient, HomepageServiceClient
+from .services.lfp_providers_service import (
+    LfpProvidersServiceAsyncClient,
+    LfpProvidersServiceClient,
+)
+from .services.omnichannel_settings_service import (
+    OmnichannelSettingsServiceAsyncClient,
+    OmnichannelSettingsServiceClient,
+)
 from .services.online_return_policy_service import (
     OnlineReturnPolicyServiceAsyncClient,
     OnlineReturnPolicyServiceClient,
@@ -93,6 +113,14 @@ from .types.autofeedsettings import (
     GetAutofeedSettingsRequest,
     UpdateAutofeedSettingsRequest,
 )
+from .types.automaticimprovements import (
+    AutomaticImageImprovements,
+    AutomaticImprovements,
+    AutomaticItemUpdates,
+    AutomaticShippingImprovements,
+    GetAutomaticImprovementsRequest,
+    UpdateAutomaticImprovementsRequest,
+)
 from .types.businessidentity import (
     BusinessIdentity,
     GetBusinessIdentityRequest,
@@ -103,11 +131,26 @@ from .types.businessinfo import (
     GetBusinessInfoRequest,
     UpdateBusinessInfoRequest,
 )
+from .types.checkoutsettings import (
+    CheckoutSettings,
+    CreateCheckoutSettingsRequest,
+    DeleteCheckoutSettingsRequest,
+    GetCheckoutSettingsRequest,
+    UpdateCheckoutSettingsRequest,
+    UriSettings,
+)
 from .types.customerservice import CustomerService
 from .types.emailpreferences import (
     EmailPreferences,
     GetEmailPreferencesRequest,
     UpdateEmailPreferencesRequest,
+)
+from .types.gbpaccounts import (
+    GbpAccount,
+    LinkGbpAccountRequest,
+    LinkGbpAccountResponse,
+    ListGbpAccountsRequest,
+    ListGbpAccountsResponse,
 )
 from .types.homepage import (
     ClaimHomepageRequest,
@@ -116,11 +159,38 @@ from .types.homepage import (
     UnclaimHomepageRequest,
     UpdateHomepageRequest,
 )
+from .types.lfpproviders import (
+    FindLfpProvidersRequest,
+    FindLfpProvidersResponse,
+    LfpProvider,
+    LinkLfpProviderRequest,
+    LinkLfpProviderResponse,
+)
+from .types.omnichannelsettings import (
+    About,
+    CreateOmnichannelSettingRequest,
+    GetOmnichannelSettingRequest,
+    InStock,
+    InventoryVerification,
+    LfpLink,
+    ListOmnichannelSettingsRequest,
+    ListOmnichannelSettingsResponse,
+    OmnichannelSetting,
+    OnDisplayToOrder,
+    Pickup,
+    RequestInventoryVerificationRequest,
+    RequestInventoryVerificationResponse,
+    ReviewState,
+    UpdateOmnichannelSettingRequest,
+)
 from .types.online_return_policy import (
+    CreateOnlineReturnPolicyRequest,
+    DeleteOnlineReturnPolicyRequest,
     GetOnlineReturnPolicyRequest,
     ListOnlineReturnPoliciesRequest,
     ListOnlineReturnPoliciesResponse,
     OnlineReturnPolicy,
+    UpdateOnlineReturnPolicyRequest,
 )
 from .types.phoneverificationstate import PhoneVerificationState
 from .types.programs import (
@@ -193,10 +263,15 @@ __all__ = (
     "AccountTaxServiceAsyncClient",
     "AccountsServiceAsyncClient",
     "AutofeedSettingsServiceAsyncClient",
+    "AutomaticImprovementsServiceAsyncClient",
     "BusinessIdentityServiceAsyncClient",
     "BusinessInfoServiceAsyncClient",
+    "CheckoutSettingsServiceAsyncClient",
     "EmailPreferencesServiceAsyncClient",
+    "GbpAccountsServiceAsyncClient",
     "HomepageServiceAsyncClient",
+    "LfpProvidersServiceAsyncClient",
+    "OmnichannelSettingsServiceAsyncClient",
     "OnlineReturnPolicyServiceAsyncClient",
     "ProgramsServiceAsyncClient",
     "RegionsServiceAsyncClient",
@@ -204,6 +279,7 @@ __all__ = (
     "TermsOfServiceAgreementStateServiceAsyncClient",
     "TermsOfServiceServiceAsyncClient",
     "UserServiceAsyncClient",
+    "About",
     "AcceptTermsOfServiceRequest",
     "Accepted",
     "AccessRight",
@@ -217,19 +293,31 @@ __all__ = (
     "Address",
     "AutofeedSettings",
     "AutofeedSettingsServiceClient",
+    "AutomaticImageImprovements",
+    "AutomaticImprovements",
+    "AutomaticImprovementsServiceClient",
+    "AutomaticItemUpdates",
+    "AutomaticShippingImprovements",
     "BusinessDayConfig",
     "BusinessIdentity",
     "BusinessIdentityServiceClient",
     "BusinessInfo",
     "BusinessInfoServiceClient",
     "CarrierRate",
+    "CheckoutSettings",
+    "CheckoutSettingsServiceClient",
     "ClaimHomepageRequest",
     "CreateAndConfigureAccountRequest",
+    "CreateCheckoutSettingsRequest",
+    "CreateOmnichannelSettingRequest",
+    "CreateOnlineReturnPolicyRequest",
     "CreateRegionRequest",
     "CreateUserRequest",
     "CustomerService",
     "CutoffTime",
     "DeleteAccountRequest",
+    "DeleteCheckoutSettingsRequest",
+    "DeleteOnlineReturnPolicyRequest",
     "DeleteRegionRequest",
     "DeleteUserRequest",
     "DeliveryTime",
@@ -238,13 +326,20 @@ __all__ = (
     "EmailPreferences",
     "EmailPreferencesServiceClient",
     "EnableProgramRequest",
+    "FindLfpProvidersRequest",
+    "FindLfpProvidersResponse",
+    "GbpAccount",
+    "GbpAccountsServiceClient",
     "GetAccountRequest",
     "GetAccountTaxRequest",
     "GetAutofeedSettingsRequest",
+    "GetAutomaticImprovementsRequest",
     "GetBusinessIdentityRequest",
     "GetBusinessInfoRequest",
+    "GetCheckoutSettingsRequest",
     "GetEmailPreferencesRequest",
     "GetHomepageRequest",
+    "GetOmnichannelSettingRequest",
     "GetOnlineReturnPolicyRequest",
     "GetProgramRequest",
     "GetRegionRequest",
@@ -255,13 +350,26 @@ __all__ = (
     "Headers",
     "Homepage",
     "HomepageServiceClient",
+    "InStock",
     "InsertShippingSettingsRequest",
+    "InventoryVerification",
+    "LfpLink",
+    "LfpProvider",
+    "LfpProvidersServiceClient",
+    "LinkGbpAccountRequest",
+    "LinkGbpAccountResponse",
+    "LinkLfpProviderRequest",
+    "LinkLfpProviderResponse",
     "ListAccountIssuesRequest",
     "ListAccountIssuesResponse",
     "ListAccountTaxRequest",
     "ListAccountTaxResponse",
     "ListAccountsRequest",
     "ListAccountsResponse",
+    "ListGbpAccountsRequest",
+    "ListGbpAccountsResponse",
+    "ListOmnichannelSettingsRequest",
+    "ListOmnichannelSettingsResponse",
     "ListOnlineReturnPoliciesRequest",
     "ListOnlineReturnPoliciesResponse",
     "ListProgramsRequest",
@@ -274,17 +382,24 @@ __all__ = (
     "ListUsersResponse",
     "LocationIdSet",
     "MinimumOrderValueTable",
+    "OmnichannelSetting",
+    "OmnichannelSettingsServiceClient",
+    "OnDisplayToOrder",
     "OnlineReturnPolicy",
     "OnlineReturnPolicyServiceClient",
     "PhoneVerificationState",
+    "Pickup",
     "Program",
     "ProgramsServiceClient",
     "RateGroup",
     "Region",
     "RegionsServiceClient",
+    "RequestInventoryVerificationRequest",
+    "RequestInventoryVerificationResponse",
     "Required",
     "RetrieveForApplicationTermsOfServiceAgreementStateRequest",
     "RetrieveLatestTermsOfServiceRequest",
+    "ReviewState",
     "Row",
     "Service",
     "ShippingSettings",
@@ -301,12 +416,17 @@ __all__ = (
     "UpdateAccountRequest",
     "UpdateAccountTaxRequest",
     "UpdateAutofeedSettingsRequest",
+    "UpdateAutomaticImprovementsRequest",
     "UpdateBusinessIdentityRequest",
     "UpdateBusinessInfoRequest",
+    "UpdateCheckoutSettingsRequest",
     "UpdateEmailPreferencesRequest",
     "UpdateHomepageRequest",
+    "UpdateOmnichannelSettingRequest",
+    "UpdateOnlineReturnPolicyRequest",
     "UpdateRegionRequest",
     "UpdateUserRequest",
+    "UriSettings",
     "User",
     "UserServiceClient",
     "Value",

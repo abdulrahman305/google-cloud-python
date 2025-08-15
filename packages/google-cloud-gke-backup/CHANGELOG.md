@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.5.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.18...google-cloud-gke-backup-v0.5.19) (2025-05-15)
+
+
+### Features
+
+* Add BackupChannel field in BackupPlan ([091f988](https://github.com/googleapis/google-cloud-python/commit/091f988fe45f5859c7540dabc809cc20aa9c5bfc))
+* Add BackupConfig of Backups in BackupPlanBinding ([091f988](https://github.com/googleapis/google-cloud-python/commit/091f988fe45f5859c7540dabc809cc20aa9c5bfc))
+* Add RestoreChannel field in RestorePlan ([091f988](https://github.com/googleapis/google-cloud-python/commit/091f988fe45f5859c7540dabc809cc20aa9c5bfc))
+* Add support for Project ID in BackupChannel and RestoreChannel ([091f988](https://github.com/googleapis/google-cloud-python/commit/091f988fe45f5859c7540dabc809cc20aa9c5bfc))
+
+
+### Documentation
+
+* minor documentation fixes ([091f988](https://github.com/googleapis/google-cloud-python/commit/091f988fe45f5859c7540dabc809cc20aa9c5bfc))
+
+## [0.5.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.17...google-cloud-gke-backup-v0.5.18) (2025-04-23)
+
+
+### Features
+
+* Adding `CLEANED_UP` enum in state field of volume.proto ([5900059](https://github.com/googleapis/google-cloud-python/commit/5900059276c15615ff178952384d0d4ee28e03c8))
+* Adding `last_successful_backup_time` field in BackupPlan ([5900059](https://github.com/googleapis/google-cloud-python/commit/5900059276c15615ff178952384d0d4ee28e03c8))
+* Adding `VALIDATING` enum in state field of restore.proto ([5900059](https://github.com/googleapis/google-cloud-python/commit/5900059276c15615ff178952384d0d4ee28e03c8))
+* Adding new BackupChannel, RestoreChannel, BackupPlanBinding and RestorePlanBinding ([5900059](https://github.com/googleapis/google-cloud-python/commit/5900059276c15615ff178952384d0d4ee28e03c8))
+
+
+### Documentation
+
+* minor documentation fixes ([5900059](https://github.com/googleapis/google-cloud-python/commit/5900059276c15615ff178952384d0d4ee28e03c8))
+
+## [0.5.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.16...google-cloud-gke-backup-v0.5.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.5.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.15...google-cloud-gke-backup-v0.5.16) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [0.5.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.14...google-cloud-gke-backup-v0.5.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [0.5.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-gke-backup-v0.5.13...google-cloud-gke-backup-v0.5.14) (2024-12-12)
 
 

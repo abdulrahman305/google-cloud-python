@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-visionai-v0.1.9...google-cloud-visionai-v0.1.10) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([0131a33](https://github.com/googleapis/google-cloud-python/commit/0131a33582f84d9be5ecb1c0ef8b56aa3d9e9cf0))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-cloud-visionai-v0.1.8...google-cloud-visionai-v0.1.9) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-visionai-v0.1.7...google-cloud-visionai-v0.1.8) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-visionai-v0.1.6...google-cloud-visionai-v0.1.7) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-visionai-v0.1.5...google-cloud-visionai-v0.1.6) (2024-12-12)
 
 

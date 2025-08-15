@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,8 +105,8 @@ class SubmitBuildRequest(proto.Message):
                 build will clean up the temporary image on a best-effort
                 basis.
             base_image (str):
-                Optional. The base image used to opt into
-                automatic base image updates.
+                Optional. The base image to use for the
+                build.
             environment_variables (MutableMapping[str, str]):
                 Optional. User-provided build-time
                 environment variables.
@@ -116,6 +116,10 @@ class SubmitBuildRequest(proto.Message):
                 image updates. When true, the application will
                 be built on a scratch base image, so the base
                 layers can be appended at run time.
+            project_descriptor (str):
+                Optional. project_descriptor stores the path to the project
+                descriptor file. When empty, it means that there is no
+                project descriptor file in the source.
         """
 
         runtime: str = proto.Field(
@@ -142,6 +146,10 @@ class SubmitBuildRequest(proto.Message):
         enable_automatic_updates: bool = proto.Field(
             proto.BOOL,
             number=6,
+        )
+        project_descriptor: str = proto.Field(
+            proto.STRING,
+            number=7,
         )
 
     parent: str = proto.Field(

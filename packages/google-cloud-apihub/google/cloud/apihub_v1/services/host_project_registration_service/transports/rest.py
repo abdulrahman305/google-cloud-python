@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class HostProjectRegistrationServiceRestInterceptor:
@@ -120,11 +124,37 @@ class HostProjectRegistrationServiceRestInterceptor:
     ) -> host_project_registration_service.HostProjectRegistration:
         """Post-rpc interceptor for create_host_project_registration
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_host_project_registration_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the HostProjectRegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_host_project_registration` interceptor runs
+        before the `post_create_host_project_registration_with_metadata` interceptor.
         """
         return response
+
+    def post_create_host_project_registration_with_metadata(
+        self,
+        response: host_project_registration_service.HostProjectRegistration,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        host_project_registration_service.HostProjectRegistration,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for create_host_project_registration
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the HostProjectRegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_create_host_project_registration_with_metadata`
+        interceptor in new development instead of the `post_create_host_project_registration` interceptor.
+        When both interceptors are used, this `post_create_host_project_registration_with_metadata` interceptor runs after the
+        `post_create_host_project_registration` interceptor. The (possibly modified) response returned by
+        `post_create_host_project_registration` will be passed to
+        `post_create_host_project_registration_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_host_project_registration(
         self,
@@ -146,11 +176,37 @@ class HostProjectRegistrationServiceRestInterceptor:
     ) -> host_project_registration_service.HostProjectRegistration:
         """Post-rpc interceptor for get_host_project_registration
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_host_project_registration_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the HostProjectRegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_host_project_registration` interceptor runs
+        before the `post_get_host_project_registration_with_metadata` interceptor.
         """
         return response
+
+    def post_get_host_project_registration_with_metadata(
+        self,
+        response: host_project_registration_service.HostProjectRegistration,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        host_project_registration_service.HostProjectRegistration,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_host_project_registration
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the HostProjectRegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_get_host_project_registration_with_metadata`
+        interceptor in new development instead of the `post_get_host_project_registration` interceptor.
+        When both interceptors are used, this `post_get_host_project_registration_with_metadata` interceptor runs after the
+        `post_get_host_project_registration` interceptor. The (possibly modified) response returned by
+        `post_get_host_project_registration` will be passed to
+        `post_get_host_project_registration_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_host_project_registrations(
         self,
@@ -173,11 +229,37 @@ class HostProjectRegistrationServiceRestInterceptor:
     ) -> host_project_registration_service.ListHostProjectRegistrationsResponse:
         """Post-rpc interceptor for list_host_project_registrations
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_host_project_registrations_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the HostProjectRegistrationService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_host_project_registrations` interceptor runs
+        before the `post_list_host_project_registrations_with_metadata` interceptor.
         """
         return response
+
+    def post_list_host_project_registrations_with_metadata(
+        self,
+        response: host_project_registration_service.ListHostProjectRegistrationsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        host_project_registration_service.ListHostProjectRegistrationsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_host_project_registrations
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the HostProjectRegistrationService server but before it is returned to user code.
+
+        We recommend only using this `post_list_host_project_registrations_with_metadata`
+        interceptor in new development instead of the `post_list_host_project_registrations` interceptor.
+        When both interceptors are used, this `post_list_host_project_registrations_with_metadata` interceptor runs after the
+        `post_list_host_project_registrations` interceptor. The (possibly modified) response returned by
+        `post_list_host_project_registrations` will be passed to
+        `post_list_host_project_registrations_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -558,6 +640,13 @@ class HostProjectRegistrationServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_host_project_registration(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_create_host_project_registration_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -718,6 +807,13 @@ class HostProjectRegistrationServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_host_project_registration(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_get_host_project_registration_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -875,6 +971,13 @@ class HostProjectRegistrationServiceRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_host_project_registrations(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_list_host_project_registrations_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

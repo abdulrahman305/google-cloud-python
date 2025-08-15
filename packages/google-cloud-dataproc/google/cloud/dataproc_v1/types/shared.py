@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ __protobuf__ = proto.module(
         "KubernetesSoftwareConfig",
         "GkeNodePoolTarget",
         "GkeNodePoolConfig",
+        "AuthenticationConfig",
         "AutotuningConfig",
         "RepositoryConfig",
         "PyPiRepositoryConfig",
@@ -59,6 +60,8 @@ class Component(proto.Enum):
             (https://cloud.google.com/dataproc/docs/concepts/versioning/dataproc-version-clusters#supported-dataproc-image-versions).
             It cannot be activated on clusters created with supported
             Dataproc on Compute Engine image versions.
+        DELTA (20):
+            Delta Lake.
         DOCKER (13):
             Docker
         DRUID (9):
@@ -72,8 +75,12 @@ class Component(proto.Enum):
             accessing HCatalog).
         HUDI (18):
             Hudi.
+        ICEBERG (19):
+            Iceberg.
         JUPYTER (1):
             The Jupyter Notebook.
+        PIG (21):
+            The Pig component.
         PRESTO (6):
             The Presto query engine.
         TRINO (17):
@@ -89,13 +96,16 @@ class Component(proto.Enum):
     """
     COMPONENT_UNSPECIFIED = 0
     ANACONDA = 5
+    DELTA = 20
     DOCKER = 13
     DRUID = 9
     FLINK = 14
     HBASE = 11
     HIVE_WEBHCAT = 3
     HUDI = 18
+    ICEBERG = 19
     JUPYTER = 1
+    PIG = 21
     PRESTO = 6
     TRINO = 17
     RANGER = 12
@@ -270,6 +280,13 @@ class ExecutionConfig(proto.Message):
             project-level, per-location staging and temporary buckets.
             **This field requires a Cloud Storage bucket name, not a
             ``gs://...`` URI to a Cloud Storage bucket.**
+        authentication_config (google.cloud.dataproc_v1.types.AuthenticationConfig):
+            Optional. Authentication configuration used
+            to set the default identity for the workload
+            execution. The config specifies the type of
+            identity (service account or user) that will be
+            used by workloads to access resources on the
+            project(s).
     """
 
     service_account: str = proto.Field(
@@ -307,6 +324,11 @@ class ExecutionConfig(proto.Message):
     staging_bucket: str = proto.Field(
         proto.STRING,
         number=10,
+    )
+    authentication_config: "AuthenticationConfig" = proto.Field(
+        proto.MESSAGE,
+        number=11,
+        message="AuthenticationConfig",
     )
 
 
@@ -888,6 +910,46 @@ class GkeNodePoolConfig(proto.Message):
     )
 
 
+class AuthenticationConfig(proto.Message):
+    r"""Authentication configuration for a workload is used to set
+    the default identity for the workload execution.
+    The config specifies the type of identity (service account or
+    user) that will be used by workloads to access resources on the
+    project(s).
+
+    Attributes:
+        user_workload_authentication_type (google.cloud.dataproc_v1.types.AuthenticationConfig.AuthenticationType):
+            Optional. Authentication type for the user
+            workload running in containers.
+    """
+
+    class AuthenticationType(proto.Enum):
+        r"""Authentication types for workload execution.
+
+        Values:
+            AUTHENTICATION_TYPE_UNSPECIFIED (0):
+                If AuthenticationType is unspecified then
+                END_USER_CREDENTIALS is used for 3.0 and newer runtimes, and
+                SERVICE_ACCOUNT is used for older runtimes.
+            SERVICE_ACCOUNT (1):
+                Use service account credentials for
+                authenticating to other services.
+            END_USER_CREDENTIALS (2):
+                Use OAuth credentials associated with the
+                workload creator/user for authenticating to
+                other services.
+        """
+        AUTHENTICATION_TYPE_UNSPECIFIED = 0
+        SERVICE_ACCOUNT = 1
+        END_USER_CREDENTIALS = 2
+
+    user_workload_authentication_type: AuthenticationType = proto.Field(
+        proto.ENUM,
+        number=1,
+        enum=AuthenticationType,
+    )
+
+
 class AutotuningConfig(proto.Message):
     r"""Autotuning configuration of the workload.
 
@@ -912,11 +974,17 @@ class AutotuningConfig(proto.Message):
                 broadcasts.
             MEMORY (4):
                 Memory management for workloads.
+            NONE (5):
+                No autotuning.
+            AUTO (6):
+                Automatic selection of scenarios.
         """
         SCENARIO_UNSPECIFIED = 0
         SCALING = 2
         BROADCAST_HASH_JOIN = 3
         MEMORY = 4
+        NONE = 5
+        AUTO = 6
 
     scenarios: MutableSequence[Scenario] = proto.RepeatedField(
         proto.ENUM,

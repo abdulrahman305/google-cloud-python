@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,10 +45,12 @@ from google.cloud.devtools.cloudbuild_v1.types.cloudbuild import (
     DeleteBuildTriggerRequest,
     DeleteWorkerPoolOperationMetadata,
     DeleteWorkerPoolRequest,
+    Dependency,
     FileHashes,
     GetBuildRequest,
     GetBuildTriggerRequest,
     GetWorkerPoolRequest,
+    GitConfig,
     GitFileSource,
     GitHubEnterpriseConfig,
     GitHubEnterpriseSecrets,
@@ -85,6 +87,7 @@ from google.cloud.devtools.cloudbuild_v1.types.cloudbuild import (
     UpdateBuildTriggerRequest,
     UpdateWorkerPoolOperationMetadata,
     UpdateWorkerPoolRequest,
+    UploadedGoModule,
     UploadedMavenArtifact,
     UploadedNpmPackage,
     UploadedPythonPackage,
@@ -116,10 +119,12 @@ __all__ = (
     "DeleteBuildTriggerRequest",
     "DeleteWorkerPoolOperationMetadata",
     "DeleteWorkerPoolRequest",
+    "Dependency",
     "FileHashes",
     "GetBuildRequest",
     "GetBuildTriggerRequest",
     "GetWorkerPoolRequest",
+    "GitConfig",
     "GitFileSource",
     "GitHubEnterpriseConfig",
     "GitHubEnterpriseSecrets",
@@ -156,6 +161,7 @@ __all__ = (
     "UpdateBuildTriggerRequest",
     "UpdateWorkerPoolOperationMetadata",
     "UpdateWorkerPoolRequest",
+    "UploadedGoModule",
     "UploadedMavenArtifact",
     "UploadedNpmPackage",
     "UploadedPythonPackage",

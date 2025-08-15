@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,20 @@ from .explanations import (
     BindingExplanation,
     ExplainedPolicy,
     HeuristicRelevance,
+)
+from .orgpolicy import (
+    CreateOrgPolicyViolationsPreviewOperationMetadata,
+    CreateOrgPolicyViolationsPreviewRequest,
+    GetOrgPolicyViolationsPreviewRequest,
+    ListOrgPolicyViolationsPreviewsRequest,
+    ListOrgPolicyViolationsPreviewsResponse,
+    ListOrgPolicyViolationsRequest,
+    ListOrgPolicyViolationsResponse,
+    OrgPolicyOverlay,
+    OrgPolicyViolation,
+    OrgPolicyViolationsPreview,
+    PreviewState,
+    ResourceContext,
 )
 from .simulator import (
     AccessStateDiff,
@@ -40,6 +54,18 @@ __all__ = (
     "ExplainedPolicy",
     "AccessState",
     "HeuristicRelevance",
+    "CreateOrgPolicyViolationsPreviewOperationMetadata",
+    "CreateOrgPolicyViolationsPreviewRequest",
+    "GetOrgPolicyViolationsPreviewRequest",
+    "ListOrgPolicyViolationsPreviewsRequest",
+    "ListOrgPolicyViolationsPreviewsResponse",
+    "ListOrgPolicyViolationsRequest",
+    "ListOrgPolicyViolationsResponse",
+    "OrgPolicyOverlay",
+    "OrgPolicyViolation",
+    "OrgPolicyViolationsPreview",
+    "ResourceContext",
+    "PreviewState",
     "AccessStateDiff",
     "CreateReplayRequest",
     "ExplainedAccess",

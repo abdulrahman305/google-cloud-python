@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,9 @@ __protobuf__ = proto.module(
         "CreateAutonomousDatabaseRequest",
         "DeleteAutonomousDatabaseRequest",
         "RestoreAutonomousDatabaseRequest",
+        "StopAutonomousDatabaseRequest",
+        "StartAutonomousDatabaseRequest",
+        "RestartAutonomousDatabaseRequest",
         "GenerateAutonomousDatabaseWalletRequest",
         "GenerateAutonomousDatabaseWalletResponse",
         "ListAutonomousDbVersionsRequest",
@@ -977,6 +980,54 @@ class RestoreAutonomousDatabaseRequest(proto.Message):
         proto.MESSAGE,
         number=2,
         message=timestamp_pb2.Timestamp,
+    )
+
+
+class StopAutonomousDatabaseRequest(proto.Message):
+    r"""The request for ``AutonomousDatabase.Stop``.
+
+    Attributes:
+        name (str):
+            Required. The name of the Autonomous Database in the
+            following format:
+            projects/{project}/locations/{location}/autonomousDatabases/{autonomous_database}.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class StartAutonomousDatabaseRequest(proto.Message):
+    r"""The request for ``AutonomousDatabase.Start``.
+
+    Attributes:
+        name (str):
+            Required. The name of the Autonomous Database in the
+            following format:
+            projects/{project}/locations/{location}/autonomousDatabases/{autonomous_database}.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
+class RestartAutonomousDatabaseRequest(proto.Message):
+    r"""The request for ``AutonomousDatabase.Restart``.
+
+    Attributes:
+        name (str):
+            Required. The name of the Autonomous Database in the
+            following format:
+            projects/{project}/locations/{location}/autonomousDatabases/{autonomous_database}.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
     )
 
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.18.19](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.18...google-analytics-data-v0.18.19) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([1562bb7](https://github.com/googleapis/google-cloud-python/commit/1562bb740c7cd56179e52185dde3c32af861de5e))
+
+## [0.18.18](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.17...google-analytics-data-v0.18.18) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.18.17](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.16...google-analytics-data-v0.18.17) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
 ## [0.18.16](https://github.com/googleapis/google-cloud-python/compare/google-analytics-data-v0.18.15...google-analytics-data-v0.18.16) (2024-12-12)
 
 

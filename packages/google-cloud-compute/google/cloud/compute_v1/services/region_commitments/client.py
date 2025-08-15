@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 #
 from collections import OrderedDict
 import functools
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -42,6 +44,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.compute_v1 import gapic_version as package_version
 
@@ -461,6 +464,33 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -735,7 +765,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project])
+        flattened_params = [project]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -857,21 +890,25 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
 
         Returns:
             google.cloud.compute_v1.types.Commitment:
-                Represents a regional Commitment
-                resource. Creating a commitment resource
-                means that you are purchasing a
-                committed use contract with an explicit
-                start and end time. You can create
-                commitments based on vCPUs and memory
-                usage and receive discounted rates. For
-                full details, read Signing Up for
-                Committed Use Discounts.
+                Represents a regional resource-based
+                commitment resource. Creating this
+                commitment resource means that you are
+                purchasing a resource-based committed
+                use contract, with an explicit start and
+                end time. You can purchase
+                resource-based commitments for both
+                hardware and software resources. For
+                more information, read Resource-based
+                committed use discounts
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region, commitment])
+        flattened_params = [project, region, commitment]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -999,7 +1036,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region, commitment_resource])
+        flattened_params = [project, region, commitment_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1126,7 +1166,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region, commitment_resource])
+        flattened_params = [project, region, commitment_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1276,7 +1319,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region])
+        flattened_params = [project, region]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1348,8 +1394,8 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
     ) -> compute.Operation:
         r"""Updates the specified commitment with the data included in the
         request. Update is performed only on selected fields included as
-        part of update-mask. Only the following fields can be modified:
-        auto_renew.
+        part of update-mask. Only the following fields can be updated:
+        auto_renew and plan.
 
         .. code-block:: python
 
@@ -1395,8 +1441,8 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             commitment (str):
-                Name of the commitment for which auto
-                renew is being updated.
+                Name of the commitment that you want
+                to update.
 
                 This corresponds to the ``commitment`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1423,7 +1469,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region, commitment, commitment_resource])
+        flattened_params = [project, region, commitment, commitment_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1489,8 +1538,8 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
     ) -> extended_operation.ExtendedOperation:
         r"""Updates the specified commitment with the data included in the
         request. Update is performed only on selected fields included as
-        part of update-mask. Only the following fields can be modified:
-        auto_renew.
+        part of update-mask. Only the following fields can be updated:
+        auto_renew and plan.
 
         .. code-block:: python
 
@@ -1536,8 +1585,8 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             commitment (str):
-                Name of the commitment for which auto
-                renew is being updated.
+                Name of the commitment that you want
+                to update.
 
                 This corresponds to the ``commitment`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1564,7 +1613,10 @@ class RegionCommitmentsClient(metaclass=RegionCommitmentsClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, region, commitment, commitment_resource])
+        flattened_params = [project, region, commitment, commitment_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1659,5 +1711,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("RegionCommitmentsClient",)

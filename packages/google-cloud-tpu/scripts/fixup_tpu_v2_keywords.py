@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,15 +40,20 @@ class tpuCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
         'create_node': ('parent', 'node', 'node_id', ),
+        'create_queued_resource': ('parent', 'queued_resource', 'queued_resource_id', 'request_id', ),
         'delete_node': ('name', ),
+        'delete_queued_resource': ('name', 'request_id', 'force', ),
         'generate_service_identity': ('parent', ),
         'get_accelerator_type': ('name', ),
         'get_guest_attributes': ('name', 'query_path', 'worker_ids', ),
         'get_node': ('name', ),
+        'get_queued_resource': ('name', ),
         'get_runtime_version': ('name', ),
         'list_accelerator_types': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_nodes': ('parent', 'page_size', 'page_token', ),
+        'list_queued_resources': ('parent', 'page_size', 'page_token', ),
         'list_runtime_versions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'reset_queued_resource': ('name', ),
         'start_node': ('name', ),
         'stop_node': ('name', ),
         'update_node': ('update_mask', 'node', ),

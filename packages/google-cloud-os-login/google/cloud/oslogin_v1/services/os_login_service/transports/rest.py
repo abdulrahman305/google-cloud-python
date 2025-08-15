@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class OsLoginServiceRestInterceptor:
@@ -143,11 +147,34 @@ class OsLoginServiceRestInterceptor:
     ) -> common.SshPublicKey:
         """Post-rpc interceptor for create_ssh_public_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_ssh_public_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the OsLoginService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_ssh_public_key` interceptor runs
+        before the `post_create_ssh_public_key_with_metadata` interceptor.
         """
         return response
+
+    def post_create_ssh_public_key_with_metadata(
+        self,
+        response: common.SshPublicKey,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[common.SshPublicKey, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_ssh_public_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the OsLoginService server but before it is returned to user code.
+
+        We recommend only using this `post_create_ssh_public_key_with_metadata`
+        interceptor in new development instead of the `post_create_ssh_public_key` interceptor.
+        When both interceptors are used, this `post_create_ssh_public_key_with_metadata` interceptor runs after the
+        `post_create_ssh_public_key` interceptor. The (possibly modified) response returned by
+        `post_create_ssh_public_key` will be passed to
+        `post_create_ssh_public_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_posix_account(
         self,
@@ -194,11 +221,34 @@ class OsLoginServiceRestInterceptor:
     ) -> oslogin.LoginProfile:
         """Post-rpc interceptor for get_login_profile
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_login_profile_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the OsLoginService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_login_profile` interceptor runs
+        before the `post_get_login_profile_with_metadata` interceptor.
         """
         return response
+
+    def post_get_login_profile_with_metadata(
+        self,
+        response: oslogin.LoginProfile,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[oslogin.LoginProfile, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_login_profile
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the OsLoginService server but before it is returned to user code.
+
+        We recommend only using this `post_get_login_profile_with_metadata`
+        interceptor in new development instead of the `post_get_login_profile` interceptor.
+        When both interceptors are used, this `post_get_login_profile_with_metadata` interceptor runs after the
+        `post_get_login_profile` interceptor. The (possibly modified) response returned by
+        `post_get_login_profile` will be passed to
+        `post_get_login_profile_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_ssh_public_key(
         self,
@@ -217,11 +267,34 @@ class OsLoginServiceRestInterceptor:
     ) -> common.SshPublicKey:
         """Post-rpc interceptor for get_ssh_public_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_ssh_public_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the OsLoginService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_ssh_public_key` interceptor runs
+        before the `post_get_ssh_public_key_with_metadata` interceptor.
         """
         return response
+
+    def post_get_ssh_public_key_with_metadata(
+        self,
+        response: common.SshPublicKey,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[common.SshPublicKey, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_ssh_public_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the OsLoginService server but before it is returned to user code.
+
+        We recommend only using this `post_get_ssh_public_key_with_metadata`
+        interceptor in new development instead of the `post_get_ssh_public_key` interceptor.
+        When both interceptors are used, this `post_get_ssh_public_key_with_metadata` interceptor runs after the
+        `post_get_ssh_public_key` interceptor. The (possibly modified) response returned by
+        `post_get_ssh_public_key` will be passed to
+        `post_get_ssh_public_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_import_ssh_public_key(
         self,
@@ -242,11 +315,36 @@ class OsLoginServiceRestInterceptor:
     ) -> oslogin.ImportSshPublicKeyResponse:
         """Post-rpc interceptor for import_ssh_public_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_import_ssh_public_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the OsLoginService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_import_ssh_public_key` interceptor runs
+        before the `post_import_ssh_public_key_with_metadata` interceptor.
         """
         return response
+
+    def post_import_ssh_public_key_with_metadata(
+        self,
+        response: oslogin.ImportSshPublicKeyResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        oslogin.ImportSshPublicKeyResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for import_ssh_public_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the OsLoginService server but before it is returned to user code.
+
+        We recommend only using this `post_import_ssh_public_key_with_metadata`
+        interceptor in new development instead of the `post_import_ssh_public_key` interceptor.
+        When both interceptors are used, this `post_import_ssh_public_key_with_metadata` interceptor runs after the
+        `post_import_ssh_public_key` interceptor. The (possibly modified) response returned by
+        `post_import_ssh_public_key` will be passed to
+        `post_import_ssh_public_key_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_ssh_public_key(
         self,
@@ -267,11 +365,34 @@ class OsLoginServiceRestInterceptor:
     ) -> common.SshPublicKey:
         """Post-rpc interceptor for update_ssh_public_key
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_ssh_public_key_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the OsLoginService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_ssh_public_key` interceptor runs
+        before the `post_update_ssh_public_key_with_metadata` interceptor.
         """
         return response
+
+    def post_update_ssh_public_key_with_metadata(
+        self,
+        response: common.SshPublicKey,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[common.SshPublicKey, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_ssh_public_key
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the OsLoginService server but before it is returned to user code.
+
+        We recommend only using this `post_update_ssh_public_key_with_metadata`
+        interceptor in new development instead of the `post_update_ssh_public_key` interceptor.
+        When both interceptors are used, this `post_update_ssh_public_key_with_metadata` interceptor runs after the
+        `post_update_ssh_public_key` interceptor. The (possibly modified) response returned by
+        `post_update_ssh_public_key` will be passed to
+        `post_update_ssh_public_key_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -492,6 +613,10 @@ class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_ssh_public_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_ssh_public_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -856,6 +981,10 @@ class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_login_profile(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_login_profile_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1001,6 +1130,10 @@ class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_ssh_public_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_ssh_public_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1152,6 +1285,10 @@ class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_import_ssh_public_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_import_ssh_public_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1305,6 +1442,10 @@ class OsLoginServiceRestTransport(_BaseOsLoginServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_ssh_public_key(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_ssh_public_key_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

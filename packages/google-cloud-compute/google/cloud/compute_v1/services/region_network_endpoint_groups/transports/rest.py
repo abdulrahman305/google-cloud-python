@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class RegionNetworkEndpointGroupsRestInterceptor:
@@ -150,11 +154,34 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     ) -> compute.Operation:
         """Post-rpc interceptor for attach_network_endpoints
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_attach_network_endpoints_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_attach_network_endpoints` interceptor runs
+        before the `post_attach_network_endpoints_with_metadata` interceptor.
         """
         return response
+
+    def post_attach_network_endpoints_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for attach_network_endpoints
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_attach_network_endpoints_with_metadata`
+        interceptor in new development instead of the `post_attach_network_endpoints` interceptor.
+        When both interceptors are used, this `post_attach_network_endpoints_with_metadata` interceptor runs after the
+        `post_attach_network_endpoints` interceptor. The (possibly modified) response returned by
+        `post_attach_network_endpoints` will be passed to
+        `post_attach_network_endpoints_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete(
         self,
@@ -174,11 +201,34 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     def post_delete(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for delete
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete` interceptor runs
+        before the `post_delete_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_delete_with_metadata`
+        interceptor in new development instead of the `post_delete` interceptor.
+        When both interceptors are used, this `post_delete_with_metadata` interceptor runs after the
+        `post_delete` interceptor. The (possibly modified) response returned by
+        `post_delete` will be passed to
+        `post_delete_with_metadata`.
+        """
+        return response, metadata
 
     def pre_detach_network_endpoints(
         self,
@@ -200,11 +250,34 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     ) -> compute.Operation:
         """Post-rpc interceptor for detach_network_endpoints
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_detach_network_endpoints_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_detach_network_endpoints` interceptor runs
+        before the `post_detach_network_endpoints_with_metadata` interceptor.
         """
         return response
+
+    def post_detach_network_endpoints_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for detach_network_endpoints
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_detach_network_endpoints_with_metadata`
+        interceptor in new development instead of the `post_detach_network_endpoints` interceptor.
+        When both interceptors are used, this `post_detach_network_endpoints_with_metadata` interceptor runs after the
+        `post_detach_network_endpoints` interceptor. The (possibly modified) response returned by
+        `post_detach_network_endpoints` will be passed to
+        `post_detach_network_endpoints_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get(
         self,
@@ -226,11 +299,34 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     ) -> compute.NetworkEndpointGroup:
         """Post-rpc interceptor for get
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get` interceptor runs
+        before the `post_get_with_metadata` interceptor.
         """
         return response
+
+    def post_get_with_metadata(
+        self,
+        response: compute.NetworkEndpointGroup,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.NetworkEndpointGroup, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_get_with_metadata`
+        interceptor in new development instead of the `post_get` interceptor.
+        When both interceptors are used, this `post_get_with_metadata` interceptor runs after the
+        `post_get` interceptor. The (possibly modified) response returned by
+        `post_get` will be passed to
+        `post_get_with_metadata`.
+        """
+        return response, metadata
 
     def pre_insert(
         self,
@@ -250,11 +346,34 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     def post_insert(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for insert
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_insert_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_insert` interceptor runs
+        before the `post_insert_with_metadata` interceptor.
         """
         return response
+
+    def post_insert_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for insert
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_insert_with_metadata`
+        interceptor in new development instead of the `post_insert` interceptor.
+        When both interceptors are used, this `post_insert_with_metadata` interceptor runs after the
+        `post_insert` interceptor. The (possibly modified) response returned by
+        `post_insert` will be passed to
+        `post_insert_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list(
         self,
@@ -276,11 +395,36 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     ) -> compute.NetworkEndpointGroupList:
         """Post-rpc interceptor for list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list` interceptor runs
+        before the `post_list_with_metadata` interceptor.
         """
         return response
+
+    def post_list_with_metadata(
+        self,
+        response: compute.NetworkEndpointGroupList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.NetworkEndpointGroupList, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_list_with_metadata`
+        interceptor in new development instead of the `post_list` interceptor.
+        When both interceptors are used, this `post_list_with_metadata` interceptor runs after the
+        `post_list` interceptor. The (possibly modified) response returned by
+        `post_list` will be passed to
+        `post_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_network_endpoints(
         self,
@@ -302,11 +446,37 @@ class RegionNetworkEndpointGroupsRestInterceptor:
     ) -> compute.NetworkEndpointGroupsListNetworkEndpoints:
         """Post-rpc interceptor for list_network_endpoints
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_network_endpoints_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the RegionNetworkEndpointGroups server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_network_endpoints` interceptor runs
+        before the `post_list_network_endpoints_with_metadata` interceptor.
         """
         return response
+
+    def post_list_network_endpoints_with_metadata(
+        self,
+        response: compute.NetworkEndpointGroupsListNetworkEndpoints,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.NetworkEndpointGroupsListNetworkEndpoints,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_network_endpoints
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the RegionNetworkEndpointGroups server but before it is returned to user code.
+
+        We recommend only using this `post_list_network_endpoints_with_metadata`
+        interceptor in new development instead of the `post_list_network_endpoints` interceptor.
+        When both interceptors are used, this `post_list_network_endpoints_with_metadata` interceptor runs after the
+        `post_list_network_endpoints` interceptor. The (possibly modified) response returned by
+        `post_list_network_endpoints` will be passed to
+        `post_list_network_endpoints_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -548,6 +718,10 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_attach_network_endpoints(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_attach_network_endpoints_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -708,6 +882,10 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -878,6 +1056,10 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_detach_network_endpoints(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_detach_network_endpoints_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1029,6 +1211,8 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1195,6 +1379,10 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_insert(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_insert_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1338,6 +1526,8 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1485,6 +1675,10 @@ class RegionNetworkEndpointGroupsRestTransport(
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_network_endpoints(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_network_endpoints_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

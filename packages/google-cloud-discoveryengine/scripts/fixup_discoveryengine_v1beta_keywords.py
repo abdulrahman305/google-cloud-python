@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ class discoveryengineCallTransformer(cst.CSTTransformer):
         'get_sample_query_set': ('name', ),
         'get_schema': ('name', ),
         'get_serving_config': ('name', ),
-        'get_session': ('name', ),
+        'get_session': ('name', 'include_answer_details', ),
         'get_site_search_engine': ('name', ),
         'get_target_site': ('name', ),
         'import_completion_suggestions': ('parent', 'inline_source', 'gcs_source', 'bigquery_source', 'error_config', ),

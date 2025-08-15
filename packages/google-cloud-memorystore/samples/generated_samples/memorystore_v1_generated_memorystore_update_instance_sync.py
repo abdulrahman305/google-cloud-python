@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,13 +39,7 @@ def sample_update_instance():
     client = memorystore_v1.MemorystoreClient()
 
     # Initialize request argument(s)
-    instance = memorystore_v1.Instance()
-    instance.psc_auto_connections.port = 453
-    instance.psc_auto_connections.project_id = "project_id_value"
-    instance.psc_auto_connections.network = "network_value"
-
     request = memorystore_v1.UpdateInstanceRequest(
-        instance=instance,
     )
 
     # Make the request

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-servicehealth-v0.1.11...google-cloud-servicehealth-v0.1.12) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-servicehealth-v0.1.10...google-cloud-servicehealth-v0.1.11) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-servicehealth-v0.1.9...google-cloud-servicehealth-v0.1.10) (2025-01-02)
 
 

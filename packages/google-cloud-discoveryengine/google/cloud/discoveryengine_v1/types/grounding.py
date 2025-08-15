@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,6 +72,12 @@ class FactChunk(proto.Message):
         source_metadata (MutableMapping[str, str]):
             More fine-grained information for the source
             reference.
+        uri (str):
+            The URI of the source.
+        title (str):
+            The title of the source.
+        domain (str):
+            The domain of the source.
     """
 
     chunk_text: str = proto.Field(
@@ -90,6 +96,18 @@ class FactChunk(proto.Message):
         proto.STRING,
         proto.STRING,
         number=3,
+    )
+    uri: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    title: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
+    domain: str = proto.Field(
+        proto.STRING,
+        number=7,
     )
 
 

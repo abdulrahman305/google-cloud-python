@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.10...google-shopping-merchant-lfp-v0.1.11) (2025-08-06)
+
+
+### Features
+
+* [google-shopping-merchant-lfp] add lfp API for v1 ([#14176](https://github.com/googleapis/google-cloud-python/issues/14176)) ([4181153](https://github.com/googleapis/google-cloud-python/commit/4181153ce7701f3c3ebae9465842d6d235075d57))
+
+## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.9...google-shopping-merchant-lfp-v0.1.10) (2025-04-29)
+
+
+### Documentation
+
+* [google-shopping-merchant-lfp] Add clarification to GetLfpMerchantState documentation ([#13850](https://github.com/googleapis/google-cloud-python/issues/13850)) ([90177f3](https://github.com/googleapis/google-cloud-python/commit/90177f3ea4fcf43de896666d1ac850f5b7457a53))
+
+## [0.1.9](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.8...google-shopping-merchant-lfp-v0.1.9) (2025-04-15)
+
+
+### Features
+
+* Add GetLfpMerchantState method ([e86f541](https://github.com/googleapis/google-cloud-python/commit/e86f541f7bc09636ce4d0b9dddb8bbb85a6757d4))
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.7...google-shopping-merchant-lfp-v0.1.8) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.6...google-shopping-merchant-lfp-v0.1.7) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-shopping-merchant-lfp-v0.1.5...google-shopping-merchant-lfp-v0.1.6) (2024-12-12)
 
 

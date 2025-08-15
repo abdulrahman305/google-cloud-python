@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.4.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.17...google-cloud-confidentialcomputing-v0.4.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [0.4.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.16...google-cloud-confidentialcomputing-v0.4.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+
+## [0.4.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.15...google-cloud-confidentialcomputing-v0.4.16) (2025-02-24)
+
+
+### Features
+
+* [google-cloud-confidentialcomputing] A new field `attester` is added to message `.google.cloud.confidentialcomputing.v1.VerifyAttestationRequest` ([#13543](https://github.com/googleapis/google-cloud-python/issues/13543)) ([6e892e0](https://github.com/googleapis/google-cloud-python/commit/6e892e0aeac1975a3fd592bca1087c5c7e043ccc))
+
+
+### Documentation
+
+* Fixed a typo in `VerifyAttestationRequest` comment ([6e892e0](https://github.com/googleapis/google-cloud-python/commit/6e892e0aeac1975a3fd592bca1087c5c7e043ccc))
+
+## [0.4.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.14...google-cloud-confidentialcomputing-v0.4.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [0.4.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-confidentialcomputing-v0.4.13...google-cloud-confidentialcomputing-v0.4.14) (2024-12-12)
 
 

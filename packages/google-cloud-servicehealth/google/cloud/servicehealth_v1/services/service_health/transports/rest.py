@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -52,6 +53,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ServiceHealthRestInterceptor:
@@ -140,11 +144,34 @@ class ServiceHealthRestInterceptor:
     def post_get_event(self, response: event_resources.Event) -> event_resources.Event:
         """Post-rpc interceptor for get_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_event` interceptor runs
+        before the `post_get_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_event_with_metadata(
+        self,
+        response: event_resources.Event,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[event_resources.Event, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_get_event_with_metadata`
+        interceptor in new development instead of the `post_get_event` interceptor.
+        When both interceptors are used, this `post_get_event_with_metadata` interceptor runs after the
+        `post_get_event` interceptor. The (possibly modified) response returned by
+        `post_get_event` will be passed to
+        `post_get_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_organization_event(
         self,
@@ -166,11 +193,36 @@ class ServiceHealthRestInterceptor:
     ) -> event_resources.OrganizationEvent:
         """Post-rpc interceptor for get_organization_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_organization_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_organization_event` interceptor runs
+        before the `post_get_organization_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_organization_event_with_metadata(
+        self,
+        response: event_resources.OrganizationEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_resources.OrganizationEvent, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_organization_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_get_organization_event_with_metadata`
+        interceptor in new development instead of the `post_get_organization_event` interceptor.
+        When both interceptors are used, this `post_get_organization_event_with_metadata` interceptor runs after the
+        `post_get_organization_event` interceptor. The (possibly modified) response returned by
+        `post_get_organization_event` will be passed to
+        `post_get_organization_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_organization_impact(
         self,
@@ -192,11 +244,36 @@ class ServiceHealthRestInterceptor:
     ) -> event_resources.OrganizationImpact:
         """Post-rpc interceptor for get_organization_impact
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_organization_impact_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_organization_impact` interceptor runs
+        before the `post_get_organization_impact_with_metadata` interceptor.
         """
         return response
+
+    def post_get_organization_impact_with_metadata(
+        self,
+        response: event_resources.OrganizationImpact,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_resources.OrganizationImpact, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for get_organization_impact
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_get_organization_impact_with_metadata`
+        interceptor in new development instead of the `post_get_organization_impact` interceptor.
+        When both interceptors are used, this `post_get_organization_impact_with_metadata` interceptor runs after the
+        `post_get_organization_impact` interceptor. The (possibly modified) response returned by
+        `post_get_organization_impact` will be passed to
+        `post_get_organization_impact_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_events(
         self,
@@ -217,11 +294,36 @@ class ServiceHealthRestInterceptor:
     ) -> event_resources.ListEventsResponse:
         """Post-rpc interceptor for list_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_events` interceptor runs
+        before the `post_list_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_events_with_metadata(
+        self,
+        response: event_resources.ListEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_resources.ListEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_list_events_with_metadata`
+        interceptor in new development instead of the `post_list_events` interceptor.
+        When both interceptors are used, this `post_list_events_with_metadata` interceptor runs after the
+        `post_list_events` interceptor. The (possibly modified) response returned by
+        `post_list_events` will be passed to
+        `post_list_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_organization_events(
         self,
@@ -243,11 +345,37 @@ class ServiceHealthRestInterceptor:
     ) -> event_resources.ListOrganizationEventsResponse:
         """Post-rpc interceptor for list_organization_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_organization_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_organization_events` interceptor runs
+        before the `post_list_organization_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_organization_events_with_metadata(
+        self,
+        response: event_resources.ListOrganizationEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_resources.ListOrganizationEventsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_organization_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_list_organization_events_with_metadata`
+        interceptor in new development instead of the `post_list_organization_events` interceptor.
+        When both interceptors are used, this `post_list_organization_events_with_metadata` interceptor runs after the
+        `post_list_organization_events` interceptor. The (possibly modified) response returned by
+        `post_list_organization_events` will be passed to
+        `post_list_organization_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_organization_impacts(
         self,
@@ -269,11 +397,37 @@ class ServiceHealthRestInterceptor:
     ) -> event_resources.ListOrganizationImpactsResponse:
         """Post-rpc interceptor for list_organization_impacts
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_organization_impacts_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ServiceHealth server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_organization_impacts` interceptor runs
+        before the `post_list_organization_impacts_with_metadata` interceptor.
         """
         return response
+
+    def post_list_organization_impacts_with_metadata(
+        self,
+        response: event_resources.ListOrganizationImpactsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        event_resources.ListOrganizationImpactsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for list_organization_impacts
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ServiceHealth server but before it is returned to user code.
+
+        We recommend only using this `post_list_organization_impacts_with_metadata`
+        interceptor in new development instead of the `post_list_organization_impacts` interceptor.
+        When both interceptors are used, this `post_list_organization_impacts_with_metadata` interceptor runs after the
+        `post_list_organization_impacts` interceptor. The (possibly modified) response returned by
+        `post_list_organization_impacts` will be passed to
+        `post_list_organization_impacts_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_location(
         self,
@@ -540,6 +694,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -688,6 +846,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_organization_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_organization_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -838,6 +1000,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_organization_impact(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_organization_impact_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -986,6 +1152,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1134,6 +1304,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_organization_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_organization_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1285,6 +1459,10 @@ class ServiceHealthRestTransport(_BaseServiceHealthRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_organization_impacts(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_organization_impacts_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

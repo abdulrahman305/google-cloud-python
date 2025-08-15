@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class PublisherRestInterceptor:
@@ -115,11 +119,34 @@ class PublisherRestInterceptor:
     ) -> publisher.PublishResponse:
         """Post-rpc interceptor for publish
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_publish_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Publisher server but before
-        it is returned to user code.
+        it is returned to user code. This `post_publish` interceptor runs
+        before the `post_publish_with_metadata` interceptor.
         """
         return response
+
+    def post_publish_with_metadata(
+        self,
+        response: publisher.PublishResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[publisher.PublishResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for publish
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Publisher server but before it is returned to user code.
+
+        We recommend only using this `post_publish_with_metadata`
+        interceptor in new development instead of the `post_publish` interceptor.
+        When both interceptors are used, this `post_publish_with_metadata` interceptor runs after the
+        `post_publish` interceptor. The (possibly modified) response returned by
+        `post_publish` will be passed to
+        `post_publish_with_metadata`.
+        """
+        return response, metadata
 
     def pre_publish_channel_connection_events(
         self,
@@ -141,11 +168,37 @@ class PublisherRestInterceptor:
     ) -> publisher.PublishChannelConnectionEventsResponse:
         """Post-rpc interceptor for publish_channel_connection_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_publish_channel_connection_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Publisher server but before
-        it is returned to user code.
+        it is returned to user code. This `post_publish_channel_connection_events` interceptor runs
+        before the `post_publish_channel_connection_events_with_metadata` interceptor.
         """
         return response
+
+    def post_publish_channel_connection_events_with_metadata(
+        self,
+        response: publisher.PublishChannelConnectionEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        publisher.PublishChannelConnectionEventsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for publish_channel_connection_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Publisher server but before it is returned to user code.
+
+        We recommend only using this `post_publish_channel_connection_events_with_metadata`
+        interceptor in new development instead of the `post_publish_channel_connection_events` interceptor.
+        When both interceptors are used, this `post_publish_channel_connection_events_with_metadata` interceptor runs after the
+        `post_publish_channel_connection_events` interceptor. The (possibly modified) response returned by
+        `post_publish_channel_connection_events` will be passed to
+        `post_publish_channel_connection_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_publish_events(
         self,
@@ -164,11 +217,36 @@ class PublisherRestInterceptor:
     ) -> publisher.PublishEventsResponse:
         """Post-rpc interceptor for publish_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_publish_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Publisher server but before
-        it is returned to user code.
+        it is returned to user code. This `post_publish_events` interceptor runs
+        before the `post_publish_events_with_metadata` interceptor.
         """
         return response
+
+    def post_publish_events_with_metadata(
+        self,
+        response: publisher.PublishEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        publisher.PublishEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for publish_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Publisher server but before it is returned to user code.
+
+        We recommend only using this `post_publish_events_with_metadata`
+        interceptor in new development instead of the `post_publish_events` interceptor.
+        When both interceptors are used, this `post_publish_events_with_metadata` interceptor runs after the
+        `post_publish_events` interceptor. The (possibly modified) response returned by
+        `post_publish_events` will be passed to
+        `post_publish_events_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -193,19 +271,26 @@ class PublisherRestTransport(_BasePublisherRestTransport):
     A partner is a third-party event provider that is integrated
     with Eventarc.
 
-    A subscriber is a GCP customer interested in receiving events.
+    A subscriber is a Google Cloud customer interested in receiving
+    events.
 
     Channel is a first-class Eventarc resource that is created and
-    managed by the subscriber in their GCP project. A Channel
-    represents a subscriber's intent to receive events from an event
-    provider. A Channel is associated with exactly one event
-    provider.
+    managed by the subscriber in their Google Cloud project. A
+    Channel represents a subscriber's intent to receive events from
+    an event provider. A Channel is associated with exactly one
+    event provider.
 
     ChannelConnection is a first-class Eventarc resource that is
-    created and managed by the partner in their GCP project. A
-    ChannelConnection represents a connection between a partner and
-    a subscriber's Channel. A ChannelConnection has a one-to-one
-    mapping with a Channel.
+    created and managed by the partner in their Google Cloud
+    project. A ChannelConnection represents a connection between a
+    partner and a subscriber's Channel. A ChannelConnection has a
+    one-to-one mapping with a Channel.
+
+    Bus is a first-class Eventarc resource that is created and
+    managed in a Google Cloud project. A Bus provides a discoverable
+    endpoint for events and is a router that receives all events
+    published by event providers and delivers them to zero or more
+    subscribers.
 
     Publisher allows an event provider to publish events to
     Eventarc.
@@ -410,6 +495,10 @@ class PublisherRestTransport(_BasePublisherRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_publish(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_publish_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -565,6 +654,13 @@ class PublisherRestTransport(_BasePublisherRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_publish_channel_connection_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_publish_channel_connection_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -724,6 +820,10 @@ class PublisherRestTransport(_BasePublisherRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_publish_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_publish_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

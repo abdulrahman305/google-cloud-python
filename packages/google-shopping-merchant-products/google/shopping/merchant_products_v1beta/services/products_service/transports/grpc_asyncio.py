@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -117,7 +117,6 @@ class ProductsServiceGrpcAsyncIOTransport(ProductsServiceTransport):
     """gRPC AsyncIO backend transport for ProductsService.
 
     Service to use Product resource.
-    This service works for products with online channel only.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
@@ -366,14 +365,14 @@ class ProductsServiceGrpcAsyncIOTransport(ProductsServiceTransport):
     ]:
         r"""Return a callable for the list products method over gRPC.
 
-        Lists the processed products in your Merchant Center
-        account. The response might contain fewer items than
-        specified by pageSize. Rely on pageToken to determine if
-        there are more items to be requested.
+        Lists the processed products in your Merchant Center account.
+        The response might contain fewer items than specified by
+        ``pageSize``. Rely on ``pageToken`` to determine if there are
+        more items to be requested.
 
-        After inserting, updating, or deleting a product input,
-        it may take several minutes before the updated processed
-        product can be retrieved.
+        After inserting, updating, or deleting a product input, it may
+        take several minutes before the updated processed product can be
+        retrieved.
 
         Returns:
             Callable[[~.ListProductsRequest],

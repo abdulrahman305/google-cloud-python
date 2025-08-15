@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -801,8 +801,9 @@ class Entry(proto.Message):
             -  If the aspect is attached to an entry's path:
                ``{project_id_or_number}.{location_id}.{aspect_type_id}@{path}``
         parent_entry (str):
-            Optional. Immutable. The resource name of the
-            parent entry.
+            Optional. Immutable. The resource name of the parent entry,
+            in the format
+            ``projects/{project_id_or_number}/locations/{location_id}/entryGroups/{entry_group_id}/entries/{entry_id}``.
         fully_qualified_name (str):
             Optional. A name for the entry that can be referenced by an
             external system. For more information, see `Fully qualified
@@ -1885,6 +1886,10 @@ class SearchEntriesRequest(proto.Message):
             ``projects/<project_ref>``. If it is unspecified, it
             defaults to the organization where the project provided in
             ``name`` is located.
+        semantic_search (bool):
+            Optional. Specifies whether the search should
+            understand the meaning and intent behind the
+            query, rather than just matching keywords.
     """
 
     name: str = proto.Field(
@@ -1910,6 +1915,10 @@ class SearchEntriesRequest(proto.Message):
     scope: str = proto.Field(
         proto.STRING,
         number=7,
+    )
+    semantic_search: bool = proto.Field(
+        proto.BOOL,
+        number=11,
     )
 
 
@@ -2029,6 +2038,9 @@ class ImportItem(proto.Message):
             The ``update_mask`` field is ignored when an entry is
             created or re-created.
 
+            In an aspect-only metadata job (when entry sync mode is
+            ``NONE``), set this value to ``aspects``.
+
             Dataplex also determines which entries and aspects to modify
             by comparing the values and timestamps that you provide in
             the metadata import file with the values and timestamps that
@@ -2042,19 +2054,19 @@ class ImportItem(proto.Message):
                the entry.
             -  ``{aspect_type_reference}@{path}``: matches aspects that
                belong to the specified aspect type and path.
-            -  ``<aspect_type_reference>@*`` : matches aspects of the
+            -  ``{aspect_type_reference}@*`` : matches aspects of the
                given type for all paths.
             -  ``*@path`` : matches aspects of all types on the given
-               path. Replace ``{aspect_type_reference}`` with a
-               reference to the aspect type, in the format
-               ``{project_id_or_number}.{location_id}.{aspect_type_id}``.
+               path.
 
-            If you leave this field empty, it is treated as specifying
-            exactly those aspects that are present within the specified
-            entry.
+            Replace ``{aspect_type_reference}`` with a reference to the
+            aspect type, in the format
+            ``{project_id_or_number}.{location_id}.{aspect_type_id}``.
 
-            In ``FULL`` entry sync mode, Dataplex implicitly adds the
-            keys for all of the required aspects of an entry.
+            In ``FULL`` entry sync mode, if you leave this field empty,
+            it is treated as specifying exactly those aspects that are
+            present within the specified entry. Dataplex implicitly adds
+            the keys for all of the required aspects of an entry.
     """
 
     entry: "Entry" = proto.Field(
@@ -2236,6 +2248,11 @@ class CancelMetadataJobRequest(proto.Message):
 class MetadataJob(proto.Message):
     r"""A metadata job resource.
 
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
     .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
 
     Attributes:
@@ -2262,8 +2279,16 @@ class MetadataJob(proto.Message):
             Import job specification.
 
             This field is a member of `oneof`_ ``spec``.
+        export_spec (google.cloud.dataplex_v1.types.MetadataJob.ExportJobSpec):
+            Export job specification.
+
+            This field is a member of `oneof`_ ``spec``.
         import_result (google.cloud.dataplex_v1.types.MetadataJob.ImportJobResult):
             Output only. Import job result.
+
+            This field is a member of `oneof`_ ``result``.
+        export_result (google.cloud.dataplex_v1.types.MetadataJob.ExportJobResult):
+            Output only. Export job result.
 
             This field is a member of `oneof`_ ``result``.
         status (google.cloud.dataplex_v1.types.MetadataJob.Status):
@@ -2278,9 +2303,12 @@ class MetadataJob(proto.Message):
                 Unspecified.
             IMPORT (1):
                 Import job.
+            EXPORT (2):
+                Export job.
         """
         TYPE_UNSPECIFIED = 0
         IMPORT = 1
+        EXPORT = 2
 
     class ImportJobResult(proto.Message):
         r"""Results from a metadata import job.
@@ -2332,8 +2360,40 @@ class MetadataJob(proto.Message):
             message=timestamp_pb2.Timestamp,
         )
 
+    class ExportJobResult(proto.Message):
+        r"""Summary results from a metadata export job. The results are a
+        snapshot of the metadata at the time when the job was created.
+        The exported entries are saved to a Cloud Storage bucket.
+
+        Attributes:
+            exported_entries (int):
+                Output only. The number of entries that were
+                exported.
+            error_message (str):
+                Output only. The error message if the
+                metadata export job failed.
+        """
+
+        exported_entries: int = proto.Field(
+            proto.INT64,
+            number=1,
+        )
+        error_message: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
     class ImportJobSpec(proto.Message):
-        r"""Job specification for a metadata import job
+        r"""Job specification for a metadata import job.
+
+        You can run the following kinds of metadata import jobs:
+
+        -  Full sync of entries with incremental import of their aspects.
+           Supported for custom entries.
+        -  Incremental import of aspects only. Supported for aspects that
+           belong to custom entries and system entries. For custom entries,
+           you can modify both optional aspects and required aspects. For
+           system entries, you can modify optional aspects.
 
         Attributes:
             source_storage_uri (str):
@@ -2342,7 +2402,7 @@ class MetadataJob(proto.Message):
                 contains the metadata import files for this job.
 
                 A metadata import file defines the values to set for each of
-                the entries and aspects in a metadata job. For more
+                the entries and aspects in a metadata import job. For more
                 information about how to create a metadata import file and
                 the file requirements, see `Metadata import
                 file <https://cloud.google.com/dataplex/docs/import-metadata#metadata-import-file>`__.
@@ -2365,16 +2425,9 @@ class MetadataJob(proto.Message):
                 Required. A boundary on the scope of impact
                 that the metadata import job can have.
             entry_sync_mode (google.cloud.dataplex_v1.types.MetadataJob.ImportJobSpec.SyncMode):
-                Required. The sync mode for entries. Only ``FULL`` mode is
-                supported for entries. All entries in the job's scope are
-                modified. If an entry exists in Dataplex but isn't included
-                in the metadata import file, the entry is deleted when you
-                run the metadata job.
+                Required. The sync mode for entries.
             aspect_sync_mode (google.cloud.dataplex_v1.types.MetadataJob.ImportJobSpec.SyncMode):
-                Required. The sync mode for aspects. Only ``INCREMENTAL``
-                mode is supported for aspects. An aspect is modified only if
-                the metadata import file includes a reference to the aspect
-                in the ``update_mask`` field and the ``aspect_keys`` field.
+                Required. The sync mode for aspects.
             log_level (google.cloud.dataplex_v1.types.MetadataJob.ImportJobSpec.LogLevel):
                 Optional. The level of logs to write to Cloud Logging for
                 this job.
@@ -2389,8 +2442,9 @@ class MetadataJob(proto.Message):
         """
 
         class SyncMode(proto.Enum):
-            r"""Specifies how the entries and aspects in a metadata job are
-            updated.
+            r"""Specifies how the entries and aspects in a metadata import job are
+            updated. For more information, see `Sync
+            mode <https://cloud.google.com/dataplex/docs/import-metadata#sync-mode>`__.
 
             Values:
                 SYNC_MODE_UNSPECIFIED (0):
@@ -2402,16 +2456,27 @@ class MetadataJob(proto.Message):
                     resource is deleted when you run the metadata
                     job. Use this mode to perform a full sync of the
                     set of entries in the job scope.
+
+                    This sync mode is supported for entries.
                 INCREMENTAL (2):
-                    Only the entries and aspects that are
-                    explicitly included in the metadata import file
-                    are modified. Use this mode to modify a subset
-                    of resources while leaving unreferenced
-                    resources unchanged.
+                    Only the resources that are explicitly
+                    included in the metadata import file are
+                    modified. Use this mode to modify a subset of
+                    resources while leaving unreferenced resources
+                    unchanged.
+
+                    This sync mode is supported for aspects.
+                NONE (3):
+                    If entry sync mode is ``NONE``, then aspects are modified
+                    according to the aspect sync mode. Other metadata that
+                    belongs to entries in the job's scope isn't modified.
+
+                    This sync mode is supported for entries.
             """
             SYNC_MODE_UNSPECIFIED = 0
             FULL = 1
             INCREMENTAL = 2
+            NONE = 3
 
         class LogLevel(proto.Enum):
             r"""The level of logs to write to Cloud Logging for this job.
@@ -2451,8 +2516,8 @@ class MetadataJob(proto.Message):
                     Required. The entry group that is in scope for the import
                     job, specified as a relative resource name in the format
                     ``projects/{project_number_or_id}/locations/{location_id}/entryGroups/{entry_group_id}``.
-                    Only entries that belong to the specified entry group are
-                    affected by the job.
+                    Only entries and aspects that belong to the specified entry
+                    group are affected by the job.
 
                     Must contain exactly one element. The entry group and the
                     job must be in the same location.
@@ -2460,8 +2525,8 @@ class MetadataJob(proto.Message):
                     Required. The entry types that are in scope for the import
                     job, specified as relative resource names in the format
                     ``projects/{project_number_or_id}/locations/{location_id}/entryTypes/{entry_type_id}``.
-                    The job modifies only the entries that belong to these entry
-                    types.
+                    The job modifies only the entries and aspects that belong to
+                    these entry types.
 
                     If the metadata import file attempts to modify an entry
                     whose type isn't included in this list, the import job is
@@ -2475,6 +2540,9 @@ class MetadataJob(proto.Message):
                     ``projects/{project_number_or_id}/locations/{location_id}/aspectTypes/{aspect_type_id}``.
                     The job modifies only the aspects that belong to these
                     aspect types.
+
+                    This field is required when creating an aspect-only import
+                    job.
 
                     If the metadata import file attempts to modify an aspect
                     whose type isn't included in this list, the import job is
@@ -2525,6 +2593,112 @@ class MetadataJob(proto.Message):
             proto.ENUM,
             number=6,
             enum="MetadataJob.ImportJobSpec.LogLevel",
+        )
+
+    class ExportJobSpec(proto.Message):
+        r"""Job specification for a metadata export job.
+
+        Attributes:
+            scope (google.cloud.dataplex_v1.types.MetadataJob.ExportJobSpec.ExportJobScope):
+                Required. The scope of the export job.
+            output_path (str):
+                Required. The root path of the Cloud Storage bucket to
+                export the metadata to, in the format ``gs://{bucket}/``.
+                You can optionally specify a custom prefix after the bucket
+                name, in the format ``gs://{bucket}/{prefix}/``. The maximum
+                length of the custom prefix is 128 characters. Dataplex
+                constructs the object path for the exported files by using
+                the bucket name and prefix that you provide, followed by a
+                system-generated path.
+
+                The bucket must be in the same VPC Service Controls
+                perimeter as the job.
+        """
+
+        class ExportJobScope(proto.Message):
+            r"""The scope of the export job.
+
+            Attributes:
+                organization_level (bool):
+                    Whether the metadata export job is an organization-level
+                    export job.
+
+                    -  If ``true``, the job exports the entries from the same
+                       organization and VPC Service Controls perimeter as the
+                       job. The project that the job belongs to determines the
+                       VPC Service Controls perimeter. If you set the job scope
+                       to be at the organization level, then don't provide a
+                       list of projects or entry groups.
+                    -  If ``false``, you must specify a list of projects or a
+                       list of entry groups whose entries you want to export.
+
+                    The default is ``false``.
+                projects (MutableSequence[str]):
+                    The projects whose metadata you want to export, in the
+                    format ``projects/{project_id_or_number}``. Only the entries
+                    from the specified projects are exported.
+
+                    The projects must be in the same organization and VPC
+                    Service Controls perimeter as the job.
+
+                    If you set the job scope to be a list of projects, then set
+                    the organization-level export flag to false and don't
+                    provide a list of entry groups.
+                entry_groups (MutableSequence[str]):
+                    The entry groups whose metadata you want to export, in the
+                    format
+                    ``projects/{project_id_or_number}/locations/{location_id}/entryGroups/{entry_group_id}``.
+                    Only the entries in the specified entry groups are exported.
+
+                    The entry groups must be in the same location and the same
+                    VPC Service Controls perimeter as the job.
+
+                    If you set the job scope to be a list of entry groups, then
+                    set the organization-level export flag to false and don't
+                    provide a list of projects.
+                entry_types (MutableSequence[str]):
+                    The entry types that are in scope for the export job,
+                    specified as relative resource names in the format
+                    ``projects/{project_id_or_number}/locations/{location}/entryTypes/{entry_type_id}``.
+                    Only entries that belong to the specified entry types are
+                    affected by the job.
+                aspect_types (MutableSequence[str]):
+                    The aspect types that are in scope for the export job,
+                    specified as relative resource names in the format
+                    ``projects/{project_id_or_number}/locations/{location}/aspectTypes/{aspect_type_id}``.
+                    Only aspects that belong to the specified aspect types are
+                    affected by the job.
+            """
+
+            organization_level: bool = proto.Field(
+                proto.BOOL,
+                number=1,
+            )
+            projects: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=2,
+            )
+            entry_groups: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=3,
+            )
+            entry_types: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=4,
+            )
+            aspect_types: MutableSequence[str] = proto.RepeatedField(
+                proto.STRING,
+                number=5,
+            )
+
+        scope: "MetadataJob.ExportJobSpec.ExportJobScope" = proto.Field(
+            proto.MESSAGE,
+            number=2,
+            message="MetadataJob.ExportJobSpec.ExportJobScope",
+        )
+        output_path: str = proto.Field(
+            proto.STRING,
+            number=3,
         )
 
     class Status(proto.Message):
@@ -2626,11 +2800,23 @@ class MetadataJob(proto.Message):
         oneof="spec",
         message=ImportJobSpec,
     )
+    export_spec: ExportJobSpec = proto.Field(
+        proto.MESSAGE,
+        number=101,
+        oneof="spec",
+        message=ExportJobSpec,
+    )
     import_result: ImportJobResult = proto.Field(
         proto.MESSAGE,
         number=200,
         oneof="result",
         message=ImportJobResult,
+    )
+    export_result: ExportJobResult = proto.Field(
+        proto.MESSAGE,
+        number=201,
+        oneof="result",
+        message=ExportJobResult,
     )
     status: Status = proto.Field(
         proto.MESSAGE,

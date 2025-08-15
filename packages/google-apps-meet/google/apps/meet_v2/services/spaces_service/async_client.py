@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.apps.meet_v2 import gapic_version as package_version
 
@@ -357,7 +358,10 @@ class SpacesServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([space])
+        flattened_params = [space]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -403,7 +407,10 @@ class SpacesServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.Space:
-        r"""Gets a space by ``space_id`` or ``meeting_code``.
+        r"""Gets details about a meeting space.
+
+        For an example, see `Get a meeting
+        space <https://developers.google.com/meet/api/guides/meeting-spaces#get-meeting-space>`__.
 
         .. code-block:: python
 
@@ -436,6 +443,29 @@ class SpacesServiceAsyncClient:
                 The request object. Request to get a space.
             name (:class:`str`):
                 Required. Resource name of the space.
+
+                Format: ``spaces/{space}`` or ``spaces/{meetingCode}``.
+
+                ``{space}`` is the resource identifier for the space.
+                It's a unique, server-generated ID and is case
+                sensitive. For example, ``jQCFfuBOdN5z``.
+
+                ``{meetingCode}`` is an alias for the space. It's a
+                typeable, unique character string and is non-case
+                sensitive. For example, ``abc-mnop-xyz``. The maximum
+                length is 128 characters.
+
+                A ``meetingCode`` shouldn't be stored long term as it
+                can become dissociated from a meeting space and can be
+                reused for different meeting spaces in the future.
+                Generally, a ``meetingCode`` expires 365 days after last
+                use. For more information, see `Learn about meeting
+                codes in Google
+                Meet <https://support.google.com/meet/answer/10710509>`__.
+
+                For more information, see `How Meet identifies a meeting
+                space <https://developers.google.com/meet/api/guides/meeting-spaces#identify-meeting-space>`__.
+
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -457,7 +487,10 @@ class SpacesServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -510,7 +543,10 @@ class SpacesServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.Space:
-        r"""Updates a space.
+        r"""Updates details about a meeting space.
+
+        For an example, see `Update a meeting
+        space <https://developers.google.com/meet/api/guides/meeting-spaces#update-meeting-space>`__.
 
         .. code-block:: python
 
@@ -547,9 +583,11 @@ class SpacesServiceAsyncClient:
                 should not be set.
             update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
                 Optional. Field mask used to specify the fields to be
-                updated in the space. If update_mask isn't provided, it
-                defaults to '*' and updates all fields provided in the
-                request, including deleting fields not set in the
+                updated in the space. If update_mask isn't provided(not
+                set, set with empty paths, or only has "" as paths), it
+                defaults to update all fields provided with values in
+                the request. Using "*" as update_mask will update all
+                fields, including deleting fields not set in the
                 request.
 
                 This corresponds to the ``update_mask`` field
@@ -573,7 +611,10 @@ class SpacesServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([space, update_mask])
+        flattened_params = [space, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -631,6 +672,9 @@ class SpacesServiceAsyncClient:
     ) -> None:
         r"""Ends an active conference (if there's one).
 
+        For an example, see `End active
+        conference <https://developers.google.com/meet/api/guides/meeting-spaces#end-active-conference>`__.
+
         .. code-block:: python
 
             # This snippet has been automatically generated and should be regarded as a
@@ -660,6 +704,16 @@ class SpacesServiceAsyncClient:
                 of a space.
             name (:class:`str`):
                 Required. Resource name of the space.
+
+                Format: ``spaces/{space}``.
+
+                ``{space}`` is the resource identifier for the space.
+                It's a unique, server-generated ID and is case
+                sensitive. For example, ``jQCFfuBOdN5z``.
+
+                For more information, see `How Meet identifies a meeting
+                space <https://developers.google.com/meet/api/guides/meeting-spaces#identify-meeting-space>`__.
+
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -674,7 +728,10 @@ class SpacesServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -724,6 +781,9 @@ class SpacesServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("SpacesServiceAsyncClient",)

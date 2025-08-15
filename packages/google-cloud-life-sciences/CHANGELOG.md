@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.9.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-life-sciences-v0.9.17...google-cloud-life-sciences-v0.9.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([868b006](https://github.com/googleapis/google-cloud-python/commit/868b0069baf1a4bf6705986e0b6885419b35cdcc))
+
+## [0.9.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-life-sciences-v0.9.16...google-cloud-life-sciences-v0.9.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.9.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-life-sciences-v0.9.15...google-cloud-life-sciences-v0.9.16) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [0.9.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-life-sciences-v0.9.14...google-cloud-life-sciences-v0.9.15) (2024-12-12)
 
 

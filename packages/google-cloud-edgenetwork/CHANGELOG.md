@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgenetwork-v0.1.17...google-cloud-edgenetwork-v0.1.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgenetwork-v0.1.16...google-cloud-edgenetwork-v0.1.17) (2025-04-12)
+
+
+### Documentation
+
+* [google-cloud-edgenetwork] fix typos in comments ([#13756](https://github.com/googleapis/google-cloud-python/issues/13756)) ([e9fda4e](https://github.com/googleapis/google-cloud-python/commit/e9fda4e97ab7202421a604df9112b9fb14c5f352))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgenetwork-v0.1.15...google-cloud-edgenetwork-v0.1.16) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgenetwork-v0.1.14...google-cloud-edgenetwork-v0.1.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-edgenetwork-v0.1.13...google-cloud-edgenetwork-v0.1.14) (2024-12-12)
 
 

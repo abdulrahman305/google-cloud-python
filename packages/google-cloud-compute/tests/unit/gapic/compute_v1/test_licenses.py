@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,6 +61,13 @@ from google.oauth2 import service_account
 
 from google.cloud.compute_v1.services.licenses import LicensesClient, pagers, transports
 from google.cloud.compute_v1.types import compute
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -285,6 +292,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         LicensesClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = LicensesClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = LicensesClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1838,7 +1888,9 @@ def test_insert_rest_flattened():
         # get truthy value for each flattened field
         mock_args = dict(
             project="project_value",
-            license_resource=compute.License(charges_use_fee=True),
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
         )
         mock_args.update(sample_request)
 
@@ -1876,7 +1928,9 @@ def test_insert_rest_flattened_error(transport: str = "rest"):
         client.insert(
             compute.InsertLicenseRequest(),
             project="project_value",
-            license_resource=compute.License(charges_use_fee=True),
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
         )
 
 
@@ -2030,7 +2084,9 @@ def test_insert_unary_rest_flattened():
         # get truthy value for each flattened field
         mock_args = dict(
             project="project_value",
-            license_resource=compute.License(charges_use_fee=True),
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
         )
         mock_args.update(sample_request)
 
@@ -2068,7 +2124,9 @@ def test_insert_unary_rest_flattened_error(transport: str = "rest"):
         client.insert_unary(
             compute.InsertLicenseRequest(),
             project="project_value",
-            license_resource=compute.License(charges_use_fee=True),
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
         )
 
 
@@ -2733,6 +2791,454 @@ def test_test_iam_permissions_rest_flattened_error(transport: str = "rest"):
         )
 
 
+def test_update_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = LicensesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.update in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.update] = mock_rpc
+
+        request = {}
+        client.update(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_rest_required_fields(request_type=compute.UpdateLicenseRequest):
+    transport_class = transports.LicensesRestTransport
+
+    request_init = {}
+    request_init["license_"] = ""
+    request_init["project"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+    assert "license" not in jsonified_request
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+    assert "license" in jsonified_request
+    assert jsonified_request["license"] == request_init["license_"]
+
+    jsonified_request["license"] = "license__value"
+    jsonified_request["project"] = "project_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "license_",
+            "request_id",
+            "update_mask",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "license" in jsonified_request
+    assert jsonified_request["license"] == "license__value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "patch",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update(request)
+
+            expected_params = [
+                (
+                    "license",
+                    "",
+                ),
+            ]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_rest_unset_required_fields():
+    transport = transports.LicensesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "license",
+                "requestId",
+                "updateMask",
+            )
+        )
+        & set(
+            (
+                "license",
+                "licenseResource",
+                "project",
+            )
+        )
+    )
+
+
+def test_update_rest_flattened():
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "license_": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            license_="license__value",
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/licenses/{license_}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_rest_flattened_error(transport: str = "rest"):
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update(
+            compute.UpdateLicenseRequest(),
+            project="project_value",
+            license_="license__value",
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
+        )
+
+
+def test_update_unary_rest_use_cached_wrapped_rpc():
+    # Clients should use _prep_wrapped_messages to create cached wrapped rpcs,
+    # instead of constructing them on each call
+    with mock.patch("google.api_core.gapic_v1.method.wrap_method") as wrapper_fn:
+        client = LicensesClient(
+            credentials=ga_credentials.AnonymousCredentials(),
+            transport="rest",
+        )
+
+        # Should wrap all calls on client creation
+        assert wrapper_fn.call_count > 0
+        wrapper_fn.reset_mock()
+
+        # Ensure method has been cached
+        assert client._transport.update in client._transport._wrapped_methods
+
+        # Replace cached wrapped function with mock
+        mock_rpc = mock.Mock()
+        mock_rpc.return_value.name = (
+            "foo"  # operation_request.operation in compute client(s) expect a string.
+        )
+        client._transport._wrapped_methods[client._transport.update] = mock_rpc
+
+        request = {}
+        client.update_unary(request)
+
+        # Establish that the underlying gRPC stub method was called.
+        assert mock_rpc.call_count == 1
+
+        # Operation methods build a cached wrapper on first rpc call
+        # subsequent calls should use the cached wrapper
+        wrapper_fn.reset_mock()
+
+        client.update_unary(request)
+
+        # Establish that a new wrapper was not created for this call
+        assert wrapper_fn.call_count == 0
+        assert mock_rpc.call_count == 2
+
+
+def test_update_unary_rest_required_fields(request_type=compute.UpdateLicenseRequest):
+    transport_class = transports.LicensesRestTransport
+
+    request_init = {}
+    request_init["license_"] = ""
+    request_init["project"] = ""
+    request = request_type(**request_init)
+    pb_request = request_type.pb(request)
+    jsonified_request = json.loads(
+        json_format.MessageToJson(pb_request, use_integers_for_enums=False)
+    )
+
+    # verify fields with default values are dropped
+    assert "license" not in jsonified_request
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update._get_unset_required_fields(jsonified_request)
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with default values are now present
+    assert "license" in jsonified_request
+    assert jsonified_request["license"] == request_init["license_"]
+
+    jsonified_request["license"] = "license__value"
+    jsonified_request["project"] = "project_value"
+
+    unset_fields = transport_class(
+        credentials=ga_credentials.AnonymousCredentials()
+    ).update._get_unset_required_fields(jsonified_request)
+    # Check that path parameters and body parameters are not mixing in.
+    assert not set(unset_fields) - set(
+        (
+            "license_",
+            "request_id",
+            "update_mask",
+        )
+    )
+    jsonified_request.update(unset_fields)
+
+    # verify required fields with non-default values are left alone
+    assert "license" in jsonified_request
+    assert jsonified_request["license"] == "license__value"
+    assert "project" in jsonified_request
+    assert jsonified_request["project"] == "project_value"
+
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+    request = request_type(**request_init)
+
+    # Designate an appropriate value for the returned response.
+    return_value = compute.Operation()
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(Session, "request") as req:
+        # We need to mock transcode() because providing default values
+        # for required fields will fail the real version if the http_options
+        # expect actual values for those fields.
+        with mock.patch.object(path_template, "transcode") as transcode:
+            # A uri without fields and an empty body will force all the
+            # request fields to show up in the query_params.
+            pb_request = request_type.pb(request)
+            transcode_result = {
+                "uri": "v1/sample_method",
+                "method": "patch",
+                "query_params": pb_request,
+            }
+            transcode_result["body"] = pb_request
+            transcode.return_value = transcode_result
+
+            response_value = Response()
+            response_value.status_code = 200
+
+            # Convert return value to protobuf type
+            return_value = compute.Operation.pb(return_value)
+            json_return_value = json_format.MessageToJson(return_value)
+
+            response_value._content = json_return_value.encode("UTF-8")
+            req.return_value = response_value
+            req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+            response = client.update_unary(request)
+
+            expected_params = [
+                (
+                    "license",
+                    "",
+                ),
+            ]
+            actual_params = req.call_args.kwargs["params"]
+            assert expected_params == actual_params
+
+
+def test_update_unary_rest_unset_required_fields():
+    transport = transports.LicensesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials
+    )
+
+    unset_fields = transport.update._get_unset_required_fields({})
+    assert set(unset_fields) == (
+        set(
+            (
+                "license",
+                "requestId",
+                "updateMask",
+            )
+        )
+        & set(
+            (
+                "license",
+                "licenseResource",
+                "project",
+            )
+        )
+    )
+
+
+def test_update_unary_rest_flattened():
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation()
+
+        # get arguments that satisfy an http rule for this method
+        sample_request = {"project": "sample1", "license_": "sample2"}
+
+        # get truthy value for each flattened field
+        mock_args = dict(
+            project="project_value",
+            license_="license__value",
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
+        )
+        mock_args.update(sample_request)
+
+        # Wrap the value into a proper Response obj
+        response_value = Response()
+        response_value.status_code = 200
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value._content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+
+        client.update_unary(**mock_args)
+
+        # Establish that the underlying call was made with the expected
+        # request object values.
+        assert len(req.mock_calls) == 1
+        _, args, _ = req.mock_calls[0]
+        assert path_template.validate(
+            "%s/compute/v1/projects/{project}/global/licenses/{license_}"
+            % client.transport._host,
+            args[1],
+        )
+
+
+def test_update_unary_rest_flattened_error(transport: str = "rest"):
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport=transport,
+    )
+
+    # Attempting to call a method with both a request object and flattened
+    # fields is an error.
+    with pytest.raises(ValueError):
+        client.update_unary(
+            compute.UpdateLicenseRequest(),
+            project="project_value",
+            license_="license__value",
+            license_resource=compute.License(
+                allowed_replacement_licenses=["allowed_replacement_licenses_value"]
+            ),
+        )
+
+
 def test_credentials_transport_error():
     # It is an error to provide credentials and a transport instance.
     transport = transports.LicensesRestTransport(
@@ -2935,10 +3441,13 @@ def test_delete_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_delete"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_delete_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_delete"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.DeleteLicenseRequest.pb(compute.DeleteLicenseRequest())
         transcode.return_value = {
             "method": "post",
@@ -2960,6 +3469,7 @@ def test_delete_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.delete(
             request,
@@ -2971,6 +3481,7 @@ def test_delete_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_rest_bad_request(request_type=compute.GetLicenseRequest):
@@ -3016,15 +3527,25 @@ def test_get_rest_call_success(request_type):
     with mock.patch.object(type(client.transport._session), "request") as req:
         # Designate an appropriate value for the returned response.
         return_value = compute.License(
+            allowed_replacement_licenses=["allowed_replacement_licenses_value"],
+            appendable_to_disk=True,
             charges_use_fee=True,
             creation_timestamp="creation_timestamp_value",
             description="description_value",
             id=205,
+            incompatible_licenses=["incompatible_licenses_value"],
             kind="kind_value",
             license_code=1245,
+            multi_tenant_only=True,
             name="name_value",
+            os_license=True,
+            removable_from_disk=True,
+            required_coattached_licenses=["required_coattached_licenses_value"],
             self_link="self_link_value",
+            self_link_with_id="self_link_with_id_value",
+            sole_tenant_only=True,
             transferable=True,
+            update_timestamp="update_timestamp_value",
         )
 
         # Wrap the value into a proper Response obj
@@ -3041,15 +3562,29 @@ def test_get_rest_call_success(request_type):
 
     # Establish that the response is the type that we expect.
     assert isinstance(response, compute.License)
+    assert response.allowed_replacement_licenses == [
+        "allowed_replacement_licenses_value"
+    ]
+    assert response.appendable_to_disk is True
     assert response.charges_use_fee is True
     assert response.creation_timestamp == "creation_timestamp_value"
     assert response.description == "description_value"
     assert response.id == 205
+    assert response.incompatible_licenses == ["incompatible_licenses_value"]
     assert response.kind == "kind_value"
     assert response.license_code == 1245
+    assert response.multi_tenant_only is True
     assert response.name == "name_value"
+    assert response.os_license is True
+    assert response.removable_from_disk is True
+    assert response.required_coattached_licenses == [
+        "required_coattached_licenses_value"
+    ]
     assert response.self_link == "self_link_value"
+    assert response.self_link_with_id == "self_link_with_id_value"
+    assert response.sole_tenant_only is True
     assert response.transferable is True
+    assert response.update_timestamp == "update_timestamp_value"
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -3067,10 +3602,13 @@ def test_get_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_get"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_get_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_get"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetLicenseRequest.pb(compute.GetLicenseRequest())
         transcode.return_value = {
             "method": "post",
@@ -3092,6 +3630,7 @@ def test_get_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.License()
+        post_with_metadata.return_value = compute.License(), metadata
 
         client.get(
             request,
@@ -3103,6 +3642,7 @@ def test_get_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_iam_policy_rest_bad_request(
@@ -3189,10 +3729,13 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_get_iam_policy"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_get_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_get_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.GetIamPolicyLicenseRequest.pb(
             compute.GetIamPolicyLicenseRequest()
         )
@@ -3216,6 +3759,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.get_iam_policy(
             request,
@@ -3227,6 +3771,7 @@ def test_get_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_insert_rest_bad_request(request_type=compute.InsertLicenseRequest):
@@ -3267,16 +3812,36 @@ def test_insert_rest_call_success(request_type):
     # send a request that will satisfy transcoding
     request_init = {"project": "sample1"}
     request_init["license_resource"] = {
+        "allowed_replacement_licenses": [
+            "allowed_replacement_licenses_value1",
+            "allowed_replacement_licenses_value2",
+        ],
+        "appendable_to_disk": True,
         "charges_use_fee": True,
         "creation_timestamp": "creation_timestamp_value",
         "description": "description_value",
         "id": 205,
+        "incompatible_licenses": [
+            "incompatible_licenses_value1",
+            "incompatible_licenses_value2",
+        ],
         "kind": "kind_value",
         "license_code": 1245,
+        "minimum_retention": {"nanos": 543, "seconds": 751},
+        "multi_tenant_only": True,
         "name": "name_value",
+        "os_license": True,
+        "removable_from_disk": True,
+        "required_coattached_licenses": [
+            "required_coattached_licenses_value1",
+            "required_coattached_licenses_value2",
+        ],
         "resource_requirements": {"min_guest_cpu_count": 2042, "min_memory_mb": 1386},
         "self_link": "self_link_value",
+        "self_link_with_id": "self_link_with_id_value",
+        "sole_tenant_only": True,
         "transferable": True,
+        "update_timestamp": "update_timestamp_value",
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -3428,10 +3993,13 @@ def test_insert_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_insert"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_insert_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_insert"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.InsertLicenseRequest.pb(compute.InsertLicenseRequest())
         transcode.return_value = {
             "method": "post",
@@ -3453,6 +4021,7 @@ def test_insert_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
 
         client.insert(
             request,
@@ -3464,6 +4033,7 @@ def test_insert_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_rest_bad_request(request_type=compute.ListLicensesRequest):
@@ -3548,10 +4118,13 @@ def test_list_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_list"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_list_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_list"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.ListLicensesRequest.pb(compute.ListLicensesRequest())
         transcode.return_value = {
             "method": "post",
@@ -3575,6 +4148,7 @@ def test_list_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.LicensesListResponse()
+        post_with_metadata.return_value = compute.LicensesListResponse(), metadata
 
         client.list(
             request,
@@ -3586,6 +4160,7 @@ def test_list_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_set_iam_policy_rest_bad_request(
@@ -3788,10 +4363,13 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_set_iam_policy"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_set_iam_policy_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_set_iam_policy"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.SetIamPolicyLicenseRequest.pb(
             compute.SetIamPolicyLicenseRequest()
         )
@@ -3815,6 +4393,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.Policy()
+        post_with_metadata.return_value = compute.Policy(), metadata
 
         client.set_iam_policy(
             request,
@@ -3826,6 +4405,7 @@ def test_set_iam_policy_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_test_iam_permissions_rest_bad_request(
@@ -3986,10 +4566,13 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.LicensesRestInterceptor, "post_test_iam_permissions"
     ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_test_iam_permissions_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.LicensesRestInterceptor, "pre_test_iam_permissions"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = compute.TestIamPermissionsLicenseRequest.pb(
             compute.TestIamPermissionsLicenseRequest()
         )
@@ -4015,6 +4598,7 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = compute.TestPermissionsResponse()
+        post_with_metadata.return_value = compute.TestPermissionsResponse(), metadata
 
         client.test_iam_permissions(
             request,
@@ -4026,6 +4610,269 @@ def test_test_iam_permissions_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
+
+
+def test_update_rest_bad_request(request_type=compute.UpdateLicenseRequest):
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "license_": "sample2"}
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a BadRequest error.
+    with mock.patch.object(Session, "request") as req, pytest.raises(
+        core_exceptions.BadRequest
+    ):
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        json_return_value = ""
+        response_value.json = mock.Mock(return_value={})
+        response_value.status_code = 400
+        response_value.request = mock.Mock()
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        client.update(request)
+
+
+@pytest.mark.parametrize(
+    "request_type",
+    [
+        compute.UpdateLicenseRequest,
+        dict,
+    ],
+)
+def test_update_rest_call_success(request_type):
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(), transport="rest"
+    )
+
+    # send a request that will satisfy transcoding
+    request_init = {"project": "sample1", "license_": "sample2"}
+    request_init["license_resource"] = {
+        "allowed_replacement_licenses": [
+            "allowed_replacement_licenses_value1",
+            "allowed_replacement_licenses_value2",
+        ],
+        "appendable_to_disk": True,
+        "charges_use_fee": True,
+        "creation_timestamp": "creation_timestamp_value",
+        "description": "description_value",
+        "id": 205,
+        "incompatible_licenses": [
+            "incompatible_licenses_value1",
+            "incompatible_licenses_value2",
+        ],
+        "kind": "kind_value",
+        "license_code": 1245,
+        "minimum_retention": {"nanos": 543, "seconds": 751},
+        "multi_tenant_only": True,
+        "name": "name_value",
+        "os_license": True,
+        "removable_from_disk": True,
+        "required_coattached_licenses": [
+            "required_coattached_licenses_value1",
+            "required_coattached_licenses_value2",
+        ],
+        "resource_requirements": {"min_guest_cpu_count": 2042, "min_memory_mb": 1386},
+        "self_link": "self_link_value",
+        "self_link_with_id": "self_link_with_id_value",
+        "sole_tenant_only": True,
+        "transferable": True,
+        "update_timestamp": "update_timestamp_value",
+    }
+    # The version of a generated dependency at test runtime may differ from the version used during generation.
+    # Delete any fields which are not present in the current runtime dependency
+    # See https://github.com/googleapis/gapic-generator-python/issues/1748
+
+    # Determine if the message type is proto-plus or protobuf
+    test_field = compute.UpdateLicenseRequest.meta.fields["license_resource"]
+
+    def get_message_fields(field):
+        # Given a field which is a message (composite type), return a list with
+        # all the fields of the message.
+        # If the field is not a composite type, return an empty list.
+        message_fields = []
+
+        if hasattr(field, "message") and field.message:
+            is_field_type_proto_plus_type = not hasattr(field.message, "DESCRIPTOR")
+
+            if is_field_type_proto_plus_type:
+                message_fields = field.message.meta.fields.values()
+            # Add `# pragma: NO COVER` because there may not be any `*_pb2` field types
+            else:  # pragma: NO COVER
+                message_fields = field.message.DESCRIPTOR.fields
+        return message_fields
+
+    runtime_nested_fields = [
+        (field.name, nested_field.name)
+        for field in get_message_fields(test_field)
+        for nested_field in get_message_fields(field)
+    ]
+
+    subfields_not_in_runtime = []
+
+    # For each item in the sample request, create a list of sub fields which are not present at runtime
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for field, value in request_init["license_resource"].items():  # pragma: NO COVER
+        result = None
+        is_repeated = False
+        # For repeated fields
+        if isinstance(value, list) and len(value):
+            is_repeated = True
+            result = value[0]
+        # For fields where the type is another message
+        if isinstance(value, dict):
+            result = value
+
+        if result and hasattr(result, "keys"):
+            for subfield in result.keys():
+                if (field, subfield) not in runtime_nested_fields:
+                    subfields_not_in_runtime.append(
+                        {
+                            "field": field,
+                            "subfield": subfield,
+                            "is_repeated": is_repeated,
+                        }
+                    )
+
+    # Remove fields from the sample request which are not present in the runtime version of the dependency
+    # Add `# pragma: NO COVER` because this test code will not run if all subfields are present at runtime
+    for subfield_to_delete in subfields_not_in_runtime:  # pragma: NO COVER
+        field = subfield_to_delete.get("field")
+        field_repeated = subfield_to_delete.get("is_repeated")
+        subfield = subfield_to_delete.get("subfield")
+        if subfield:
+            if field_repeated:
+                for i in range(0, len(request_init["license_resource"][field])):
+                    del request_init["license_resource"][field][i][subfield]
+            else:
+                del request_init["license_resource"][field][subfield]
+    request = request_type(**request_init)
+
+    # Mock the http request call within the method and fake a response.
+    with mock.patch.object(type(client.transport._session), "request") as req:
+        # Designate an appropriate value for the returned response.
+        return_value = compute.Operation(
+            client_operation_id="client_operation_id_value",
+            creation_timestamp="creation_timestamp_value",
+            description="description_value",
+            end_time="end_time_value",
+            http_error_message="http_error_message_value",
+            http_error_status_code=2374,
+            id=205,
+            insert_time="insert_time_value",
+            kind="kind_value",
+            name="name_value",
+            operation_group_id="operation_group_id_value",
+            operation_type="operation_type_value",
+            progress=885,
+            region="region_value",
+            self_link="self_link_value",
+            start_time="start_time_value",
+            status=compute.Operation.Status.DONE,
+            status_message="status_message_value",
+            target_id=947,
+            target_link="target_link_value",
+            user="user_value",
+            zone="zone_value",
+        )
+
+        # Wrap the value into a proper Response obj
+        response_value = mock.Mock()
+        response_value.status_code = 200
+
+        # Convert return value to protobuf type
+        return_value = compute.Operation.pb(return_value)
+        json_return_value = json_format.MessageToJson(return_value)
+        response_value.content = json_return_value.encode("UTF-8")
+        req.return_value = response_value
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        response = client.update(request)
+
+    # Establish that the response is the type that we expect.
+    assert isinstance(response, extended_operation.ExtendedOperation)
+    assert response.client_operation_id == "client_operation_id_value"
+    assert response.creation_timestamp == "creation_timestamp_value"
+    assert response.description == "description_value"
+    assert response.end_time == "end_time_value"
+    assert response.http_error_message == "http_error_message_value"
+    assert response.http_error_status_code == 2374
+    assert response.id == 205
+    assert response.insert_time == "insert_time_value"
+    assert response.kind == "kind_value"
+    assert response.name == "name_value"
+    assert response.operation_group_id == "operation_group_id_value"
+    assert response.operation_type == "operation_type_value"
+    assert response.progress == 885
+    assert response.region == "region_value"
+    assert response.self_link == "self_link_value"
+    assert response.start_time == "start_time_value"
+    assert response.status == compute.Operation.Status.DONE
+    assert response.status_message == "status_message_value"
+    assert response.target_id == 947
+    assert response.target_link == "target_link_value"
+    assert response.user == "user_value"
+    assert response.zone == "zone_value"
+
+
+@pytest.mark.parametrize("null_interceptor", [True, False])
+def test_update_rest_interceptors(null_interceptor):
+    transport = transports.LicensesRestTransport(
+        credentials=ga_credentials.AnonymousCredentials(),
+        interceptor=None if null_interceptor else transports.LicensesRestInterceptor(),
+    )
+    client = LicensesClient(transport=transport)
+
+    with mock.patch.object(
+        type(client.transport._session), "request"
+    ) as req, mock.patch.object(
+        path_template, "transcode"
+    ) as transcode, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_update"
+    ) as post, mock.patch.object(
+        transports.LicensesRestInterceptor, "post_update_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
+        transports.LicensesRestInterceptor, "pre_update"
+    ) as pre:
+        pre.assert_not_called()
+        post.assert_not_called()
+        post_with_metadata.assert_not_called()
+        pb_message = compute.UpdateLicenseRequest.pb(compute.UpdateLicenseRequest())
+        transcode.return_value = {
+            "method": "post",
+            "uri": "my_uri",
+            "body": pb_message,
+            "query_params": pb_message,
+        }
+
+        req.return_value = mock.Mock()
+        req.return_value.status_code = 200
+        req.return_value.headers = {"header-1": "value-1", "header-2": "value-2"}
+        return_value = compute.Operation.to_json(compute.Operation())
+        req.return_value.content = return_value
+
+        request = compute.UpdateLicenseRequest()
+        metadata = [
+            ("key", "val"),
+            ("cephalopod", "squid"),
+        ]
+        pre.return_value = request, metadata
+        post.return_value = compute.Operation()
+        post_with_metadata.return_value = compute.Operation(), metadata
+
+        client.update(
+            request,
+            metadata=[
+                ("key", "val"),
+                ("cephalopod", "squid"),
+            ],
+        )
+
+        pre.assert_called_once()
+        post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_initialize_client_w_rest():
@@ -4177,6 +5024,26 @@ def test_test_iam_permissions_empty_call_rest():
         assert args[0] == request_msg
 
 
+# This test is a coverage failsafe to make sure that totally empty calls,
+# i.e. request == None and no flattened fields passed, work.
+def test_update_unary_empty_call_rest():
+    client = LicensesClient(
+        credentials=ga_credentials.AnonymousCredentials(),
+        transport="rest",
+    )
+
+    # Mock the actual call, and fake the request.
+    with mock.patch.object(type(client.transport.update), "__call__") as call:
+        client.update_unary(request=None)
+
+        # Establish that the underlying stub method was called.
+        call.assert_called()
+        _, args, _ = call.mock_calls[0]
+        request_msg = compute.UpdateLicenseRequest()
+
+        assert args[0] == request_msg
+
+
 def test_licenses_base_transport_error():
     # Passing both a credentials object and credentials_file should raise an error
     with pytest.raises(core_exceptions.DuplicateCredentialArgs):
@@ -4206,6 +5073,7 @@ def test_licenses_base_transport():
         "list",
         "set_iam_policy",
         "test_iam_permissions",
+        "update",
     )
     for method in methods:
         with pytest.raises(NotImplementedError):
@@ -4363,6 +5231,9 @@ def test_licenses_client_transport_session_collision(transport_name):
     assert session1 != session2
     session1 = client1.transport.test_iam_permissions._session
     session2 = client2.transport.test_iam_permissions._session
+    assert session1 != session2
+    session1 = client1.transport.update._session
+    session2 = client2.transport.update._session
     assert session1 != session2
 
 

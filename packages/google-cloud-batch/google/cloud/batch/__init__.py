@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ from google.cloud.batch_v1.services.batch_service.async_client import (
 )
 from google.cloud.batch_v1.services.batch_service.client import BatchServiceClient
 from google.cloud.batch_v1.types.batch import (
+    CancelJobRequest,
+    CancelJobResponse,
     CreateJobRequest,
     DeleteJobRequest,
     GetJobRequest,
@@ -58,6 +60,8 @@ from google.cloud.batch_v1.types.volume import GCS, NFS, Volume
 __all__ = (
     "BatchServiceClient",
     "BatchServiceAsyncClient",
+    "CancelJobRequest",
+    "CancelJobResponse",
     "CreateJobRequest",
     "DeleteJobRequest",
     "GetJobRequest",

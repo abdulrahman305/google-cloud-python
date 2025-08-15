@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.support_v2 import gapic_version as package_version
 
@@ -302,8 +303,7 @@ class CommentServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListCommentsAsyncPager:
-        r"""Retrieve all Comments associated with the Case
-        object.
+        r"""List all the comments associated with a case.
 
         .. code-block:: python
 
@@ -337,9 +337,8 @@ class CommentServiceAsyncClient:
                 The request object. The request message for the
                 ListComments endpoint.
             parent (:class:`str`):
-                Required. The resource name of Case
-                object for which comments should be
-                listed.
+                Required. The name of the case for
+                which to list comments.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -364,7 +363,10 @@ class CommentServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -428,9 +430,9 @@ class CommentServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> gcs_comment.Comment:
-        r"""Add a new comment to the specified Case.
-        The comment object must have the following fields set:
-        body.
+        r"""Add a new comment to a case.
+
+        The comment must have the following fields set: ``body``.
 
         .. code-block:: python
 
@@ -460,19 +462,17 @@ class CommentServiceAsyncClient:
 
         Args:
             request (Optional[Union[google.cloud.support_v2.types.CreateCommentRequest, dict]]):
-                The request object. The request message for CreateComment
-                endpoint.
+                The request object. The request message for the
+                CreateComment endpoint.
             parent (:class:`str`):
-                Required. The resource name of Case
-                to which this comment should be added.
+                Required. The name of the case to
+                which the comment should be added.
 
                 This corresponds to the ``parent`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
             comment (:class:`google.cloud.support_v2.types.Comment`):
-                Required. The Comment object to be
-                added to this Case.
-
+                Required. The comment to be added.
                 This corresponds to the ``comment`` field
                 on the ``request`` instance; if ``request`` is provided, this
                 should not be set.
@@ -488,12 +488,20 @@ class CommentServiceAsyncClient:
             google.cloud.support_v2.types.Comment:
                 A comment associated with a support
                 case.
+                Case comments are the primary way for
+                Google Support to communicate with a
+                user who has opened a case. When a user
+                responds to Google Support, the user's
+                responses also appear as comments.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent, comment])
+        flattened_params = [parent, comment]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -548,6 +556,9 @@ class CommentServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("CommentServiceAsyncClient",)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1204,7 +1204,7 @@ class ReservationServiceGrpcAsyncIOTransport(ReservationServiceTransport):
             ),
             self.failover_reservation: self._wrap_method(
                 self.failover_reservation,
-                default_timeout=None,
+                default_timeout=300.0,
                 client_info=client_info,
             ),
             self.create_capacity_commitment: self._wrap_method(

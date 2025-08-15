@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,33 +18,40 @@ from google.shopping.merchant_lfp import gapic_version as package_version
 __version__ = package_version.__version__
 
 
-from google.shopping.merchant_lfp_v1beta.services.lfp_inventory_service.async_client import (
+from google.shopping.merchant_lfp_v1.services.lfp_inventory_service.async_client import (
     LfpInventoryServiceAsyncClient,
 )
-from google.shopping.merchant_lfp_v1beta.services.lfp_inventory_service.client import (
+from google.shopping.merchant_lfp_v1.services.lfp_inventory_service.client import (
     LfpInventoryServiceClient,
 )
-from google.shopping.merchant_lfp_v1beta.services.lfp_sale_service.async_client import (
+from google.shopping.merchant_lfp_v1.services.lfp_merchant_state_service.async_client import (
+    LfpMerchantStateServiceAsyncClient,
+)
+from google.shopping.merchant_lfp_v1.services.lfp_merchant_state_service.client import (
+    LfpMerchantStateServiceClient,
+)
+from google.shopping.merchant_lfp_v1.services.lfp_sale_service.async_client import (
     LfpSaleServiceAsyncClient,
 )
-from google.shopping.merchant_lfp_v1beta.services.lfp_sale_service.client import (
+from google.shopping.merchant_lfp_v1.services.lfp_sale_service.client import (
     LfpSaleServiceClient,
 )
-from google.shopping.merchant_lfp_v1beta.services.lfp_store_service.async_client import (
+from google.shopping.merchant_lfp_v1.services.lfp_store_service.async_client import (
     LfpStoreServiceAsyncClient,
 )
-from google.shopping.merchant_lfp_v1beta.services.lfp_store_service.client import (
+from google.shopping.merchant_lfp_v1.services.lfp_store_service.client import (
     LfpStoreServiceClient,
 )
-from google.shopping.merchant_lfp_v1beta.types.lfpinventory import (
+from google.shopping.merchant_lfp_v1.types.lfpinventory import (
     InsertLfpInventoryRequest,
     LfpInventory,
 )
-from google.shopping.merchant_lfp_v1beta.types.lfpsale import (
-    InsertLfpSaleRequest,
-    LfpSale,
+from google.shopping.merchant_lfp_v1.types.lfpmerchantstate import (
+    GetLfpMerchantStateRequest,
+    LfpMerchantState,
 )
-from google.shopping.merchant_lfp_v1beta.types.lfpstore import (
+from google.shopping.merchant_lfp_v1.types.lfpsale import InsertLfpSaleRequest, LfpSale
+from google.shopping.merchant_lfp_v1.types.lfpstore import (
     DeleteLfpStoreRequest,
     GetLfpStoreRequest,
     InsertLfpStoreRequest,
@@ -56,12 +63,16 @@ from google.shopping.merchant_lfp_v1beta.types.lfpstore import (
 __all__ = (
     "LfpInventoryServiceClient",
     "LfpInventoryServiceAsyncClient",
+    "LfpMerchantStateServiceClient",
+    "LfpMerchantStateServiceAsyncClient",
     "LfpSaleServiceClient",
     "LfpSaleServiceAsyncClient",
     "LfpStoreServiceClient",
     "LfpStoreServiceAsyncClient",
     "InsertLfpInventoryRequest",
     "LfpInventory",
+    "GetLfpMerchantStateRequest",
+    "LfpMerchantState",
     "InsertLfpSaleRequest",
     "LfpSale",
     "DeleteLfpStoreRequest",

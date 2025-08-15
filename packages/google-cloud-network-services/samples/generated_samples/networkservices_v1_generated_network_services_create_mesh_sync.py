@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,13 +39,9 @@ def sample_create_mesh():
     client = network_services_v1.NetworkServicesClient()
 
     # Initialize request argument(s)
-    mesh = network_services_v1.Mesh()
-    mesh.name = "name_value"
-
     request = network_services_v1.CreateMeshRequest(
         parent="parent_value",
         mesh_id="mesh_id_value",
-        mesh=mesh,
     )
 
     # Make the request

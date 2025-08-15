@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policytroubleshooter-iam-v0.1.12...google-cloud-policytroubleshooter-iam-v0.1.13) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([dfc2cd6](https://github.com/googleapis/google-cloud-python/commit/dfc2cd6be6422baa45dcebc5ff6e7fc846bf5c7d))
+
+## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policytroubleshooter-iam-v0.1.11...google-cloud-policytroubleshooter-iam-v0.1.12) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+
+## [0.1.11](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policytroubleshooter-iam-v0.1.10...google-cloud-policytroubleshooter-iam-v0.1.11) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
 ## [0.1.10](https://github.com/googleapis/google-cloud-python/compare/google-cloud-policytroubleshooter-iam-v0.1.9...google-cloud-policytroubleshooter-iam-v0.1.10) (2024-12-12)
 
 

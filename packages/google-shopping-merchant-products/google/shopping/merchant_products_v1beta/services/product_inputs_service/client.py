@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.shopping.merchant_products_v1beta import gapic_version as package_version
 
@@ -58,6 +61,7 @@ except ImportError:  # pragma: NO COVER
 
 _LOGGER = std_logging.getLogger(__name__)
 
+from google.protobuf import field_mask_pb2  # type: ignore
 from google.shopping.type.types import types
 
 from google.shopping.merchant_products_v1beta.types import (
@@ -504,6 +508,33 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -713,14 +744,18 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> productinputs.ProductInput:
-        r"""Uploads a product input to your Merchant Center
-        account. If an input with the same contentLanguage,
-        offerId, and dataSource already exists, this method
-        replaces that entry.
+        r"""`Uploads a product input to your Merchant Center
+        account </merchant/api/guides/products/overview#upload-product-input>`__.
+        You must have a products data source to be able to insert a
+        product. The unique identifier of the data source is passed as a
+        query parameter in the request URL.
 
-        After inserting, updating, or deleting a product input,
-        it may take several minutes before the processed product
-        can be retrieved.
+        If an input with the same contentLanguage, offerId, and
+        dataSource already exists, this method replaces that entry.
+
+        After inserting, updating, or deleting a product input, it may
+        take several minutes before the processed product can be
+        retrieved.
 
         .. code-block:: python
 
@@ -739,7 +774,6 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
 
                 # Initialize request argument(s)
                 product_input = merchant_products_v1beta.ProductInput()
-                product_input.channel = "LOCAL"
                 product_input.offer_id = "offer_id_value"
                 product_input.content_language = "content_language_value"
                 product_input.feed_label = "feed_label_value"
@@ -776,6 +810,8 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
                    inputs, rules and supplemental data source data are
                    combined to create the processed
                    [Product][google.shopping.merchant.products.v1beta.Product].
+                   For more information, see [Manage
+                   products](/merchant/api/guides/products/overview).
 
                    Required product input attributes to pass data
                    validation checks are primarily defined in the
@@ -794,8 +830,14 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
 
                    All fields in the product input and its sub-messages
                    match the English name of their corresponding
-                   attribute in the vertical spec with [some
+                   attribute in the [Products Data
+                   Specification](\ https://support.google.com/merchants/answer/188494)
+                   with [some
                    exceptions](\ https://support.google.com/merchants/answer/7052112).
+                   The following reference documentation lists the field
+                   names in the **camelCase** casing style while the
+                   Products Data Specification lists the names in the
+                   **snake_case** casing style.
 
         """
         # Create or coerce a protobuf request object.
@@ -812,6 +854,190 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
         # add these here.
         metadata = tuple(metadata) + (
             gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def update_product_input(
+        self,
+        request: Optional[Union[productinputs.UpdateProductInputRequest, dict]] = None,
+        *,
+        product_input: Optional[productinputs.ProductInput] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> productinputs.ProductInput:
+        r"""Updates the existing product input in your Merchant
+        Center account.
+        After inserting, updating, or deleting a product input,
+        it may take several minutes before the processed product
+        can be retrieved.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.shopping import merchant_products_v1beta
+
+            def sample_update_product_input():
+                # Create a client
+                client = merchant_products_v1beta.ProductInputsServiceClient()
+
+                # Initialize request argument(s)
+                product_input = merchant_products_v1beta.ProductInput()
+                product_input.offer_id = "offer_id_value"
+                product_input.content_language = "content_language_value"
+                product_input.feed_label = "feed_label_value"
+
+                request = merchant_products_v1beta.UpdateProductInputRequest(
+                    product_input=product_input,
+                    data_source="data_source_value",
+                )
+
+                # Make the request
+                response = client.update_product_input(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.shopping.merchant_products_v1beta.types.UpdateProductInputRequest, dict]):
+                The request object. Request message for the
+                UpdateProductInput method. The product
+                (primary input) must exist for the
+                update to succeed. If the update is for
+                a primary product input, the existing
+                primary product input must be from the
+                same data source.
+            product_input (google.shopping.merchant_products_v1beta.types.ProductInput):
+                Required. The product input resource
+                to update. Information you submit will
+                be applied to the processed product as
+                well.
+
+                This corresponds to the ``product_input`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Optional. The list of product attributes to be updated.
+
+                If the update mask is omitted, then it is treated as
+                implied field mask equivalent to all fields that are
+                populated (have a non-empty value).
+
+                Attributes specified in the update mask without a value
+                specified in the body will be deleted from the product.
+
+                Update mask can only be specified for top level fields
+                in attributes and custom attributes.
+
+                To specify the update mask for custom attributes you
+                need to add the ``custom_attribute.`` prefix.
+
+                Providing special "*" value for full product replacement
+                is not supported.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.shopping.merchant_products_v1beta.types.ProductInput:
+                This resource represents input data you submit for a product, not the
+                   processed product that you see in Merchant Center, in
+                   Shopping ads, or across Google surfaces. Product
+                   inputs, rules and supplemental data source data are
+                   combined to create the processed
+                   [Product][google.shopping.merchant.products.v1beta.Product].
+                   For more information, see [Manage
+                   products](/merchant/api/guides/products/overview).
+
+                   Required product input attributes to pass data
+                   validation checks are primarily defined in the
+                   [Products Data
+                   Specification](\ https://support.google.com/merchants/answer/188494).
+
+                   The following attributes are required:
+                   [feedLabel][google.shopping.merchant.products.v1beta.Product.feed_label],
+                   [contentLanguage][google.shopping.merchant.products.v1beta.Product.content_language]
+                   and
+                   [offerId][google.shopping.merchant.products.v1beta.Product.offer_id].
+
+                   After inserting, updating, or deleting a product
+                   input, it may take several minutes before the
+                   processed product can be retrieved.
+
+                   All fields in the product input and its sub-messages
+                   match the English name of their corresponding
+                   attribute in the [Products Data
+                   Specification](\ https://support.google.com/merchants/answer/188494)
+                   with [some
+                   exceptions](\ https://support.google.com/merchants/answer/7052112).
+                   The following reference documentation lists the field
+                   names in the **camelCase** casing style while the
+                   Products Data Specification lists the names in the
+                   **snake_case** casing style.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [product_input, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, productinputs.UpdateProductInputRequest):
+            request = productinputs.UpdateProductInputRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if product_input is not None:
+                request.product_input = product_input
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_product_input]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("product_input.name", request.product_input.name),)
+            ),
         )
 
         # Validate the universe domain.
@@ -874,11 +1100,11 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
             name (str):
                 Required. The name of the product input resource to
                 delete. Format:
-                accounts/{account}/productInputs/{product} where the
+                ``accounts/{account}/productInputs/{product}`` where the
                 last section ``product`` consists of 4 parts:
-                channel~content_language~feed_label~offer_id example for
-                product name is
-                "accounts/123/productInputs/online~en~US~sku123"
+                ``channel~content_language~feed_label~offer_id`` example
+                for product name is
+                ``accounts/123/productInputs/online~en~US~sku123``.
 
                 This corresponds to the ``name`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -894,7 +1120,10 @@ class ProductInputsServiceClient(metaclass=ProductInputsServiceClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -949,5 +1178,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("ProductInputsServiceClient",)

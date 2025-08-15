@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ __version__ = package_version.__version__
 
 
 from .services.asset_service import AssetServiceAsyncClient, AssetServiceClient
+from .types.asset_enrichment_resourceowners import ResourceOwners
 from .types.asset_service import (
     AnalyzeIamPolicyLongrunningMetadata,
     AnalyzeIamPolicyLongrunningRequest,
@@ -84,6 +85,7 @@ from .types.asset_service import (
 )
 from .types.assets import (
     Asset,
+    AssetEnrichment,
     AttachedResource,
     ConditionEvaluation,
     EffectiveTagDetails,
@@ -121,6 +123,7 @@ __all__ = (
     "AnalyzerOrgPolicy",
     "AnalyzerOrgPolicyConstraint",
     "Asset",
+    "AssetEnrichment",
     "AssetServiceClient",
     "AttachedResource",
     "BatchGetAssetsHistoryRequest",
@@ -171,6 +174,7 @@ __all__ = (
     "RelatedResources",
     "RelationshipAttributes",
     "Resource",
+    "ResourceOwners",
     "ResourceSearchResult",
     "SavedQuery",
     "SearchAllIamPoliciesRequest",

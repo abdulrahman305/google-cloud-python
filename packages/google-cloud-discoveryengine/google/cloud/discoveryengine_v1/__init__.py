@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,14 @@ from google.cloud.discoveryengine_v1 import gapic_version as package_version
 __version__ = package_version.__version__
 
 
+from .services.assistant_service import (
+    AssistantServiceAsyncClient,
+    AssistantServiceClient,
+)
+from .services.cmek_config_service import (
+    CmekConfigServiceAsyncClient,
+    CmekConfigServiceClient,
+)
 from .services.completion_service import (
     CompletionServiceAsyncClient,
     CompletionServiceClient,
@@ -37,6 +45,10 @@ from .services.grounded_generation_service import (
     GroundedGenerationServiceAsyncClient,
     GroundedGenerationServiceClient,
 )
+from .services.identity_mapping_store_service import (
+    IdentityMappingStoreServiceAsyncClient,
+    IdentityMappingStoreServiceClient,
+)
 from .services.project_service import ProjectServiceAsyncClient, ProjectServiceClient
 from .services.rank_service import RankServiceAsyncClient, RankServiceClient
 from .services.recommendation_service import (
@@ -49,6 +61,11 @@ from .services.search_tuning_service import (
     SearchTuningServiceAsyncClient,
     SearchTuningServiceClient,
 )
+from .services.serving_config_service import (
+    ServingConfigServiceAsyncClient,
+    ServingConfigServiceClient,
+)
+from .services.session_service import SessionServiceAsyncClient, SessionServiceClient
 from .services.site_search_engine_service import (
     SiteSearchEngineServiceAsyncClient,
     SiteSearchEngineServiceClient,
@@ -57,13 +74,43 @@ from .services.user_event_service import (
     UserEventServiceAsyncClient,
     UserEventServiceClient,
 )
+from .services.user_license_service import (
+    UserLicenseServiceAsyncClient,
+    UserLicenseServiceClient,
+)
 from .types.answer import Answer
+from .types.assist_answer import (
+    AssistAnswer,
+    AssistantContent,
+    AssistantGroundedContent,
+)
+from .types.assistant import Assistant
+from .types.assistant_service import (
+    AssistUserMetadata,
+    StreamAssistRequest,
+    StreamAssistResponse,
+)
 from .types.chunk import Chunk
+from .types.cmek_config_service import (
+    CmekConfig,
+    DeleteCmekConfigMetadata,
+    DeleteCmekConfigRequest,
+    GetCmekConfigRequest,
+    ListCmekConfigsRequest,
+    ListCmekConfigsResponse,
+    SingleRegionKey,
+    UpdateCmekConfigMetadata,
+    UpdateCmekConfigRequest,
+)
 from .types.common import (
     CustomAttribute,
+    DoubleList,
+    HealthcareFhirConfig,
     IndustryVertical,
     Interval,
+    Principal,
     SearchAddOn,
+    SearchLinkPromotion,
     SearchTier,
     SearchUseCase,
     SolutionType,
@@ -107,7 +154,7 @@ from .types.conversational_search_service import (
     UpdateSessionRequest,
 )
 from .types.custom_tuning_model import CustomTuningModel
-from .types.data_store import DataStore, WorkspaceConfig
+from .types.data_store import AdvancedSiteSearchConfig, DataStore, WorkspaceConfig
 from .types.data_store_service import (
     CreateDataStoreMetadata,
     CreateDataStoreRequest,
@@ -150,6 +197,21 @@ from .types.grounded_generation_service import (
     GroundedGenerationContent,
 )
 from .types.grounding import FactChunk, GroundingFact
+from .types.identity_mapping_store import IdentityMappingEntry, IdentityMappingStore
+from .types.identity_mapping_store_service import (
+    CreateIdentityMappingStoreRequest,
+    DeleteIdentityMappingStoreMetadata,
+    DeleteIdentityMappingStoreRequest,
+    GetIdentityMappingStoreRequest,
+    IdentityMappingEntryOperationMetadata,
+    ImportIdentityMappingsRequest,
+    ImportIdentityMappingsResponse,
+    ListIdentityMappingsRequest,
+    ListIdentityMappingsResponse,
+    ListIdentityMappingStoresRequest,
+    ListIdentityMappingStoresResponse,
+    PurgeIdentityMappingsRequest,
+)
 from .types.import_config import (
     AlloyDbSource,
     BigQuerySource,
@@ -193,6 +255,7 @@ from .types.purge_config import (
 )
 from .types.rank_service import RankingRecord, RankRequest, RankResponse
 from .types.recommendation_service import RecommendRequest, RecommendResponse
+from .types.safety import HarmCategory, SafetyRating
 from .types.schema import Schema
 from .types.schema_service import (
     CreateSchemaMetadata,
@@ -213,8 +276,15 @@ from .types.search_tuning_service import (
     TrainCustomModelRequest,
     TrainCustomModelResponse,
 )
+from .types.serving_config import ServingConfig
+from .types.serving_config_service import UpdateServingConfigRequest
 from .types.session import Query, Session
-from .types.site_search_engine import SiteSearchEngine, SiteVerificationInfo, TargetSite
+from .types.site_search_engine import (
+    Sitemap,
+    SiteSearchEngine,
+    SiteVerificationInfo,
+    TargetSite,
+)
 from .types.site_search_engine_service import (
     BatchCreateTargetSiteMetadata,
     BatchCreateTargetSitesRequest,
@@ -222,8 +292,12 @@ from .types.site_search_engine_service import (
     BatchVerifyTargetSitesMetadata,
     BatchVerifyTargetSitesRequest,
     BatchVerifyTargetSitesResponse,
+    CreateSitemapMetadata,
+    CreateSitemapRequest,
     CreateTargetSiteMetadata,
     CreateTargetSiteRequest,
+    DeleteSitemapMetadata,
+    DeleteSitemapRequest,
     DeleteTargetSiteMetadata,
     DeleteTargetSiteRequest,
     DisableAdvancedSiteSearchMetadata,
@@ -234,6 +308,8 @@ from .types.site_search_engine_service import (
     EnableAdvancedSiteSearchResponse,
     FetchDomainVerificationStatusRequest,
     FetchDomainVerificationStatusResponse,
+    FetchSitemapsRequest,
+    FetchSitemapsResponse,
     GetSiteSearchEngineRequest,
     GetTargetSiteRequest,
     ListTargetSitesRequest,
@@ -255,8 +331,18 @@ from .types.user_event import (
     UserEvent,
 )
 from .types.user_event_service import CollectUserEventRequest, WriteUserEventRequest
+from .types.user_license import UserLicense
+from .types.user_license_service import (
+    BatchUpdateUserLicensesMetadata,
+    BatchUpdateUserLicensesRequest,
+    BatchUpdateUserLicensesResponse,
+    ListUserLicensesRequest,
+    ListUserLicensesResponse,
+)
 
 __all__ = (
+    "AssistantServiceAsyncClient",
+    "CmekConfigServiceAsyncClient",
     "CompletionServiceAsyncClient",
     "ControlServiceAsyncClient",
     "ConversationalSearchServiceAsyncClient",
@@ -264,23 +350,37 @@ __all__ = (
     "DocumentServiceAsyncClient",
     "EngineServiceAsyncClient",
     "GroundedGenerationServiceAsyncClient",
+    "IdentityMappingStoreServiceAsyncClient",
     "ProjectServiceAsyncClient",
     "RankServiceAsyncClient",
     "RecommendationServiceAsyncClient",
     "SchemaServiceAsyncClient",
     "SearchServiceAsyncClient",
     "SearchTuningServiceAsyncClient",
+    "ServingConfigServiceAsyncClient",
+    "SessionServiceAsyncClient",
     "SiteSearchEngineServiceAsyncClient",
     "UserEventServiceAsyncClient",
+    "UserLicenseServiceAsyncClient",
+    "AdvancedSiteSearchConfig",
     "AlloyDbSource",
     "Answer",
     "AnswerQueryRequest",
     "AnswerQueryResponse",
+    "AssistAnswer",
+    "AssistUserMetadata",
+    "Assistant",
+    "AssistantContent",
+    "AssistantGroundedContent",
+    "AssistantServiceClient",
     "BatchCreateTargetSiteMetadata",
     "BatchCreateTargetSitesRequest",
     "BatchCreateTargetSitesResponse",
     "BatchGetDocumentsMetadataRequest",
     "BatchGetDocumentsMetadataResponse",
+    "BatchUpdateUserLicensesMetadata",
+    "BatchUpdateUserLicensesRequest",
+    "BatchUpdateUserLicensesResponse",
     "BatchVerifyTargetSitesMetadata",
     "BatchVerifyTargetSitesRequest",
     "BatchVerifyTargetSitesResponse",
@@ -292,6 +392,8 @@ __all__ = (
     "CheckGroundingSpec",
     "Chunk",
     "CloudSqlSource",
+    "CmekConfig",
+    "CmekConfigServiceClient",
     "CollectUserEventRequest",
     "CompleteQueryRequest",
     "CompleteQueryResponse",
@@ -314,15 +416,20 @@ __all__ = (
     "CreateDocumentRequest",
     "CreateEngineMetadata",
     "CreateEngineRequest",
+    "CreateIdentityMappingStoreRequest",
     "CreateSchemaMetadata",
     "CreateSchemaRequest",
     "CreateSessionRequest",
+    "CreateSitemapMetadata",
+    "CreateSitemapRequest",
     "CreateTargetSiteMetadata",
     "CreateTargetSiteRequest",
     "CustomAttribute",
     "CustomTuningModel",
     "DataStore",
     "DataStoreServiceClient",
+    "DeleteCmekConfigMetadata",
+    "DeleteCmekConfigRequest",
     "DeleteControlRequest",
     "DeleteConversationRequest",
     "DeleteDataStoreMetadata",
@@ -330,9 +437,13 @@ __all__ = (
     "DeleteDocumentRequest",
     "DeleteEngineMetadata",
     "DeleteEngineRequest",
+    "DeleteIdentityMappingStoreMetadata",
+    "DeleteIdentityMappingStoreRequest",
     "DeleteSchemaMetadata",
     "DeleteSchemaRequest",
     "DeleteSessionRequest",
+    "DeleteSitemapMetadata",
+    "DeleteSitemapRequest",
     "DeleteTargetSiteMetadata",
     "DeleteTargetSiteRequest",
     "DisableAdvancedSiteSearchMetadata",
@@ -342,6 +453,7 @@ __all__ = (
     "DocumentInfo",
     "DocumentProcessingConfig",
     "DocumentServiceClient",
+    "DoubleList",
     "EnableAdvancedSiteSearchMetadata",
     "EnableAdvancedSiteSearchRequest",
     "EnableAdvancedSiteSearchResponse",
@@ -350,17 +462,21 @@ __all__ = (
     "FactChunk",
     "FetchDomainVerificationStatusRequest",
     "FetchDomainVerificationStatusResponse",
+    "FetchSitemapsRequest",
+    "FetchSitemapsResponse",
     "FhirStoreSource",
     "FirestoreSource",
     "GcsSource",
     "GenerateGroundedContentRequest",
     "GenerateGroundedContentResponse",
     "GetAnswerRequest",
+    "GetCmekConfigRequest",
     "GetControlRequest",
     "GetConversationRequest",
     "GetDataStoreRequest",
     "GetDocumentRequest",
     "GetEngineRequest",
+    "GetIdentityMappingStoreRequest",
     "GetSchemaRequest",
     "GetSessionRequest",
     "GetSiteSearchEngineRequest",
@@ -368,6 +484,12 @@ __all__ = (
     "GroundedGenerationContent",
     "GroundedGenerationServiceClient",
     "GroundingFact",
+    "HarmCategory",
+    "HealthcareFhirConfig",
+    "IdentityMappingEntry",
+    "IdentityMappingEntryOperationMetadata",
+    "IdentityMappingStore",
+    "IdentityMappingStoreServiceClient",
     "ImportCompletionSuggestionsMetadata",
     "ImportCompletionSuggestionsRequest",
     "ImportCompletionSuggestionsResponse",
@@ -375,6 +497,8 @@ __all__ = (
     "ImportDocumentsRequest",
     "ImportDocumentsResponse",
     "ImportErrorConfig",
+    "ImportIdentityMappingsRequest",
+    "ImportIdentityMappingsResponse",
     "ImportSuggestionDenyListEntriesMetadata",
     "ImportSuggestionDenyListEntriesRequest",
     "ImportSuggestionDenyListEntriesResponse",
@@ -383,6 +507,8 @@ __all__ = (
     "ImportUserEventsResponse",
     "IndustryVertical",
     "Interval",
+    "ListCmekConfigsRequest",
+    "ListCmekConfigsResponse",
     "ListControlsRequest",
     "ListControlsResponse",
     "ListConversationsRequest",
@@ -395,15 +521,22 @@ __all__ = (
     "ListDocumentsResponse",
     "ListEnginesRequest",
     "ListEnginesResponse",
+    "ListIdentityMappingStoresRequest",
+    "ListIdentityMappingStoresResponse",
+    "ListIdentityMappingsRequest",
+    "ListIdentityMappingsResponse",
     "ListSchemasRequest",
     "ListSchemasResponse",
     "ListSessionsRequest",
     "ListSessionsResponse",
     "ListTargetSitesRequest",
     "ListTargetSitesResponse",
+    "ListUserLicensesRequest",
+    "ListUserLicensesResponse",
     "MediaInfo",
     "PageInfo",
     "PanelInfo",
+    "Principal",
     "Project",
     "ProjectServiceClient",
     "ProvisionProjectMetadata",
@@ -415,6 +548,7 @@ __all__ = (
     "PurgeDocumentsRequest",
     "PurgeDocumentsResponse",
     "PurgeErrorConfig",
+    "PurgeIdentityMappingsRequest",
     "PurgeSuggestionDenyListEntriesMetadata",
     "PurgeSuggestionDenyListEntriesRequest",
     "PurgeSuggestionDenyListEntriesResponse",
@@ -433,22 +567,31 @@ __all__ = (
     "RecrawlUrisRequest",
     "RecrawlUrisResponse",
     "Reply",
+    "SafetyRating",
     "Schema",
     "SchemaServiceClient",
     "SearchAddOn",
     "SearchInfo",
+    "SearchLinkPromotion",
     "SearchRequest",
     "SearchResponse",
     "SearchServiceClient",
     "SearchTier",
     "SearchTuningServiceClient",
     "SearchUseCase",
+    "ServingConfig",
+    "ServingConfigServiceClient",
     "Session",
+    "SessionServiceClient",
+    "SingleRegionKey",
     "SiteSearchEngine",
     "SiteSearchEngineServiceClient",
     "SiteVerificationInfo",
+    "Sitemap",
     "SolutionType",
     "SpannerSource",
+    "StreamAssistRequest",
+    "StreamAssistResponse",
     "SuggestionDenyListEntry",
     "TargetSite",
     "TextInput",
@@ -456,6 +599,8 @@ __all__ = (
     "TrainCustomModelRequest",
     "TrainCustomModelResponse",
     "TransactionInfo",
+    "UpdateCmekConfigMetadata",
+    "UpdateCmekConfigRequest",
     "UpdateControlRequest",
     "UpdateConversationRequest",
     "UpdateDataStoreRequest",
@@ -463,12 +608,15 @@ __all__ = (
     "UpdateEngineRequest",
     "UpdateSchemaMetadata",
     "UpdateSchemaRequest",
+    "UpdateServingConfigRequest",
     "UpdateSessionRequest",
     "UpdateTargetSiteMetadata",
     "UpdateTargetSiteRequest",
     "UserEvent",
     "UserEventServiceClient",
     "UserInfo",
+    "UserLicense",
+    "UserLicenseServiceClient",
     "WorkspaceConfig",
     "WriteUserEventRequest",
 )

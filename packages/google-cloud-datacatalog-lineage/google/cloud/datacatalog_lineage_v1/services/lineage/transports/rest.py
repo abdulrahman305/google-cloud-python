@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -53,6 +54,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class LineageRestInterceptor:
@@ -227,11 +231,37 @@ class LineageRestInterceptor:
     ) -> lineage.BatchSearchLinkProcessesResponse:
         """Post-rpc interceptor for batch_search_link_processes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_batch_search_link_processes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_batch_search_link_processes` interceptor runs
+        before the `post_batch_search_link_processes_with_metadata` interceptor.
         """
         return response
+
+    def post_batch_search_link_processes_with_metadata(
+        self,
+        response: lineage.BatchSearchLinkProcessesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        lineage.BatchSearchLinkProcessesResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for batch_search_link_processes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_batch_search_link_processes_with_metadata`
+        interceptor in new development instead of the `post_batch_search_link_processes` interceptor.
+        When both interceptors are used, this `post_batch_search_link_processes_with_metadata` interceptor runs after the
+        `post_batch_search_link_processes` interceptor. The (possibly modified) response returned by
+        `post_batch_search_link_processes` will be passed to
+        `post_batch_search_link_processes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_lineage_event(
         self,
@@ -252,11 +282,34 @@ class LineageRestInterceptor:
     ) -> lineage.LineageEvent:
         """Post-rpc interceptor for create_lineage_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_lineage_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_lineage_event` interceptor runs
+        before the `post_create_lineage_event_with_metadata` interceptor.
         """
         return response
+
+    def post_create_lineage_event_with_metadata(
+        self,
+        response: lineage.LineageEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.LineageEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_lineage_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_create_lineage_event_with_metadata`
+        interceptor in new development instead of the `post_create_lineage_event` interceptor.
+        When both interceptors are used, this `post_create_lineage_event_with_metadata` interceptor runs after the
+        `post_create_lineage_event` interceptor. The (possibly modified) response returned by
+        `post_create_lineage_event` will be passed to
+        `post_create_lineage_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_process(
         self,
@@ -273,11 +326,34 @@ class LineageRestInterceptor:
     def post_create_process(self, response: lineage.Process) -> lineage.Process:
         """Post-rpc interceptor for create_process
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_process_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_process` interceptor runs
+        before the `post_create_process_with_metadata` interceptor.
         """
         return response
+
+    def post_create_process_with_metadata(
+        self,
+        response: lineage.Process,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.Process, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_process
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_create_process_with_metadata`
+        interceptor in new development instead of the `post_create_process` interceptor.
+        When both interceptors are used, this `post_create_process_with_metadata` interceptor runs after the
+        `post_create_process` interceptor. The (possibly modified) response returned by
+        `post_create_process` will be passed to
+        `post_create_process_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_run(
         self,
@@ -294,11 +370,32 @@ class LineageRestInterceptor:
     def post_create_run(self, response: lineage.Run) -> lineage.Run:
         """Post-rpc interceptor for create_run
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_run_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_run` interceptor runs
+        before the `post_create_run_with_metadata` interceptor.
         """
         return response
+
+    def post_create_run_with_metadata(
+        self, response: lineage.Run, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[lineage.Run, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_run
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_create_run_with_metadata`
+        interceptor in new development instead of the `post_create_run` interceptor.
+        When both interceptors are used, this `post_create_run_with_metadata` interceptor runs after the
+        `post_create_run` interceptor. The (possibly modified) response returned by
+        `post_create_run` will be passed to
+        `post_create_run_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_lineage_event(
         self,
@@ -331,11 +428,34 @@ class LineageRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_process
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_process_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_process` interceptor runs
+        before the `post_delete_process_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_process_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_process
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_delete_process_with_metadata`
+        interceptor in new development instead of the `post_delete_process` interceptor.
+        When both interceptors are used, this `post_delete_process_with_metadata` interceptor runs after the
+        `post_delete_process` interceptor. The (possibly modified) response returned by
+        `post_delete_process` will be passed to
+        `post_delete_process_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_run(
         self,
@@ -354,11 +474,34 @@ class LineageRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for delete_run
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_run_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete_run` interceptor runs
+        before the `post_delete_run_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_run_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete_run
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_delete_run_with_metadata`
+        interceptor in new development instead of the `post_delete_run` interceptor.
+        When both interceptors are used, this `post_delete_run_with_metadata` interceptor runs after the
+        `post_delete_run` interceptor. The (possibly modified) response returned by
+        `post_delete_run` will be passed to
+        `post_delete_run_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_lineage_event(
         self,
@@ -377,11 +520,34 @@ class LineageRestInterceptor:
     ) -> lineage.LineageEvent:
         """Post-rpc interceptor for get_lineage_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_lineage_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_lineage_event` interceptor runs
+        before the `post_get_lineage_event_with_metadata` interceptor.
         """
         return response
+
+    def post_get_lineage_event_with_metadata(
+        self,
+        response: lineage.LineageEvent,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.LineageEvent, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_lineage_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_get_lineage_event_with_metadata`
+        interceptor in new development instead of the `post_get_lineage_event` interceptor.
+        When both interceptors are used, this `post_get_lineage_event_with_metadata` interceptor runs after the
+        `post_get_lineage_event` interceptor. The (possibly modified) response returned by
+        `post_get_lineage_event` will be passed to
+        `post_get_lineage_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_process(
         self,
@@ -398,11 +564,34 @@ class LineageRestInterceptor:
     def post_get_process(self, response: lineage.Process) -> lineage.Process:
         """Post-rpc interceptor for get_process
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_process_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_process` interceptor runs
+        before the `post_get_process_with_metadata` interceptor.
         """
         return response
+
+    def post_get_process_with_metadata(
+        self,
+        response: lineage.Process,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.Process, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_process
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_get_process_with_metadata`
+        interceptor in new development instead of the `post_get_process` interceptor.
+        When both interceptors are used, this `post_get_process_with_metadata` interceptor runs after the
+        `post_get_process` interceptor. The (possibly modified) response returned by
+        `post_get_process` will be passed to
+        `post_get_process_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_run(
         self,
@@ -419,11 +608,32 @@ class LineageRestInterceptor:
     def post_get_run(self, response: lineage.Run) -> lineage.Run:
         """Post-rpc interceptor for get_run
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_run_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_run` interceptor runs
+        before the `post_get_run_with_metadata` interceptor.
         """
         return response
+
+    def post_get_run_with_metadata(
+        self, response: lineage.Run, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[lineage.Run, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_run
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_get_run_with_metadata`
+        interceptor in new development instead of the `post_get_run` interceptor.
+        When both interceptors are used, this `post_get_run_with_metadata` interceptor runs after the
+        `post_get_run` interceptor. The (possibly modified) response returned by
+        `post_get_run` will be passed to
+        `post_get_run_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_lineage_events(
         self,
@@ -444,11 +654,36 @@ class LineageRestInterceptor:
     ) -> lineage.ListLineageEventsResponse:
         """Post-rpc interceptor for list_lineage_events
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_lineage_events_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_lineage_events` interceptor runs
+        before the `post_list_lineage_events_with_metadata` interceptor.
         """
         return response
+
+    def post_list_lineage_events_with_metadata(
+        self,
+        response: lineage.ListLineageEventsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        lineage.ListLineageEventsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_lineage_events
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_list_lineage_events_with_metadata`
+        interceptor in new development instead of the `post_list_lineage_events` interceptor.
+        When both interceptors are used, this `post_list_lineage_events_with_metadata` interceptor runs after the
+        `post_list_lineage_events` interceptor. The (possibly modified) response returned by
+        `post_list_lineage_events` will be passed to
+        `post_list_lineage_events_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_processes(
         self,
@@ -467,11 +702,34 @@ class LineageRestInterceptor:
     ) -> lineage.ListProcessesResponse:
         """Post-rpc interceptor for list_processes
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_processes_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_processes` interceptor runs
+        before the `post_list_processes_with_metadata` interceptor.
         """
         return response
+
+    def post_list_processes_with_metadata(
+        self,
+        response: lineage.ListProcessesResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.ListProcessesResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_processes
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_list_processes_with_metadata`
+        interceptor in new development instead of the `post_list_processes` interceptor.
+        When both interceptors are used, this `post_list_processes_with_metadata` interceptor runs after the
+        `post_list_processes` interceptor. The (possibly modified) response returned by
+        `post_list_processes` will be passed to
+        `post_list_processes_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_runs(
         self,
@@ -490,11 +748,34 @@ class LineageRestInterceptor:
     ) -> lineage.ListRunsResponse:
         """Post-rpc interceptor for list_runs
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_runs_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_runs` interceptor runs
+        before the `post_list_runs_with_metadata` interceptor.
         """
         return response
+
+    def post_list_runs_with_metadata(
+        self,
+        response: lineage.ListRunsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.ListRunsResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list_runs
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_list_runs_with_metadata`
+        interceptor in new development instead of the `post_list_runs` interceptor.
+        When both interceptors are used, this `post_list_runs_with_metadata` interceptor runs after the
+        `post_list_runs` interceptor. The (possibly modified) response returned by
+        `post_list_runs` will be passed to
+        `post_list_runs_with_metadata`.
+        """
+        return response, metadata
 
     def pre_process_open_lineage_run_event(
         self,
@@ -516,11 +797,37 @@ class LineageRestInterceptor:
     ) -> lineage.ProcessOpenLineageRunEventResponse:
         """Post-rpc interceptor for process_open_lineage_run_event
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_process_open_lineage_run_event_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_process_open_lineage_run_event` interceptor runs
+        before the `post_process_open_lineage_run_event_with_metadata` interceptor.
         """
         return response
+
+    def post_process_open_lineage_run_event_with_metadata(
+        self,
+        response: lineage.ProcessOpenLineageRunEventResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        lineage.ProcessOpenLineageRunEventResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for process_open_lineage_run_event
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_process_open_lineage_run_event_with_metadata`
+        interceptor in new development instead of the `post_process_open_lineage_run_event` interceptor.
+        When both interceptors are used, this `post_process_open_lineage_run_event_with_metadata` interceptor runs after the
+        `post_process_open_lineage_run_event` interceptor. The (possibly modified) response returned by
+        `post_process_open_lineage_run_event` will be passed to
+        `post_process_open_lineage_run_event_with_metadata`.
+        """
+        return response, metadata
 
     def pre_search_links(
         self,
@@ -539,11 +846,34 @@ class LineageRestInterceptor:
     ) -> lineage.SearchLinksResponse:
         """Post-rpc interceptor for search_links
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_search_links_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_search_links` interceptor runs
+        before the `post_search_links_with_metadata` interceptor.
         """
         return response
+
+    def post_search_links_with_metadata(
+        self,
+        response: lineage.SearchLinksResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.SearchLinksResponse, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for search_links
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_search_links_with_metadata`
+        interceptor in new development instead of the `post_search_links` interceptor.
+        When both interceptors are used, this `post_search_links_with_metadata` interceptor runs after the
+        `post_search_links` interceptor. The (possibly modified) response returned by
+        `post_search_links` will be passed to
+        `post_search_links_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_process(
         self,
@@ -560,11 +890,34 @@ class LineageRestInterceptor:
     def post_update_process(self, response: lineage.Process) -> lineage.Process:
         """Post-rpc interceptor for update_process
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_process_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_process` interceptor runs
+        before the `post_update_process_with_metadata` interceptor.
         """
         return response
+
+    def post_update_process_with_metadata(
+        self,
+        response: lineage.Process,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[lineage.Process, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_process
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_update_process_with_metadata`
+        interceptor in new development instead of the `post_update_process` interceptor.
+        When both interceptors are used, this `post_update_process_with_metadata` interceptor runs after the
+        `post_update_process` interceptor. The (possibly modified) response returned by
+        `post_update_process` will be passed to
+        `post_update_process_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_run(
         self,
@@ -581,11 +934,32 @@ class LineageRestInterceptor:
     def post_update_run(self, response: lineage.Run) -> lineage.Run:
         """Post-rpc interceptor for update_run
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_run_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Lineage server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_run` interceptor runs
+        before the `post_update_run_with_metadata` interceptor.
         """
         return response
+
+    def post_update_run_with_metadata(
+        self, response: lineage.Run, metadata: Sequence[Tuple[str, Union[str, bytes]]]
+    ) -> Tuple[lineage.Run, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_run
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Lineage server but before it is returned to user code.
+
+        We recommend only using this `post_update_run_with_metadata`
+        interceptor in new development instead of the `post_update_run` interceptor.
+        When both interceptors are used, this `post_update_run_with_metadata` interceptor runs after the
+        `post_update_run` interceptor. The (possibly modified) response returned by
+        `post_update_run` will be passed to
+        `post_update_run_with_metadata`.
+        """
+        return response, metadata
 
     def pre_cancel_operation(
         self,
@@ -957,6 +1331,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_batch_search_link_processes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_batch_search_link_processes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1113,6 +1491,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_lineage_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_lineage_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1264,6 +1646,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_process(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_process_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1414,6 +1800,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_run(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_run_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1667,6 +2057,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_process(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_process_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1809,6 +2203,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete_run(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_run_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1961,6 +2359,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_lineage_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_lineage_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2104,6 +2506,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_process(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_process_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2246,6 +2652,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_run(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_run_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2393,6 +2803,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_lineage_events(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_lineage_events_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2540,6 +2954,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_processes(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_processes_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2683,6 +3101,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_runs(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_runs_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2835,6 +3257,13 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_process_open_lineage_run_event(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            (
+                resp,
+                _,
+            ) = self._interceptor.post_process_open_lineage_run_event_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2988,6 +3417,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_search_links(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_search_links_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3139,6 +3572,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_process(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_process_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -3289,6 +3726,10 @@ class LineageRestTransport(_BaseLineageRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_run(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_run_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

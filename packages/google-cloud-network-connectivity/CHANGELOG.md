@@ -1,5 +1,54 @@
 # Changelog
 
+## [2.9.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.8.1...google-cloud-network-connectivity-v2.9.0) (2025-07-23)
+
+
+### Features
+
+* add Network Connectivity Center APIs for Internal Range service ([62da15d](https://github.com/googleapis/google-cloud-python/commit/62da15d782de5294d641de8b562acefd99c025a4))
+
+## [2.8.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.8.0...google-cloud-network-connectivity-v2.8.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([868b006](https://github.com/googleapis/google-cloud-python/commit/868b0069baf1a4bf6705986e0b6885419b35cdcc))
+
+## [2.8.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.7.2...google-cloud-network-connectivity-v2.8.0) (2025-03-21)
+
+
+### Features
+
+* add Network Connectivity Center APIs for PSC service automation ([ed8bfa4](https://github.com/googleapis/google-cloud-python/commit/ed8bfa48bf59f6a052704ce3becf6c5b5c0ffcca))
+
+
+### Documentation
+
+* update some documentation. ([ed8bfa4](https://github.com/googleapis/google-cloud-python/commit/ed8bfa48bf59f6a052704ce3becf6c5b5c0ffcca))
+
+## [2.7.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.7.1...google-cloud-network-connectivity-v2.7.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([c8bbf32](https://github.com/googleapis/google-cloud-python/commit/c8bbf32606e790b559b261bf96700c76b6e2bfce))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [2.7.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.7.0...google-cloud-network-connectivity-v2.7.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [2.7.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.6.0...google-cloud-network-connectivity-v2.7.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
 ## [2.6.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-network-connectivity-v2.5.1...google-cloud-network-connectivity-v2.6.0) (2024-12-12)
 
 

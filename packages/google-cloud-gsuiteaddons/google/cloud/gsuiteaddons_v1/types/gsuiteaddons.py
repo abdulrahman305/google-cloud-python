@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,13 +49,13 @@ __protobuf__ = proto.module(
 
 
 class GetAuthorizationRequest(proto.Message):
-    r"""Request message to get Google Workspace Add-ons authorization
+    r"""Request message to get Google Workspace add-ons authorization
     information.
 
     Attributes:
         name (str):
             Required. Name of the project for which to get the Google
-            Workspace Add-ons authorization information.
+            Workspace add-ons authorization information.
 
             Example: ``projects/my_project/authorization``.
     """
@@ -332,7 +332,7 @@ class InstallStatus(proto.Message):
 
 
 class Deployment(proto.Message):
-    r"""A Google Workspace Add-on deployment
+    r"""A Google Workspace add-on deployment
 
     Attributes:
         name (str):
@@ -343,7 +343,7 @@ class Deployment(proto.Message):
             request consent from the end user before
             executing an add-on endpoint.
         add_ons (google.cloud.gsuiteaddons_v1.types.AddOns):
-            The Google Workspace Add-on configuration.
+            The Google Workspace add-on configuration.
         etag (str):
             This value is computed by the server based on
             the version of the deployment in storage, and
@@ -372,12 +372,12 @@ class Deployment(proto.Message):
 
 
 class AddOns(proto.Message):
-    r"""A Google Workspace Add-on configuration.
+    r"""A Google Workspace add-on configuration.
 
     Attributes:
         common (google.apps.script.type.types.CommonAddOnManifest):
             Configuration that is common across all
-            Google Workspace Add-ons.
+            Google Workspace add-ons.
         gmail (google.apps.script.type.gmail.types.GmailAddOnManifest):
             Gmail add-on configuration.
         drive (google.apps.script.type.drive.types.DriveAddOnManifest):

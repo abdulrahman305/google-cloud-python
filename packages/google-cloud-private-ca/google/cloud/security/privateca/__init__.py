@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ from google.cloud.security.privateca_v1.services.certificate_authority_service.c
     CertificateAuthorityServiceClient,
 )
 from google.cloud.security.privateca_v1.types.resources import (
+    AttributeType,
+    AttributeTypeAndValue,
     CaPool,
     Certificate,
     CertificateAuthority,
@@ -37,6 +39,7 @@ from google.cloud.security.privateca_v1.types.resources import (
     KeyUsage,
     ObjectId,
     PublicKey,
+    RelativeDistinguishedName,
     RevocationReason,
     Subject,
     SubjectAltNames,
@@ -88,6 +91,7 @@ from google.cloud.security.privateca_v1.types.service import (
 __all__ = (
     "CertificateAuthorityServiceClient",
     "CertificateAuthorityServiceAsyncClient",
+    "AttributeTypeAndValue",
     "CaPool",
     "Certificate",
     "CertificateAuthority",
@@ -100,11 +104,13 @@ __all__ = (
     "KeyUsage",
     "ObjectId",
     "PublicKey",
+    "RelativeDistinguishedName",
     "Subject",
     "SubjectAltNames",
     "SubordinateConfig",
     "X509Extension",
     "X509Parameters",
+    "AttributeType",
     "RevocationReason",
     "SubjectRequestMode",
     "ActivateCertificateAuthorityRequest",

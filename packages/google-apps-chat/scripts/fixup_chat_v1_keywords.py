@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,22 +40,27 @@ class chatCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
         'complete_import_space': ('name', ),
+        'create_custom_emoji': ('custom_emoji', ),
         'create_membership': ('parent', 'membership', 'use_admin_access', ),
         'create_message': ('parent', 'message', 'thread_key', 'request_id', 'message_reply_option', 'message_id', ),
         'create_reaction': ('parent', 'reaction', ),
         'create_space': ('space', 'request_id', ),
+        'delete_custom_emoji': ('name', ),
         'delete_membership': ('name', 'use_admin_access', ),
         'delete_message': ('name', 'force', ),
         'delete_reaction': ('name', ),
         'delete_space': ('name', 'use_admin_access', ),
         'find_direct_message': ('name', ),
         'get_attachment': ('name', ),
+        'get_custom_emoji': ('name', ),
         'get_membership': ('name', 'use_admin_access', ),
         'get_message': ('name', ),
         'get_space': ('name', 'use_admin_access', ),
         'get_space_event': ('name', ),
+        'get_space_notification_setting': ('name', ),
         'get_space_read_state': ('name', ),
         'get_thread_read_state': ('name', ),
+        'list_custom_emojis': ('page_size', 'page_token', 'filter', ),
         'list_memberships': ('parent', 'page_size', 'page_token', 'filter', 'show_groups', 'show_invited', 'use_admin_access', ),
         'list_messages': ('parent', 'page_size', 'page_token', 'filter', 'order_by', 'show_deleted', ),
         'list_reactions': ('parent', 'page_size', 'page_token', 'filter', ),
@@ -66,6 +71,7 @@ class chatCallTransformer(cst.CSTTransformer):
         'update_membership': ('membership', 'update_mask', 'use_admin_access', ),
         'update_message': ('message', 'update_mask', 'allow_missing', ),
         'update_space': ('space', 'update_mask', 'use_admin_access', ),
+        'update_space_notification_setting': ('space_notification_setting', 'update_mask', ),
         'update_space_read_state': ('space_read_state', 'update_mask', ),
         'upload_attachment': ('parent', 'filename', ),
     }

@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ def partition(
 class network_servicesCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
+        'create_authz_extension': ('parent', 'authz_extension_id', 'authz_extension', 'request_id', ),
         'create_endpoint_policy': ('parent', 'endpoint_policy_id', 'endpoint_policy', ),
         'create_gateway': ('parent', 'gateway_id', 'gateway', ),
         'create_grpc_route': ('parent', 'grpc_route_id', 'grpc_route', ),
@@ -47,8 +48,12 @@ class network_servicesCallTransformer(cst.CSTTransformer):
         'create_lb_traffic_extension': ('parent', 'lb_traffic_extension_id', 'lb_traffic_extension', 'request_id', ),
         'create_mesh': ('parent', 'mesh_id', 'mesh', ),
         'create_service_binding': ('parent', 'service_binding_id', 'service_binding', ),
+        'create_service_lb_policy': ('parent', 'service_lb_policy_id', 'service_lb_policy', ),
         'create_tcp_route': ('parent', 'tcp_route_id', 'tcp_route', ),
         'create_tls_route': ('parent', 'tls_route_id', 'tls_route', ),
+        'create_wasm_plugin': ('parent', 'wasm_plugin_id', 'wasm_plugin', ),
+        'create_wasm_plugin_version': ('parent', 'wasm_plugin_version_id', 'wasm_plugin_version', ),
+        'delete_authz_extension': ('name', 'request_id', ),
         'delete_endpoint_policy': ('name', ),
         'delete_gateway': ('name', ),
         'delete_grpc_route': ('name', ),
@@ -57,28 +62,44 @@ class network_servicesCallTransformer(cst.CSTTransformer):
         'delete_lb_traffic_extension': ('name', 'request_id', ),
         'delete_mesh': ('name', ),
         'delete_service_binding': ('name', ),
+        'delete_service_lb_policy': ('name', ),
         'delete_tcp_route': ('name', ),
         'delete_tls_route': ('name', ),
+        'delete_wasm_plugin': ('name', ),
+        'delete_wasm_plugin_version': ('name', ),
+        'get_authz_extension': ('name', ),
         'get_endpoint_policy': ('name', ),
         'get_gateway': ('name', ),
+        'get_gateway_route_view': ('name', ),
         'get_grpc_route': ('name', ),
         'get_http_route': ('name', ),
         'get_lb_route_extension': ('name', ),
         'get_lb_traffic_extension': ('name', ),
         'get_mesh': ('name', ),
+        'get_mesh_route_view': ('name', ),
         'get_service_binding': ('name', ),
+        'get_service_lb_policy': ('name', ),
         'get_tcp_route': ('name', ),
         'get_tls_route': ('name', ),
-        'list_endpoint_policies': ('parent', 'page_size', 'page_token', ),
+        'get_wasm_plugin': ('name', 'view', ),
+        'get_wasm_plugin_version': ('name', ),
+        'list_authz_extensions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
+        'list_endpoint_policies': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
+        'list_gateway_route_views': ('parent', 'page_size', 'page_token', ),
         'list_gateways': ('parent', 'page_size', 'page_token', ),
-        'list_grpc_routes': ('parent', 'page_size', 'page_token', ),
-        'list_http_routes': ('parent', 'page_size', 'page_token', ),
+        'list_grpc_routes': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
+        'list_http_routes': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
         'list_lb_route_extensions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
         'list_lb_traffic_extensions': ('parent', 'page_size', 'page_token', 'filter', 'order_by', ),
-        'list_meshes': ('parent', 'page_size', 'page_token', ),
+        'list_meshes': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
+        'list_mesh_route_views': ('parent', 'page_size', 'page_token', ),
         'list_service_bindings': ('parent', 'page_size', 'page_token', ),
-        'list_tcp_routes': ('parent', 'page_size', 'page_token', ),
-        'list_tls_routes': ('parent', 'page_size', 'page_token', ),
+        'list_service_lb_policies': ('parent', 'page_size', 'page_token', ),
+        'list_tcp_routes': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
+        'list_tls_routes': ('parent', 'page_size', 'page_token', 'return_partial_success', ),
+        'list_wasm_plugins': ('parent', 'page_size', 'page_token', ),
+        'list_wasm_plugin_versions': ('parent', 'page_size', 'page_token', ),
+        'update_authz_extension': ('update_mask', 'authz_extension', 'request_id', ),
         'update_endpoint_policy': ('endpoint_policy', 'update_mask', ),
         'update_gateway': ('gateway', 'update_mask', ),
         'update_grpc_route': ('grpc_route', 'update_mask', ),
@@ -86,8 +107,11 @@ class network_servicesCallTransformer(cst.CSTTransformer):
         'update_lb_route_extension': ('lb_route_extension', 'update_mask', 'request_id', ),
         'update_lb_traffic_extension': ('lb_traffic_extension', 'update_mask', 'request_id', ),
         'update_mesh': ('mesh', 'update_mask', ),
+        'update_service_binding': ('service_binding', 'update_mask', ),
+        'update_service_lb_policy': ('service_lb_policy', 'update_mask', ),
         'update_tcp_route': ('tcp_route', 'update_mask', ),
         'update_tls_route': ('tls_route', 'update_mask', ),
+        'update_wasm_plugin': ('wasm_plugin', 'update_mask', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

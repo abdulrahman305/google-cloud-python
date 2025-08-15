@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.backupdr_v1 import gapic_version as package_version
 from google.cloud.backupdr_v1.types import (
@@ -34,11 +35,15 @@ from google.cloud.backupdr_v1.types import (
     backupplan,
     backupplanassociation,
     backupvault,
+    datasourcereference,
 )
 
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class BackupDRTransport(abc.ABC):
@@ -331,6 +336,11 @@ class BackupDRTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.update_backup_plan: gapic_v1.method.wrap_method(
+                self.update_backup_plan,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.get_backup_plan: gapic_v1.method.wrap_method(
                 self.get_backup_plan,
                 default_timeout=None,
@@ -346,8 +356,23 @@ class BackupDRTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.get_backup_plan_revision: gapic_v1.method.wrap_method(
+                self.get_backup_plan_revision,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.list_backup_plan_revisions: gapic_v1.method.wrap_method(
+                self.list_backup_plan_revisions,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.create_backup_plan_association: gapic_v1.method.wrap_method(
                 self.create_backup_plan_association,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_backup_plan_association: gapic_v1.method.wrap_method(
+                self.update_backup_plan_association,
                 default_timeout=None,
                 client_info=client_info,
             ),
@@ -361,6 +386,11 @@ class BackupDRTransport(abc.ABC):
                 default_timeout=None,
                 client_info=client_info,
             ),
+            self.fetch_backup_plan_associations_for_resource_type: gapic_v1.method.wrap_method(
+                self.fetch_backup_plan_associations_for_resource_type,
+                default_timeout=None,
+                client_info=client_info,
+            ),
             self.delete_backup_plan_association: gapic_v1.method.wrap_method(
                 self.delete_backup_plan_association,
                 default_timeout=None,
@@ -369,6 +399,30 @@ class BackupDRTransport(abc.ABC):
             self.trigger_backup: gapic_v1.method.wrap_method(
                 self.trigger_backup,
                 default_timeout=None,
+                client_info=client_info,
+            ),
+            self.get_data_source_reference: gapic_v1.method.wrap_method(
+                self.get_data_source_reference,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.fetch_data_source_references_for_resource_type: gapic_v1.method.wrap_method(
+                self.fetch_data_source_references_for_resource_type,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.initialize_service: gapic_v1.method.wrap_method(
+                self.initialize_service,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=10.0,
+                    multiplier=1.3,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.ServiceUnavailable,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.get_location: gapic_v1.method.wrap_method(
@@ -618,6 +672,15 @@ class BackupDRTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def update_backup_plan(
+        self,
+    ) -> Callable[
+        [backupplan.UpdateBackupPlanRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def get_backup_plan(
         self,
     ) -> Callable[
@@ -648,10 +711,40 @@ class BackupDRTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def get_backup_plan_revision(
+        self,
+    ) -> Callable[
+        [backupplan.GetBackupPlanRevisionRequest],
+        Union[backupplan.BackupPlanRevision, Awaitable[backupplan.BackupPlanRevision]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_backup_plan_revisions(
+        self,
+    ) -> Callable[
+        [backupplan.ListBackupPlanRevisionsRequest],
+        Union[
+            backupplan.ListBackupPlanRevisionsResponse,
+            Awaitable[backupplan.ListBackupPlanRevisionsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def create_backup_plan_association(
         self,
     ) -> Callable[
         [backupplanassociation.CreateBackupPlanAssociationRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_backup_plan_association(
+        self,
+    ) -> Callable[
+        [backupplanassociation.UpdateBackupPlanAssociationRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()
@@ -681,6 +774,20 @@ class BackupDRTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
+    def fetch_backup_plan_associations_for_resource_type(
+        self,
+    ) -> Callable[
+        [backupplanassociation.FetchBackupPlanAssociationsForResourceTypeRequest],
+        Union[
+            backupplanassociation.FetchBackupPlanAssociationsForResourceTypeResponse,
+            Awaitable[
+                backupplanassociation.FetchBackupPlanAssociationsForResourceTypeResponse
+            ],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
     def delete_backup_plan_association(
         self,
     ) -> Callable[
@@ -694,6 +801,41 @@ class BackupDRTransport(abc.ABC):
         self,
     ) -> Callable[
         [backupplanassociation.TriggerBackupRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_data_source_reference(
+        self,
+    ) -> Callable[
+        [datasourcereference.GetDataSourceReferenceRequest],
+        Union[
+            datasourcereference.DataSourceReference,
+            Awaitable[datasourcereference.DataSourceReference],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def fetch_data_source_references_for_resource_type(
+        self,
+    ) -> Callable[
+        [datasourcereference.FetchDataSourceReferencesForResourceTypeRequest],
+        Union[
+            datasourcereference.FetchDataSourceReferencesForResourceTypeResponse,
+            Awaitable[
+                datasourcereference.FetchDataSourceReferencesForResourceTypeResponse
+            ],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def initialize_service(
+        self,
+    ) -> Callable[
+        [backupdr.InitializeServiceRequest],
         Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
     ]:
         raise NotImplementedError()

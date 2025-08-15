@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -109,7 +109,9 @@ class BackupPlan(proto.Message):
             the BackupPlan is deactivated on an Update
         state_reason (str):
             Output only. Human-readable description of why BackupPlan is
-            in the current ``state``
+            in the current ``state``. This field is only meant for human
+            readability and should not be used programmatically as this
+            field is not guaranteed to be consistent.
         rpo_risk_level (int):
             Output only. A number that represents the
             current risk level of this BackupPlan from RPO
@@ -119,6 +121,16 @@ class BackupPlan(proto.Message):
             Output only. Human-readable description of why the
             BackupPlan is in the current rpo_risk_level and action items
             if any.
+        backup_channel (str):
+            Output only. The fully qualified name of the BackupChannel
+            to be used to create a backup. This field is set only if the
+            cluster being backed up is in a different project.
+            ``projects/*/locations/*/backupChannels/*``
+        last_successful_backup_time (google.protobuf.timestamp_pb2.Timestamp):
+            Output only. Completion time of the last successful Backup.
+            This is sourced from a successful Backup's complete_time
+            field. This field is added to maintain consistency with
+            BackupPlanBinding to display last successful backup time.
     """
 
     class State(proto.Enum):
@@ -431,6 +443,15 @@ class BackupPlan(proto.Message):
     rpo_risk_reason: str = proto.Field(
         proto.STRING,
         number=17,
+    )
+    backup_channel: str = proto.Field(
+        proto.STRING,
+        number=18,
+    )
+    last_successful_backup_time: timestamp_pb2.Timestamp = proto.Field(
+        proto.MESSAGE,
+        number=19,
+        message=timestamp_pb2.Timestamp,
     )
 
 

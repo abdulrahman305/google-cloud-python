@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ class iapCallTransformer(cst.CSTTransformer):
         'test_iam_permissions': ('resource', 'permissions', ),
         'update_iap_settings': ('iap_settings', 'update_mask', ),
         'update_tunnel_dest_group': ('tunnel_dest_group', 'update_mask', ),
+        'validate_iap_attribute_expression': ('name', 'expression', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

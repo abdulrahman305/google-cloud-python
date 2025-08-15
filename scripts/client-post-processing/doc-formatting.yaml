@@ -15,18 +15,13 @@ description: Fix formatting issues in docs
 url: https://github.com/googleapis/gapic-generator-python/issues/1829
 replacements:
   - paths: [
-      packages/google-cloud-kms/google/cloud/kms_v1/services/autokey/async_client.py,
-      packages/google-cloud-kms/google/cloud/kms_v1/services/autokey_admin/async_client.py,
-      packages/google-cloud-kms/google/cloud/kms_v1/services/ekm_service/async_client.py,
-      packages/google-cloud-kms/google/cloud/kms_v1/services/key_management_service/async_client.py,
-    ]
-    before: |
-      \                ::
-      \                    {
-    after: "                ::\n\n                    {\n"
-    count: 4
-  - paths: [
       packages/google-cloud-compute/google/cloud/compute_v1/types/compute.py,
+    ]
+    before: \"IT_\"
+    after: "`IT_`"
+    count: 2
+  - paths: [
+      packages/google-cloud-compute-v1beta/google/cloud/compute_v1beta/types/compute.py,
     ]
     before: \"IT_\"
     after: "`IT_`"
@@ -38,11 +33,18 @@ replacements:
     after: "`NS_`"
     count: 2
   - paths: [
+      packages/google-cloud-compute-v1beta/google/cloud/compute_v1beta/types/compute.py,
+    ]
+    before: \"NS_\"
+    after: "`NS_`"
+    count: 2
+  - paths: [
+      packages/google-ai-generativelanguage/google/ai/generativelanguage_v1alpha/types/retriever.py,
       packages/google-ai-generativelanguage/google/ai/generativelanguage_v1beta/types/retriever.py,
     ]
     before: \"corpora/\*/documents/\"
     after: "`corpora/*/documents/`"
-    count: 1
+    count: 2
   - paths: [
       packages/google-ai-generativelanguage/google/ai/generativelanguage_v1beta/types/retriever.py,
     ]
@@ -143,25 +145,25 @@ replacements:
     after:  "\n            Currently support query strings are:\n\n            - ``SplitType=DATASET_SPLIT_TEST|DATASET_SPLIT_TRAIN|DATASET_SPLIT_UNASSIGNED``\n            -  ``LabelingState=DOCUMENT_LABELED|DOCUMENT_UNLABELED|DOCUMENT_AUTO_LABELED``\n"
     count: 1
   - paths: [
-      packages/google-ads-admanager/google/ads/admanager_v1/types/report_service.py,
+      packages/google-ads-admanager/google/ads/admanager_v1/types/report_messages.py,
     ]
     before: CUSTOM_DIMENSION_\\\*
     after: "`CUSTOM_DIMENSION_*`"
     count: 1
   - paths: [
-      packages/google-ads-admanager/google/ads/admanager_v1/types/report_service.py,
+      packages/google-ads-admanager/google/ads/admanager_v1/types/report_messages.py,
     ]
     before: ORDER_CUSTOM_FIELD_\\\*
     after: "`ORDER_CUSTOM_FIELD_*`"
     count: 1
   - paths: [
-      packages/google-ads-admanager/google/ads/admanager_v1/types/report_service.py,
+      packages/google-ads-admanager/google/ads/admanager_v1/types/report_messages.py,
     ]
     before: LINE_ITEM_CUSTOM_FIELD_\\\*
     after: "`LINE_ITEM_CUSTOM_FIELD_*`"
     count: 1
   - paths: [
-      packages/google-ads-admanager/google/ads/admanager_v1/types/report_service.py,
+      packages/google-ads-admanager/google/ads/admanager_v1/types/report_messages.py,
     ]
     before: CREATIVE_CUSTOM_FIELD_\\\*
     after: "`CREATIVE_CUSTOM_FIELD_*`"
@@ -233,30 +235,6 @@ replacements:
     after: "`gs://my-bucket/dir/configs/*`"
     count: 1
   - paths: [
-      packages/google-cloud-dialogflow-cx/google/cloud/dialogflowcx_v3beta1/types/tool.py,
-    ]
-    before: |
-      For instance a certificate can be self-signed
-      \                    using the following command,    openssl x509
-      \                    -req -days 200 -in example.com.csr \\\
-      \                    -signkey example.com.key \\\
-      \                         -out example.com.crt \\\
-      \                         -extfile \<\(printf
-      \                    \"\\nsubjectAltName=\'DNS:www.example.com\'\"\)
-    after: |
-      For instance a certificate can be self-signed
-                          using the following command:
-
-                          ::
-
-                              openssl x509
-                              -req -days 200 -in example.com.csr \
-                              -signkey example.com.key \
-                              -out example.com.crt \
-                              -extfile <(printf
-                              "\\nsubjectAltName='DNS:www.example.com'")\n
-    count: 1
-  - paths: [
       packages/google-cloud-dms/google/cloud/clouddms_v1/types/conversionworkspace_resources.py,
     ]
     before: |
@@ -322,13 +300,6 @@ replacements:
                     during site visits\n
     count: 1
   - paths: [
-      packages/google-cloud-network-management/google/cloud/network_management_v1/types/connectivity_test.py,
-    ]
-    before: |
-      \             projects\/\{project\}\/global\/forwardingRules\/\{id\}
-    after: "            projects/{project}/global/forwardingRules/{id}\n"
-    count: 1
-  - paths: [
       packages/google-cloud-oracledatabase/google/cloud/oracledatabase_v1/types/exadata_infra.py,
     ]
     before: |
@@ -351,15 +322,6 @@ replacements:
                   12 - represents time slot 12:00 - 15:59 UTC
                   16 - represents time slot 16:00 - 19:59 UTC
                   20 - represents time slot 20:00 - 23:59 UTC
-    count: 1
-  - paths: [
-      packages/google-cloud-oracledatabase/google/cloud/oracledatabase_v1/types/exadata_infra.py,
-    ]
-    before: |
-      Optional. Cloud CloudExadataInfrastructure
-      \            node patching method, either "ROLLING"
-      \             or "NONROLLING". Default value is ROLLING.
-    after: "Optional. Cloud CloudExadataInfrastructure\n            node patching method, either \"ROLLING\"\n            or \"NONROLLING\". Default value is ROLLING.\n"
     count: 1
   - paths: [
       packages/google-cloud-service-control/google/cloud/servicecontrol_v1/types/service_controller.py,
@@ -392,24 +354,45 @@ replacements:
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/email_preferences_service/client.py,
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/email_preferences_service/transports/grpc.py,
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/email_preferences_service/transports/grpc_asyncio.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/email_preferences_service/async_client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/email_preferences_service/client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/email_preferences_service/transports/grpc.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/email_preferences_service/transports/grpc_asyncio.py,
     ]
     before: name=accounts\/\*\/users\/me\/emailPreferences alias
     after: "`name=accounts/*/users/me/emailPreferences` alias"
-    count: 8
+    count: 16
   - paths: [
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/online_return_policy_service/async_client.py,
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/online_return_policy_service/client.py,
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/online_return_policy_service/transports/grpc.py,
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/online_return_policy_service/transports/grpc_asyncio.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/online_return_policy_service/async_client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/online_return_policy_service/client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/online_return_policy_service/transports/grpc.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/online_return_policy_service/transports/grpc_asyncio.py,
+    ]
+    before: "This API defines the following resource model:\n    --------------------------------------------------------\n\n    `OnlineReturnPolicy"
+    after: "This API defines the following resource model:\n\n    - `OnlineReturnPolicy"
+    count: 8
+  - paths: [
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/omnichannel_settings_service/async_client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/omnichannel_settings_service/client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/omnichannel_settings_service/transports/grpc.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/services/omnichannel_settings_service/transports/grpc_asyncio.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/omnichannel_settings_service/async_client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/omnichannel_settings_service/client.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/omnichannel_settings_service/transports/grpc.py,
+      packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1/services/omnichannel_settings_service/transports/grpc_asyncio.py,
     ]
     before: |
-      This API defines the following resource model:
-      \    --------------------------------------------------------\n
-      \    \[OnlineReturnPolicy\]\[google.shopping.merchant.accounts.v1.OnlineReturnPolicy\]
+        This API defines the following resource model:
+        \    ----------------------------------------------\n
+        \    \[OmnichannelSetting\]\[google.shopping.merchant.accounts.v1.OmnichannelSetting\]
     after: |
-      This API defines the following resource model:
-          - [OnlineReturnPolicy][google.shopping.merchant.accounts.v1.OnlineReturnPolicy]
-    count: 4
+        This API defines the following resource model:
+            - [OmnichannelSetting][google.shopping.merchant.accounts.v1.OmnichannelSetting]
+    count: 8
   - paths: [
       packages/google-shopping-merchant-accounts/google/shopping/merchant_accounts_v1beta/types/shippingsettings.py
     ]
@@ -423,7 +406,9 @@ replacements:
                   didn't change between get call and insert call.
     count: 1
   - paths: [
-      packages/google-shopping-merchant-reports/google/shopping/merchant_reports_v1beta/types/reports.py
+      packages/google-shopping-merchant-reports/google/shopping/merchant_reports_v1alpha/types/reports.py,
+      packages/google-shopping-merchant-reports/google/shopping/merchant_reports_v1beta/types/reports.py,
+      packages/google-shopping-merchant-reports/google/shopping/merchant_reports_v1/types/reports.py,
     ]
     before: |
       Here's an example of how the aggregated status is computed:\n
@@ -443,4 +428,224 @@ replacements:
               PENDING Disapproved \| Disapproved \| NOT_ELIGIBLE_OR_DISAPPROVED
               ```\n
               Values:
+    count: 3
+  - paths: [
+      packages/google-cloud-monitoring/google/cloud/monitoring_v3/types/metric_service.py
+    ]
+    before: |
+      Optional. If true, only metrics and monitored
+      \            resource types that have recent data \(within
+      \            roughly 25 hours\) will be included in the
+      \            response.
+      \             - If a metric descriptor enumerates monitored
+      \              resource types, only the    monitored resource
+      \              types for which the metric type has recent
+      \              data will    be included in the returned
+      \              metric descriptor, and if none of them have
+      \              recent data, the metric descriptor will not be
+      \              returned.
+      \             - If a metric descriptor does not enumerate the
+      \              compatible monitored    resource types, it
+      \              will be returned only if the metric type has
+      \              recent    data for some monitored resource
+      \              type. The returned descriptor will not
+      \              enumerate any monitored resource types.
+    after: |
+      Optional. If true, only metrics and monitored
+                  resource types that have recent data (within
+                  roughly 25 hours) will be included in the
+                  response.\n
+                  - If a metric descriptor enumerates monitored
+                    resource types, only the monitored resource
+                    types for which the metric type has recent
+                    data will be included in the returned
+                    metric descriptor, and if none of them have
+                    recent data, the metric descriptor will not be
+                    returned.
+                  - If a metric descriptor does not enumerate the
+                    compatible monitored resource types, it
+                    will be returned only if the metric type has
+                    recent data for some monitored resource
+                    type. The returned descriptor will not
+                    enumerate any monitored resource types.
     count: 1
+  - paths: [
+      packages/google-cloud-orchestration-airflow/google/cloud/orchestration/airflow/service_v1/types/environments.py,
+      packages/google-cloud-orchestration-airflow/google/cloud/orchestration/airflow/service_v1beta1/types/environments.py,
+    ]
+    before: |
+      \{
+                    "example": "ZXhhbXBsZV92YWx1ZQ==",
+                    "another-example":
+                  "YW5vdGhlcl9leGFtcGxlX3ZhbHVl" \}
+    after: |
+        .. code-block:: json\n
+                      {
+                        "example": "ZXhhbXBsZV92YWx1ZQ==",
+                        "another-example": "YW5vdGhlcl9leGFtcGxlX3ZhbHVl"
+                      }\n
+    count: 2
+  - paths: [
+      packages/google-cloud-financialservices/google/cloud/financialservices_v1/types/engine_version.py,
+    ]
+    before: \"state:\*\"
+    after: "`state:*`"
+    count: 1
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: "Classification\n    ''''''''''''''"
+    after: "Classification:"
+    count: 6
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: |
+      AutoML Vision
+      \    \^\^\^\^\^\^\^\^\^\^\^\^\^
+    after: |
+      AutoML Vision:
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: |
+      AutoML Tables
+      \    \^\^\^\^\^\^\^\^\^\^\^\^\^
+    after: |
+      AutoML Tables:
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: |
+      AutoML Tables
+      \            \^\^\^\^\^\^\^\^\^\^\^\^\^
+    after: |
+      AutoML Tables:
+    count: 1
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: "Entity Extraction\n    '''''''''''''''''"
+    after: "Entity Extraction:"
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: "Sentiment Analysis\n    ''''''''''''''''''"
+    after: "Sentiment Analysis:"
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: "Object Tracking\n    '''''''''''''''"
+    after: "Object Tracking:"
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: |
+      AutoML Video Intelligence
+      \    \^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^
+    after: |
+      AutoML Video Intelligence:
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: "Object Detection\n    ''''''''''''''''"
+    after: "Object Detection:"
+    count: 2
+  - paths: [
+      packages/google-cloud-automl/google/cloud/automl_v1/types/io.py,
+    ]
+    before: |
+      AutoML Natural Language
+      \    \^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^\^
+    after: |
+      AutoML Natural Language:
+    count: 2
+  - paths: [
+      packages/google-cloud-workflows/google/cloud/workflows_v1/types/workflows.py,
+    ]
+    before: |
+      The maximum number of revisions to return per
+      \            page. If a value is not specified, a default
+      \            value of 20 is used. The maximum permitted value
+      \            is
+      \            100. Values greater than 100 are coerced down to
+      \                100.
+    after: |
+      The maximum number of revisions to return per
+                  page. If a value is not specified, a default
+                  value of 20 is used. The maximum permitted value
+                  is 100. Values greater than 100 are coerced down
+                  to 100.
+    count: 1
+  - paths: [
+      packages/google-cloud-managedkafka/google/cloud/managedkafka_v1/types/resources.py,
+    ]
+    before: \"User:\*\"
+    after: "`User:*`"
+    count: 1
+  - paths: [
+      packages/google-cloud-network-services/google/cloud/network_services_v1/types/service_lb_policy.py,
+    ]
+    before: |
+      Optional. If set to 'True', an unhealthy
+      \                IG/NEG will be set as drained.
+      \                - An IG/NEG is considered unhealthy if less than
+    after: |
+      Optional. If set to 'True', an unhealthy
+                      IG/NEG will be set as drained.\n
+                      - An IG/NEG is considered unhealthy if less than
+    count: 1
+  - paths: [
+      packages/google-cloud-managedkafka-schemaregistry/google/cloud/managedkafka_schemaregistry_v1/types/schema_registry.py,
+      packages/google-cloud-managedkafka-schemaregistry/google/cloud/managedkafka_schemaregistry_v1/services/managed_schema_registry/client.py,
+      packages/google-cloud-managedkafka-schemaregistry/google/cloud/managedkafka_schemaregistry_v1/services/managed_schema_registry/async_client.py,
+    ]
+    before: |
+      -  projects/\{project\}/locations/\{location\}/schemaRegistries/\{schema_registry\}/compatibility/subjects/\*/versions:
+    after: "-  `projects/{project}/locations/{location}/schemaRegistries/{schema_registry}/compatibility/subjects/*/versions`:\n"
+    count: 3
+  - paths: [
+      packages/google-cloud-discoveryengine/google/cloud/discoveryengine_v1/types/search_service.py,
+      packages/google-cloud-discoveryengine/google/cloud/discoveryengine_v1alpha/types/search_service.py,
+      packages/google-cloud-discoveryengine/google/cloud/discoveryengine_v1beta/types/search_service.py,
+    ]
+    before: |
+      Example #1 \(multi-turn /search API calls\):
+      \
+      \              Call /search API with the session ID generated
+      \            in the first call.   Here, the previous search
+      \            query gets considered in query   standing. I.e.,
+      \            if the first query is "How did Alphabet do in
+      \            2022\?"   and the current query is "How about
+      \            2023\?", the current query will   be interpreted
+      \            as "How did Alphabet do in 2023\?".
+      \
+      \            Example #2 \(coordination between /search API
+      \            calls and /answer API calls\):
+      \
+      \              Call /answer API with the session ID generated
+      \            in the first call.   Here, the answer generation
+      \            happens in the context of the search   results
+      \            from the first search call.
+    after: |
+      Example #1 (multi-turn /search API calls):\n
+                  - Call /search API with the session ID generated
+                    in the first call.   Here, the previous search
+                    query gets considered in query   standing. I.e.,
+                    if the first query is "How did Alphabet do in
+                    2022?"   and the current query is "How about
+                    2023?", the current query will   be interpreted
+                    as "How did Alphabet do in 2023?".\n
+                  Example #2 (coordination between /search API
+                  calls and /answer API calls):\n
+                  - Call /answer API with the session ID generated
+                    in the first call.   Here, the answer generation
+                    happens in the context of the search   results
+                    from the first search call.
+    count: 3

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ class MerchantReviewAttributes(proto.Message):
 
             This field is a member of `oneof`_ ``_review_time``.
         review_language (str):
-            Required. The language of the review defined
+            Optional. The language of the review defined
             by BCP-47 language code.
 
             This field is a member of `oneof`_ ``_review_language``.

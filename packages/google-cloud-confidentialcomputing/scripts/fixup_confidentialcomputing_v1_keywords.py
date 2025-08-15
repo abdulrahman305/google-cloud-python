@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ class confidentialcomputingCallTransformer(cst.CSTTransformer):
     CTRL_PARAMS: Tuple[str] = ('retry', 'timeout', 'metadata')
     METHOD_TO_PARAMS: Dict[str, Tuple[str]] = {
         'create_challenge': ('parent', 'challenge', ),
-        'verify_attestation': ('challenge', 'tpm_attestation', 'td_ccel', 'sev_snp_attestation', 'gcp_credentials', 'confidential_space_info', 'token_options', ),
+        'verify_attestation': ('challenge', 'tpm_attestation', 'td_ccel', 'sev_snp_attestation', 'gcp_credentials', 'confidential_space_info', 'token_options', 'attester', ),
     }
 
     def leave_Call(self, original: cst.Call, updated: cst.Call) -> cst.CSTNode:

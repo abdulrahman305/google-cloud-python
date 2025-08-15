@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.15...google-cloud-storageinsights-v0.1.16) (2025-05-15)
+
+
+### Features
+
+* Add Client Libraries for Datasets ([2e7f0b8](https://github.com/googleapis/google-cloud-python/commit/2e7f0b8527639ea06509d9037d490766b3871c3f))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.14...google-cloud-storageinsights-v0.1.15) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.13...google-cloud-storageinsights-v0.1.14) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-storageinsights-v0.1.12...google-cloud-storageinsights-v0.1.13) (2024-12-12)
 
 

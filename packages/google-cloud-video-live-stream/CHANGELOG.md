@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.12.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.11.1...google-cloud-video-live-stream-v1.12.0) (2025-05-15)
+
+
+### Features
+
+* added DVRSession methods to support DVR feature ([f20efc4](https://github.com/googleapis/google-cloud-python/commit/f20efc44ed858b34b96a70dfcd8938e6be86cbb2))
+* added OutputType field to the Clip resource to support MP4 clipping ([f20efc4](https://github.com/googleapis/google-cloud-python/commit/f20efc44ed858b34b96a70dfcd8938e6be86cbb2))
+
+
+### Documentation
+
+* A comment for field `requested_cancellation` in message `.google.cloud.video.livestream.v1.OperationMetadata` is changed to clarify error type ([f20efc4](https://github.com/googleapis/google-cloud-python/commit/f20efc44ed858b34b96a70dfcd8938e6be86cbb2))
+* Clarified GCS in the comment for method `DeleteClip` in service `LivestreamService` ([f20efc4](https://github.com/googleapis/google-cloud-python/commit/f20efc44ed858b34b96a70dfcd8938e6be86cbb2))
+* Updated comment for field `update_mask` in message `.google.cloud.video.livestream.v1.UpdateInputRequest` to indicate updates in `tier` field are allowed ([f20efc4](https://github.com/googleapis/google-cloud-python/commit/f20efc44ed858b34b96a70dfcd8938e6be86cbb2))
+
+## [1.11.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.11.0...google-cloud-video-live-stream-v1.11.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.11.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.10.0...google-cloud-video-live-stream-v1.11.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+* Add support for reading selective GAPIC generation methods from service YAML ([5cdcc9d](https://github.com/googleapis/google-cloud-python/commit/5cdcc9d9d3e259c9a743895940552eb75b4554d3))
+
 ## [1.10.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-video-live-stream-v1.9.1...google-cloud-video-live-stream-v1.10.0) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from google.iam.v1 import iam_policy_pb2  # type: ignore
 from google.iam.v1 import policy_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.kms_v1 import gapic_version as package_version
 from google.cloud.kms_v1.types import autokey
@@ -34,6 +35,9 @@ from google.cloud.kms_v1.types import autokey
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class AutokeyTransport(abc.ABC):
@@ -255,27 +259,6 @@ class AutokeyTransport(abc.ABC):
         raise NotImplementedError()
 
     @property
-    def get_location(
-        self,
-    ) -> Callable[
-        [locations_pb2.GetLocationRequest],
-        Union[locations_pb2.Location, Awaitable[locations_pb2.Location]],
-    ]:
-        raise NotImplementedError()
-
-    @property
-    def list_locations(
-        self,
-    ) -> Callable[
-        [locations_pb2.ListLocationsRequest],
-        Union[
-            locations_pb2.ListLocationsResponse,
-            Awaitable[locations_pb2.ListLocationsResponse],
-        ],
-    ]:
-        raise NotImplementedError()
-
-    @property
     def set_iam_policy(
         self,
     ) -> Callable[
@@ -301,6 +284,27 @@ class AutokeyTransport(abc.ABC):
         Union[
             iam_policy_pb2.TestIamPermissionsResponse,
             Awaitable[iam_policy_pb2.TestIamPermissionsResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_location(
+        self,
+    ) -> Callable[
+        [locations_pb2.GetLocationRequest],
+        Union[locations_pb2.Location, Awaitable[locations_pb2.Location]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_locations(
+        self,
+    ) -> Callable[
+        [locations_pb2.ListLocationsRequest],
+        Union[
+            locations_pb2.ListLocationsResponse,
+            Awaitable[locations_pb2.ListLocationsResponse],
         ],
     ]:
         raise NotImplementedError()

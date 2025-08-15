@@ -1,5 +1,95 @@
 # Changelog
 
+## [0.2.8](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.7...google-apps-chat-v0.2.8) (2025-08-06)
+
+
+### Features
+
+* Addition of app auth support for chat api ([e9795e3](https://github.com/googleapis/google-cloud-python/commit/e9795e356339141f7087a982c08fe962b3f559da))
+
+
+### Documentation
+
+* Update reference documentation for createSpace,updateSpace,deleteSpace,createMembership,updateMembership,deleteMembership and the newly added field -customer- in space.proto ([e9795e3](https://github.com/googleapis/google-cloud-python/commit/e9795e356339141f7087a982c08fe962b3f559da))
+
+## [0.2.7](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.6...google-apps-chat-v0.2.7) (2025-07-23)
+
+
+### Features
+
+* Exposing 1p integration message content (drive, calendar, huddle, meet chips) ([b74ec0e](https://github.com/googleapis/google-cloud-python/commit/b74ec0ef9d46f96219dbdd9ff4937597a7486f28))
+
+
+### Documentation
+
+* Update reference documentation for annotations. Introduce new richlink metadata types ([b74ec0e](https://github.com/googleapis/google-cloud-python/commit/b74ec0ef9d46f96219dbdd9ff4937597a7486f28))
+
+## [0.2.6](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.5...google-apps-chat-v0.2.6) (2025-05-08)
+
+
+### Features
+
+* A new method `customEmojis.create` is added ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+* A new method `customEmojis.delete` is added ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+* A new method `customEmojis.get` is added ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+* A new method `customEmojis.list` is added ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+
+
+### Documentation
+
+* A comment for field `filter` in message `.google.chat.v1.ListReactionsRequest` is changed ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+* A comment for message `CustomEmoji` is changed ([1781daa](https://github.com/googleapis/google-cloud-python/commit/1781daa266a787f8e51575c121f247b1451806a9))
+
+## [0.2.5](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.4...google-apps-chat-v0.2.5) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.3...google-apps-chat-v0.2.4) (2025-03-09)
+
+
+### Features
+
+* Addition of space notification setting Chat API ([4c3dbf2](https://github.com/googleapis/google-cloud-python/commit/4c3dbf253f5113a5565110dd33a0749fb40c8fb2))
+
+## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.2...google-apps-chat-v0.2.3) (2025-02-24)
+
+
+### Features
+
+* [google-apps-chat] Add DeletionType.SPACE_MEMBER. This is returned when a message sent by an app is deleted by a human in a space ([#13539](https://github.com/googleapis/google-cloud-python/issues/13539)) ([8366123](https://github.com/googleapis/google-cloud-python/commit/8366123ecefb47efa33b3f7ead81dfd64225ae25))
+
+## [0.2.2](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.1...google-apps-chat-v0.2.2) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
+
+### Documentation
+
+* Update Google chat app command documentation ([50d43b1](https://github.com/googleapis/google-cloud-python/commit/50d43b1574812be8eb9bfffd241660ee1bddef15))
+
+## [0.2.1](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.2.0...google-apps-chat-v0.2.1) (2025-01-29)
+
+
+### Features
+
+* A new field custom_emoji_metadata is added to message `.google.chat.v1.Annotation` ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+* A new message `CustomEmojiMetadata` is added ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+* A new value `CUSTOM_EMOJI` is added to enum `AnnotationType` ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+
+
+### Documentation
+
+* A comment for field `custom_emoji` in message `.google.chat.v1.Emoji` is changed ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+* A comment for method `CreateReaction` in service `ChatService` is changed ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+* A comment for method `DeleteReaction` in service `ChatService` is changed ([b165f92](https://github.com/googleapis/google-cloud-python/commit/b165f923cdf47fbb23757531145eace0e3f088cb))
+
 ## [0.2.0](https://github.com/googleapis/google-cloud-python/compare/google-apps-chat-v0.1.14...google-apps-chat-v0.2.0) (2024-12-12)
 
 

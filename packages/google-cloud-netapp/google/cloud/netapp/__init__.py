@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -58,7 +58,9 @@ from google.cloud.netapp_v1.types.backup_vault import (
 )
 from google.cloud.netapp_v1.types.cloud_netapp_service import OperationMetadata
 from google.cloud.netapp_v1.types.common import (
+    DirectoryServiceType,
     EncryptionType,
+    FlexPerformance,
     LocationMetadata,
     ServiceLevel,
 )
@@ -73,6 +75,15 @@ from google.cloud.netapp_v1.types.kms import (
     UpdateKmsConfigRequest,
     VerifyKmsConfigRequest,
     VerifyKmsConfigResponse,
+)
+from google.cloud.netapp_v1.types.quota_rule import (
+    CreateQuotaRuleRequest,
+    DeleteQuotaRuleRequest,
+    GetQuotaRuleRequest,
+    ListQuotaRulesRequest,
+    ListQuotaRulesResponse,
+    QuotaRule,
+    UpdateQuotaRuleRequest,
 )
 from google.cloud.netapp_v1.types.replication import (
     CreateReplicationRequest,
@@ -109,6 +120,7 @@ from google.cloud.netapp_v1.types.storage_pool import (
     StoragePool,
     SwitchActiveReplicaZoneRequest,
     UpdateStoragePoolRequest,
+    ValidateDirectoryServiceRequest,
 )
 from google.cloud.netapp_v1.types.volume import (
     AccessType,
@@ -171,7 +183,9 @@ __all__ = (
     "UpdateBackupVaultRequest",
     "OperationMetadata",
     "LocationMetadata",
+    "DirectoryServiceType",
     "EncryptionType",
+    "FlexPerformance",
     "ServiceLevel",
     "CreateKmsConfigRequest",
     "DeleteKmsConfigRequest",
@@ -183,6 +197,13 @@ __all__ = (
     "UpdateKmsConfigRequest",
     "VerifyKmsConfigRequest",
     "VerifyKmsConfigResponse",
+    "CreateQuotaRuleRequest",
+    "DeleteQuotaRuleRequest",
+    "GetQuotaRuleRequest",
+    "ListQuotaRulesRequest",
+    "ListQuotaRulesResponse",
+    "QuotaRule",
+    "UpdateQuotaRuleRequest",
     "CreateReplicationRequest",
     "DeleteReplicationRequest",
     "DestinationVolumeParameters",
@@ -213,6 +234,7 @@ __all__ = (
     "StoragePool",
     "SwitchActiveReplicaZoneRequest",
     "UpdateStoragePoolRequest",
+    "ValidateDirectoryServiceRequest",
     "BackupConfig",
     "CreateVolumeRequest",
     "DailySchedule",

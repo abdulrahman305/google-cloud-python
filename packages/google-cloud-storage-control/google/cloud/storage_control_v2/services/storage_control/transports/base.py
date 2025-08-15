@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import google.auth  # type: ignore
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 
 from google.cloud.storage_control_v2 import gapic_version as package_version
@@ -32,6 +33,9 @@ from google.cloud.storage_control_v2.types import storage_control
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class StorageControlTransport(abc.ABC):
@@ -138,7 +142,20 @@ class StorageControlTransport(abc.ABC):
         self._wrapped_methods = {
             self.create_folder: gapic_v1.method.wrap_method(
                 self.create_folder,
-                default_timeout=None,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
                 client_info=client_info,
             ),
             self.delete_folder: gapic_v1.method.wrap_method(
@@ -264,6 +281,240 @@ class StorageControlTransport(abc.ABC):
                 default_timeout=60.0,
                 client_info=client_info,
             ),
+            self.create_anywhere_cache: gapic_v1.method.wrap_method(
+                self.create_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_anywhere_cache: gapic_v1.method.wrap_method(
+                self.update_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.disable_anywhere_cache: gapic_v1.method.wrap_method(
+                self.disable_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.pause_anywhere_cache: gapic_v1.method.wrap_method(
+                self.pause_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.resume_anywhere_cache: gapic_v1.method.wrap_method(
+                self.resume_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_anywhere_cache: gapic_v1.method.wrap_method(
+                self.get_anywhere_cache,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.list_anywhere_caches: gapic_v1.method.wrap_method(
+                self.list_anywhere_caches,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_project_intelligence_config: gapic_v1.method.wrap_method(
+                self.get_project_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_project_intelligence_config: gapic_v1.method.wrap_method(
+                self.update_project_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_folder_intelligence_config: gapic_v1.method.wrap_method(
+                self.get_folder_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_folder_intelligence_config: gapic_v1.method.wrap_method(
+                self.update_folder_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.get_organization_intelligence_config: gapic_v1.method.wrap_method(
+                self.get_organization_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
+            self.update_organization_intelligence_config: gapic_v1.method.wrap_method(
+                self.update_organization_intelligence_config,
+                default_retry=retries.Retry(
+                    initial=1.0,
+                    maximum=60.0,
+                    multiplier=2,
+                    predicate=retries.if_exception_type(
+                        core_exceptions.DeadlineExceeded,
+                        core_exceptions.InternalServerError,
+                        core_exceptions.ResourceExhausted,
+                        core_exceptions.ServiceUnavailable,
+                        core_exceptions.Unknown,
+                    ),
+                    deadline=60.0,
+                ),
+                default_timeout=60.0,
+                client_info=client_info,
+            ),
         }
 
     def close(self):
@@ -372,6 +623,144 @@ class StorageControlTransport(abc.ABC):
         Union[
             storage_control.ListManagedFoldersResponse,
             Awaitable[storage_control.ListManagedFoldersResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def create_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.CreateAnywhereCacheRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.UpdateAnywhereCacheRequest],
+        Union[operations_pb2.Operation, Awaitable[operations_pb2.Operation]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def disable_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.DisableAnywhereCacheRequest],
+        Union[storage_control.AnywhereCache, Awaitable[storage_control.AnywhereCache]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def pause_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.PauseAnywhereCacheRequest],
+        Union[storage_control.AnywhereCache, Awaitable[storage_control.AnywhereCache]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def resume_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.ResumeAnywhereCacheRequest],
+        Union[storage_control.AnywhereCache, Awaitable[storage_control.AnywhereCache]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_anywhere_cache(
+        self,
+    ) -> Callable[
+        [storage_control.GetAnywhereCacheRequest],
+        Union[storage_control.AnywhereCache, Awaitable[storage_control.AnywhereCache]],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def list_anywhere_caches(
+        self,
+    ) -> Callable[
+        [storage_control.ListAnywhereCachesRequest],
+        Union[
+            storage_control.ListAnywhereCachesResponse,
+            Awaitable[storage_control.ListAnywhereCachesResponse],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_project_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.GetProjectIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_project_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.UpdateProjectIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_folder_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.GetFolderIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_folder_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.UpdateFolderIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def get_organization_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.GetOrganizationIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
+        ],
+    ]:
+        raise NotImplementedError()
+
+    @property
+    def update_organization_intelligence_config(
+        self,
+    ) -> Callable[
+        [storage_control.UpdateOrganizationIntelligenceConfigRequest],
+        Union[
+            storage_control.IntelligenceConfig,
+            Awaitable[storage_control.IntelligenceConfig],
         ],
     ]:
         raise NotImplementedError()

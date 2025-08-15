@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,12 +72,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.cloud.iap.v1.IdentityAwareProxyAdminService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -468,6 +467,39 @@ class IdentityAwareProxyAdminServiceGrpcTransport(
                 response_deserializer=service.IapSettings.deserialize,
             )
         return self._stubs["update_iap_settings"]
+
+    @property
+    def validate_iap_attribute_expression(
+        self,
+    ) -> Callable[
+        [service.ValidateIapAttributeExpressionRequest],
+        service.ValidateIapAttributeExpressionResponse,
+    ]:
+        r"""Return a callable for the validate iap attribute
+        expression method over gRPC.
+
+        Validates that a given CEL expression conforms to IAP
+        restrictions.
+
+        Returns:
+            Callable[[~.ValidateIapAttributeExpressionRequest],
+                    ~.ValidateIapAttributeExpressionResponse]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "validate_iap_attribute_expression" not in self._stubs:
+            self._stubs[
+                "validate_iap_attribute_expression"
+            ] = self._logged_channel.unary_unary(
+                "/google.cloud.iap.v1.IdentityAwareProxyAdminService/ValidateIapAttributeExpression",
+                request_serializer=service.ValidateIapAttributeExpressionRequest.serialize,
+                response_deserializer=service.ValidateIapAttributeExpressionResponse.deserialize,
+            )
+        return self._stubs["validate_iap_attribute_expression"]
 
     @property
     def list_tunnel_dest_groups(

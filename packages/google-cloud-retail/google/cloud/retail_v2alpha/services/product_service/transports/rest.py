@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
 from google.cloud.location import locations_pb2  # type: ignore
 from google.longrunning import operations_pb2  # type: ignore
+import google.protobuf
 from google.protobuf import empty_pb2  # type: ignore
 from google.protobuf import json_format
 from requests import __version__ as requests_version
@@ -57,6 +58,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class ProductServiceRestInterceptor:
@@ -200,11 +204,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for add_fulfillment_places
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_add_fulfillment_places_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_add_fulfillment_places` interceptor runs
+        before the `post_add_fulfillment_places_with_metadata` interceptor.
         """
         return response
+
+    def post_add_fulfillment_places_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for add_fulfillment_places
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_add_fulfillment_places_with_metadata`
+        interceptor in new development instead of the `post_add_fulfillment_places` interceptor.
+        When both interceptors are used, this `post_add_fulfillment_places_with_metadata` interceptor runs after the
+        `post_add_fulfillment_places` interceptor. The (possibly modified) response returned by
+        `post_add_fulfillment_places` will be passed to
+        `post_add_fulfillment_places_with_metadata`.
+        """
+        return response, metadata
 
     def pre_add_local_inventories(
         self,
@@ -226,11 +253,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for add_local_inventories
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_add_local_inventories_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_add_local_inventories` interceptor runs
+        before the `post_add_local_inventories_with_metadata` interceptor.
         """
         return response
+
+    def post_add_local_inventories_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for add_local_inventories
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_add_local_inventories_with_metadata`
+        interceptor in new development instead of the `post_add_local_inventories` interceptor.
+        When both interceptors are used, this `post_add_local_inventories_with_metadata` interceptor runs after the
+        `post_add_local_inventories` interceptor. The (possibly modified) response returned by
+        `post_add_local_inventories` will be passed to
+        `post_add_local_inventories_with_metadata`.
+        """
+        return response, metadata
 
     def pre_create_product(
         self,
@@ -249,11 +299,34 @@ class ProductServiceRestInterceptor:
     def post_create_product(self, response: gcr_product.Product) -> gcr_product.Product:
         """Post-rpc interceptor for create_product
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_create_product_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_create_product` interceptor runs
+        before the `post_create_product_with_metadata` interceptor.
         """
         return response
+
+    def post_create_product_with_metadata(
+        self,
+        response: gcr_product.Product,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcr_product.Product, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for create_product
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_create_product_with_metadata`
+        interceptor in new development instead of the `post_create_product` interceptor.
+        When both interceptors are used, this `post_create_product_with_metadata` interceptor runs after the
+        `post_create_product` interceptor. The (possibly modified) response returned by
+        `post_create_product` will be passed to
+        `post_create_product_with_metadata`.
+        """
+        return response, metadata
 
     def pre_delete_product(
         self,
@@ -288,11 +361,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for export_products
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_export_products_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_export_products` interceptor runs
+        before the `post_export_products_with_metadata` interceptor.
         """
         return response
+
+    def post_export_products_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for export_products
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_export_products_with_metadata`
+        interceptor in new development instead of the `post_export_products` interceptor.
+        When both interceptors are used, this `post_export_products_with_metadata` interceptor runs after the
+        `post_export_products` interceptor. The (possibly modified) response returned by
+        `post_export_products` will be passed to
+        `post_export_products_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_product(
         self,
@@ -311,11 +407,34 @@ class ProductServiceRestInterceptor:
     def post_get_product(self, response: product.Product) -> product.Product:
         """Post-rpc interceptor for get_product
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_product_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_product` interceptor runs
+        before the `post_get_product_with_metadata` interceptor.
         """
         return response
+
+    def post_get_product_with_metadata(
+        self,
+        response: product.Product,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[product.Product, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get_product
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_get_product_with_metadata`
+        interceptor in new development instead of the `post_get_product` interceptor.
+        When both interceptors are used, this `post_get_product_with_metadata` interceptor runs after the
+        `post_get_product` interceptor. The (possibly modified) response returned by
+        `post_get_product` will be passed to
+        `post_get_product_with_metadata`.
+        """
+        return response, metadata
 
     def pre_import_products(
         self,
@@ -336,11 +455,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for import_products
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_import_products_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_import_products` interceptor runs
+        before the `post_import_products_with_metadata` interceptor.
         """
         return response
+
+    def post_import_products_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for import_products
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_import_products_with_metadata`
+        interceptor in new development instead of the `post_import_products` interceptor.
+        When both interceptors are used, this `post_import_products_with_metadata` interceptor runs after the
+        `post_import_products` interceptor. The (possibly modified) response returned by
+        `post_import_products` will be passed to
+        `post_import_products_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list_products(
         self,
@@ -361,11 +503,36 @@ class ProductServiceRestInterceptor:
     ) -> product_service.ListProductsResponse:
         """Post-rpc interceptor for list_products
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_products_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list_products` interceptor runs
+        before the `post_list_products_with_metadata` interceptor.
         """
         return response
+
+    def post_list_products_with_metadata(
+        self,
+        response: product_service.ListProductsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        product_service.ListProductsResponse, Sequence[Tuple[str, Union[str, bytes]]]
+    ]:
+        """Post-rpc interceptor for list_products
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_list_products_with_metadata`
+        interceptor in new development instead of the `post_list_products` interceptor.
+        When both interceptors are used, this `post_list_products_with_metadata` interceptor runs after the
+        `post_list_products` interceptor. The (possibly modified) response returned by
+        `post_list_products` will be passed to
+        `post_list_products_with_metadata`.
+        """
+        return response, metadata
 
     def pre_purge_products(
         self,
@@ -386,11 +553,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for purge_products
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_purge_products_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_purge_products` interceptor runs
+        before the `post_purge_products_with_metadata` interceptor.
         """
         return response
+
+    def post_purge_products_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for purge_products
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_purge_products_with_metadata`
+        interceptor in new development instead of the `post_purge_products` interceptor.
+        When both interceptors are used, this `post_purge_products_with_metadata` interceptor runs after the
+        `post_purge_products` interceptor. The (possibly modified) response returned by
+        `post_purge_products` will be passed to
+        `post_purge_products_with_metadata`.
+        """
+        return response, metadata
 
     def pre_remove_fulfillment_places(
         self,
@@ -412,11 +602,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for remove_fulfillment_places
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_remove_fulfillment_places_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_remove_fulfillment_places` interceptor runs
+        before the `post_remove_fulfillment_places_with_metadata` interceptor.
         """
         return response
+
+    def post_remove_fulfillment_places_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for remove_fulfillment_places
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_remove_fulfillment_places_with_metadata`
+        interceptor in new development instead of the `post_remove_fulfillment_places` interceptor.
+        When both interceptors are used, this `post_remove_fulfillment_places_with_metadata` interceptor runs after the
+        `post_remove_fulfillment_places` interceptor. The (possibly modified) response returned by
+        `post_remove_fulfillment_places` will be passed to
+        `post_remove_fulfillment_places_with_metadata`.
+        """
+        return response, metadata
 
     def pre_remove_local_inventories(
         self,
@@ -438,11 +651,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for remove_local_inventories
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_remove_local_inventories_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_remove_local_inventories` interceptor runs
+        before the `post_remove_local_inventories_with_metadata` interceptor.
         """
         return response
+
+    def post_remove_local_inventories_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for remove_local_inventories
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_remove_local_inventories_with_metadata`
+        interceptor in new development instead of the `post_remove_local_inventories` interceptor.
+        When both interceptors are used, this `post_remove_local_inventories_with_metadata` interceptor runs after the
+        `post_remove_local_inventories` interceptor. The (possibly modified) response returned by
+        `post_remove_local_inventories` will be passed to
+        `post_remove_local_inventories_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_inventory(
         self,
@@ -463,11 +699,34 @@ class ProductServiceRestInterceptor:
     ) -> operations_pb2.Operation:
         """Post-rpc interceptor for set_inventory
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_inventory_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_inventory` interceptor runs
+        before the `post_set_inventory_with_metadata` interceptor.
         """
         return response
+
+    def post_set_inventory_with_metadata(
+        self,
+        response: operations_pb2.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[operations_pb2.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_inventory
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_set_inventory_with_metadata`
+        interceptor in new development instead of the `post_set_inventory` interceptor.
+        When both interceptors are used, this `post_set_inventory_with_metadata` interceptor runs after the
+        `post_set_inventory` interceptor. The (possibly modified) response returned by
+        `post_set_inventory` will be passed to
+        `post_set_inventory_with_metadata`.
+        """
+        return response, metadata
 
     def pre_update_product(
         self,
@@ -486,11 +745,34 @@ class ProductServiceRestInterceptor:
     def post_update_product(self, response: gcr_product.Product) -> gcr_product.Product:
         """Post-rpc interceptor for update_product
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_update_product_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the ProductService server but before
-        it is returned to user code.
+        it is returned to user code. This `post_update_product` interceptor runs
+        before the `post_update_product_with_metadata` interceptor.
         """
         return response
+
+    def post_update_product_with_metadata(
+        self,
+        response: gcr_product.Product,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[gcr_product.Product, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for update_product
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the ProductService server but before it is returned to user code.
+
+        We recommend only using this `post_update_product_with_metadata`
+        interceptor in new development instead of the `post_update_product` interceptor.
+        When both interceptors are used, this `post_update_product_with_metadata` interceptor runs after the
+        `post_update_product` interceptor. The (possibly modified) response returned by
+        `post_update_product` will be passed to
+        `post_update_product_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_operation(
         self,
@@ -824,6 +1106,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_add_fulfillment_places(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_fulfillment_places_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -976,6 +1262,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_add_local_inventories(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_add_local_inventories_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1127,6 +1417,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_create_product(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_create_product_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1383,6 +1677,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_export_products(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_export_products_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1530,6 +1828,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_product(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_product_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1677,6 +1979,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_import_products(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_import_products_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1822,6 +2128,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list_products(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_products_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1972,6 +2282,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_purge_products(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_purge_products_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2126,6 +2440,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_remove_fulfillment_places(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_remove_fulfillment_places_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2280,6 +2598,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_remove_local_inventories(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_remove_local_inventories_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2429,6 +2751,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_inventory(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_inventory_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -2580,6 +2906,10 @@ class ProductServiceRestTransport(_BaseProductServiceRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_update_product(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_update_product_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

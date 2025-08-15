@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,10 +54,11 @@ class DataQualitySpec(proto.Message):
 
             100.
         row_filter (str):
-            Optional. A filter applied to all rows in a
-            single DataScan job. The filter needs to be a
-            valid SQL expression for a WHERE clause in
-            BigQuery standard SQL syntax.
+            Optional. A filter applied to all rows in a single DataScan
+            job. The filter needs to be a valid SQL expression for a
+            `WHERE clause in GoogleSQL
+            syntax <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#where_clause>`__.
+
             Example: col1 >= 0 AND col2 < 10
         post_scan_actions (google.cloud.dataplex_v1.types.DataQualitySpec.PostScanActions):
             Optional. Actions to take upon job
@@ -84,6 +85,7 @@ class DataQualitySpec(proto.Message):
                     Optional. The BigQuery table to export DataQualityScan
                     results to. Format:
                     //bigquery.googleapis.com/projects/PROJECT_ID/datasets/DATASET_ID/tables/TABLE_ID
+                    or projects/PROJECT_ID/datasets/DATASET_ID/tables/TABLE_ID
             """
 
             results_table: str = proto.Field(
@@ -215,7 +217,8 @@ class DataQualityResult(proto.Message):
 
     Attributes:
         passed (bool):
-            Overall data quality result -- ``true`` if all rules passed.
+            Output only. Overall data quality result -- ``true`` if all
+            rules passed.
         score (float):
             Output only. The overall data quality score.
 
@@ -224,7 +227,7 @@ class DataQualityResult(proto.Message):
 
             This field is a member of `oneof`_ ``_score``.
         dimensions (MutableSequence[google.cloud.dataplex_v1.types.DataQualityDimensionResult]):
-            A list of results at the dimension level.
+            Output only. A list of results at the dimension level.
 
             A dimension will have a corresponding
             ``DataQualityDimensionResult`` if and only if there is at
@@ -236,12 +239,13 @@ class DataQualityResult(proto.Message):
             ``DataQualityColumnResult`` if and only if there is at least
             one rule with the 'column' field set to it.
         rules (MutableSequence[google.cloud.dataplex_v1.types.DataQualityRuleResult]):
-            A list of all the rules in a job, and their
-            results.
+            Output only. A list of all the rules in a
+            job, and their results.
         row_count (int):
-            The count of rows processed.
+            Output only. The count of rows processed.
         scanned_data (google.cloud.dataplex_v1.types.ScannedData):
-            The data scanned for this result.
+            Output only. The data scanned for this
+            result.
         post_scan_actions_result (google.cloud.dataplex_v1.types.DataQualityResult.PostScanActionsResult):
             Output only. The result of post scan actions.
     """
@@ -350,12 +354,14 @@ class DataQualityRuleResult(proto.Message):
 
     Attributes:
         rule (google.cloud.dataplex_v1.types.DataQualityRule):
-            The rule specified in the DataQualitySpec, as
-            is.
+            Output only. The rule specified in the
+            DataQualitySpec, as is.
         passed (bool):
-            Whether the rule passed or failed.
+            Output only. Whether the rule passed or
+            failed.
         evaluated_count (int):
-            The number of rows a rule was evaluated against.
+            Output only. The number of rows a rule was evaluated
+            against.
 
             This field is only valid for row-level type rules.
 
@@ -365,21 +371,26 @@ class DataQualityRuleResult(proto.Message):
                automatically failing rule evaluation, or
             -  exclude ``null`` rows from the ``evaluated_count``, by
                setting ``ignore_nulls = true``.
+
+            This field is not set for rule SqlAssertion.
         passed_count (int):
-            The number of rows which passed a rule
-            evaluation.
+            Output only. The number of rows which passed
+            a rule evaluation.
             This field is only valid for row-level type
             rules.
+
+            This field is not set for rule SqlAssertion.
         null_count (int):
-            The number of rows with null values in the
-            specified column.
+            Output only. The number of rows with null
+            values in the specified column.
         pass_ratio (float):
-            The ratio of **passed_count / evaluated_count**.
+            Output only. The ratio of **passed_count /
+            evaluated_count**.
 
             This field is only valid for row-level type rules.
         failing_rows_query (str):
-            The query to find rows that did not pass this
-            rule.
+            Output only. The query to find rows that did
+            not pass this rule.
             This field is only valid for row-level type
             rules.
         assertion_row_count (int):
@@ -437,7 +448,8 @@ class DataQualityDimensionResult(proto.Message):
             Output only. The dimension config specified
             in the DataQualitySpec, as is.
         passed (bool):
-            Whether the dimension passed or failed.
+            Output only. Whether the dimension passed or
+            failed.
         score (float):
             Output only. The dimension-level data quality score for this
             data scan job if and only if the 'dimension' field is set.
@@ -470,9 +482,10 @@ class DataQualityDimension(proto.Message):
 
     Attributes:
         name (str):
-            The dimension name a rule belongs to. Supported dimensions
-            are ["COMPLETENESS", "ACCURACY", "CONSISTENCY", "VALIDITY",
-            "UNIQUENESS", "FRESHNESS", "VOLUME"]
+            Optional. The dimension name a rule belongs
+            to. Custom dimension name is supported with all
+            uppercase letters and maximum length of 30
+            characters.
     """
 
     name: str = proto.Field(
@@ -741,8 +754,9 @@ class DataQualityRule(proto.Message):
     class RowConditionExpectation(proto.Message):
         r"""Evaluates whether each row passes the specified condition.
 
-        The SQL expression needs to use BigQuery standard SQL syntax and
-        should produce a boolean value per row as the result.
+        The SQL expression needs to use `GoogleSQL
+        syntax <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax>`__
+        and should produce a boolean value per row as the result.
 
         Example: col1 >= 0 AND col2 < 10
 
@@ -759,8 +773,9 @@ class DataQualityRule(proto.Message):
     class TableConditionExpectation(proto.Message):
         r"""Evaluates whether the provided expression is true.
 
-        The SQL expression needs to use BigQuery standard SQL syntax and
-        should produce a scalar boolean result.
+        The SQL expression needs to use `GoogleSQL
+        syntax <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax>`__
+        and should produce a scalar boolean result.
 
         Example: MIN(col1) >= 0
 
@@ -778,8 +793,9 @@ class DataQualityRule(proto.Message):
         r"""A SQL statement that is evaluated to return rows that match an
         invalid state. If any rows are are returned, this rule fails.
 
-        The SQL statement must use BigQuery standard SQL syntax, and must
-        not contain any semicolons.
+        The SQL statement must use `GoogleSQL
+        syntax <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax>`__,
+        and must not contain any semicolons.
 
         You can use the data reference parameter ``${data()}`` to reference
         the source table with all of its precondition filters applied.

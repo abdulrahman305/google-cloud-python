@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from google.api_core import gapic_v1, rest_helpers, rest_streaming
 from google.api_core import retry as retries
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.auth.transport.requests import AuthorizedSession  # type: ignore
+import google.protobuf
 from google.protobuf import json_format
 from requests import __version__ as requests_version
 
@@ -51,6 +52,9 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     grpc_version=None,
     rest_version=f"requests@{requests_version}",
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 class InterconnectsRestInterceptor:
@@ -155,11 +159,34 @@ class InterconnectsRestInterceptor:
     def post_delete(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for delete
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_delete_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_delete` interceptor runs
+        before the `post_delete_with_metadata` interceptor.
         """
         return response
+
+    def post_delete_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for delete
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_delete_with_metadata`
+        interceptor in new development instead of the `post_delete` interceptor.
+        When both interceptors are used, this `post_delete_with_metadata` interceptor runs after the
+        `post_delete` interceptor. The (possibly modified) response returned by
+        `post_delete` will be passed to
+        `post_delete_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get(
         self,
@@ -176,11 +203,34 @@ class InterconnectsRestInterceptor:
     def post_get(self, response: compute.Interconnect) -> compute.Interconnect:
         """Post-rpc interceptor for get
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get` interceptor runs
+        before the `post_get_with_metadata` interceptor.
         """
         return response
+
+    def post_get_with_metadata(
+        self,
+        response: compute.Interconnect,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Interconnect, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for get
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_get_with_metadata`
+        interceptor in new development instead of the `post_get` interceptor.
+        When both interceptors are used, this `post_get_with_metadata` interceptor runs after the
+        `post_get` interceptor. The (possibly modified) response returned by
+        `post_get` will be passed to
+        `post_get_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_diagnostics(
         self,
@@ -202,11 +252,37 @@ class InterconnectsRestInterceptor:
     ) -> compute.InterconnectsGetDiagnosticsResponse:
         """Post-rpc interceptor for get_diagnostics
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_diagnostics_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_diagnostics` interceptor runs
+        before the `post_get_diagnostics_with_metadata` interceptor.
         """
         return response
+
+    def post_get_diagnostics_with_metadata(
+        self,
+        response: compute.InterconnectsGetDiagnosticsResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.InterconnectsGetDiagnosticsResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_diagnostics
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_get_diagnostics_with_metadata`
+        interceptor in new development instead of the `post_get_diagnostics` interceptor.
+        When both interceptors are used, this `post_get_diagnostics_with_metadata` interceptor runs after the
+        `post_get_diagnostics` interceptor. The (possibly modified) response returned by
+        `post_get_diagnostics` will be passed to
+        `post_get_diagnostics_with_metadata`.
+        """
+        return response, metadata
 
     def pre_get_macsec_config(
         self,
@@ -228,11 +304,37 @@ class InterconnectsRestInterceptor:
     ) -> compute.InterconnectsGetMacsecConfigResponse:
         """Post-rpc interceptor for get_macsec_config
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_get_macsec_config_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_get_macsec_config` interceptor runs
+        before the `post_get_macsec_config_with_metadata` interceptor.
         """
         return response
+
+    def post_get_macsec_config_with_metadata(
+        self,
+        response: compute.InterconnectsGetMacsecConfigResponse,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[
+        compute.InterconnectsGetMacsecConfigResponse,
+        Sequence[Tuple[str, Union[str, bytes]]],
+    ]:
+        """Post-rpc interceptor for get_macsec_config
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_get_macsec_config_with_metadata`
+        interceptor in new development instead of the `post_get_macsec_config` interceptor.
+        When both interceptors are used, this `post_get_macsec_config_with_metadata` interceptor runs after the
+        `post_get_macsec_config` interceptor. The (possibly modified) response returned by
+        `post_get_macsec_config` will be passed to
+        `post_get_macsec_config_with_metadata`.
+        """
+        return response, metadata
 
     def pre_insert(
         self,
@@ -251,11 +353,34 @@ class InterconnectsRestInterceptor:
     def post_insert(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for insert
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_insert_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_insert` interceptor runs
+        before the `post_insert_with_metadata` interceptor.
         """
         return response
+
+    def post_insert_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for insert
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_insert_with_metadata`
+        interceptor in new development instead of the `post_insert` interceptor.
+        When both interceptors are used, this `post_insert_with_metadata` interceptor runs after the
+        `post_insert` interceptor. The (possibly modified) response returned by
+        `post_insert` will be passed to
+        `post_insert_with_metadata`.
+        """
+        return response, metadata
 
     def pre_list(
         self,
@@ -274,11 +399,34 @@ class InterconnectsRestInterceptor:
     def post_list(self, response: compute.InterconnectList) -> compute.InterconnectList:
         """Post-rpc interceptor for list
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_list_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_list` interceptor runs
+        before the `post_list_with_metadata` interceptor.
         """
         return response
+
+    def post_list_with_metadata(
+        self,
+        response: compute.InterconnectList,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.InterconnectList, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for list
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_list_with_metadata`
+        interceptor in new development instead of the `post_list` interceptor.
+        When both interceptors are used, this `post_list_with_metadata` interceptor runs after the
+        `post_list` interceptor. The (possibly modified) response returned by
+        `post_list` will be passed to
+        `post_list_with_metadata`.
+        """
+        return response, metadata
 
     def pre_patch(
         self,
@@ -297,11 +445,34 @@ class InterconnectsRestInterceptor:
     def post_patch(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for patch
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_patch_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_patch` interceptor runs
+        before the `post_patch_with_metadata` interceptor.
         """
         return response
+
+    def post_patch_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for patch
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_patch_with_metadata`
+        interceptor in new development instead of the `post_patch` interceptor.
+        When both interceptors are used, this `post_patch_with_metadata` interceptor runs after the
+        `post_patch` interceptor. The (possibly modified) response returned by
+        `post_patch` will be passed to
+        `post_patch_with_metadata`.
+        """
+        return response, metadata
 
     def pre_set_labels(
         self,
@@ -320,11 +491,34 @@ class InterconnectsRestInterceptor:
     def post_set_labels(self, response: compute.Operation) -> compute.Operation:
         """Post-rpc interceptor for set_labels
 
-        Override in a subclass to manipulate the response
+        DEPRECATED. Please use the `post_set_labels_with_metadata`
+        interceptor instead.
+
+        Override in a subclass to read or manipulate the response
         after it is returned by the Interconnects server but before
-        it is returned to user code.
+        it is returned to user code. This `post_set_labels` interceptor runs
+        before the `post_set_labels_with_metadata` interceptor.
         """
         return response
+
+    def post_set_labels_with_metadata(
+        self,
+        response: compute.Operation,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]],
+    ) -> Tuple[compute.Operation, Sequence[Tuple[str, Union[str, bytes]]]]:
+        """Post-rpc interceptor for set_labels
+
+        Override in a subclass to read or manipulate the response or metadata after it
+        is returned by the Interconnects server but before it is returned to user code.
+
+        We recommend only using this `post_set_labels_with_metadata`
+        interceptor in new development instead of the `post_set_labels` interceptor.
+        When both interceptors are used, this `post_set_labels_with_metadata` interceptor runs after the
+        `post_set_labels` interceptor. The (possibly modified) response returned by
+        `post_set_labels` will be passed to
+        `post_set_labels_with_metadata`.
+        """
+        return response, metadata
 
 
 @dataclasses.dataclass
@@ -555,6 +749,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_delete(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_delete_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -703,6 +901,8 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -847,6 +1047,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_diagnostics(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_diagnostics_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -995,6 +1199,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_get_macsec_config(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_get_macsec_config_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1164,6 +1372,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_insert(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_insert_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1308,6 +1520,8 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_list(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_list_with_metadata(resp, response_metadata)
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1475,6 +1689,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_patch(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_patch_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER
@@ -1646,6 +1864,10 @@ class InterconnectsRestTransport(_BaseInterconnectsRestTransport):
             json_format.Parse(response.content, pb_resp, ignore_unknown_fields=True)
 
             resp = self._interceptor.post_set_labels(resp)
+            response_metadata = [(k, str(v)) for k, v in response.headers.items()]
+            resp, _ = self._interceptor.post_set_labels_with_metadata(
+                resp, response_metadata
+            )
             if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
                 logging.DEBUG
             ):  # pragma: NO COVER

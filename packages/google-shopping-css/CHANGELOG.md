@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.16...google-shopping-css-v0.1.17) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8066d24](https://github.com/googleapis/google-cloud-python/commit/8066d24068e6d036dcf77e7abb5401a5ba3f8a63))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.15...google-shopping-css-v0.1.16) (2025-04-12)
+
+
+### Features
+
+* Introduce QuotaService for CSS API ([1c2d32c](https://github.com/googleapis/google-cloud-python/commit/1c2d32cddd80da9ede0bbc39d1a93aa9d7305f3f))
+
+
+### Documentation
+
+* A comment for field `name` in message `.google.shopping.css.v1.CssProductInput` is changed ([1c2d32c](https://github.com/googleapis/google-cloud-python/commit/1c2d32cddd80da9ede0bbc39d1a93aa9d7305f3f))
+* A comment for field `name` in message `.google.shopping.css.v1.DeleteCssProductInputRequest` is changed ([1c2d32c](https://github.com/googleapis/google-cloud-python/commit/1c2d32cddd80da9ede0bbc39d1a93aa9d7305f3f))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.14...google-shopping-css-v0.1.15) (2025-03-21)
+
+
+### Documentation
+
+* [google-shopping-css] added a clarifying note to the description of the parent field in the Account resource ([#13698](https://github.com/googleapis/google-cloud-python/issues/13698)) ([46df862](https://github.com/googleapis/google-cloud-python/commit/46df862e3f012d24de08f19c31250c7d687f2b16))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.13...google-shopping-css-v0.1.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([25ced24](https://github.com/googleapis/google-cloud-python/commit/25ced2444528a1dc6a22daa32b82b844961f1b75))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.12...google-shopping-css-v0.1.13) (2025-02-18)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+* Add support for reading selective GAPIC generation methods from service YAML ([30b675e](https://github.com/googleapis/google-cloud-python/commit/30b675e7e9eaee87f9e7bdf4dc910b01f6a3044f))
+
 ## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-shopping-css-v0.1.11...google-shopping-css-v0.1.12) (2025-01-02)
 
 

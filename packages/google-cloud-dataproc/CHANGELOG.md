@@ -4,6 +4,57 @@
 
 [1]: https://pypi.org/project/google-cloud-dataproc/#history
 
+## [5.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.20.0...google-cloud-dataproc-v5.21.0) (2025-07-02)
+
+
+### Features
+
+* [google-cloud-dataproc] Add `cluster_tier` to support creating premium clusters ([#14047](https://github.com/googleapis/google-cloud-python/issues/14047)) ([5a27ea2](https://github.com/googleapis/google-cloud-python/commit/5a27ea27c9a6016628957d1e1d118d3caaca9498))
+
+## [5.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.19.0...google-cloud-dataproc-v5.20.0) (2025-06-11)
+
+
+### Features
+
+* Added support for DELTA, ICEBERG, PIG components ([#13982](https://github.com/googleapis/google-cloud-python/issues/13982)) ([5e57d1c](https://github.com/googleapis/google-cloud-python/commit/5e57d1c40d7edb932aa6192c2d41787856c6fe3b))
+
+## [5.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.18.1...google-cloud-dataproc-v5.19.0) (2025-06-05)
+
+
+### Features
+
+* [google-cloud-dataproc] add scenarios AUTO/NONE to autotuning config ([#13969](https://github.com/googleapis/google-cloud-python/issues/13969)) ([134af69](https://github.com/googleapis/google-cloud-python/commit/134af69b0494f3a96280f32a1435a91989271d13))
+
+## [5.18.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.18.0...google-cloud-dataproc-v5.18.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([feb5353](https://github.com/googleapis/google-cloud-python/commit/feb53532240bb70a94b359b519f0f41f95875a33))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [5.18.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.17.1...google-cloud-dataproc-v5.18.0) (2025-02-24)
+
+
+### Features
+
+* Added support for the AuthenticationConfig field to Dataproc serverless workload configurations ([4c96416](https://github.com/googleapis/google-cloud-python/commit/4c964163885d43e5683e3416fe7af605a14b2b9b))
+
+## [5.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.17.0...google-cloud-dataproc-v5.17.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [5.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.16.0...google-cloud-dataproc-v5.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+* Add support for reading selective GAPIC generation methods from service YAML ([e92d527](https://github.com/googleapis/google-cloud-python/commit/e92d52797ffbce45d033eb81af24e0cad32baa55))
+
 ## [5.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-dataproc-v5.15.1...google-cloud-dataproc-v5.16.0) (2024-12-12)
 
 

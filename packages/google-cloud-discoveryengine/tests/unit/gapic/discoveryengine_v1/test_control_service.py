@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,13 @@ from google.cloud.discoveryengine_v1.types import common
 from google.cloud.discoveryengine_v1.types import control
 from google.cloud.discoveryengine_v1.types import control as gcd_control
 from google.cloud.discoveryengine_v1.types import control_service
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -323,6 +330,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         ControlServiceClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = ControlServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = ControlServiceClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1342,7 +1392,7 @@ def test_create_control_flattened():
         client.create_control(
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -1356,7 +1406,7 @@ def test_create_control_flattened():
         assert arg == mock_val
         arg = args[0].control
         mock_val = gcd_control.Control(
-            boost_action=gcd_control.Control.BoostAction(boost=0.551)
+            boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
         )
         assert arg == mock_val
         arg = args[0].control_id
@@ -1376,7 +1426,7 @@ def test_create_control_flattened_error():
             control_service.CreateControlRequest(),
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -1399,7 +1449,7 @@ async def test_create_control_flattened_async():
         response = await client.create_control(
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -1413,7 +1463,7 @@ async def test_create_control_flattened_async():
         assert arg == mock_val
         arg = args[0].control
         mock_val = gcd_control.Control(
-            boost_action=gcd_control.Control.BoostAction(boost=0.551)
+            boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
         )
         assert arg == mock_val
         arg = args[0].control_id
@@ -1434,7 +1484,7 @@ async def test_create_control_flattened_error_async():
             control_service.CreateControlRequest(),
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -2019,7 +2069,7 @@ def test_update_control_flattened():
         # using the keyword arguments to the method.
         client.update_control(
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -2030,7 +2080,7 @@ def test_update_control_flattened():
         _, args, _ = call.mock_calls[0]
         arg = args[0].control
         mock_val = gcd_control.Control(
-            boost_action=gcd_control.Control.BoostAction(boost=0.551)
+            boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
         )
         assert arg == mock_val
         arg = args[0].update_mask
@@ -2049,7 +2099,7 @@ def test_update_control_flattened_error():
         client.update_control(
             control_service.UpdateControlRequest(),
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -2071,7 +2121,7 @@ async def test_update_control_flattened_async():
         # using the keyword arguments to the method.
         response = await client.update_control(
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -2082,7 +2132,7 @@ async def test_update_control_flattened_async():
         _, args, _ = call.mock_calls[0]
         arg = args[0].control
         mock_val = gcd_control.Control(
-            boost_action=gcd_control.Control.BoostAction(boost=0.551)
+            boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
         )
         assert arg == mock_val
         arg = args[0].update_mask
@@ -2102,7 +2152,7 @@ async def test_update_control_flattened_error_async():
         await client.update_control(
             control_service.UpdateControlRequest(),
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -3133,7 +3183,7 @@ def test_create_control_rest_flattened():
         mock_args = dict(
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -3175,7 +3225,7 @@ def test_create_control_rest_flattened_error(transport: str = "rest"):
             control_service.CreateControlRequest(),
             parent="parent_value",
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             control_id="control_id_value",
         )
@@ -3495,7 +3545,7 @@ def test_update_control_rest_flattened():
         # get truthy value for each flattened field
         mock_args = dict(
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -3536,7 +3586,7 @@ def test_update_control_rest_flattened_error(transport: str = "rest"):
         client.update_control(
             control_service.UpdateControlRequest(),
             control=gcd_control.Control(
-                boost_action=gcd_control.Control.BoostAction(boost=0.551)
+                boost_action=gcd_control.Control.BoostAction(fixed_boost=0.1174)
             ),
             update_mask=field_mask_pb2.FieldMask(paths=["paths_value"]),
         )
@@ -4400,6 +4450,15 @@ def test_create_control_rest_call_success(request_type):
     request_init = {"parent": "projects/sample1/locations/sample2/dataStores/sample3"}
     request_init["control"] = {
         "boost_action": {
+            "fixed_boost": 0.1174,
+            "interpolation_boost_spec": {
+                "field_name": "field_name_value",
+                "attribute_type": 1,
+                "interpolation_type": 1,
+                "control_points": [
+                    {"attribute_value": "attribute_value_value", "boost_amount": 0.1306}
+                ],
+            },
             "boost": 0.551,
             "filter": "filter_value",
             "data_store": "data_store_value",
@@ -4407,6 +4466,17 @@ def test_create_control_rest_call_success(request_type):
         "filter_action": {"filter": "filter_value", "data_store": "data_store_value"},
         "redirect_action": {"redirect_uri": "redirect_uri_value"},
         "synonyms_action": {"synonyms": ["synonyms_value1", "synonyms_value2"]},
+        "promote_action": {
+            "data_store": "data_store_value",
+            "search_link_promotion": {
+                "title": "title_value",
+                "uri": "uri_value",
+                "document": "document_value",
+                "image_uri": "image_uri_value",
+                "description": "description_value",
+                "enabled": True,
+            },
+        },
         "name": "name_value",
         "display_name": "display_name_value",
         "associated_serving_config_ids": [
@@ -4545,10 +4615,13 @@ def test_create_control_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ControlServiceRestInterceptor, "post_create_control"
     ) as post, mock.patch.object(
+        transports.ControlServiceRestInterceptor, "post_create_control_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ControlServiceRestInterceptor, "pre_create_control"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = control_service.CreateControlRequest.pb(
             control_service.CreateControlRequest()
         )
@@ -4572,6 +4645,7 @@ def test_create_control_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_control.Control()
+        post_with_metadata.return_value = gcd_control.Control(), metadata
 
         client.create_control(
             request,
@@ -4583,6 +4657,7 @@ def test_create_control_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_control_rest_bad_request(
@@ -4747,6 +4822,15 @@ def test_update_control_rest_call_success(request_type):
     }
     request_init["control"] = {
         "boost_action": {
+            "fixed_boost": 0.1174,
+            "interpolation_boost_spec": {
+                "field_name": "field_name_value",
+                "attribute_type": 1,
+                "interpolation_type": 1,
+                "control_points": [
+                    {"attribute_value": "attribute_value_value", "boost_amount": 0.1306}
+                ],
+            },
             "boost": 0.551,
             "filter": "filter_value",
             "data_store": "data_store_value",
@@ -4754,6 +4838,17 @@ def test_update_control_rest_call_success(request_type):
         "filter_action": {"filter": "filter_value", "data_store": "data_store_value"},
         "redirect_action": {"redirect_uri": "redirect_uri_value"},
         "synonyms_action": {"synonyms": ["synonyms_value1", "synonyms_value2"]},
+        "promote_action": {
+            "data_store": "data_store_value",
+            "search_link_promotion": {
+                "title": "title_value",
+                "uri": "uri_value",
+                "document": "document_value",
+                "image_uri": "image_uri_value",
+                "description": "description_value",
+                "enabled": True,
+            },
+        },
         "name": "projects/sample1/locations/sample2/dataStores/sample3/controls/sample4",
         "display_name": "display_name_value",
         "associated_serving_config_ids": [
@@ -4892,10 +4987,13 @@ def test_update_control_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ControlServiceRestInterceptor, "post_update_control"
     ) as post, mock.patch.object(
+        transports.ControlServiceRestInterceptor, "post_update_control_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ControlServiceRestInterceptor, "pre_update_control"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = control_service.UpdateControlRequest.pb(
             control_service.UpdateControlRequest()
         )
@@ -4919,6 +5017,7 @@ def test_update_control_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = gcd_control.Control()
+        post_with_metadata.return_value = gcd_control.Control(), metadata
 
         client.update_control(
             request,
@@ -4930,6 +5029,7 @@ def test_update_control_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_control_rest_bad_request(request_type=control_service.GetControlRequest):
@@ -5026,10 +5126,13 @@ def test_get_control_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ControlServiceRestInterceptor, "post_get_control"
     ) as post, mock.patch.object(
+        transports.ControlServiceRestInterceptor, "post_get_control_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ControlServiceRestInterceptor, "pre_get_control"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = control_service.GetControlRequest.pb(
             control_service.GetControlRequest()
         )
@@ -5053,6 +5156,7 @@ def test_get_control_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = control.Control()
+        post_with_metadata.return_value = control.Control(), metadata
 
         client.get_control(
             request,
@@ -5064,6 +5168,7 @@ def test_get_control_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_controls_rest_bad_request(
@@ -5148,10 +5253,13 @@ def test_list_controls_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.ControlServiceRestInterceptor, "post_list_controls"
     ) as post, mock.patch.object(
+        transports.ControlServiceRestInterceptor, "post_list_controls_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.ControlServiceRestInterceptor, "pre_list_controls"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = control_service.ListControlsRequest.pb(
             control_service.ListControlsRequest()
         )
@@ -5177,6 +5285,10 @@ def test_list_controls_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = control_service.ListControlsResponse()
+        post_with_metadata.return_value = (
+            control_service.ListControlsResponse(),
+            metadata,
+        )
 
         client.list_controls(
             request,
@@ -5188,6 +5300,7 @@ def test_list_controls_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_cancel_operation_rest_bad_request(
@@ -5978,8 +6091,42 @@ def test_parse_data_store_path():
     assert expected == actual
 
 
+def test_document_path():
+    project = "whelk"
+    location = "octopus"
+    data_store = "oyster"
+    branch = "nudibranch"
+    document = "cuttlefish"
+    expected = "projects/{project}/locations/{location}/dataStores/{data_store}/branches/{branch}/documents/{document}".format(
+        project=project,
+        location=location,
+        data_store=data_store,
+        branch=branch,
+        document=document,
+    )
+    actual = ControlServiceClient.document_path(
+        project, location, data_store, branch, document
+    )
+    assert expected == actual
+
+
+def test_parse_document_path():
+    expected = {
+        "project": "mussel",
+        "location": "winkle",
+        "data_store": "nautilus",
+        "branch": "scallop",
+        "document": "abalone",
+    }
+    path = ControlServiceClient.document_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = ControlServiceClient.parse_document_path(path)
+    assert expected == actual
+
+
 def test_common_billing_account_path():
-    billing_account = "whelk"
+    billing_account = "squid"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -5989,7 +6136,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "octopus",
+        "billing_account": "clam",
     }
     path = ControlServiceClient.common_billing_account_path(**expected)
 
@@ -5999,7 +6146,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "oyster"
+    folder = "whelk"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -6009,7 +6156,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nudibranch",
+        "folder": "octopus",
     }
     path = ControlServiceClient.common_folder_path(**expected)
 
@@ -6019,7 +6166,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "cuttlefish"
+    organization = "oyster"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -6029,7 +6176,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "mussel",
+        "organization": "nudibranch",
     }
     path = ControlServiceClient.common_organization_path(**expected)
 
@@ -6039,7 +6186,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "winkle"
+    project = "cuttlefish"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -6049,7 +6196,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nautilus",
+        "project": "mussel",
     }
     path = ControlServiceClient.common_project_path(**expected)
 
@@ -6059,8 +6206,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "scallop"
-    location = "abalone"
+    project = "winkle"
+    location = "nautilus"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -6071,8 +6218,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
+        "project": "scallop",
+        "location": "abalone",
     }
     path = ControlServiceClient.common_location_path(**expected)
 

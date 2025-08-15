@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -620,7 +620,7 @@ class LookupEntryRequest(proto.Message):
             -  ``bigquery.dataset.project_id.dataset_id``
             -  ``datacatalog.entry.project_id.location_id.entry_group_id.entry_id``
 
-            ``*_id``\ s should satisfy the standard SQL rules for
+            ``*_id``\ s should satisfy the GoogleSQL rules for
             identifiers.
             https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical.
 

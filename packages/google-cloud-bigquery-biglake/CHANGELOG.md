@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-biglake-v0.4.14...google-cloud-bigquery-biglake-v0.4.15) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [0.4.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-biglake-v0.4.13...google-cloud-bigquery-biglake-v0.4.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+
+## [0.4.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-biglake-v0.4.12...google-cloud-bigquery-biglake-v0.4.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [0.4.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-bigquery-biglake-v0.4.11...google-cloud-bigquery-biglake-v0.4.12) (2024-12-12)
 
 

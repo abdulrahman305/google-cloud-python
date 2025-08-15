@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.2.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.6...google-cloud-cloudcontrolspartner-v0.2.7) (2025-05-08)
+
+
+### Features
+
+* A new field `organization_domain` is added to message `Customer` ([d4fc92b](https://github.com/googleapis/google-cloud-python/commit/d4fc92be46fffb329fc05d463ee039321b23c432))
+* Enable partners to create, update and delete their customers ([d4fc92b](https://github.com/googleapis/google-cloud-python/commit/d4fc92be46fffb329fc05d463ee039321b23c432))
+
+
+### Documentation
+
+* Mark the enum value `EkmSolution.VIRTRU` as deprecated ([d4fc92b](https://github.com/googleapis/google-cloud-python/commit/d4fc92be46fffb329fc05d463ee039321b23c432))
+
+## [0.2.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.5...google-cloud-cloudcontrolspartner-v0.2.6) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+
+## [0.2.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.4...google-cloud-cloudcontrolspartner-v0.2.5) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
+## [0.2.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.3...google-cloud-cloudcontrolspartner-v0.2.4) (2025-01-27)
+
+
+### Features
+
+* A new field `organization_domain` is added to message `.google.cloud.cloudcontrolspartner.v1beta.Customer` ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new message `CreateCustomerRequest` is added ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new message `DeleteCustomerRequest` is added ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new message `UpdateCustomerRequest` is added ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new method `CreateCustomer` is added to service `CloudControlsPartnerCore` ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new method `DeleteCustomer` is added to service `CloudControlsPartnerCore` ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A new method `UpdateCustomer` is added to service `CloudControlsPartnerCore` ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+
+
+### Documentation
+
+* A comment for enum value `VIRTRU` in enum `EkmSolution` is changed ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+* A comment for field `requested_cancellation` in message `.google.cloud.cloudcontrolspartner.v1beta.OperationMetadata` is changed ([1913b6c](https://github.com/googleapis/google-cloud-python/commit/1913b6cc099c50650b2a35c2f05b7e0da1157791))
+
 ## [0.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-cloudcontrolspartner-v0.2.2...google-cloud-cloudcontrolspartner-v0.2.3) (2024-12-12)
 
 

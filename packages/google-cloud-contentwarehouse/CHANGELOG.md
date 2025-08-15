@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.15...google-cloud-contentwarehouse-v0.7.16) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [0.7.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.14...google-cloud-contentwarehouse-v0.7.15) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+
+## [0.7.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.13...google-cloud-contentwarehouse-v0.7.14) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [0.7.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.12...google-cloud-contentwarehouse-v0.7.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [0.7.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-contentwarehouse-v0.7.11...google-cloud-contentwarehouse-v0.7.12) (2024-12-12)
 
 

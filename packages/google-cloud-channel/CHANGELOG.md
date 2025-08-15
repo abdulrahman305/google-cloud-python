@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.23.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.22.2...google-cloud-channel-v1.23.0) (2025-06-19)
+
+
+### Features
+
+* A new enum `CustomerAttestationState` is added ([92713ab](https://github.com/googleapis/google-cloud-python/commit/92713ab86a4dbbd7112176f7985b5fd3e82d1ca9))
+* A new field `customer_attestation_state` is added to message `.google.cloud.channel.v1.Customer` ([92713ab](https://github.com/googleapis/google-cloud-python/commit/92713ab86a4dbbd7112176f7985b5fd3e82d1ca9))
+
+## [1.22.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.22.1...google-cloud-channel-v1.22.2) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [1.22.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.22.0...google-cloud-channel-v1.22.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.22.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.21.0...google-cloud-channel-v1.22.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [1.21.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-channel-v1.20.1...google-cloud-channel-v1.21.0) (2024-12-12)
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from google.api_core import retry_async as retries
 from google.api_core.client_options import ClientOptions
 from google.auth import credentials as ga_credentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.shopping.merchant_accounts_v1beta import gapic_version as package_version
 
@@ -43,8 +44,13 @@ try:
 except AttributeError:  # pragma: NO COVER
     OptionalRetry = Union[retries.AsyncRetry, object, None]  # type: ignore
 
+from google.protobuf import field_mask_pb2  # type: ignore
+
 from google.shopping.merchant_accounts_v1beta.services.online_return_policy_service import (
     pagers,
+)
+from google.shopping.merchant_accounts_v1beta.types import (
+    online_return_policy as gsma_online_return_policy,
 )
 from google.shopping.merchant_accounts_v1beta.types import online_return_policy
 
@@ -68,7 +74,8 @@ class OnlineReturnPolicyServiceAsyncClient:
     ads and free listings
 
     programs. This API defines the following resource model:
-    - [OnlineReturnPolicy][google.shopping.merchant.accounts.v1.OnlineReturnPolicy]
+
+    - `OnlineReturnPolicy </merchant/api/reference/rpc/google.shopping.merchant.accounts.v1beta#google.shopping.merchant.accounts.v1beta.OnlineReturnPolicy>`__
     """
 
     _client: OnlineReturnPolicyServiceClient
@@ -321,7 +328,7 @@ class OnlineReturnPolicyServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> online_return_policy.OnlineReturnPolicy:
-        r"""Gets an existing return policy.
+        r"""Gets an existing return policy for a given merchant.
 
         .. code-block:: python
 
@@ -379,7 +386,10 @@ class OnlineReturnPolicyServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -433,7 +443,8 @@ class OnlineReturnPolicyServiceAsyncClient:
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListOnlineReturnPoliciesAsyncPager:
-        r"""Lists all existing return policies.
+        r"""Lists all existing return policies for a given
+        merchant.
 
         .. code-block:: python
 
@@ -493,7 +504,10 @@ class OnlineReturnPolicyServiceAsyncClient:
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -549,6 +563,395 @@ class OnlineReturnPolicyServiceAsyncClient:
         # Done; return the response.
         return response
 
+    async def create_online_return_policy(
+        self,
+        request: Optional[
+            Union[gsma_online_return_policy.CreateOnlineReturnPolicyRequest, dict]
+        ] = None,
+        *,
+        parent: Optional[str] = None,
+        online_return_policy: Optional[
+            gsma_online_return_policy.OnlineReturnPolicy
+        ] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> gsma_online_return_policy.OnlineReturnPolicy:
+        r"""Creates a new return policy for a given merchant.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.shopping import merchant_accounts_v1beta
+
+            async def sample_create_online_return_policy():
+                # Create a client
+                client = merchant_accounts_v1beta.OnlineReturnPolicyServiceAsyncClient()
+
+                # Initialize request argument(s)
+                online_return_policy = merchant_accounts_v1beta.OnlineReturnPolicy()
+                online_return_policy.label = "label_value"
+                online_return_policy.countries = ['countries_value1', 'countries_value2']
+                online_return_policy.return_policy_uri = "return_policy_uri_value"
+
+                request = merchant_accounts_v1beta.CreateOnlineReturnPolicyRequest(
+                    parent="parent_value",
+                    online_return_policy=online_return_policy,
+                )
+
+                # Make the request
+                response = await client.create_online_return_policy(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.shopping.merchant_accounts_v1beta.types.CreateOnlineReturnPolicyRequest, dict]]):
+                The request object. Request message for the ``CreateOnlineReturnPolicy``
+                method.
+            parent (:class:`str`):
+                Required. The merchant account for which the return
+                policy will be created. Format: ``accounts/{account}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            online_return_policy (:class:`google.shopping.merchant_accounts_v1beta.types.OnlineReturnPolicy`):
+                Required. The return policy object to
+                create.
+
+                This corresponds to the ``online_return_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.shopping.merchant_accounts_v1beta.types.OnlineReturnPolicy:
+                [Online return policy](\ https://support.google.com/merchants/answer/10220642)
+                   object. This is currently used to represent return
+                   policies for ads and free listings programs.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent, online_return_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, gsma_online_return_policy.CreateOnlineReturnPolicyRequest
+        ):
+            request = gsma_online_return_policy.CreateOnlineReturnPolicyRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if parent is not None:
+            request.parent = parent
+        if online_return_policy is not None:
+            request.online_return_policy = online_return_policy
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.create_online_return_policy
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def update_online_return_policy(
+        self,
+        request: Optional[
+            Union[gsma_online_return_policy.UpdateOnlineReturnPolicyRequest, dict]
+        ] = None,
+        *,
+        online_return_policy: Optional[
+            gsma_online_return_policy.OnlineReturnPolicy
+        ] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> gsma_online_return_policy.OnlineReturnPolicy:
+        r"""Updates an existing return policy for a given
+        merchant.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.shopping import merchant_accounts_v1beta
+
+            async def sample_update_online_return_policy():
+                # Create a client
+                client = merchant_accounts_v1beta.OnlineReturnPolicyServiceAsyncClient()
+
+                # Initialize request argument(s)
+                online_return_policy = merchant_accounts_v1beta.OnlineReturnPolicy()
+                online_return_policy.label = "label_value"
+                online_return_policy.countries = ['countries_value1', 'countries_value2']
+                online_return_policy.return_policy_uri = "return_policy_uri_value"
+
+                request = merchant_accounts_v1beta.UpdateOnlineReturnPolicyRequest(
+                    online_return_policy=online_return_policy,
+                )
+
+                # Make the request
+                response = await client.update_online_return_policy(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Optional[Union[google.shopping.merchant_accounts_v1beta.types.UpdateOnlineReturnPolicyRequest, dict]]):
+                The request object. Request message for the ``UpdateOnlineReturnPolicy``
+                method. The method supports field masks and when the
+                mask is provided, only the fields specified in the mask
+                are updated.
+            online_return_policy (:class:`google.shopping.merchant_accounts_v1beta.types.OnlineReturnPolicy`):
+                Required. The online return policy to update. The online
+                return policy's ``name`` field is used to identify the
+                online return policy to be updated.
+
+                This corresponds to the ``online_return_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (:class:`google.protobuf.field_mask_pb2.FieldMask`):
+                Optional. List of fields being updated.
+
+                The following fields are supported (in both
+                ``snake_case`` and ``lowerCamelCase``):
+
+                -  ``accept_defective_only``
+                -  ``accept_exchange``
+                -  ``item_conditions``
+                -  ``policy``
+                -  ``process_refund_days``
+                -  ``restocking_fee``
+                -  ``return_methods``
+                -  ``return_policy_uri``
+                -  ``return_shipping_fee``
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.shopping.merchant_accounts_v1beta.types.OnlineReturnPolicy:
+                [Online return policy](\ https://support.google.com/merchants/answer/10220642)
+                   object. This is currently used to represent return
+                   policies for ads and free listings programs.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [online_return_policy, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, gsma_online_return_policy.UpdateOnlineReturnPolicyRequest
+        ):
+            request = gsma_online_return_policy.UpdateOnlineReturnPolicyRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if online_return_policy is not None:
+            request.online_return_policy = online_return_policy
+        if update_mask is not None:
+            request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.update_online_return_policy
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("online_return_policy.name", request.online_return_policy.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        response = await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    async def delete_online_return_policy(
+        self,
+        request: Optional[
+            Union[online_return_policy.DeleteOnlineReturnPolicyRequest, dict]
+        ] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> None:
+        r"""Deletes an existing return policy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.shopping import merchant_accounts_v1beta
+
+            async def sample_delete_online_return_policy():
+                # Create a client
+                client = merchant_accounts_v1beta.OnlineReturnPolicyServiceAsyncClient()
+
+                # Initialize request argument(s)
+                request = merchant_accounts_v1beta.DeleteOnlineReturnPolicyRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                await client.delete_online_return_policy(request=request)
+
+        Args:
+            request (Optional[Union[google.shopping.merchant_accounts_v1beta.types.DeleteOnlineReturnPolicyRequest, dict]]):
+                The request object. Request message for the ``DeleteOnlineReturnPolicy``
+                method.
+            name (:class:`str`):
+                Required. The name of the return policy to delete.
+                Format:
+                ``accounts/{account}/onlineReturnPolicies/{return_policy}``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry_async.AsyncRetry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, online_return_policy.DeleteOnlineReturnPolicyRequest
+        ):
+            request = online_return_policy.DeleteOnlineReturnPolicyRequest(request)
+
+        # If we have keyword arguments corresponding to fields on the
+        # request, apply these.
+        if name is not None:
+            request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._client._transport._wrapped_methods[
+            self._client._transport.delete_online_return_policy
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._client._validate_universe_domain()
+
+        # Send the request.
+        await rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
     async def __aenter__(self) -> "OnlineReturnPolicyServiceAsyncClient":
         return self
 
@@ -559,6 +962,9 @@ class OnlineReturnPolicyServiceAsyncClient:
 DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
+
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 
 __all__ = ("OnlineReturnPolicyServiceAsyncClient",)

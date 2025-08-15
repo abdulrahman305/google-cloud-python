@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,12 +70,11 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
                 f"Sending request for {client_call_details.method}",
                 extra={
                     "serviceName": "google.analytics.admin.v1beta.AnalyticsAdminService",
-                    "rpcName": client_call_details.method,
+                    "rpcName": str(client_call_details.method),
                     "request": grpc_request,
                     "metadata": grpc_request["metadata"],
                 },
             )
-
         response = continuation(client_call_details, request)
         if logging_enabled:  # pragma: NO COVER
             response_metadata = response.trailing_metadata()
@@ -112,7 +111,7 @@ class _LoggingClientInterceptor(grpc.UnaryUnaryClientInterceptor):  # pragma: NO
 class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     """gRPC backend transport for AnalyticsAdminService.
 
-    Service Interface for the Analytics Admin API (GA4).
+    Service Interface for the Google Analytics Admin API.
 
     This class defines the same methods as the primary client, so the
     primary client can load the underlying transport implementation
@@ -357,7 +356,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Returns all accounts accessible by the caller.
 
-        Note that these accounts might not currently have GA4
+        Note that these accounts might not currently have GA
         properties. Soft-deleted (ie: "trashed") accounts are
         excluded by default. Returns an empty list if no
         relevant accounts are found.
@@ -509,7 +508,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     ) -> Callable[[analytics_admin.GetPropertyRequest], resources.Property]:
         r"""Return a callable for the get property method over gRPC.
 
-        Lookup for a single "GA4" Property.
+        Lookup for a single GA Property.
 
         Returns:
             Callable[[~.GetPropertyRequest],
@@ -539,7 +538,6 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Returns child Properties under the specified parent
         Account.
-        Only "GA4" properties will be returned.
         Properties will be excluded if the caller does not have
         access. Soft-deleted (ie: "trashed") properties are
         excluded by default. Returns an empty list if no
@@ -569,8 +567,8 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
     ) -> Callable[[analytics_admin.CreatePropertyRequest], resources.Property]:
         r"""Return a callable for the create property method over gRPC.
 
-        Creates an "GA4" property with the specified location
-        and attributes.
+        Creates a Google Analytics property with the
+        specified location and attributes.
 
         Returns:
             Callable[[~.CreatePropertyRequest],
@@ -608,8 +606,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         permanently purged.
         https://support.google.com/analytics/answer/6154772
 
-        Returns an error if the target is not found, or is not a
-        GA4 Property.
+        Returns an error if the target is not found.
 
         Returns:
             Callable[[~.DeletePropertyRequest],
@@ -889,7 +886,7 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         r"""Return a callable for the get measurement protocol
         secret method over gRPC.
 
-        Lookup for a single "GA4" MeasurementProtocolSecret.
+        Lookup for a single MeasurementProtocolSecret.
 
         Returns:
             Callable[[~.GetMeasurementProtocolSecretRequest],
@@ -1086,6 +1083,9 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
 
         Searches through all changes to an account or its
         children given the specified set of filters.
+
+        Only returns the subset of changes supported by the API.
+        The UI may return additional changes.
 
         Returns:
             Callable[[~.SearchChangeHistoryEventsRequest],
@@ -1874,13 +1874,18 @@ class AnalyticsAdminServiceGrpcTransport(AnalyticsAdminServiceTransport):
         related to quota can only be requested on Google Analytics 360
         properties. This method is only available to Administrators.
 
-        These data access records include GA4 UI Reporting, GA4 UI
-        Explorations, GA4 Data API, and other products like Firebase &
+        These data access records include GA UI Reporting, GA UI
+        Explorations, GA Data API, and other products like Firebase &
         Admob that can retrieve data from Google Analytics through a
         linkage. These records don't include property configuration
         changes like adding a stream or changing a property's time zone.
         For configuration change history, see
         `searchChangeHistoryEvents <https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1alpha/accounts/searchChangeHistoryEvents>`__.
+
+        To give your feedback on this API, complete the `Google
+        Analytics Access Reports
+        feedback <https://docs.google.com/forms/d/e/1FAIpQLSdmEBUrMzAEdiEKk5TV5dEHvDUZDRlgWYdQdAeSdtR4hVjEhw/viewform>`__
+        form.
 
         Returns:
             Callable[[~.RunAccessReportRequest],

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1249,7 +1249,7 @@ class DiagnoseInterconnectResponse(proto.Message):
 
 
 class DiagnoseRouterRequest(proto.Message):
-    r"""Message for requesting diagnositcs of a router within a
+    r"""Message for requesting diagnostics of a router within a
     specific zone.
 
     Attributes:

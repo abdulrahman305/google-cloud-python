@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.1.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.18...google-cloud-support-v0.1.19) (2025-08-10)
+
+
+### Features
+
+* [google-cloud-support] Add`GetAttachmentRequest` and `GetComment` ([#14208](https://github.com/googleapis/google-cloud-python/issues/14208)) ([483de87](https://github.com/googleapis/google-cloud-python/commit/483de87d0e8e7229618823b306d86d9aed687afc))
+
+## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.17...google-cloud-support-v0.1.18) (2025-06-23)
+
+
+### Features
+
+* KMS key resource_definition `[cloudkms.googleapis.com/CryptoKey](https://www.google.com/url?sa=D&q=http%3A%2F%2Fcloudkms.googleapis.com%2FCryptoKey) is added ([8494eab](https://github.com/googleapis/google-cloud-python/commit/8494eab9d5243e3adaa6a15bd09867473c28c56c))
+
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.16...google-cloud-support-v0.1.17) (2025-05-21)
+
+
+### Documentation
+
+* Annotate all names with IDENTIFIER ([948efc5](https://github.com/googleapis/google-cloud-python/commit/948efc53b02593b76a8ba587944751e2ddb85bc8))
+* Remove unnecessary curl and Python documentation ([948efc5](https://github.com/googleapis/google-cloud-python/commit/948efc53b02593b76a8ba587944751e2ddb85bc8))
+* Use backticks around `username` in documentation for `Actor.email` ([948efc5](https://github.com/googleapis/google-cloud-python/commit/948efc53b02593b76a8ba587944751e2ddb85bc8))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.15...google-cloud-support-v0.1.16) (2025-05-20)
+
+
+### Documentation
+
+* [google-cloud-support] Update Cloud Support RPC comments to no longer include cURL and Python examples ([#13929](https://github.com/googleapis/google-cloud-python/issues/13929)) ([40e08b2](https://github.com/googleapis/google-cloud-python/commit/40e08b2bd92f7fbc256a6bf4c58d4b0549eb053a))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.14...google-cloud-support-v0.1.15) (2025-05-15)
+
+
+### Features
+
+* Annotate `Comment.plain_text_body` as deprecated (it was already deprecated, but now we're adding the annotation for it) ([85418b0](https://github.com/googleapis/google-cloud-python/commit/85418b093f0d5e06e809cbf52e63a46df8aa087c))
+* Deprecate the `Actor.email` field and add `username` to replace it ([85418b0](https://github.com/googleapis/google-cloud-python/commit/85418b093f0d5e06e809cbf52e63a46df8aa087c))
+* publish client libraries for CSAPI v2beta ([85418b0](https://github.com/googleapis/google-cloud-python/commit/85418b093f0d5e06e809cbf52e63a46df8aa087c))
+
+
+### Documentation
+
+* Bring comments and metadata up to date ([85418b0](https://github.com/googleapis/google-cloud-python/commit/85418b093f0d5e06e809cbf52e63a46df8aa087c))
+
+## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.13...google-cloud-support-v0.1.14) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([4757dae](https://github.com/googleapis/google-cloud-python/commit/4757daede978618382ba46f4aa91bb9cfd9b937b))
+
+## [0.1.13](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.12...google-cloud-support-v0.1.13) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+* Add support for reading selective GAPIC generation methods from service YAML ([87b5382](https://github.com/googleapis/google-cloud-python/commit/87b5382a05b7a0c9faeabaf3e2baa6f05c88bb8e))
+
 ## [0.1.12](https://github.com/googleapis/google-cloud-python/compare/google-cloud-support-v0.1.11...google-cloud-support-v0.1.12) (2024-12-12)
 
 

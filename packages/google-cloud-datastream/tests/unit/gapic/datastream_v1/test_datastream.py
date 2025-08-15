@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,6 +77,13 @@ from google.cloud.datastream_v1.services.datastream import (
     transports,
 )
 from google.cloud.datastream_v1.types import datastream, datastream_resources
+
+CRED_INFO_JSON = {
+    "credential_source": "/path/to/file",
+    "credential_type": "service account credentials",
+    "principal": "service-account@example.com",
+}
+CRED_INFO_STRING = json.dumps(CRED_INFO_JSON)
 
 
 async def mock_async_gen(data, chunk_size=1):
@@ -311,6 +318,49 @@ def test__get_universe_domain():
     with pytest.raises(ValueError) as excinfo:
         DatastreamClient._get_universe_domain("", None)
     assert str(excinfo.value) == "Universe Domain cannot be an empty string."
+
+
+@pytest.mark.parametrize(
+    "error_code,cred_info_json,show_cred_info",
+    [
+        (401, CRED_INFO_JSON, True),
+        (403, CRED_INFO_JSON, True),
+        (404, CRED_INFO_JSON, True),
+        (500, CRED_INFO_JSON, False),
+        (401, None, False),
+        (403, None, False),
+        (404, None, False),
+        (500, None, False),
+    ],
+)
+def test__add_cred_info_for_auth_errors(error_code, cred_info_json, show_cred_info):
+    cred = mock.Mock(["get_cred_info"])
+    cred.get_cred_info = mock.Mock(return_value=cred_info_json)
+    client = DatastreamClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=["foo"])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    if show_cred_info:
+        assert error.details == ["foo", CRED_INFO_STRING]
+    else:
+        assert error.details == ["foo"]
+
+
+@pytest.mark.parametrize("error_code", [401, 403, 404, 500])
+def test__add_cred_info_for_auth_errors_no_get_cred_info(error_code):
+    cred = mock.Mock([])
+    assert not hasattr(cred, "get_cred_info")
+    client = DatastreamClient(credentials=cred)
+    client._transport._credentials = cred
+
+    error = core_exceptions.GoogleAPICallError("message", details=[])
+    error.code = error_code
+
+    client._add_cred_info_for_auth_errors(error)
+    assert error.details == []
 
 
 @pytest.mark.parametrize(
@@ -1623,6 +1673,8 @@ def test_get_connection_profile(request_type, transport: str = "grpc"):
         call.return_value = datastream_resources.ConnectionProfile(
             name="name_value",
             display_name="display_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_connection_profile(request)
 
@@ -1636,6 +1688,8 @@ def test_get_connection_profile(request_type, transport: str = "grpc"):
     assert isinstance(response, datastream_resources.ConnectionProfile)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_connection_profile_non_empty_request_with_auto_populated_field():
@@ -1772,6 +1826,8 @@ async def test_get_connection_profile_async(
             datastream_resources.ConnectionProfile(
                 name="name_value",
                 display_name="display_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_connection_profile(request)
@@ -1786,6 +1842,8 @@ async def test_get_connection_profile_async(
     assert isinstance(response, datastream_resources.ConnectionProfile)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -3842,6 +3900,8 @@ def test_get_stream(request_type, transport: str = "grpc"):
             display_name="display_name_value",
             state=datastream_resources.Stream.State.NOT_STARTED,
             customer_managed_encryption_key="customer_managed_encryption_key_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_stream(request)
 
@@ -3860,6 +3920,8 @@ def test_get_stream(request_type, transport: str = "grpc"):
         response.customer_managed_encryption_key
         == "customer_managed_encryption_key_value"
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_stream_non_empty_request_with_auto_populated_field():
@@ -3987,6 +4049,8 @@ async def test_get_stream_async(
                 display_name="display_name_value",
                 state=datastream_resources.Stream.State.NOT_STARTED,
                 customer_managed_encryption_key="customer_managed_encryption_key_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_stream(request)
@@ -4006,6 +4070,8 @@ async def test_get_stream_async(
         response.customer_managed_encryption_key
         == "customer_managed_encryption_key_value"
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -8161,6 +8227,8 @@ def test_get_private_connection(request_type, transport: str = "grpc"):
             name="name_value",
             display_name="display_name_value",
             state=datastream_resources.PrivateConnection.State.CREATING,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
         response = client.get_private_connection(request)
 
@@ -8175,6 +8243,8 @@ def test_get_private_connection(request_type, transport: str = "grpc"):
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == datastream_resources.PrivateConnection.State.CREATING
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 def test_get_private_connection_non_empty_request_with_auto_populated_field():
@@ -8312,6 +8382,8 @@ async def test_get_private_connection_async(
                 name="name_value",
                 display_name="display_name_value",
                 state=datastream_resources.PrivateConnection.State.CREATING,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         response = await client.get_private_connection(request)
@@ -8327,6 +8399,8 @@ async def test_get_private_connection_async(
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == datastream_resources.PrivateConnection.State.CREATING
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.asyncio
@@ -14570,6 +14644,7 @@ def test_create_private_connection_rest_required_fields(
             "force",
             "private_connection_id",
             "request_id",
+            "validate_only",
         )
     )
     jsonified_request.update(unset_fields)
@@ -14638,6 +14713,7 @@ def test_create_private_connection_rest_unset_required_fields():
                 "force",
                 "privateConnectionId",
                 "requestId",
+                "validateOnly",
             )
         )
         & set(
@@ -16942,6 +17018,8 @@ async def test_get_connection_profile_empty_call_grpc_asyncio():
             datastream_resources.ConnectionProfile(
                 name="name_value",
                 display_name="display_name_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         await client.get_connection_profile(request=None)
@@ -17108,6 +17186,8 @@ async def test_get_stream_empty_call_grpc_asyncio():
                 display_name="display_name_value",
                 state=datastream_resources.Stream.State.NOT_STARTED,
                 customer_managed_encryption_key="customer_managed_encryption_key_value",
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         await client.get_stream(request=None)
@@ -17437,6 +17517,8 @@ async def test_get_private_connection_empty_call_grpc_asyncio():
                 name="name_value",
                 display_name="display_name_value",
                 state=datastream_resources.PrivateConnection.State.CREATING,
+                satisfies_pzs=True,
+                satisfies_pzi=True,
             )
         )
         await client.get_private_connection(request=None)
@@ -17705,10 +17787,14 @@ def test_list_connection_profiles_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_list_connection_profiles"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_list_connection_profiles_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_list_connection_profiles"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.ListConnectionProfilesRequest.pb(
             datastream.ListConnectionProfilesRequest()
         )
@@ -17734,6 +17820,10 @@ def test_list_connection_profiles_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.ListConnectionProfilesResponse()
+        post_with_metadata.return_value = (
+            datastream.ListConnectionProfilesResponse(),
+            metadata,
+        )
 
         client.list_connection_profiles(
             request,
@@ -17745,6 +17835,7 @@ def test_list_connection_profiles_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_connection_profile_rest_bad_request(
@@ -17798,6 +17889,8 @@ def test_get_connection_profile_rest_call_success(request_type):
         return_value = datastream_resources.ConnectionProfile(
             name="name_value",
             display_name="display_name_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -17816,6 +17909,8 @@ def test_get_connection_profile_rest_call_success(request_type):
     assert isinstance(response, datastream_resources.ConnectionProfile)
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -17835,10 +17930,14 @@ def test_get_connection_profile_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_get_connection_profile"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_get_connection_profile_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_get_connection_profile"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.GetConnectionProfileRequest.pb(
             datastream.GetConnectionProfileRequest()
         )
@@ -17864,6 +17963,10 @@ def test_get_connection_profile_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.ConnectionProfile()
+        post_with_metadata.return_value = (
+            datastream_resources.ConnectionProfile(),
+            metadata,
+        )
 
         client.get_connection_profile(
             request,
@@ -17875,6 +17978,7 @@ def test_get_connection_profile_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_connection_profile_rest_bad_request(
@@ -17922,6 +18026,8 @@ def test_create_connection_profile_rest_call_success(request_type):
         "update_time": {},
         "labels": {},
         "display_name": "display_name_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
         "oracle_profile": {
             "hostname": "hostname_value",
             "port": 453,
@@ -17932,6 +18038,7 @@ def test_create_connection_profile_rest_call_success(request_type):
             "oracle_ssl_config": {
                 "ca_certificate": "ca_certificate_value",
                 "ca_certificate_set": True,
+                "server_certificate_distinguished_name": "server_certificate_distinguished_name_value",
             },
             "oracle_asm_config": {
                 "hostname": "hostname_value",
@@ -17941,6 +18048,7 @@ def test_create_connection_profile_rest_call_success(request_type):
                 "asm_service": "asm_service_value",
                 "connection_attributes": {},
                 "oracle_ssl_config": {},
+                "secret_manager_stored_password": "secret_manager_stored_password_value",
             },
             "secret_manager_stored_password": "secret_manager_stored_password_value",
         },
@@ -17958,6 +18066,7 @@ def test_create_connection_profile_rest_call_success(request_type):
                 "ca_certificate": "ca_certificate_value",
                 "ca_certificate_set": True,
             },
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
         },
         "bigquery_profile": {},
         "postgresql_profile": {
@@ -17966,6 +18075,19 @@ def test_create_connection_profile_rest_call_success(request_type):
             "username": "username_value",
             "password": "password_value",
             "database": "database_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+            "ssl_config": {
+                "server_verification": {
+                    "ca_certificate": "ca_certificate_value",
+                    "server_certificate_hostname": "server_certificate_hostname_value",
+                },
+                "server_and_client_verification": {
+                    "client_certificate": "client_certificate_value",
+                    "client_key": "client_key_value",
+                    "ca_certificate": "ca_certificate_value",
+                    "server_certificate_hostname": "server_certificate_hostname_value",
+                },
+            },
         },
         "sql_server_profile": {
             "hostname": "hostname_value",
@@ -17973,6 +18095,40 @@ def test_create_connection_profile_rest_call_success(request_type):
             "username": "username_value",
             "password": "password_value",
             "database": "database_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+        },
+        "salesforce_profile": {
+            "domain": "domain_value",
+            "user_credentials": {
+                "username": "username_value",
+                "password": "password_value",
+                "security_token": "security_token_value",
+                "secret_manager_stored_password": "secret_manager_stored_password_value",
+                "secret_manager_stored_security_token": "secret_manager_stored_security_token_value",
+            },
+            "oauth2_client_credentials": {
+                "client_id": "client_id_value",
+                "client_secret": "client_secret_value",
+                "secret_manager_stored_client_secret": "secret_manager_stored_client_secret_value",
+            },
+        },
+        "mongodb_profile": {
+            "host_addresses": [{"hostname": "hostname_value", "port": 453}],
+            "replica_set": "replica_set_value",
+            "username": "username_value",
+            "password": "password_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+            "ssl_config": {
+                "client_key": "client_key_value",
+                "client_key_set": True,
+                "client_certificate": "client_certificate_value",
+                "client_certificate_set": True,
+                "ca_certificate": "ca_certificate_value",
+                "ca_certificate_set": True,
+                "secret_manager_stored_client_key": "secret_manager_stored_client_key_value",
+            },
+            "srv_connection_format": {},
+            "standard_connection_format": {"direct_connection": True},
         },
         "static_service_ip_connectivity": {},
         "forward_ssh_connectivity": {
@@ -18092,10 +18248,14 @@ def test_create_connection_profile_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_create_connection_profile"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_create_connection_profile_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_create_connection_profile"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.CreateConnectionProfileRequest.pb(
             datastream.CreateConnectionProfileRequest()
         )
@@ -18119,6 +18279,7 @@ def test_create_connection_profile_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_connection_profile(
             request,
@@ -18130,6 +18291,7 @@ def test_create_connection_profile_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_connection_profile_rest_bad_request(
@@ -18185,6 +18347,8 @@ def test_update_connection_profile_rest_call_success(request_type):
         "update_time": {},
         "labels": {},
         "display_name": "display_name_value",
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
         "oracle_profile": {
             "hostname": "hostname_value",
             "port": 453,
@@ -18195,6 +18359,7 @@ def test_update_connection_profile_rest_call_success(request_type):
             "oracle_ssl_config": {
                 "ca_certificate": "ca_certificate_value",
                 "ca_certificate_set": True,
+                "server_certificate_distinguished_name": "server_certificate_distinguished_name_value",
             },
             "oracle_asm_config": {
                 "hostname": "hostname_value",
@@ -18204,6 +18369,7 @@ def test_update_connection_profile_rest_call_success(request_type):
                 "asm_service": "asm_service_value",
                 "connection_attributes": {},
                 "oracle_ssl_config": {},
+                "secret_manager_stored_password": "secret_manager_stored_password_value",
             },
             "secret_manager_stored_password": "secret_manager_stored_password_value",
         },
@@ -18221,6 +18387,7 @@ def test_update_connection_profile_rest_call_success(request_type):
                 "ca_certificate": "ca_certificate_value",
                 "ca_certificate_set": True,
             },
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
         },
         "bigquery_profile": {},
         "postgresql_profile": {
@@ -18229,6 +18396,19 @@ def test_update_connection_profile_rest_call_success(request_type):
             "username": "username_value",
             "password": "password_value",
             "database": "database_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+            "ssl_config": {
+                "server_verification": {
+                    "ca_certificate": "ca_certificate_value",
+                    "server_certificate_hostname": "server_certificate_hostname_value",
+                },
+                "server_and_client_verification": {
+                    "client_certificate": "client_certificate_value",
+                    "client_key": "client_key_value",
+                    "ca_certificate": "ca_certificate_value",
+                    "server_certificate_hostname": "server_certificate_hostname_value",
+                },
+            },
         },
         "sql_server_profile": {
             "hostname": "hostname_value",
@@ -18236,6 +18416,40 @@ def test_update_connection_profile_rest_call_success(request_type):
             "username": "username_value",
             "password": "password_value",
             "database": "database_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+        },
+        "salesforce_profile": {
+            "domain": "domain_value",
+            "user_credentials": {
+                "username": "username_value",
+                "password": "password_value",
+                "security_token": "security_token_value",
+                "secret_manager_stored_password": "secret_manager_stored_password_value",
+                "secret_manager_stored_security_token": "secret_manager_stored_security_token_value",
+            },
+            "oauth2_client_credentials": {
+                "client_id": "client_id_value",
+                "client_secret": "client_secret_value",
+                "secret_manager_stored_client_secret": "secret_manager_stored_client_secret_value",
+            },
+        },
+        "mongodb_profile": {
+            "host_addresses": [{"hostname": "hostname_value", "port": 453}],
+            "replica_set": "replica_set_value",
+            "username": "username_value",
+            "password": "password_value",
+            "secret_manager_stored_password": "secret_manager_stored_password_value",
+            "ssl_config": {
+                "client_key": "client_key_value",
+                "client_key_set": True,
+                "client_certificate": "client_certificate_value",
+                "client_certificate_set": True,
+                "ca_certificate": "ca_certificate_value",
+                "ca_certificate_set": True,
+                "secret_manager_stored_client_key": "secret_manager_stored_client_key_value",
+            },
+            "srv_connection_format": {},
+            "standard_connection_format": {"direct_connection": True},
         },
         "static_service_ip_connectivity": {},
         "forward_ssh_connectivity": {
@@ -18355,10 +18569,14 @@ def test_update_connection_profile_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_update_connection_profile"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_update_connection_profile_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_update_connection_profile"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.UpdateConnectionProfileRequest.pb(
             datastream.UpdateConnectionProfileRequest()
         )
@@ -18382,6 +18600,7 @@ def test_update_connection_profile_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_connection_profile(
             request,
@@ -18393,6 +18612,7 @@ def test_update_connection_profile_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_connection_profile_rest_bad_request(
@@ -18477,10 +18697,14 @@ def test_delete_connection_profile_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_delete_connection_profile"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_delete_connection_profile_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_delete_connection_profile"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.DeleteConnectionProfileRequest.pb(
             datastream.DeleteConnectionProfileRequest()
         )
@@ -18504,6 +18728,7 @@ def test_delete_connection_profile_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_connection_profile(
             request,
@@ -18515,6 +18740,7 @@ def test_delete_connection_profile_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_discover_connection_profile_rest_bad_request(
@@ -18596,10 +18822,14 @@ def test_discover_connection_profile_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_discover_connection_profile"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_discover_connection_profile_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_discover_connection_profile"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.DiscoverConnectionProfileRequest.pb(
             datastream.DiscoverConnectionProfileRequest()
         )
@@ -18625,6 +18855,10 @@ def test_discover_connection_profile_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.DiscoverConnectionProfileResponse()
+        post_with_metadata.return_value = (
+            datastream.DiscoverConnectionProfileResponse(),
+            metadata,
+        )
 
         client.discover_connection_profile(
             request,
@@ -18636,6 +18870,7 @@ def test_discover_connection_profile_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_streams_rest_bad_request(request_type=datastream.ListStreamsRequest):
@@ -18720,10 +18955,13 @@ def test_list_streams_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_list_streams"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_list_streams_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_list_streams"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.ListStreamsRequest.pb(datastream.ListStreamsRequest())
         transcode.return_value = {
             "method": "post",
@@ -18747,6 +18985,7 @@ def test_list_streams_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.ListStreamsResponse()
+        post_with_metadata.return_value = datastream.ListStreamsResponse(), metadata
 
         client.list_streams(
             request,
@@ -18758,6 +18997,7 @@ def test_list_streams_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_stream_rest_bad_request(request_type=datastream.GetStreamRequest):
@@ -18807,6 +19047,8 @@ def test_get_stream_rest_call_success(request_type):
             display_name="display_name_value",
             state=datastream_resources.Stream.State.NOT_STARTED,
             customer_managed_encryption_key="customer_managed_encryption_key_value",
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -18830,6 +19072,8 @@ def test_get_stream_rest_call_success(request_type):
         response.customer_managed_encryption_key
         == "customer_managed_encryption_key_value"
     )
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -18849,10 +19093,13 @@ def test_get_stream_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_get_stream"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_get_stream_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_get_stream"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.GetStreamRequest.pb(datastream.GetStreamRequest())
         transcode.return_value = {
             "method": "post",
@@ -18876,6 +19123,7 @@ def test_get_stream_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.Stream()
+        post_with_metadata.return_value = datastream_resources.Stream(), metadata
 
         client.get_stream(
             request,
@@ -18887,6 +19135,7 @@ def test_get_stream_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_stream_rest_bad_request(request_type=datastream.CreateStreamRequest):
@@ -19067,13 +19316,48 @@ def test_create_stream_rest_call_success(request_type):
                 "transaction_logs": {},
                 "change_tables": {},
             },
+            "salesforce_source_config": {
+                "include_objects": {
+                    "objects": [
+                        {
+                            "object_name": "object_name_value",
+                            "fields": [
+                                {
+                                    "name": "name_value",
+                                    "data_type": "data_type_value",
+                                    "nillable": True,
+                                }
+                            ],
+                        }
+                    ]
+                },
+                "exclude_objects": {},
+                "polling_interval": {"seconds": 751, "nanos": 543},
+            },
+            "mongodb_source_config": {
+                "include_objects": {
+                    "databases": [
+                        {
+                            "database": "database_value",
+                            "collections": [
+                                {
+                                    "collection": "collection_value",
+                                    "fields": [{"field": "field_value"}],
+                                }
+                            ],
+                        }
+                    ]
+                },
+                "exclude_objects": {},
+                "max_concurrent_backfill_tasks": 3076,
+            },
         },
         "destination_config": {
             "destination_connection_profile": "destination_connection_profile_value",
             "gcs_destination_config": {
                 "path": "path_value",
                 "file_rotation_mb": 1693,
-                "file_rotation_interval": {"seconds": 751, "nanos": 543},
+                "file_rotation_interval": {},
                 "avro_file_format": {},
                 "json_file_format": {"schema_file_format": 1, "compression": 1},
             },
@@ -19084,9 +19368,17 @@ def test_create_stream_rest_call_success(request_type):
                         "location": "location_value",
                         "dataset_id_prefix": "dataset_id_prefix_value",
                         "kms_key_name": "kms_key_name_value",
-                    }
+                    },
+                    "project_id": "project_id_value",
                 },
                 "data_freshness": {},
+                "blmt_config": {
+                    "bucket": "bucket_value",
+                    "root_path": "root_path_value",
+                    "connection_name": "connection_name_value",
+                    "file_format": 1,
+                    "table_format": 1,
+                },
                 "merge": {},
                 "append_only": {},
             },
@@ -19097,6 +19389,8 @@ def test_create_stream_rest_call_success(request_type):
             "mysql_excluded_objects": {},
             "postgresql_excluded_objects": {},
             "sql_server_excluded_objects": {},
+            "salesforce_excluded_objects": {},
+            "mongodb_excluded_objects": {},
         },
         "backfill_none": {},
         "errors": [
@@ -19110,6 +19404,8 @@ def test_create_stream_rest_call_success(request_type):
         ],
         "customer_managed_encryption_key": "customer_managed_encryption_key_value",
         "last_recovery_time": {},
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -19217,10 +19513,13 @@ def test_create_stream_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_create_stream"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_create_stream_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_create_stream"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.CreateStreamRequest.pb(datastream.CreateStreamRequest())
         transcode.return_value = {
             "method": "post",
@@ -19242,6 +19541,7 @@ def test_create_stream_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_stream(
             request,
@@ -19253,6 +19553,7 @@ def test_create_stream_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_update_stream_rest_bad_request(request_type=datastream.UpdateStreamRequest):
@@ -19437,13 +19738,48 @@ def test_update_stream_rest_call_success(request_type):
                 "transaction_logs": {},
                 "change_tables": {},
             },
+            "salesforce_source_config": {
+                "include_objects": {
+                    "objects": [
+                        {
+                            "object_name": "object_name_value",
+                            "fields": [
+                                {
+                                    "name": "name_value",
+                                    "data_type": "data_type_value",
+                                    "nillable": True,
+                                }
+                            ],
+                        }
+                    ]
+                },
+                "exclude_objects": {},
+                "polling_interval": {"seconds": 751, "nanos": 543},
+            },
+            "mongodb_source_config": {
+                "include_objects": {
+                    "databases": [
+                        {
+                            "database": "database_value",
+                            "collections": [
+                                {
+                                    "collection": "collection_value",
+                                    "fields": [{"field": "field_value"}],
+                                }
+                            ],
+                        }
+                    ]
+                },
+                "exclude_objects": {},
+                "max_concurrent_backfill_tasks": 3076,
+            },
         },
         "destination_config": {
             "destination_connection_profile": "destination_connection_profile_value",
             "gcs_destination_config": {
                 "path": "path_value",
                 "file_rotation_mb": 1693,
-                "file_rotation_interval": {"seconds": 751, "nanos": 543},
+                "file_rotation_interval": {},
                 "avro_file_format": {},
                 "json_file_format": {"schema_file_format": 1, "compression": 1},
             },
@@ -19454,9 +19790,17 @@ def test_update_stream_rest_call_success(request_type):
                         "location": "location_value",
                         "dataset_id_prefix": "dataset_id_prefix_value",
                         "kms_key_name": "kms_key_name_value",
-                    }
+                    },
+                    "project_id": "project_id_value",
                 },
                 "data_freshness": {},
+                "blmt_config": {
+                    "bucket": "bucket_value",
+                    "root_path": "root_path_value",
+                    "connection_name": "connection_name_value",
+                    "file_format": 1,
+                    "table_format": 1,
+                },
                 "merge": {},
                 "append_only": {},
             },
@@ -19467,6 +19811,8 @@ def test_update_stream_rest_call_success(request_type):
             "mysql_excluded_objects": {},
             "postgresql_excluded_objects": {},
             "sql_server_excluded_objects": {},
+            "salesforce_excluded_objects": {},
+            "mongodb_excluded_objects": {},
         },
         "backfill_none": {},
         "errors": [
@@ -19480,6 +19826,8 @@ def test_update_stream_rest_call_success(request_type):
         ],
         "customer_managed_encryption_key": "customer_managed_encryption_key_value",
         "last_recovery_time": {},
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -19587,10 +19935,13 @@ def test_update_stream_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_update_stream"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_update_stream_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_update_stream"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.UpdateStreamRequest.pb(datastream.UpdateStreamRequest())
         transcode.return_value = {
             "method": "post",
@@ -19612,6 +19963,7 @@ def test_update_stream_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.update_stream(
             request,
@@ -19623,6 +19975,7 @@ def test_update_stream_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_stream_rest_bad_request(request_type=datastream.DeleteStreamRequest):
@@ -19701,10 +20054,13 @@ def test_delete_stream_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_delete_stream"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_delete_stream_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_delete_stream"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.DeleteStreamRequest.pb(datastream.DeleteStreamRequest())
         transcode.return_value = {
             "method": "post",
@@ -19726,6 +20082,7 @@ def test_delete_stream_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_stream(
             request,
@@ -19737,6 +20094,7 @@ def test_delete_stream_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_run_stream_rest_bad_request(request_type=datastream.RunStreamRequest):
@@ -19815,10 +20173,13 @@ def test_run_stream_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_run_stream"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_run_stream_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_run_stream"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.RunStreamRequest.pb(datastream.RunStreamRequest())
         transcode.return_value = {
             "method": "post",
@@ -19840,6 +20201,7 @@ def test_run_stream_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.run_stream(
             request,
@@ -19851,6 +20213,7 @@ def test_run_stream_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_stream_object_rest_bad_request(
@@ -19941,10 +20304,13 @@ def test_get_stream_object_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_get_stream_object"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_get_stream_object_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_get_stream_object"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.GetStreamObjectRequest.pb(
             datastream.GetStreamObjectRequest()
         )
@@ -19970,6 +20336,7 @@ def test_get_stream_object_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.StreamObject()
+        post_with_metadata.return_value = datastream_resources.StreamObject(), metadata
 
         client.get_stream_object(
             request,
@@ -19981,6 +20348,7 @@ def test_get_stream_object_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_lookup_stream_object_rest_bad_request(
@@ -20067,10 +20435,13 @@ def test_lookup_stream_object_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_lookup_stream_object"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_lookup_stream_object_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_lookup_stream_object"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.LookupStreamObjectRequest.pb(
             datastream.LookupStreamObjectRequest()
         )
@@ -20096,6 +20467,7 @@ def test_lookup_stream_object_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.StreamObject()
+        post_with_metadata.return_value = datastream_resources.StreamObject(), metadata
 
         client.lookup_stream_object(
             request,
@@ -20107,6 +20479,7 @@ def test_lookup_stream_object_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_stream_objects_rest_bad_request(
@@ -20191,10 +20564,13 @@ def test_list_stream_objects_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_list_stream_objects"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_list_stream_objects_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_list_stream_objects"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.ListStreamObjectsRequest.pb(
             datastream.ListStreamObjectsRequest()
         )
@@ -20220,6 +20596,10 @@ def test_list_stream_objects_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.ListStreamObjectsResponse()
+        post_with_metadata.return_value = (
+            datastream.ListStreamObjectsResponse(),
+            metadata,
+        )
 
         client.list_stream_objects(
             request,
@@ -20231,6 +20611,7 @@ def test_list_stream_objects_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_start_backfill_job_rest_bad_request(
@@ -20316,10 +20697,13 @@ def test_start_backfill_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_start_backfill_job"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_start_backfill_job_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_start_backfill_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.StartBackfillJobRequest.pb(
             datastream.StartBackfillJobRequest()
         )
@@ -20345,6 +20729,10 @@ def test_start_backfill_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.StartBackfillJobResponse()
+        post_with_metadata.return_value = (
+            datastream.StartBackfillJobResponse(),
+            metadata,
+        )
 
         client.start_backfill_job(
             request,
@@ -20356,6 +20744,7 @@ def test_start_backfill_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_stop_backfill_job_rest_bad_request(
@@ -20441,10 +20830,13 @@ def test_stop_backfill_job_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_stop_backfill_job"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_stop_backfill_job_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_stop_backfill_job"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.StopBackfillJobRequest.pb(
             datastream.StopBackfillJobRequest()
         )
@@ -20470,6 +20862,7 @@ def test_stop_backfill_job_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.StopBackfillJobResponse()
+        post_with_metadata.return_value = datastream.StopBackfillJobResponse(), metadata
 
         client.stop_backfill_job(
             request,
@@ -20481,6 +20874,7 @@ def test_stop_backfill_job_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_fetch_static_ips_rest_bad_request(
@@ -20567,10 +20961,13 @@ def test_fetch_static_ips_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_fetch_static_ips"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_fetch_static_ips_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_fetch_static_ips"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.FetchStaticIpsRequest.pb(
             datastream.FetchStaticIpsRequest()
         )
@@ -20596,6 +20993,7 @@ def test_fetch_static_ips_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.FetchStaticIpsResponse()
+        post_with_metadata.return_value = datastream.FetchStaticIpsResponse(), metadata
 
         client.fetch_static_ips(
             request,
@@ -20607,6 +21005,7 @@ def test_fetch_static_ips_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_private_connection_rest_bad_request(
@@ -20662,7 +21061,10 @@ def test_create_private_connection_rest_call_success(request_type):
             "error_time": {},
             "details": {},
         },
+        "satisfies_pzs": True,
+        "satisfies_pzi": True,
         "vpc_peering_config": {"vpc": "vpc_value", "subnet": "subnet_value"},
+        "psc_interface_config": {"network_attachment": "network_attachment_value"},
     }
     # The version of a generated dependency at test runtime may differ from the version used during generation.
     # Delete any fields which are not present in the current runtime dependency
@@ -20772,10 +21174,14 @@ def test_create_private_connection_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_create_private_connection"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_create_private_connection_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_create_private_connection"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.CreatePrivateConnectionRequest.pb(
             datastream.CreatePrivateConnectionRequest()
         )
@@ -20799,6 +21205,7 @@ def test_create_private_connection_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_private_connection(
             request,
@@ -20810,6 +21217,7 @@ def test_create_private_connection_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_private_connection_rest_bad_request(
@@ -20864,6 +21272,8 @@ def test_get_private_connection_rest_call_success(request_type):
             name="name_value",
             display_name="display_name_value",
             state=datastream_resources.PrivateConnection.State.CREATING,
+            satisfies_pzs=True,
+            satisfies_pzi=True,
         )
 
         # Wrap the value into a proper Response obj
@@ -20883,6 +21293,8 @@ def test_get_private_connection_rest_call_success(request_type):
     assert response.name == "name_value"
     assert response.display_name == "display_name_value"
     assert response.state == datastream_resources.PrivateConnection.State.CREATING
+    assert response.satisfies_pzs is True
+    assert response.satisfies_pzi is True
 
 
 @pytest.mark.parametrize("null_interceptor", [True, False])
@@ -20902,10 +21314,14 @@ def test_get_private_connection_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_get_private_connection"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_get_private_connection_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_get_private_connection"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.GetPrivateConnectionRequest.pb(
             datastream.GetPrivateConnectionRequest()
         )
@@ -20931,6 +21347,10 @@ def test_get_private_connection_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.PrivateConnection()
+        post_with_metadata.return_value = (
+            datastream_resources.PrivateConnection(),
+            metadata,
+        )
 
         client.get_private_connection(
             request,
@@ -20942,6 +21362,7 @@ def test_get_private_connection_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_private_connections_rest_bad_request(
@@ -21028,10 +21449,14 @@ def test_list_private_connections_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_list_private_connections"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_list_private_connections_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_list_private_connections"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.ListPrivateConnectionsRequest.pb(
             datastream.ListPrivateConnectionsRequest()
         )
@@ -21057,6 +21482,10 @@ def test_list_private_connections_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.ListPrivateConnectionsResponse()
+        post_with_metadata.return_value = (
+            datastream.ListPrivateConnectionsResponse(),
+            metadata,
+        )
 
         client.list_private_connections(
             request,
@@ -21068,6 +21497,7 @@ def test_list_private_connections_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_private_connection_rest_bad_request(
@@ -21152,10 +21582,14 @@ def test_delete_private_connection_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_delete_private_connection"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor,
+        "post_delete_private_connection_with_metadata",
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_delete_private_connection"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.DeletePrivateConnectionRequest.pb(
             datastream.DeletePrivateConnectionRequest()
         )
@@ -21179,6 +21613,7 @@ def test_delete_private_connection_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_private_connection(
             request,
@@ -21190,6 +21625,7 @@ def test_delete_private_connection_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_create_route_rest_bad_request(request_type=datastream.CreateRouteRequest):
@@ -21348,10 +21784,13 @@ def test_create_route_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_create_route"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_create_route_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_create_route"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.CreateRouteRequest.pb(datastream.CreateRouteRequest())
         transcode.return_value = {
             "method": "post",
@@ -21373,6 +21812,7 @@ def test_create_route_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.create_route(
             request,
@@ -21384,6 +21824,7 @@ def test_create_route_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_route_rest_bad_request(request_type=datastream.GetRouteRequest):
@@ -21476,10 +21917,13 @@ def test_get_route_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_get_route"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_get_route_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_get_route"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.GetRouteRequest.pb(datastream.GetRouteRequest())
         transcode.return_value = {
             "method": "post",
@@ -21501,6 +21945,7 @@ def test_get_route_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream_resources.Route()
+        post_with_metadata.return_value = datastream_resources.Route(), metadata
 
         client.get_route(
             request,
@@ -21512,6 +21957,7 @@ def test_get_route_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_list_routes_rest_bad_request(request_type=datastream.ListRoutesRequest):
@@ -21600,10 +22046,13 @@ def test_list_routes_rest_interceptors(null_interceptor):
     ) as transcode, mock.patch.object(
         transports.DatastreamRestInterceptor, "post_list_routes"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_list_routes_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_list_routes"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.ListRoutesRequest.pb(datastream.ListRoutesRequest())
         transcode.return_value = {
             "method": "post",
@@ -21627,6 +22076,7 @@ def test_list_routes_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = datastream.ListRoutesResponse()
+        post_with_metadata.return_value = datastream.ListRoutesResponse(), metadata
 
         client.list_routes(
             request,
@@ -21638,6 +22088,7 @@ def test_list_routes_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_delete_route_rest_bad_request(request_type=datastream.DeleteRouteRequest):
@@ -21720,10 +22171,13 @@ def test_delete_route_rest_interceptors(null_interceptor):
     ), mock.patch.object(
         transports.DatastreamRestInterceptor, "post_delete_route"
     ) as post, mock.patch.object(
+        transports.DatastreamRestInterceptor, "post_delete_route_with_metadata"
+    ) as post_with_metadata, mock.patch.object(
         transports.DatastreamRestInterceptor, "pre_delete_route"
     ) as pre:
         pre.assert_not_called()
         post.assert_not_called()
+        post_with_metadata.assert_not_called()
         pb_message = datastream.DeleteRouteRequest.pb(datastream.DeleteRouteRequest())
         transcode.return_value = {
             "method": "post",
@@ -21745,6 +22199,7 @@ def test_delete_route_rest_interceptors(null_interceptor):
         ]
         pre.return_value = request, metadata
         post.return_value = operations_pb2.Operation()
+        post_with_metadata.return_value = operations_pb2.Operation(), metadata
 
         client.delete_route(
             request,
@@ -21756,6 +22211,7 @@ def test_delete_route_rest_interceptors(null_interceptor):
 
         pre.assert_called_once()
         post.assert_called_once()
+        post_with_metadata.assert_called_once()
 
 
 def test_get_location_rest_bad_request(request_type=locations_pb2.GetLocationRequest):
@@ -23285,9 +23741,37 @@ def test_parse_connection_profile_path():
     assert expected == actual
 
 
-def test_networks_path():
+def test_network_attachment_path():
     project = "cuttlefish"
-    network = "mussel"
+    region = "mussel"
+    network_attachment = "winkle"
+    expected = "projects/{project}/regions/{region}/networkAttachments/{network_attachment}".format(
+        project=project,
+        region=region,
+        network_attachment=network_attachment,
+    )
+    actual = DatastreamClient.network_attachment_path(
+        project, region, network_attachment
+    )
+    assert expected == actual
+
+
+def test_parse_network_attachment_path():
+    expected = {
+        "project": "nautilus",
+        "region": "scallop",
+        "network_attachment": "abalone",
+    }
+    path = DatastreamClient.network_attachment_path(**expected)
+
+    # Check that the path construction is reversible.
+    actual = DatastreamClient.parse_network_attachment_path(path)
+    assert expected == actual
+
+
+def test_networks_path():
+    project = "squid"
+    network = "clam"
     expected = "projects/{project}/global/networks/{network}".format(
         project=project,
         network=network,
@@ -23298,8 +23782,8 @@ def test_networks_path():
 
 def test_parse_networks_path():
     expected = {
-        "project": "winkle",
-        "network": "nautilus",
+        "project": "whelk",
+        "network": "octopus",
     }
     path = DatastreamClient.networks_path(**expected)
 
@@ -23309,9 +23793,9 @@ def test_parse_networks_path():
 
 
 def test_private_connection_path():
-    project = "scallop"
-    location = "abalone"
-    private_connection = "squid"
+    project = "oyster"
+    location = "nudibranch"
+    private_connection = "cuttlefish"
     expected = "projects/{project}/locations/{location}/privateConnections/{private_connection}".format(
         project=project,
         location=location,
@@ -23325,9 +23809,9 @@ def test_private_connection_path():
 
 def test_parse_private_connection_path():
     expected = {
-        "project": "clam",
-        "location": "whelk",
-        "private_connection": "octopus",
+        "project": "mussel",
+        "location": "winkle",
+        "private_connection": "nautilus",
     }
     path = DatastreamClient.private_connection_path(**expected)
 
@@ -23337,10 +23821,10 @@ def test_parse_private_connection_path():
 
 
 def test_route_path():
-    project = "oyster"
-    location = "nudibranch"
-    private_connection = "cuttlefish"
-    route = "mussel"
+    project = "scallop"
+    location = "abalone"
+    private_connection = "squid"
+    route = "clam"
     expected = "projects/{project}/locations/{location}/privateConnections/{private_connection}/routes/{route}".format(
         project=project,
         location=location,
@@ -23353,10 +23837,10 @@ def test_route_path():
 
 def test_parse_route_path():
     expected = {
-        "project": "winkle",
-        "location": "nautilus",
-        "private_connection": "scallop",
-        "route": "abalone",
+        "project": "whelk",
+        "location": "octopus",
+        "private_connection": "oyster",
+        "route": "nudibranch",
     }
     path = DatastreamClient.route_path(**expected)
 
@@ -23366,9 +23850,9 @@ def test_parse_route_path():
 
 
 def test_stream_path():
-    project = "squid"
-    location = "clam"
-    stream = "whelk"
+    project = "cuttlefish"
+    location = "mussel"
+    stream = "winkle"
     expected = "projects/{project}/locations/{location}/streams/{stream}".format(
         project=project,
         location=location,
@@ -23380,9 +23864,9 @@ def test_stream_path():
 
 def test_parse_stream_path():
     expected = {
-        "project": "octopus",
-        "location": "oyster",
-        "stream": "nudibranch",
+        "project": "nautilus",
+        "location": "scallop",
+        "stream": "abalone",
     }
     path = DatastreamClient.stream_path(**expected)
 
@@ -23392,10 +23876,10 @@ def test_parse_stream_path():
 
 
 def test_stream_object_path():
-    project = "cuttlefish"
-    location = "mussel"
-    stream = "winkle"
-    object = "nautilus"
+    project = "squid"
+    location = "clam"
+    stream = "whelk"
+    object = "octopus"
     expected = "projects/{project}/locations/{location}/streams/{stream}/objects/{object}".format(
         project=project,
         location=location,
@@ -23408,10 +23892,10 @@ def test_stream_object_path():
 
 def test_parse_stream_object_path():
     expected = {
-        "project": "scallop",
-        "location": "abalone",
-        "stream": "squid",
-        "object": "clam",
+        "project": "oyster",
+        "location": "nudibranch",
+        "stream": "cuttlefish",
+        "object": "mussel",
     }
     path = DatastreamClient.stream_object_path(**expected)
 
@@ -23421,7 +23905,7 @@ def test_parse_stream_object_path():
 
 
 def test_common_billing_account_path():
-    billing_account = "whelk"
+    billing_account = "winkle"
     expected = "billingAccounts/{billing_account}".format(
         billing_account=billing_account,
     )
@@ -23431,7 +23915,7 @@ def test_common_billing_account_path():
 
 def test_parse_common_billing_account_path():
     expected = {
-        "billing_account": "octopus",
+        "billing_account": "nautilus",
     }
     path = DatastreamClient.common_billing_account_path(**expected)
 
@@ -23441,7 +23925,7 @@ def test_parse_common_billing_account_path():
 
 
 def test_common_folder_path():
-    folder = "oyster"
+    folder = "scallop"
     expected = "folders/{folder}".format(
         folder=folder,
     )
@@ -23451,7 +23935,7 @@ def test_common_folder_path():
 
 def test_parse_common_folder_path():
     expected = {
-        "folder": "nudibranch",
+        "folder": "abalone",
     }
     path = DatastreamClient.common_folder_path(**expected)
 
@@ -23461,7 +23945,7 @@ def test_parse_common_folder_path():
 
 
 def test_common_organization_path():
-    organization = "cuttlefish"
+    organization = "squid"
     expected = "organizations/{organization}".format(
         organization=organization,
     )
@@ -23471,7 +23955,7 @@ def test_common_organization_path():
 
 def test_parse_common_organization_path():
     expected = {
-        "organization": "mussel",
+        "organization": "clam",
     }
     path = DatastreamClient.common_organization_path(**expected)
 
@@ -23481,7 +23965,7 @@ def test_parse_common_organization_path():
 
 
 def test_common_project_path():
-    project = "winkle"
+    project = "whelk"
     expected = "projects/{project}".format(
         project=project,
     )
@@ -23491,7 +23975,7 @@ def test_common_project_path():
 
 def test_parse_common_project_path():
     expected = {
-        "project": "nautilus",
+        "project": "octopus",
     }
     path = DatastreamClient.common_project_path(**expected)
 
@@ -23501,8 +23985,8 @@ def test_parse_common_project_path():
 
 
 def test_common_location_path():
-    project = "scallop"
-    location = "abalone"
+    project = "oyster"
+    location = "nudibranch"
     expected = "projects/{project}/locations/{location}".format(
         project=project,
         location=location,
@@ -23513,8 +23997,8 @@ def test_common_location_path():
 
 def test_parse_common_location_path():
     expected = {
-        "project": "squid",
-        "location": "clam",
+        "project": "cuttlefish",
+        "location": "mussel",
     }
     path = DatastreamClient.common_location_path(**expected)
 

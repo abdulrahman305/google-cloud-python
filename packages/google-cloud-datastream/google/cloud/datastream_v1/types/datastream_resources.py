@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,16 +29,24 @@ __protobuf__ = proto.module(
         "MysqlProfile",
         "PostgresqlProfile",
         "SqlServerProfile",
+        "SalesforceProfile",
+        "MongodbProfile",
+        "HostAddress",
+        "SrvConnectionFormat",
+        "StandardConnectionFormat",
         "GcsProfile",
         "BigQueryProfile",
         "StaticServiceIpConnectivity",
         "ForwardSshTunnelConnectivity",
         "VpcPeeringConfig",
+        "PscInterfaceConfig",
         "PrivateConnection",
         "PrivateConnectivity",
         "Route",
+        "MongodbSslConfig",
         "MysqlSslConfig",
         "OracleSslConfig",
+        "PostgresqlSslConfig",
         "ConnectionProfile",
         "OracleColumn",
         "OracleTable",
@@ -62,6 +70,15 @@ __protobuf__ = proto.module(
         "MysqlDatabase",
         "MysqlRdbms",
         "MysqlSourceConfig",
+        "SalesforceSourceConfig",
+        "SalesforceOrg",
+        "SalesforceObject",
+        "SalesforceField",
+        "MongodbSourceConfig",
+        "MongodbCluster",
+        "MongodbDatabase",
+        "MongodbCollection",
+        "MongodbField",
         "SourceConfig",
         "AvroFileFormat",
         "JsonFileFormat",
@@ -80,13 +97,13 @@ __protobuf__ = proto.module(
         "SqlServerLsnPosition",
         "OracleScnPosition",
         "MysqlLogPosition",
+        "MysqlGtidPosition",
     },
 )
 
 
 class OracleProfile(proto.Message):
     r"""Oracle database profile.
-    Next ID: 10.
 
     Attributes:
         hostname (str):
@@ -170,8 +187,8 @@ class OracleAsmConfig(proto.Message):
             Required. Username for the Oracle ASM
             connection.
         password (str):
-            Required. Password for the Oracle ASM
-            connection.
+            Optional. Password for the Oracle ASM connection. Mutually
+            exclusive with the ``secret_manager_stored_password`` field.
         asm_service (str):
             Required. ASM service name for the Oracle ASM
             connection.
@@ -180,6 +197,10 @@ class OracleAsmConfig(proto.Message):
         oracle_ssl_config (google.cloud.datastream_v1.types.OracleSslConfig):
             Optional. SSL configuration for the Oracle
             connection.
+        secret_manager_stored_password (str):
+            Optional. A reference to a Secret Manager resource name
+            storing the Oracle ASM connection password. Mutually
+            exclusive with the ``password`` field.
     """
 
     hostname: str = proto.Field(
@@ -212,11 +233,14 @@ class OracleAsmConfig(proto.Message):
         number=7,
         message="OracleSslConfig",
     )
+    secret_manager_stored_password: str = proto.Field(
+        proto.STRING,
+        number=8,
+    )
 
 
 class MysqlProfile(proto.Message):
     r"""MySQL database profile.
-    Next ID: 7.
 
     Attributes:
         hostname (str):
@@ -232,6 +256,10 @@ class MysqlProfile(proto.Message):
             ``secret_manager_stored_password`` field.
         ssl_config (google.cloud.datastream_v1.types.MysqlSslConfig):
             SSL configuration for the MySQL connection.
+        secret_manager_stored_password (str):
+            Optional. A reference to a Secret Manager resource name
+            storing the MySQL connection password. Mutually exclusive
+            with the ``password`` field.
     """
 
     hostname: str = proto.Field(
@@ -255,6 +283,10 @@ class MysqlProfile(proto.Message):
         number=5,
         message="MysqlSslConfig",
     )
+    secret_manager_stored_password: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
 
 
 class PostgresqlProfile(proto.Message):
@@ -276,6 +308,16 @@ class PostgresqlProfile(proto.Message):
         database (str):
             Required. Database for the PostgreSQL
             connection.
+        secret_manager_stored_password (str):
+            Optional. A reference to a Secret Manager resource name
+            storing the PostgreSQL connection password. Mutually
+            exclusive with the ``password`` field.
+        ssl_config (google.cloud.datastream_v1.types.PostgresqlSslConfig):
+            Optional. SSL configuration for the PostgreSQL connection.
+            In case PostgresqlSslConfig is not set, the connection will
+            use the default SSL mode, which is ``prefer`` (i.e. this
+            mode will only use encryption if enabled from database side,
+            otherwise will use unencrypted communication)
     """
 
     hostname: str = proto.Field(
@@ -298,11 +340,19 @@ class PostgresqlProfile(proto.Message):
         proto.STRING,
         number=5,
     )
+    secret_manager_stored_password: str = proto.Field(
+        proto.STRING,
+        number=6,
+    )
+    ssl_config: "PostgresqlSslConfig" = proto.Field(
+        proto.MESSAGE,
+        number=7,
+        message="PostgresqlSslConfig",
+    )
 
 
 class SqlServerProfile(proto.Message):
     r"""SQLServer database profile.
-    Next ID: 8.
 
     Attributes:
         hostname (str):
@@ -320,6 +370,10 @@ class SqlServerProfile(proto.Message):
         database (str):
             Required. Database for the SQLServer
             connection.
+        secret_manager_stored_password (str):
+            Optional. A reference to a Secret Manager resource name
+            storing the SQLServer connection password. Mutually
+            exclusive with the ``password`` field.
     """
 
     hostname: str = proto.Field(
@@ -341,6 +395,254 @@ class SqlServerProfile(proto.Message):
     database: str = proto.Field(
         proto.STRING,
         number=5,
+    )
+    secret_manager_stored_password: str = proto.Field(
+        proto.STRING,
+        number=7,
+    )
+
+
+class SalesforceProfile(proto.Message):
+    r"""Salesforce profile
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        domain (str):
+            Required. Domain endpoint for the Salesforce
+            connection.
+        user_credentials (google.cloud.datastream_v1.types.SalesforceProfile.UserCredentials):
+            User-password authentication.
+
+            This field is a member of `oneof`_ ``credentials``.
+        oauth2_client_credentials (google.cloud.datastream_v1.types.SalesforceProfile.Oauth2ClientCredentials):
+            Connected app authentication.
+
+            This field is a member of `oneof`_ ``credentials``.
+    """
+
+    class UserCredentials(proto.Message):
+        r"""Username-password credentials.
+
+        Attributes:
+            username (str):
+                Required. Username for the Salesforce
+                connection.
+            password (str):
+                Optional. Password for the Salesforce connection. Mutually
+                exclusive with the ``secret_manager_stored_password`` field.
+            security_token (str):
+                Optional. Security token for the Salesforce connection.
+                Mutually exclusive with the
+                ``secret_manager_stored_security_token`` field.
+            secret_manager_stored_password (str):
+                Optional. A reference to a Secret Manager resource name
+                storing the Salesforce connection's password. Mutually
+                exclusive with the ``password`` field.
+            secret_manager_stored_security_token (str):
+                Optional. A reference to a Secret Manager resource name
+                storing the Salesforce connection's security token. Mutually
+                exclusive with the ``security_token`` field.
+        """
+
+        username: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        password: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        security_token: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        secret_manager_stored_password: str = proto.Field(
+            proto.STRING,
+            number=4,
+        )
+        secret_manager_stored_security_token: str = proto.Field(
+            proto.STRING,
+            number=5,
+        )
+
+    class Oauth2ClientCredentials(proto.Message):
+        r"""OAuth2 Client Credentials.
+
+        Attributes:
+            client_id (str):
+                Required. Client ID for Salesforce OAuth2
+                Client Credentials.
+            client_secret (str):
+                Optional. Client secret for Salesforce OAuth2 Client
+                Credentials. Mutually exclusive with the
+                ``secret_manager_stored_client_secret`` field.
+            secret_manager_stored_client_secret (str):
+                Optional. A reference to a Secret Manager resource name
+                storing the Salesforce OAuth2 client_secret. Mutually
+                exclusive with the ``client_secret`` field.
+        """
+
+        client_id: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        client_secret: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        secret_manager_stored_client_secret: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+
+    domain: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    user_credentials: UserCredentials = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="credentials",
+        message=UserCredentials,
+    )
+    oauth2_client_credentials: Oauth2ClientCredentials = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        oneof="credentials",
+        message=Oauth2ClientCredentials,
+    )
+
+
+class MongodbProfile(proto.Message):
+    r"""MongoDB profile.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        host_addresses (MutableSequence[google.cloud.datastream_v1.types.HostAddress]):
+            Required. List of host addresses for a
+            MongoDB cluster. For SRV connection format, this
+            list must contain exactly one DNS host without a
+            port. For Standard connection format, this list
+            must contain all the required hosts in the
+            cluster with their respective ports.
+        replica_set (str):
+            Optional. Name of the replica set. Only
+            needed for self hosted replica set type MongoDB
+            cluster. For SRV connection format, this field
+            must be empty. For Standard connection format,
+            this field must be specified.
+        username (str):
+            Required. Username for the MongoDB
+            connection.
+        password (str):
+            Optional. Password for the MongoDB connection. Mutually
+            exclusive with the ``secret_manager_stored_password`` field.
+        secret_manager_stored_password (str):
+            Optional. A reference to a Secret Manager resource name
+            storing the SQLServer connection password. Mutually
+            exclusive with the ``password`` field.
+        ssl_config (google.cloud.datastream_v1.types.MongodbSslConfig):
+            Optional. SSL configuration for the MongoDB
+            connection.
+        srv_connection_format (google.cloud.datastream_v1.types.SrvConnectionFormat):
+            Srv connection format.
+
+            This field is a member of `oneof`_ ``mongodb_connection_format``.
+        standard_connection_format (google.cloud.datastream_v1.types.StandardConnectionFormat):
+            Standard connection format.
+
+            This field is a member of `oneof`_ ``mongodb_connection_format``.
+    """
+
+    host_addresses: MutableSequence["HostAddress"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="HostAddress",
+    )
+    replica_set: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    username: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    password: str = proto.Field(
+        proto.STRING,
+        number=4,
+    )
+    secret_manager_stored_password: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    ssl_config: "MongodbSslConfig" = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        message="MongodbSslConfig",
+    )
+    srv_connection_format: "SrvConnectionFormat" = proto.Field(
+        proto.MESSAGE,
+        number=101,
+        oneof="mongodb_connection_format",
+        message="SrvConnectionFormat",
+    )
+    standard_connection_format: "StandardConnectionFormat" = proto.Field(
+        proto.MESSAGE,
+        number=102,
+        oneof="mongodb_connection_format",
+        message="StandardConnectionFormat",
+    )
+
+
+class HostAddress(proto.Message):
+    r"""A HostAddress represents a transport end point, which is the
+    combination of an IP address or hostname and a port number.
+
+    Attributes:
+        hostname (str):
+            Required. Hostname for the connection.
+        port (int):
+            Optional. Port for the connection.
+    """
+
+    hostname: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    port: int = proto.Field(
+        proto.INT32,
+        number=2,
+    )
+
+
+class SrvConnectionFormat(proto.Message):
+    r"""Srv connection format."""
+
+
+class StandardConnectionFormat(proto.Message):
+    r"""Standard connection format.
+
+    Attributes:
+        direct_connection (bool):
+            Optional. Specifies whether the client connects directly to
+            the host[:port] in the connection URI.
+    """
+
+    direct_connection: bool = proto.Field(
+        proto.BOOL,
+        number=1,
     )
 
 
@@ -453,13 +755,33 @@ class VpcPeeringConfig(proto.Message):
     )
 
 
+class PscInterfaceConfig(proto.Message):
+    r"""The PSC Interface configuration is used to create PSC
+    Interface between Datastream and the consumer's PSC.
+
+    Attributes:
+        network_attachment (str):
+            Required. Fully qualified name of the Network Attachment
+            that Datastream will connect to. Format:
+            ``projects/{project}/regions/{region}/networkAttachments/{name}``
+    """
+
+    network_attachment: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
 class PrivateConnection(proto.Message):
     r"""The PrivateConnection resource is used to establish private
     connectivity between Datastream and a customer's network.
 
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
     Attributes:
         name (str):
-            Output only. The resource's name.
+            Output only. Identifier. The resource's name.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The create time of the resource.
         update_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -474,8 +796,18 @@ class PrivateConnection(proto.Message):
         error (google.cloud.datastream_v1.types.Error):
             Output only. In case of error, the details of
             the error in a user-friendly format.
+        satisfies_pzs (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzs``.
+        satisfies_pzi (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzi``.
         vpc_peering_config (google.cloud.datastream_v1.types.VpcPeeringConfig):
             VPC Peering Config.
+        psc_interface_config (google.cloud.datastream_v1.types.PscInterfaceConfig):
+            PSC Interface Config.
     """
 
     class State(proto.Enum):
@@ -538,10 +870,25 @@ class PrivateConnection(proto.Message):
         number=7,
         message="Error",
     )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=8,
+        optional=True,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=9,
+        optional=True,
+    )
     vpc_peering_config: "VpcPeeringConfig" = proto.Field(
         proto.MESSAGE,
         number=100,
         message="VpcPeeringConfig",
+    )
+    psc_interface_config: "PscInterfaceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=101,
+        message="PscInterfaceConfig",
     )
 
 
@@ -567,7 +914,7 @@ class Route(proto.Message):
 
     Attributes:
         name (str):
-            Output only. The resource's name.
+            Output only. Identifier. The resource's name.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The create time of the resource.
         update_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -615,22 +962,86 @@ class Route(proto.Message):
     )
 
 
-class MysqlSslConfig(proto.Message):
-    r"""MySQL SSL configuration information.
+class MongodbSslConfig(proto.Message):
+    r"""MongoDB SSL configuration information.
 
     Attributes:
         client_key (str):
-            Input only. PEM-encoded private key associated with the
-            Client Certificate. If this field is used then the
+            Optional. Input only. PEM-encoded private key associated
+            with the Client Certificate. If this field is used then the
             'client_certificate' and the 'ca_certificate' fields are
             mandatory.
         client_key_set (bool):
             Output only. Indicates whether the client_key field is set.
         client_certificate (str):
-            Input only. PEM-encoded certificate that will be used by the
-            replica to authenticate against the source database server.
-            If this field is used then the 'client_key' and the
-            'ca_certificate' fields are mandatory.
+            Optional. Input only. PEM-encoded certificate that will be
+            used by the replica to authenticate against the source
+            database server. If this field is used then the 'client_key'
+            and the 'ca_certificate' fields are mandatory.
+        client_certificate_set (bool):
+            Output only. Indicates whether the client_certificate field
+            is set.
+        ca_certificate (str):
+            Optional. Input only. PEM-encoded certificate
+            of the CA that signed the source database
+            server's certificate.
+        ca_certificate_set (bool):
+            Output only. Indicates whether the ca_certificate field is
+            set.
+        secret_manager_stored_client_key (str):
+            Optional. Input only. A reference to a Secret Manager
+            resource name storing the PEM-encoded private key associated
+            with the Client Certificate. If this field is used then the
+            'client_certificate' and the 'ca_certificate' fields are
+            mandatory. Mutually exclusive with the ``client_key`` field.
+    """
+
+    client_key: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    client_key_set: bool = proto.Field(
+        proto.BOOL,
+        number=2,
+    )
+    client_certificate: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    client_certificate_set: bool = proto.Field(
+        proto.BOOL,
+        number=4,
+    )
+    ca_certificate: str = proto.Field(
+        proto.STRING,
+        number=5,
+    )
+    ca_certificate_set: bool = proto.Field(
+        proto.BOOL,
+        number=6,
+    )
+    secret_manager_stored_client_key: str = proto.Field(
+        proto.STRING,
+        number=7,
+    )
+
+
+class MysqlSslConfig(proto.Message):
+    r"""MySQL SSL configuration information.
+
+    Attributes:
+        client_key (str):
+            Optional. Input only. PEM-encoded private key associated
+            with the Client Certificate. If this field is used then the
+            'client_certificate' and the 'ca_certificate' fields are
+            mandatory.
+        client_key_set (bool):
+            Output only. Indicates whether the client_key field is set.
+        client_certificate (str):
+            Optional. Input only. PEM-encoded certificate that will be
+            used by the replica to authenticate against the source
+            database server. If this field is used then the 'client_key'
+            and the 'ca_certificate' fields are mandatory.
         client_certificate_set (bool):
             Output only. Indicates whether the client_certificate field
             is set.
@@ -680,6 +1091,13 @@ class OracleSslConfig(proto.Message):
         ca_certificate_set (bool):
             Output only. Indicates whether the ca_certificate field has
             been set for this Connection-Profile.
+        server_certificate_distinguished_name (str):
+            Optional. The distinguished name (DN) mentioned in the
+            server certificate. This corresponds to SSL_SERVER_CERT_DN
+            sqlnet parameter. Refer
+            https://docs.oracle.com/en/database/oracle/oracle-database/19/netrf/local-naming-parameters-in-tns-ora-file.html#GUID-70AB0695-A9AA-4A94-B141-4C605236EEB7
+            If this field is not provided, the DN matching is not
+            enforced.
     """
 
     ca_certificate: str = proto.Field(
@@ -689,6 +1107,128 @@ class OracleSslConfig(proto.Message):
     ca_certificate_set: bool = proto.Field(
         proto.BOOL,
         number=2,
+    )
+    server_certificate_distinguished_name: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+
+
+class PostgresqlSslConfig(proto.Message):
+    r"""PostgreSQL SSL configuration information.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        server_verification (google.cloud.datastream_v1.types.PostgresqlSslConfig.ServerVerification):
+            If this field is set, the communication will
+            be encrypted with TLS  encryption and the server
+            identity will be authenticated.
+
+            This field is a member of `oneof`_ ``encryption_setting``.
+        server_and_client_verification (google.cloud.datastream_v1.types.PostgresqlSslConfig.ServerAndClientVerification):
+            If this field is set, the communication will
+            be encrypted with TLS encryption and both the
+            server identity and the client identity will be
+            authenticated.
+
+            This field is a member of `oneof`_ ``encryption_setting``.
+    """
+
+    class ServerVerification(proto.Message):
+        r"""Message represents the option where Datastream will enforce the
+        encryption and authenticate the server identity. ca_certificate must
+        be set if user selects this option.
+
+        Attributes:
+            ca_certificate (str):
+                Required. Input only. PEM-encoded server root
+                CA certificate.
+            server_certificate_hostname (str):
+                Optional. The hostname mentioned in the
+                Subject or SAN extension of the server
+                certificate. If this field is not provided, the
+                hostname in the server certificate is not
+                validated.
+        """
+
+        ca_certificate: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        server_certificate_hostname: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
+    class ServerAndClientVerification(proto.Message):
+        r"""Message represents the option where Datastream will enforce the
+        encryption and authenticate the server identity as well as the
+        client identity. ca_certificate, client_certificate and client_key
+        must be set if user selects this option.
+
+        Attributes:
+            client_certificate (str):
+                Required. Input only. PEM-encoded certificate
+                used by the source database to authenticate the
+                client identity (i.e., the Datastream's
+                identity). This certificate is signed by either
+                a root certificate trusted by the server or one
+                or more intermediate certificates (which is
+                stored with the leaf certificate) to link the
+                this certificate to the trusted root
+                certificate.
+            client_key (str):
+                Optional. Input only. PEM-encoded private key
+                associated with the client certificate. This
+                value will be used during the SSL/TLS handshake,
+                allowing the PostgreSQL server to authenticate
+                the client's identity, i.e. identity of the
+                Datastream.
+            ca_certificate (str):
+                Required. Input only. PEM-encoded server root
+                CA certificate.
+            server_certificate_hostname (str):
+                Optional. The hostname mentioned in the
+                Subject or SAN extension of the server
+                certificate. If this field is not provided, the
+                hostname in the server certificate is not
+                validated.
+        """
+
+        client_certificate: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        client_key: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        ca_certificate: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        server_certificate_hostname: str = proto.Field(
+            proto.STRING,
+            number=5,
+        )
+
+    server_verification: ServerVerification = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        oneof="encryption_setting",
+        message=ServerVerification,
+    )
+    server_and_client_verification: ServerAndClientVerification = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        oneof="encryption_setting",
+        message=ServerAndClientVerification,
     )
 
 
@@ -705,7 +1245,7 @@ class ConnectionProfile(proto.Message):
 
     Attributes:
         name (str):
-            Output only. The resource's name.
+            Output only. Identifier. The resource's name.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The create time of the resource.
         update_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -714,6 +1254,14 @@ class ConnectionProfile(proto.Message):
             Labels.
         display_name (str):
             Required. Display name.
+        satisfies_pzs (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzs``.
+        satisfies_pzi (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzi``.
         oracle_profile (google.cloud.datastream_v1.types.OracleProfile):
             Oracle ConnectionProfile configuration.
 
@@ -737,6 +1285,14 @@ class ConnectionProfile(proto.Message):
             This field is a member of `oneof`_ ``profile``.
         sql_server_profile (google.cloud.datastream_v1.types.SqlServerProfile):
             SQLServer Connection Profile configuration.
+
+            This field is a member of `oneof`_ ``profile``.
+        salesforce_profile (google.cloud.datastream_v1.types.SalesforceProfile):
+            Salesforce Connection Profile configuration.
+
+            This field is a member of `oneof`_ ``profile``.
+        mongodb_profile (google.cloud.datastream_v1.types.MongodbProfile):
+            MongoDB Connection Profile configuration.
 
             This field is a member of `oneof`_ ``profile``.
         static_service_ip_connectivity (google.cloud.datastream_v1.types.StaticServiceIpConnectivity):
@@ -776,6 +1332,16 @@ class ConnectionProfile(proto.Message):
         proto.STRING,
         number=5,
     )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=6,
+        optional=True,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=7,
+        optional=True,
+    )
     oracle_profile: "OracleProfile" = proto.Field(
         proto.MESSAGE,
         number=100,
@@ -811,6 +1377,18 @@ class ConnectionProfile(proto.Message):
         number=105,
         oneof="profile",
         message="SqlServerProfile",
+    )
+    salesforce_profile: "SalesforceProfile" = proto.Field(
+        proto.MESSAGE,
+        number=107,
+        oneof="profile",
+        message="SalesforceProfile",
+    )
+    mongodb_profile: "MongodbProfile" = proto.Field(
+        proto.MESSAGE,
+        number=108,
+        oneof="profile",
+        message="MongodbProfile",
     )
     static_service_ip_connectivity: "StaticServiceIpConnectivity" = proto.Field(
         proto.MESSAGE,
@@ -1661,6 +2239,210 @@ class MysqlSourceConfig(proto.Message):
     )
 
 
+class SalesforceSourceConfig(proto.Message):
+    r"""Salesforce source configuration
+
+    Attributes:
+        include_objects (google.cloud.datastream_v1.types.SalesforceOrg):
+            Salesforce objects to retrieve from the
+            source.
+        exclude_objects (google.cloud.datastream_v1.types.SalesforceOrg):
+            Salesforce objects to exclude from the
+            stream.
+        polling_interval (google.protobuf.duration_pb2.Duration):
+            Required. Salesforce objects polling
+            interval. The interval at which new changes will
+            be polled for each object. The duration must be
+            between 5 minutes and 24 hours.
+    """
+
+    include_objects: "SalesforceOrg" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="SalesforceOrg",
+    )
+    exclude_objects: "SalesforceOrg" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="SalesforceOrg",
+    )
+    polling_interval: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=3,
+        message=duration_pb2.Duration,
+    )
+
+
+class SalesforceOrg(proto.Message):
+    r"""Salesforce organization structure.
+
+    Attributes:
+        objects (MutableSequence[google.cloud.datastream_v1.types.SalesforceObject]):
+            Salesforce objects in the database server.
+    """
+
+    objects: MutableSequence["SalesforceObject"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="SalesforceObject",
+    )
+
+
+class SalesforceObject(proto.Message):
+    r"""Salesforce object.
+
+    Attributes:
+        object_name (str):
+            Object name.
+        fields (MutableSequence[google.cloud.datastream_v1.types.SalesforceField]):
+            Salesforce fields.
+            When unspecified as part of include objects,
+            includes everything, when unspecified as part of
+            exclude objects, excludes nothing.
+    """
+
+    object_name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    fields: MutableSequence["SalesforceField"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message="SalesforceField",
+    )
+
+
+class SalesforceField(proto.Message):
+    r"""Salesforce field.
+
+    Attributes:
+        name (str):
+            Field name.
+        data_type (str):
+            The data type.
+        nillable (bool):
+            Indicates whether the field can accept nil
+            values.
+    """
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    data_type: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    nillable: bool = proto.Field(
+        proto.BOOL,
+        number=3,
+    )
+
+
+class MongodbSourceConfig(proto.Message):
+    r"""MongoDB source configuration.
+
+    Attributes:
+        include_objects (google.cloud.datastream_v1.types.MongodbCluster):
+            MongoDB collections to include in the stream.
+        exclude_objects (google.cloud.datastream_v1.types.MongodbCluster):
+            MongoDB collections to exclude from the
+            stream.
+        max_concurrent_backfill_tasks (int):
+            Optional. Maximum number of concurrent
+            backfill tasks. The number should be
+            non-negative and less than or equal to 50. If
+            not set (or set to 0), the system's default
+            value is used
+    """
+
+    include_objects: "MongodbCluster" = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message="MongodbCluster",
+    )
+    exclude_objects: "MongodbCluster" = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message="MongodbCluster",
+    )
+    max_concurrent_backfill_tasks: int = proto.Field(
+        proto.INT32,
+        number=3,
+    )
+
+
+class MongodbCluster(proto.Message):
+    r"""MongoDB Cluster structure.
+
+    Attributes:
+        databases (MutableSequence[google.cloud.datastream_v1.types.MongodbDatabase]):
+            MongoDB databases in the cluster.
+    """
+
+    databases: MutableSequence["MongodbDatabase"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=1,
+        message="MongodbDatabase",
+    )
+
+
+class MongodbDatabase(proto.Message):
+    r"""MongoDB Database.
+
+    Attributes:
+        database (str):
+            Database name.
+        collections (MutableSequence[google.cloud.datastream_v1.types.MongodbCollection]):
+            Collections in the database.
+    """
+
+    database: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    collections: MutableSequence["MongodbCollection"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message="MongodbCollection",
+    )
+
+
+class MongodbCollection(proto.Message):
+    r"""MongoDB Collection.
+
+    Attributes:
+        collection (str):
+            Collection name.
+        fields (MutableSequence[google.cloud.datastream_v1.types.MongodbField]):
+            Fields in the collection.
+    """
+
+    collection: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    fields: MutableSequence["MongodbField"] = proto.RepeatedField(
+        proto.MESSAGE,
+        number=2,
+        message="MongodbField",
+    )
+
+
+class MongodbField(proto.Message):
+    r"""MongoDB Field.
+
+    Attributes:
+        field (str):
+            Field name.
+    """
+
+    field: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+
+
 class SourceConfig(proto.Message):
     r"""The configuration of the stream source.
 
@@ -1673,7 +2455,7 @@ class SourceConfig(proto.Message):
 
     Attributes:
         source_connection_profile (str):
-            Required. Source connection profile resoource. Format:
+            Required. Source connection profile resource. Format:
             ``projects/{project}/locations/{location}/connectionProfiles/{name}``
         oracle_source_config (google.cloud.datastream_v1.types.OracleSourceConfig):
             Oracle data source configuration.
@@ -1689,6 +2471,14 @@ class SourceConfig(proto.Message):
             This field is a member of `oneof`_ ``source_stream_config``.
         sql_server_source_config (google.cloud.datastream_v1.types.SqlServerSourceConfig):
             SQLServer data source configuration.
+
+            This field is a member of `oneof`_ ``source_stream_config``.
+        salesforce_source_config (google.cloud.datastream_v1.types.SalesforceSourceConfig):
+            Salesforce data source configuration.
+
+            This field is a member of `oneof`_ ``source_stream_config``.
+        mongodb_source_config (google.cloud.datastream_v1.types.MongodbSourceConfig):
+            MongoDB data source configuration.
 
             This field is a member of `oneof`_ ``source_stream_config``.
     """
@@ -1720,6 +2510,18 @@ class SourceConfig(proto.Message):
         number=103,
         oneof="source_stream_config",
         message="SqlServerSourceConfig",
+    )
+    salesforce_source_config: "SalesforceSourceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=104,
+        oneof="source_stream_config",
+        message="SalesforceSourceConfig",
+    )
+    mongodb_source_config: "MongodbSourceConfig" = proto.Field(
+        proto.MESSAGE,
+        number=105,
+        oneof="source_stream_config",
+        message="MongodbSourceConfig",
     )
 
 
@@ -1865,6 +2667,9 @@ class BigQueryDestinationConfig(proto.Message):
             not be impacted. Lower values mean that queries
             will return fresher data, but may result in
             higher cost.
+        blmt_config (google.cloud.datastream_v1.types.BigQueryDestinationConfig.BlmtConfig):
+            Optional. Big Lake Managed Tables (BLMT)
+            configuration.
         merge (google.cloud.datastream_v1.types.BigQueryDestinationConfig.Merge):
             The standard mode
 
@@ -1895,10 +2700,19 @@ class BigQueryDestinationConfig(proto.Message):
         r"""Destination datasets are created so that hierarchy of the
         destination data objects matches the source hierarchy.
 
+
+        .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
         Attributes:
             dataset_template (google.cloud.datastream_v1.types.BigQueryDestinationConfig.SourceHierarchyDatasets.DatasetTemplate):
                 The dataset template to use for dynamic
                 dataset creation.
+            project_id (str):
+                Optional. The project id of the BigQuery
+                dataset. If not specified, the project will be
+                inferred from the stream resource.
+
+                This field is a member of `oneof`_ ``_project_id``.
         """
 
         class DatasetTemplate(proto.Message):
@@ -1943,6 +2757,76 @@ class BigQueryDestinationConfig(proto.Message):
             number=2,
             message="BigQueryDestinationConfig.SourceHierarchyDatasets.DatasetTemplate",
         )
+        project_id: str = proto.Field(
+            proto.STRING,
+            number=3,
+            optional=True,
+        )
+
+    class BlmtConfig(proto.Message):
+        r"""The configuration for BLMT.
+
+        Attributes:
+            bucket (str):
+                Required. The Cloud Storage bucket name.
+            root_path (str):
+                The root path inside the Cloud Storage
+                bucket.
+            connection_name (str):
+                Required. The bigquery connection. Format:
+                ``{project}.{location}.{name}``
+            file_format (google.cloud.datastream_v1.types.BigQueryDestinationConfig.BlmtConfig.FileFormat):
+                Required. The file format.
+            table_format (google.cloud.datastream_v1.types.BigQueryDestinationConfig.BlmtConfig.TableFormat):
+                Required. The table format.
+        """
+
+        class FileFormat(proto.Enum):
+            r"""Supported file formats for BigLake managed tables.
+
+            Values:
+                FILE_FORMAT_UNSPECIFIED (0):
+                    Default value.
+                PARQUET (1):
+                    Parquet file format.
+            """
+            FILE_FORMAT_UNSPECIFIED = 0
+            PARQUET = 1
+
+        class TableFormat(proto.Enum):
+            r"""Supported table formats for BigLake managed tables.
+
+            Values:
+                TABLE_FORMAT_UNSPECIFIED (0):
+                    Default value.
+                ICEBERG (1):
+                    Iceberg table format.
+            """
+            TABLE_FORMAT_UNSPECIFIED = 0
+            ICEBERG = 1
+
+        bucket: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        root_path: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+        connection_name: str = proto.Field(
+            proto.STRING,
+            number=3,
+        )
+        file_format: "BigQueryDestinationConfig.BlmtConfig.FileFormat" = proto.Field(
+            proto.ENUM,
+            number=4,
+            enum="BigQueryDestinationConfig.BlmtConfig.FileFormat",
+        )
+        table_format: "BigQueryDestinationConfig.BlmtConfig.TableFormat" = proto.Field(
+            proto.ENUM,
+            number=5,
+            enum="BigQueryDestinationConfig.BlmtConfig.TableFormat",
+        )
 
     class AppendOnly(proto.Message):
         r"""AppendOnly mode defines that all changes to a table will be
@@ -1972,6 +2856,11 @@ class BigQueryDestinationConfig(proto.Message):
         proto.MESSAGE,
         number=300,
         message=duration_pb2.Duration,
+    )
+    blmt_config: BlmtConfig = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=BlmtConfig,
     )
     merge: Merge = proto.Field(
         proto.MESSAGE,
@@ -2043,7 +2932,7 @@ class Stream(proto.Message):
 
     Attributes:
         name (str):
-            Output only. The stream's name.
+            Output only. Identifier. The stream's name.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The creation time of the stream.
         update_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -2085,6 +2974,14 @@ class Stream(proto.Message):
             Output only. If the stream was recovered, the
             time of the last recovery. Note: This field is
             currently experimental.
+        satisfies_pzs (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzs``.
+        satisfies_pzi (bool):
+            Output only. Reserved for future use.
+
+            This field is a member of `oneof`_ ``_satisfies_pzi``.
     """
 
     class State(proto.Enum):
@@ -2159,6 +3056,16 @@ class Stream(proto.Message):
                 backfilling
 
                 This field is a member of `oneof`_ ``excluded_objects``.
+            salesforce_excluded_objects (google.cloud.datastream_v1.types.SalesforceOrg):
+                Salesforce data source objects to avoid
+                backfilling
+
+                This field is a member of `oneof`_ ``excluded_objects``.
+            mongodb_excluded_objects (google.cloud.datastream_v1.types.MongodbCluster):
+                MongoDB data source objects to avoid
+                backfilling
+
+                This field is a member of `oneof`_ ``excluded_objects``.
         """
 
         oracle_excluded_objects: "OracleRdbms" = proto.Field(
@@ -2184,6 +3091,18 @@ class Stream(proto.Message):
             number=4,
             oneof="excluded_objects",
             message="SqlServerRdbms",
+        )
+        salesforce_excluded_objects: "SalesforceOrg" = proto.Field(
+            proto.MESSAGE,
+            number=5,
+            oneof="excluded_objects",
+            message="SalesforceOrg",
+        )
+        mongodb_excluded_objects: "MongodbCluster" = proto.Field(
+            proto.MESSAGE,
+            number=6,
+            oneof="excluded_objects",
+            message="MongodbCluster",
         )
 
     class BackfillNoneStrategy(proto.Message):
@@ -2257,6 +3176,16 @@ class Stream(proto.Message):
         number=13,
         message=timestamp_pb2.Timestamp,
     )
+    satisfies_pzs: bool = proto.Field(
+        proto.BOOL,
+        number=15,
+        optional=True,
+    )
+    satisfies_pzi: bool = proto.Field(
+        proto.BOOL,
+        number=16,
+        optional=True,
+    )
 
 
 class StreamObject(proto.Message):
@@ -2264,7 +3193,8 @@ class StreamObject(proto.Message):
 
     Attributes:
         name (str):
-            Output only. The object resource's name.
+            Output only. Identifier. The object
+            resource's name.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The creation time of the object.
         update_time (google.protobuf.timestamp_pb2.Timestamp):
@@ -2341,6 +3271,14 @@ class SourceObjectIdentifier(proto.Message):
             This field is a member of `oneof`_ ``source_identifier``.
         sql_server_identifier (google.cloud.datastream_v1.types.SourceObjectIdentifier.SqlServerObjectIdentifier):
             SQLServer data source object identifier.
+
+            This field is a member of `oneof`_ ``source_identifier``.
+        salesforce_identifier (google.cloud.datastream_v1.types.SourceObjectIdentifier.SalesforceObjectIdentifier):
+            Salesforce data source object identifier.
+
+            This field is a member of `oneof`_ ``source_identifier``.
+        mongodb_identifier (google.cloud.datastream_v1.types.SourceObjectIdentifier.MongodbObjectIdentifier):
+            MongoDB data source object identifier.
 
             This field is a member of `oneof`_ ``source_identifier``.
     """
@@ -2421,6 +3359,38 @@ class SourceObjectIdentifier(proto.Message):
             number=2,
         )
 
+    class SalesforceObjectIdentifier(proto.Message):
+        r"""Salesforce data source object identifier.
+
+        Attributes:
+            object_name (str):
+                Required. The object name.
+        """
+
+        object_name: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+
+    class MongodbObjectIdentifier(proto.Message):
+        r"""MongoDB data source object identifier.
+
+        Attributes:
+            database (str):
+                Required. The database name.
+            collection (str):
+                Required. The collection name.
+        """
+
+        database: str = proto.Field(
+            proto.STRING,
+            number=1,
+        )
+        collection: str = proto.Field(
+            proto.STRING,
+            number=2,
+        )
+
     oracle_identifier: OracleObjectIdentifier = proto.Field(
         proto.MESSAGE,
         number=1,
@@ -2444,6 +3414,18 @@ class SourceObjectIdentifier(proto.Message):
         number=4,
         oneof="source_identifier",
         message=SqlServerObjectIdentifier,
+    )
+    salesforce_identifier: SalesforceObjectIdentifier = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        oneof="source_identifier",
+        message=SalesforceObjectIdentifier,
+    )
+    mongodb_identifier: MongodbObjectIdentifier = proto.Field(
+        proto.MESSAGE,
+        number=6,
+        oneof="source_identifier",
+        message=MongodbObjectIdentifier,
     )
 
 
@@ -2775,6 +3757,10 @@ class CdcStrategy(proto.Message):
                 SqlServer LSN to start replicating from.
 
                 This field is a member of `oneof`_ ``position``.
+            mysql_gtid_position (google.cloud.datastream_v1.types.MysqlGtidPosition):
+                MySQL GTID set to start replicating from.
+
+                This field is a member of `oneof`_ ``position``.
         """
 
         mysql_log_position: "MysqlLogPosition" = proto.Field(
@@ -2794,6 +3780,12 @@ class CdcStrategy(proto.Message):
             number=103,
             oneof="position",
             message="SqlServerLsnPosition",
+        )
+        mysql_gtid_position: "MysqlGtidPosition" = proto.Field(
+            proto.MESSAGE,
+            number=104,
+            oneof="position",
+            message="MysqlGtidPosition",
         )
 
     most_recent_start_position: MostRecentStartPosition = proto.Field(
@@ -2869,6 +3861,21 @@ class MysqlLogPosition(proto.Message):
         proto.INT32,
         number=2,
         optional=True,
+    )
+
+
+class MysqlGtidPosition(proto.Message):
+    r"""MySQL GTID position
+
+    Attributes:
+        gtid_set (str):
+            Required. The gtid set to start replication
+            from.
+    """
+
+    gtid_set: str = proto.Field(
+        proto.STRING,
+        number=1,
     )
 
 

@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.16.0...google-cloud-artifact-registry-v1.16.1) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([eea9e6f](https://github.com/googleapis/google-cloud-python/commit/eea9e6f798406fec17a17dfd71e40fbeea42cf6a))
+
+## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.15.2...google-cloud-artifact-registry-v1.16.0) (2025-04-12)
+
+
+### Features
+
+* add the GoModule and KfpArtifact resources ([33b1d93](https://github.com/googleapis/google-cloud-python/commit/33b1d93d262266a274cf0ad3b822fd61d260406d))
+
+
+### Documentation
+
+* remove the restriction of the maximum numbers of versions that can be deleted in one BatchDeleteVersions call ([33b1d93](https://github.com/googleapis/google-cloud-python/commit/33b1d93d262266a274cf0ad3b822fd61d260406d))
+
+## [1.15.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.15.1...google-cloud-artifact-registry-v1.15.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([3a85796](https://github.com/googleapis/google-cloud-python/commit/3a85796774ebf728cbc9e82dc536316530ac78c1))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.15.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.15.0...google-cloud-artifact-registry-v1.15.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [1.15.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.14.0...google-cloud-artifact-registry-v1.15.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+* Add support for reading selective GAPIC generation methods from service YAML ([b1c3ce8](https://github.com/googleapis/google-cloud-python/commit/b1c3ce8b271e9d22afabcde054e81dcedae6b0ef))
+
 ## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-artifact-registry-v1.13.1...google-cloud-artifact-registry-v1.14.0) (2024-12-12)
 
 

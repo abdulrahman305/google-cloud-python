@@ -1,5 +1,63 @@
 # Changelog
 
+## [1.17.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.17.4...google-cloud-orchestration-airflow-v1.17.5) (2025-04-15)
+
+
+### Documentation
+
+* `enabled` field of `MasterAuthorizedNetworksConfig` is now marked as optional ([0a2a1ee](https://github.com/googleapis/google-cloud-python/commit/0a2a1ee6637c9e643a66324dded780384bfc414f))
+
+## [1.17.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.17.3...google-cloud-orchestration-airflow-v1.17.4) (2025-04-12)
+
+
+### Documentation
+
+* [google-cloud-orchestration-airflow] `enabled` field of `MasterAuthorizedNetworksConfig` is now marked as optional ([#13728](https://github.com/googleapis/google-cloud-python/issues/13728)) ([79835a9](https://github.com/googleapis/google-cloud-python/commit/79835a955f4a37fda68fe2d084f0d9042685c88b))
+
+## [1.17.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.17.2...google-cloud-orchestration-airflow-v1.17.3) (2025-03-21)
+
+
+### Documentation
+
+* [google-cloud-orchestration-airflow] fix typo in comments ([#13697](https://github.com/googleapis/google-cloud-python/issues/13697)) ([6e93528](https://github.com/googleapis/google-cloud-python/commit/6e93528463490369fc9701a35b7a30e5e66a0291))
+
+## [1.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.17.1...google-cloud-orchestration-airflow-v1.17.2) (2025-03-19)
+
+
+### Documentation
+
+* [google-cloud-orchestration-airflow] A comment for field ([6cce4cd](https://github.com/googleapis/google-cloud-python/commit/6cce4cdb66c2ade97223315ba46e2c9b60acee15))
+* [google-cloud-orchestration-airflow] update composer supported environments version match ([#13663](https://github.com/googleapis/google-cloud-python/issues/13663)) ([098c51d](https://github.com/googleapis/google-cloud-python/commit/098c51d6ba314917bc43486dc07b13e868b5c05c))
+* A comment for field `connection_type` in message `.google.cloud.orchestration.airflow.service.v1.NetworkingConfig` is changed ([#13679](https://github.com/googleapis/google-cloud-python/issues/13679)) ([6cce4cd](https://github.com/googleapis/google-cloud-python/commit/6cce4cdb66c2ade97223315ba46e2c9b60acee15))
+
+## [1.17.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.17.0...google-cloud-orchestration-airflow-v1.17.1) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([7295cbb](https://github.com/googleapis/google-cloud-python/commit/7295cbb7c3122eeff1042c3c543bfc9b8b3ca913))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+
+### Documentation
+
+* [google-cloud-orchestration-airflow] fix Composer 3 image version format in API docs ([#13649](https://github.com/googleapis/google-cloud-python/issues/13649)) ([fb48dac](https://github.com/googleapis/google-cloud-python/commit/fb48daca69d16602fe29fbfaa7b2e9f01b87360b))
+
+## [1.17.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.16.1...google-cloud-orchestration-airflow-v1.17.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+* Add support for reading selective GAPIC generation methods from service YAML ([a0910dd](https://github.com/googleapis/google-cloud-python/commit/a0910dd51541d238bc5fcf10159066ddfd928579))
+
+## [1.16.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.16.0...google-cloud-orchestration-airflow-v1.16.1) (2025-01-16)
+
+
+### Documentation
+
+* [google-cloud-orchestration-airflow] A comment for method `ListWorkloads` in service `Environments` is changed ([#13443](https://github.com/googleapis/google-cloud-python/issues/13443)) ([f47303a](https://github.com/googleapis/google-cloud-python/commit/f47303a072156798479cafa3fd9fe98b9145d7f7))
+
 ## [1.16.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-orchestration-airflow-v1.15.1...google-cloud-orchestration-airflow-v1.16.0) (2024-12-12)
 
 

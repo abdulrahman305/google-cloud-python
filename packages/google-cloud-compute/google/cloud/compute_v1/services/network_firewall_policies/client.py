@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 #
 from collections import OrderedDict
 import functools
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -42,6 +44,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.cloud.compute_v1 import gapic_version as package_version
 
@@ -463,6 +466,33 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -753,8 +783,13 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_association_resource]
+        flattened_params = [
+            project,
+            firewall_policy,
+            firewall_policy_association_resource,
+        ]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -890,8 +925,13 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_association_resource]
+        flattened_params = [
+            project,
+            firewall_policy,
+            firewall_policy_association_resource,
+        ]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -917,6 +957,310 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
         rpc = self._transport._wrapped_methods[self._transport.add_association]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._global_operations_client
+        operation_request = compute.GetGlobalOperationRequest()
+        operation_request.project = request.project
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def add_packet_mirroring_rule_unary(
+        self,
+        request: Optional[
+            Union[compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        firewall_policy_rule_resource: Optional[compute.FirewallPolicyRule] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Inserts a packet mirroring rule into a firewall
+        policy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_add_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.AddPacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.add_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.AddPacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.AddPacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy_rule_resource (google.cloud.compute_v1.types.FirewallPolicyRule):
+                The body resource for this request
+                This corresponds to the ``firewall_policy_rule_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+            if firewall_policy_rule_resource is not None:
+                request.firewall_policy_rule_resource = firewall_policy_rule_resource
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.add_packet_mirroring_rule
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def add_packet_mirroring_rule(
+        self,
+        request: Optional[
+            Union[compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        firewall_policy_rule_resource: Optional[compute.FirewallPolicyRule] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Inserts a packet mirroring rule into a firewall
+        policy.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_add_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.AddPacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.add_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.AddPacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.AddPacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy_rule_resource (google.cloud.compute_v1.types.FirewallPolicyRule):
+                The body resource for this request
+                This corresponds to the ``firewall_policy_rule_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.AddPacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+            if firewall_policy_rule_resource is not None:
+                request.firewall_policy_rule_resource = firewall_policy_rule_resource
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.add_packet_mirroring_rule
+        ]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -1048,8 +1392,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_rule_resource]
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -1180,8 +1525,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_rule_resource]
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -1251,6 +1597,134 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
                 return self._extended_operation.http_error_status_code
 
         response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def aggregated_list(
+        self,
+        request: Optional[
+            Union[compute.AggregatedListNetworkFirewallPoliciesRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> pagers.AggregatedListPager:
+        r"""Retrieves an aggregated list of network firewall policies,
+        listing network firewall policies from all applicable scopes
+        (global and regional) and grouping the results per scope. To
+        prevent failure, Google recommends that you set the
+        ``returnPartialSuccess`` parameter to ``true``.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_aggregated_list():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.AggregatedListNetworkFirewallPoliciesRequest(
+                    project="project_value",
+                )
+
+                # Make the request
+                page_result = client.aggregated_list(request=request)
+
+                # Handle the response
+                for response in page_result:
+                    print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.AggregatedListNetworkFirewallPoliciesRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.AggregatedList.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.compute_v1.services.network_firewall_policies.pagers.AggregatedListPager:
+                Iterating over this object will yield
+                results and resolve additional pages
+                automatically.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.AggregatedListNetworkFirewallPoliciesRequest
+        ):
+            request = compute.AggregatedListNetworkFirewallPoliciesRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.aggregated_list]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("project", request.project),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # This method is paged; wrap the response in a pager, which provides
+        # an `__iter__` convenience method.
+        response = pagers.AggregatedListPager(
+            method=rpc,
+            request=request,
+            response=response,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
 
         # Done; return the response.
         return response
@@ -1330,7 +1804,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1452,7 +1929,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1598,7 +2078,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1720,7 +2203,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1862,7 +2348,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1982,7 +2471,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2125,7 +2617,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, resource])
+        flattened_params = [project, resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2154,6 +2649,140 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
                 (
                     ("project", request.project),
                     ("resource", request.resource),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def get_packet_mirroring_rule(
+        self,
+        request: Optional[
+            Union[compute.GetPacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.FirewallPolicyRule:
+        r"""Gets a packet mirroring rule of the specified
+        priority.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_get_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.GetPacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.get_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.GetPacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.GetPacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to which
+                the queried rule belongs.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.compute_v1.types.FirewallPolicyRule:
+                Represents a rule that describes one
+                or more match conditions along with the
+                action to be taken when traffic matches
+                this condition (allow or deny).
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.GetPacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.GetPacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.get_packet_mirroring_rule
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
                 )
             ),
         )
@@ -2249,7 +2878,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2369,7 +3001,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy_resource])
+        flattened_params = [project, firewall_policy_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2484,7 +3119,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy_resource])
+        flattened_params = [project, firewall_policy_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2619,7 +3257,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project])
+        flattened_params = [project]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2752,7 +3393,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy, firewall_policy_resource])
+        flattened_params = [project, firewall_policy, firewall_policy_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2883,7 +3527,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy, firewall_policy_resource])
+        flattened_params = [project, firewall_policy, firewall_policy_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2906,6 +3553,310 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
         rpc = self._transport._wrapped_methods[self._transport.patch]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._global_operations_client
+        operation_request = compute.GetGlobalOperationRequest()
+        operation_request.project = request.project
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def patch_packet_mirroring_rule_unary(
+        self,
+        request: Optional[
+            Union[compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        firewall_policy_rule_resource: Optional[compute.FirewallPolicyRule] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Patches a packet mirroring rule of the specified
+        priority.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_patch_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.PatchPacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.patch_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.PatchPacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.PatchPacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy_rule_resource (google.cloud.compute_v1.types.FirewallPolicyRule):
+                The body resource for this request
+                This corresponds to the ``firewall_policy_rule_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+            if firewall_policy_rule_resource is not None:
+                request.firewall_policy_rule_resource = firewall_policy_rule_resource
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.patch_packet_mirroring_rule
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def patch_packet_mirroring_rule(
+        self,
+        request: Optional[
+            Union[compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        firewall_policy_rule_resource: Optional[compute.FirewallPolicyRule] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Patches a packet mirroring rule of the specified
+        priority.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_patch_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.PatchPacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.patch_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.PatchPacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.PatchPacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy_rule_resource (google.cloud.compute_v1.types.FirewallPolicyRule):
+                The body resource for this request
+                This corresponds to the ``firewall_policy_rule_resource`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.PatchPacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+            if firewall_policy_rule_resource is not None:
+                request.firewall_policy_rule_resource = firewall_policy_rule_resource
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.patch_packet_mirroring_rule
+        ]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3037,8 +3988,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_rule_resource]
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -3169,8 +4121,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, firewall_policy, firewall_policy_rule_resource]
+        flattened_params = [project, firewall_policy, firewall_policy_rule_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -3320,7 +4273,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3445,7 +4401,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3468,6 +4427,294 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Wrap the RPC method; this adds retry and timeout information,
         # and friendly error handling.
         rpc = self._transport._wrapped_methods[self._transport.remove_association]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        operation_service = self._transport._global_operations_client
+        operation_request = compute.GetGlobalOperationRequest()
+        operation_request.project = request.project
+        operation_request.operation = response.name
+
+        get_operation = functools.partial(operation_service.get, operation_request)
+        # Cancel is not part of extended operations yet.
+        cancel_operation = lambda: None
+
+        # Note: this class is an implementation detail to provide a uniform
+        # set of names for certain fields in the extended operation proto message.
+        # See google.api_core.extended_operation.ExtendedOperation for details
+        # on these properties and the  expected interface.
+        class _CustomOperation(extended_operation.ExtendedOperation):
+            @property
+            def error_message(self):
+                return self._extended_operation.http_error_message
+
+            @property
+            def error_code(self):
+                return self._extended_operation.http_error_status_code
+
+        response = _CustomOperation.make(get_operation, cancel_operation, response)
+
+        # Done; return the response.
+        return response
+
+    def remove_packet_mirroring_rule_unary(
+        self,
+        request: Optional[
+            Union[compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> compute.Operation:
+        r"""Deletes a packet mirroring rule of the specified
+        priority.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_remove_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.RemovePacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.remove_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.RemovePacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.RemovePacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.remove_packet_mirroring_rule
+        ]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (
+                    ("project", request.project),
+                    ("firewall_policy", request.firewall_policy),
+                )
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def remove_packet_mirroring_rule(
+        self,
+        request: Optional[
+            Union[compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest, dict]
+        ] = None,
+        *,
+        project: Optional[str] = None,
+        firewall_policy: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> extended_operation.ExtendedOperation:
+        r"""Deletes a packet mirroring rule of the specified
+        priority.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import compute_v1
+
+            def sample_remove_packet_mirroring_rule():
+                # Create a client
+                client = compute_v1.NetworkFirewallPoliciesClient()
+
+                # Initialize request argument(s)
+                request = compute_v1.RemovePacketMirroringRuleNetworkFirewallPolicyRequest(
+                    firewall_policy="firewall_policy_value",
+                    project="project_value",
+                )
+
+                # Make the request
+                response = client.remove_packet_mirroring_rule(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.compute_v1.types.RemovePacketMirroringRuleNetworkFirewallPolicyRequest, dict]):
+                The request object. A request message for
+                NetworkFirewallPolicies.RemovePacketMirroringRule.
+                See the method description for details.
+            project (str):
+                Project ID for this request.
+                This corresponds to the ``project`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            firewall_policy (str):
+                Name of the firewall policy to
+                update.
+
+                This corresponds to the ``firewall_policy`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.api_core.extended_operation.ExtendedOperation:
+                An object representing a extended
+                long-running operation.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(
+            request, compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest
+        ):
+            request = compute.RemovePacketMirroringRuleNetworkFirewallPolicyRequest(
+                request
+            )
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if project is not None:
+                request.project = project
+            if firewall_policy is not None:
+                request.firewall_policy = firewall_policy
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[
+            self._transport.remove_packet_mirroring_rule
+        ]
 
         # Certain fields should be provided within the metadata header;
         # add these here.
@@ -3593,7 +4840,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3715,7 +4965,10 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([project, firewall_policy])
+        flattened_params = [project, firewall_policy]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -3890,8 +5143,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, resource, global_set_policy_request_resource]
+        flattened_params = [project, resource, global_set_policy_request_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -4025,8 +5279,9 @@ class NetworkFirewallPoliciesClient(metaclass=NetworkFirewallPoliciesClientMeta)
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any(
-            [project, resource, test_permissions_request_resource]
+        flattened_params = [project, resource, test_permissions_request_resource]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
         )
         if request is not None and has_flattened_params:
             raise ValueError(
@@ -4098,5 +5353,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("NetworkFirewallPoliciesClient",)

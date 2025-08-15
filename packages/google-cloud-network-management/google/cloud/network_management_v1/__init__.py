@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ __version__ = package_version.__version__
 from .services.reachability_service import (
     ReachabilityServiceAsyncClient,
     ReachabilityServiceClient,
+)
+from .services.vpc_flow_logs_service import (
+    VpcFlowLogsServiceAsyncClient,
+    VpcFlowLogsServiceClient,
 )
 from .types.connectivity_test import (
     ConnectivityTest,
@@ -47,6 +51,7 @@ from .types.trace import (
     CloudRunRevisionInfo,
     CloudSQLInstanceInfo,
     DeliverInfo,
+    DirectVpcEgressConnectionInfo,
     DropInfo,
     EndpointInfo,
     FirewallInfo,
@@ -65,6 +70,7 @@ from .types.trace import (
     RedisClusterInfo,
     RedisInstanceInfo,
     RouteInfo,
+    ServerlessExternalConnectionInfo,
     ServerlessNegInfo,
     Step,
     StorageBucketInfo,
@@ -73,9 +79,19 @@ from .types.trace import (
     VpnGatewayInfo,
     VpnTunnelInfo,
 )
+from .types.vpc_flow_logs import (
+    CreateVpcFlowLogsConfigRequest,
+    DeleteVpcFlowLogsConfigRequest,
+    GetVpcFlowLogsConfigRequest,
+    ListVpcFlowLogsConfigsRequest,
+    ListVpcFlowLogsConfigsResponse,
+    UpdateVpcFlowLogsConfigRequest,
+)
+from .types.vpc_flow_logs_config import VpcFlowLogsConfig
 
 __all__ = (
     "ReachabilityServiceAsyncClient",
+    "VpcFlowLogsServiceAsyncClient",
     "AbortInfo",
     "AppEngineVersionInfo",
     "CloudFunctionInfo",
@@ -83,8 +99,11 @@ __all__ = (
     "CloudSQLInstanceInfo",
     "ConnectivityTest",
     "CreateConnectivityTestRequest",
+    "CreateVpcFlowLogsConfigRequest",
     "DeleteConnectivityTestRequest",
+    "DeleteVpcFlowLogsConfigRequest",
     "DeliverInfo",
+    "DirectVpcEgressConnectionInfo",
     "DropInfo",
     "Endpoint",
     "EndpointInfo",
@@ -93,12 +112,15 @@ __all__ = (
     "ForwardingRuleInfo",
     "GKEMasterInfo",
     "GetConnectivityTestRequest",
+    "GetVpcFlowLogsConfigRequest",
     "GoogleServiceInfo",
     "InstanceInfo",
     "LatencyDistribution",
     "LatencyPercentile",
     "ListConnectivityTestsRequest",
     "ListConnectivityTestsResponse",
+    "ListVpcFlowLogsConfigsRequest",
+    "ListVpcFlowLogsConfigsResponse",
     "LoadBalancerBackend",
     "LoadBalancerBackendInfo",
     "LoadBalancerInfo",
@@ -114,12 +136,16 @@ __all__ = (
     "RedisInstanceInfo",
     "RerunConnectivityTestRequest",
     "RouteInfo",
+    "ServerlessExternalConnectionInfo",
     "ServerlessNegInfo",
     "Step",
     "StorageBucketInfo",
     "Trace",
     "UpdateConnectivityTestRequest",
+    "UpdateVpcFlowLogsConfigRequest",
     "VpcConnectorInfo",
+    "VpcFlowLogsConfig",
+    "VpcFlowLogsServiceClient",
     "VpnGatewayInfo",
     "VpnTunnelInfo",
 )

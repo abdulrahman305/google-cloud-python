@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ from .resource import (
     ConferenceRecord,
     DocsDestination,
     DriveDestination,
+    Member,
     Participant,
     ParticipantSession,
     PhoneUser,
@@ -30,9 +31,14 @@ from .resource import (
     TranscriptEntry,
 )
 from .service import (
+    ConnectActiveConferenceRequest,
+    ConnectActiveConferenceResponse,
+    CreateMemberRequest,
     CreateSpaceRequest,
+    DeleteMemberRequest,
     EndActiveConferenceRequest,
     GetConferenceRecordRequest,
+    GetMemberRequest,
     GetParticipantRequest,
     GetParticipantSessionRequest,
     GetRecordingRequest,
@@ -41,6 +47,8 @@ from .service import (
     GetTranscriptRequest,
     ListConferenceRecordsRequest,
     ListConferenceRecordsResponse,
+    ListMembersRequest,
+    ListMembersResponse,
     ListParticipantSessionsRequest,
     ListParticipantSessionsResponse,
     ListParticipantsRequest,
@@ -60,6 +68,7 @@ __all__ = (
     "ConferenceRecord",
     "DocsDestination",
     "DriveDestination",
+    "Member",
     "Participant",
     "ParticipantSession",
     "PhoneUser",
@@ -69,9 +78,14 @@ __all__ = (
     "SpaceConfig",
     "Transcript",
     "TranscriptEntry",
+    "ConnectActiveConferenceRequest",
+    "ConnectActiveConferenceResponse",
+    "CreateMemberRequest",
     "CreateSpaceRequest",
+    "DeleteMemberRequest",
     "EndActiveConferenceRequest",
     "GetConferenceRecordRequest",
+    "GetMemberRequest",
     "GetParticipantRequest",
     "GetParticipantSessionRequest",
     "GetRecordingRequest",
@@ -80,6 +94,8 @@ __all__ = (
     "GetTranscriptRequest",
     "ListConferenceRecordsRequest",
     "ListConferenceRecordsResponse",
+    "ListMembersRequest",
+    "ListMembersResponse",
     "ListParticipantSessionsRequest",
     "ListParticipantSessionsResponse",
     "ListParticipantsRequest",

@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.6.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apigee-registry-v0.6.17...google-cloud-apigee-registry-v0.6.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([1562bb7](https://github.com/googleapis/google-cloud-python/commit/1562bb740c7cd56179e52185dde3c32af861de5e))
+
+## [0.6.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apigee-registry-v0.6.16...google-cloud-apigee-registry-v0.6.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([a1b9294](https://github.com/googleapis/google-cloud-python/commit/a1b9294d0bf6e27c2a951d6df7faf7807dc5420b))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [0.6.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apigee-registry-v0.6.15...google-cloud-apigee-registry-v0.6.16) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.6.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apigee-registry-v0.6.14...google-cloud-apigee-registry-v0.6.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+* Add support for reading selective GAPIC generation methods from service YAML ([a961bc0](https://github.com/googleapis/google-cloud-python/commit/a961bc029201b72fc4923490aeb3d82781853e6a))
+
 ## [0.6.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-apigee-registry-v0.6.13...google-cloud-apigee-registry-v0.6.14) (2024-12-12)
 
 

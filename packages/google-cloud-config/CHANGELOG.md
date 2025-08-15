@@ -1,5 +1,67 @@
 # Changelog
 
+## [0.1.20](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.19...google-cloud-config-v0.1.20) (2025-08-06)
+
+
+### Features
+
+* add a FooBar API ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* add the VeoTuningSpec ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+* Remove private preview label from Model Armor protos ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+
+### Documentation
+
+* update comments for rpc BatchCreatePullRequestComments, ResolvePullRequestComments and UnresolvePullRequestComments ([2f16fa5](https://github.com/googleapis/google-cloud-python/commit/2f16fa5610250d05ecc605862e2f806b94593814))
+
+## [0.1.19](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.18...google-cloud-config-v0.1.19) (2025-07-10)
+
+
+### Features
+
+* added resource change and drift details for the preview ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+
+
+### Documentation
+
+* A comment for field `annotations` in message `.google.cloud.config.v1.Preview` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `error` in message `.google.cloud.config.v1.TerraformError` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `input_value` in message `.google.cloud.config.v1.TerraformVariable` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `input_values` in message `.google.cloud.config.v1.TerraformBlueprint` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `labels` in message `.google.cloud.config.v1.Deployment` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `name` in message `.google.cloud.config.v1.Deployment` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `page_size` in message `.google.cloud.config.v1.ListTerraformVersionsRequest` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+* A comment for field `page_token` in message `.google.cloud.config.v1.ListTerraformVersionsRequest` is changed ([f5cd663](https://github.com/googleapis/google-cloud-python/commit/f5cd663a11af7ca0bd6b03dfff1a258401c78b0a))
+
+## [0.1.18](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.17...google-cloud-config-v0.1.18) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([8697120](https://github.com/googleapis/google-cloud-python/commit/869712032803cb31d93f3b16abc2abdb14f733a4))
+
+## [0.1.17](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.16...google-cloud-config-v0.1.17) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([1e43e75](https://github.com/googleapis/google-cloud-python/commit/1e43e75e99445373785b11381e0e859fa14bb485))
+
+## [0.1.16](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.15...google-cloud-config-v0.1.16) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([4571dff](https://github.com/googleapis/google-cloud-python/commit/4571dff9614843c6944c8568bd234c6ac5197218))
+
+## [0.1.15](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.14...google-cloud-config-v0.1.15) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+* Add support for reading selective GAPIC generation methods from service YAML ([e22e2bd](https://github.com/googleapis/google-cloud-python/commit/e22e2bde55d11d2f85e9d2caf1d152a4027f88cf))
+
 ## [0.1.14](https://github.com/googleapis/google-cloud-python/compare/google-cloud-config-v0.1.13...google-cloud-config-v0.1.14) (2024-12-12)
 
 

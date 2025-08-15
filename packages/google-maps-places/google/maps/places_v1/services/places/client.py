@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.maps.places_v1 import gapic_version as package_version
 
@@ -59,10 +62,13 @@ except ImportError:  # pragma: NO COVER
 _LOGGER = std_logging.getLogger(__name__)
 
 from google.geo.type.types import viewport
+from google.type import datetime_pb2  # type: ignore
 from google.type import latlng_pb2  # type: ignore
 from google.type import localized_text_pb2  # type: ignore
+from google.type import postal_address_pb2  # type: ignore
 
 from google.maps.places_v1.types import (
+    address_descriptor,
     contextual_content,
     ev_charging,
     fuel_options,
@@ -117,9 +123,9 @@ class PlacesClientMeta(type):
 
 class PlacesClient(metaclass=PlacesClientMeta):
     """Service definition for the Places API. Note: every request (except
-    for Autocomplete requests) requires a field mask set outside of the
-    request proto (``all/*``, is not assumed). The field mask can be set
-    via the HTTP header ``X-Goog-FieldMask``. See:
+    for Autocomplete and GetPhotoMedia requests) requires a field mask
+    set outside of the request proto (``all/*``, is not assumed). The
+    field mask can be set via the HTTP header ``X-Goog-FieldMask``. See:
     https://developers.google.com/maps/documentation/places/web-service/choose-fields
     """
 
@@ -546,6 +552,33 @@ class PlacesClient(metaclass=PlacesClientMeta):
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -749,35 +782,6 @@ class PlacesClient(metaclass=PlacesClientMeta):
     ) -> places_service.SearchNearbyResponse:
         r"""Search for places near locations.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            def sample_search_nearby():
-                # Create a client
-                client = places_v1.PlacesClient()
-
-                # Initialize request argument(s)
-                location_restriction = places_v1.LocationRestriction()
-                location_restriction.circle.radius = 0.648
-
-                request = places_v1.SearchNearbyRequest(
-                    location_restriction=location_restriction,
-                )
-
-                # Make the request
-                response = client.search_nearby(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Union[google.maps.places_v1.types.SearchNearbyRequest, dict]):
                 The request object. Request proto for Search Nearby.
@@ -826,32 +830,6 @@ class PlacesClient(metaclass=PlacesClientMeta):
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> places_service.SearchTextResponse:
         r"""Text query based place search.
-
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            def sample_search_text():
-                # Create a client
-                client = places_v1.PlacesClient()
-
-                # Initialize request argument(s)
-                request = places_v1.SearchTextRequest(
-                    text_query="text_query_value",
-                )
-
-                # Make the request
-                response = client.search_text(request=request)
-
-                # Handle the response
-                print(response)
 
         Args:
             request (Union[google.maps.places_v1.types.SearchTextRequest, dict]):
@@ -903,32 +881,6 @@ class PlacesClient(metaclass=PlacesClientMeta):
     ) -> places_service.PhotoMedia:
         r"""Get a photo media with a photo reference string.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            def sample_get_photo_media():
-                # Create a client
-                client = places_v1.PlacesClient()
-
-                # Initialize request argument(s)
-                request = places_v1.GetPhotoMediaRequest(
-                    name="name_value",
-                )
-
-                # Make the request
-                response = client.get_photo_media(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Union[google.maps.places_v1.types.GetPhotoMediaRequest, dict]):
                 The request object. Request for fetching a photo of a
@@ -962,7 +914,10 @@ class PlacesClient(metaclass=PlacesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1014,32 +969,6 @@ class PlacesClient(metaclass=PlacesClientMeta):
         r"""Get the details of a place based on its resource name, which is
         a string in the ``places/{place_id}`` format.
 
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            def sample_get_place():
-                # Create a client
-                client = places_v1.PlacesClient()
-
-                # Initialize request argument(s)
-                request = places_v1.GetPlaceRequest(
-                    name="name_value",
-                )
-
-                # Make the request
-                response = client.get_place(request=request)
-
-                # Handle the response
-                print(response)
-
         Args:
             request (Union[google.maps.places_v1.types.GetPlaceRequest, dict]):
                 The request object. Request for fetching a Place based on its resource name,
@@ -1068,7 +997,10 @@ class PlacesClient(metaclass=PlacesClientMeta):
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1117,32 +1049,6 @@ class PlacesClient(metaclass=PlacesClientMeta):
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> places_service.AutocompletePlacesResponse:
         r"""Returns predictions for the given input.
-
-        .. code-block:: python
-
-            # This snippet has been automatically generated and should be regarded as a
-            # code template only.
-            # It will require modifications to work:
-            # - It may require correct/in-range values for request initialization.
-            # - It may require specifying regional endpoints when creating the service
-            #   client as shown in:
-            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
-            from google.maps import places_v1
-
-            def sample_autocomplete_places():
-                # Create a client
-                client = places_v1.PlacesClient()
-
-                # Initialize request argument(s)
-                request = places_v1.AutocompletePlacesRequest(
-                    input="input_value",
-                )
-
-                # Make the request
-                response = client.autocomplete_places(request=request)
-
-                # Handle the response
-                print(response)
 
         Args:
             request (Union[google.maps.places_v1.types.AutocompletePlacesRequest, dict]):
@@ -1203,5 +1109,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("PlacesClient",)

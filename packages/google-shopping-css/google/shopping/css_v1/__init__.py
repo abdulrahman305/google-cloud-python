@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ from .services.css_products_service import (
     CssProductsServiceAsyncClient,
     CssProductsServiceClient,
 )
+from .services.quota_service import QuotaServiceAsyncClient, QuotaServiceClient
 from .types.accounts import (
     Account,
     GetAccountRequest,
@@ -69,12 +70,19 @@ from .types.css_products import (
     ListCssProductsRequest,
     ListCssProductsResponse,
 )
+from .types.quota import (
+    ListQuotaGroupsRequest,
+    ListQuotaGroupsResponse,
+    MethodDetails,
+    QuotaGroup,
+)
 
 __all__ = (
     "AccountLabelsServiceAsyncClient",
     "AccountsServiceAsyncClient",
     "CssProductInputsServiceAsyncClient",
     "CssProductsServiceAsyncClient",
+    "QuotaServiceAsyncClient",
     "Account",
     "AccountLabel",
     "AccountLabelsServiceClient",
@@ -100,9 +108,14 @@ __all__ = (
     "ListChildAccountsResponse",
     "ListCssProductsRequest",
     "ListCssProductsResponse",
+    "ListQuotaGroupsRequest",
+    "ListQuotaGroupsResponse",
+    "MethodDetails",
     "ProductDetail",
     "ProductDimension",
     "ProductWeight",
+    "QuotaGroup",
+    "QuotaServiceClient",
     "SubscriptionPeriod",
     "UpdateAccountLabelRequest",
     "UpdateAccountLabelsRequest",

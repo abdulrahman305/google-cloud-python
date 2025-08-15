@@ -2,6 +2,17 @@
 
 .. include:: multiprocessing.rst
 
+This package includes clients for multiple versions of Merchant Inventories API.
+By default, you will get version ``merchant_inventories_v1``.
+
+
+API Reference
+-------------
+.. toctree::
+    :maxdepth: 2
+
+    merchant_inventories_v1/services_
+    merchant_inventories_v1/types_
 
 API Reference
 -------------

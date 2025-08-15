@@ -319,6 +319,11 @@
                 "bulk_insert"
               ]
             },
+            "BulkSetLabels": {
+              "methods": [
+                "bulk_set_labels"
+              ]
+            },
             "CreateSnapshot": {
               "methods": [
                 "create_snapshot"
@@ -1355,6 +1360,11 @@
                 "remove_resource_policies"
               ]
             },
+            "ReportHostAsFaulty": {
+              "methods": [
+                "report_host_as_faulty"
+              ]
+            },
             "Reset": {
               "methods": [
                 "reset"
@@ -1553,6 +1563,60 @@
         }
       }
     },
+    "InterconnectAttachmentGroups": {
+      "clients": {
+        "rest": {
+          "libraryClient": "InterconnectAttachmentGroupsClient",
+          "rpcs": {
+            "Delete": {
+              "methods": [
+                "delete"
+              ]
+            },
+            "Get": {
+              "methods": [
+                "get"
+              ]
+            },
+            "GetIamPolicy": {
+              "methods": [
+                "get_iam_policy"
+              ]
+            },
+            "GetOperationalStatus": {
+              "methods": [
+                "get_operational_status"
+              ]
+            },
+            "Insert": {
+              "methods": [
+                "insert"
+              ]
+            },
+            "List": {
+              "methods": [
+                "list"
+              ]
+            },
+            "Patch": {
+              "methods": [
+                "patch"
+              ]
+            },
+            "SetIamPolicy": {
+              "methods": [
+                "set_iam_policy"
+              ]
+            },
+            "TestIamPermissions": {
+              "methods": [
+                "test_iam_permissions"
+              ]
+            }
+          }
+        }
+      }
+    },
     "InterconnectAttachments": {
       "clients": {
         "rest": {
@@ -1591,6 +1655,65 @@
             "SetLabels": {
               "methods": [
                 "set_labels"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "InterconnectGroups": {
+      "clients": {
+        "rest": {
+          "libraryClient": "InterconnectGroupsClient",
+          "rpcs": {
+            "CreateMembers": {
+              "methods": [
+                "create_members"
+              ]
+            },
+            "Delete": {
+              "methods": [
+                "delete"
+              ]
+            },
+            "Get": {
+              "methods": [
+                "get"
+              ]
+            },
+            "GetIamPolicy": {
+              "methods": [
+                "get_iam_policy"
+              ]
+            },
+            "GetOperationalStatus": {
+              "methods": [
+                "get_operational_status"
+              ]
+            },
+            "Insert": {
+              "methods": [
+                "insert"
+              ]
+            },
+            "List": {
+              "methods": [
+                "list"
+              ]
+            },
+            "Patch": {
+              "methods": [
+                "patch"
+              ]
+            },
+            "SetIamPolicy": {
+              "methods": [
+                "set_iam_policy"
+              ]
+            },
+            "TestIamPermissions": {
+              "methods": [
+                "test_iam_permissions"
               ]
             }
           }
@@ -1742,6 +1865,11 @@
               "methods": [
                 "test_iam_permissions"
               ]
+            },
+            "Update": {
+              "methods": [
+                "update"
+              ]
             }
           }
         }
@@ -1780,6 +1908,11 @@
             "SetIamPolicy": {
               "methods": [
                 "set_iam_policy"
+              ]
+            },
+            "SetLabels": {
+              "methods": [
+                "set_labels"
               ]
             },
             "TestIamPermissions": {
@@ -1967,9 +2100,19 @@
                 "add_association"
               ]
             },
+            "AddPacketMirroringRule": {
+              "methods": [
+                "add_packet_mirroring_rule"
+              ]
+            },
             "AddRule": {
               "methods": [
                 "add_rule"
+              ]
+            },
+            "AggregatedList": {
+              "methods": [
+                "aggregated_list"
               ]
             },
             "CloneRules": {
@@ -1997,6 +2140,11 @@
                 "get_iam_policy"
               ]
             },
+            "GetPacketMirroringRule": {
+              "methods": [
+                "get_packet_mirroring_rule"
+              ]
+            },
             "GetRule": {
               "methods": [
                 "get_rule"
@@ -2017,6 +2165,11 @@
                 "patch"
               ]
             },
+            "PatchPacketMirroringRule": {
+              "methods": [
+                "patch_packet_mirroring_rule"
+              ]
+            },
             "PatchRule": {
               "methods": [
                 "patch_rule"
@@ -2025,6 +2178,11 @@
             "RemoveAssociation": {
               "methods": [
                 "remove_association"
+              ]
+            },
+            "RemovePacketMirroringRule": {
+              "methods": [
+                "remove_packet_mirroring_rule"
               ]
             },
             "RemoveRule": {
@@ -2113,6 +2271,11 @@
             "RemovePeering": {
               "methods": [
                 "remove_peering"
+              ]
+            },
+            "RequestRemovePeering": {
+              "methods": [
+                "request_remove_peering"
               ]
             },
             "SwitchToCustomMode": {
@@ -3582,6 +3745,54 @@
         }
       }
     },
+    "ReservationBlocks": {
+      "clients": {
+        "rest": {
+          "libraryClient": "ReservationBlocksClient",
+          "rpcs": {
+            "Get": {
+              "methods": [
+                "get"
+              ]
+            },
+            "List": {
+              "methods": [
+                "list"
+              ]
+            },
+            "PerformMaintenance": {
+              "methods": [
+                "perform_maintenance"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "ReservationSubBlocks": {
+      "clients": {
+        "rest": {
+          "libraryClient": "ReservationSubBlocksClient",
+          "rpcs": {
+            "Get": {
+              "methods": [
+                "get"
+              ]
+            },
+            "List": {
+              "methods": [
+                "list"
+              ]
+            },
+            "PerformMaintenance": {
+              "methods": [
+                "perform_maintenance"
+              ]
+            }
+          }
+        }
+      }
+    },
     "Reservations": {
       "clients": {
         "rest": {
@@ -3615,6 +3826,11 @@
             "List": {
               "methods": [
                 "list"
+              ]
+            },
+            "PerformMaintenance": {
+              "methods": [
+                "perform_maintenance"
               ]
             },
             "Resize": {
@@ -3710,6 +3926,11 @@
                 "delete"
               ]
             },
+            "DeleteRoutePolicy": {
+              "methods": [
+                "delete_route_policy"
+              ]
+            },
             "Get": {
               "methods": [
                 "get"
@@ -3723,6 +3944,11 @@
             "GetNatMappingInfo": {
               "methods": [
                 "get_nat_mapping_info"
+              ]
+            },
+            "GetRoutePolicy": {
+              "methods": [
+                "get_route_policy"
               ]
             },
             "GetRouterStatus": {
@@ -3740,9 +3966,24 @@
                 "list"
               ]
             },
+            "ListBgpRoutes": {
+              "methods": [
+                "list_bgp_routes"
+              ]
+            },
+            "ListRoutePolicies": {
+              "methods": [
+                "list_route_policies"
+              ]
+            },
             "Patch": {
               "methods": [
                 "patch"
+              ]
+            },
+            "PatchRoutePolicy": {
+              "methods": [
+                "patch_route_policy"
               ]
             },
             "Preview": {
@@ -3753,6 +3994,11 @@
             "Update": {
               "methods": [
                 "update"
+              ]
+            },
+            "UpdateRoutePolicy": {
+              "methods": [
+                "update_route_policy"
               ]
             }
           }

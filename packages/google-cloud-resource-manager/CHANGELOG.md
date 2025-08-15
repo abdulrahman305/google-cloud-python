@@ -4,6 +4,21 @@
 
 [1]: https://pypi.org/project/google-cloud-resource-manager/#history
 
+## [1.14.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.14.1...google-cloud-resource-manager-v1.14.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([784a3ca](https://github.com/googleapis/google-cloud-python/commit/784a3ca7a180453320521753f5bce71de329d65c))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.14.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.14.0...google-cloud-resource-manager-v1.14.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([770cf0f](https://github.com/googleapis/google-cloud-python/commit/770cf0f31125586a8622e9639f6d24c1bafa9b31))
+
 ## [1.14.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-resource-manager-v1.13.1...google-cloud-resource-manager-v1.14.0) (2024-12-12)
 
 

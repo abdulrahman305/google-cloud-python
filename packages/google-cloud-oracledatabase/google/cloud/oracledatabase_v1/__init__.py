@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ from google.cloud.oracledatabase_v1 import gapic_version as package_version
 __version__ = package_version.__version__
 
 
-from .services.oracle_database import OracleDatabaseClient
+from .services.oracle_database import OracleDatabaseAsyncClient, OracleDatabaseClient
 from .types.autonomous_database import (
     AllConnectionStrings,
     AutonomousDatabase,
@@ -87,7 +87,10 @@ from .types.oracledatabase import (
     ListGiVersionsRequest,
     ListGiVersionsResponse,
     OperationMetadata,
+    RestartAutonomousDatabaseRequest,
     RestoreAutonomousDatabaseRequest,
+    StartAutonomousDatabaseRequest,
+    StopAutonomousDatabaseRequest,
 )
 from .types.vm_cluster import (
     CloudVmCluster,
@@ -96,6 +99,7 @@ from .types.vm_cluster import (
 )
 
 __all__ = (
+    "OracleDatabaseAsyncClient",
     "AllConnectionStrings",
     "AutonomousDatabase",
     "AutonomousDatabaseApex",
@@ -162,7 +166,10 @@ __all__ = (
     "OperationMetadata",
     "OperationsInsightsState",
     "OracleDatabaseClient",
+    "RestartAutonomousDatabaseRequest",
     "RestoreAutonomousDatabaseRequest",
     "ScheduledOperationDetails",
+    "StartAutonomousDatabaseRequest",
     "State",
+    "StopAutonomousDatabaseRequest",
 )

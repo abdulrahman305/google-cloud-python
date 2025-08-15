@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ __version__ = package_version.__version__
 
 from .services.batch_service import BatchServiceAsyncClient, BatchServiceClient
 from .types.batch import (
+    CancelJobRequest,
+    CancelJobResponse,
     CreateJobRequest,
     DeleteJobRequest,
     GetJobRequest,
@@ -56,6 +58,8 @@ __all__ = (
     "BatchServiceAsyncClient",
     "AllocationPolicy",
     "BatchServiceClient",
+    "CancelJobRequest",
+    "CancelJobResponse",
     "ComputeResource",
     "CreateJobRequest",
     "DeleteJobRequest",

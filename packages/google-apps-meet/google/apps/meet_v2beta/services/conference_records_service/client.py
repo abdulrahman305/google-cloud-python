@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from http import HTTPStatus
+import json
 import logging as std_logging
 import os
 import re
@@ -41,6 +43,7 @@ from google.auth.exceptions import MutualTLSChannelError  # type: ignore
 from google.auth.transport import mtls  # type: ignore
 from google.auth.transport.grpc import SslCredentials  # type: ignore
 from google.oauth2 import service_account  # type: ignore
+import google.protobuf
 
 from google.apps.meet_v2beta import gapic_version as package_version
 
@@ -602,6 +605,33 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # NOTE (b/349488459): universe validation is disabled until further notice.
         return True
 
+    def _add_cred_info_for_auth_errors(
+        self, error: core_exceptions.GoogleAPICallError
+    ) -> None:
+        """Adds credential info string to error details for 401/403/404 errors.
+
+        Args:
+            error (google.api_core.exceptions.GoogleAPICallError): The error to add the cred info.
+        """
+        if error.code not in [
+            HTTPStatus.UNAUTHORIZED,
+            HTTPStatus.FORBIDDEN,
+            HTTPStatus.NOT_FOUND,
+        ]:
+            return
+
+        cred = self._transport._credentials
+
+        # get_cred_info is only available in google-auth>=2.35.0
+        if not hasattr(cred, "get_cred_info"):
+            return
+
+        # ignore the type check since pypy test fails when get_cred_info
+        # is not available
+        cred_info = cred.get_cred_info()  # type: ignore
+        if cred_info and hasattr(error._details, "append"):
+            error._details.append(json.dumps(cred_info))
+
     @property
     def api_endpoint(self):
         """Return the API endpoint used by the client instance.
@@ -814,9 +844,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.ConferenceRecord:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a conference record by conference ID.
+        r"""Gets a conference record by conference ID.
 
         .. code-block:: python
 
@@ -864,14 +892,17 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.ConferenceRecord:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   Single instance of a meeting held in a space.
+                Single instance of a meeting held in
+                a space.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -919,10 +950,8 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListConferenceRecordsPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the conference records by start time and in descending
-        order.
+        r"""Lists the conference records. By default, ordered by
+        start time and in descending order.
 
         .. code-block:: python
 
@@ -1015,9 +1044,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.Participant:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a participant by participant ID.
+        r"""Gets a participant by participant ID.
 
         .. code-block:: python
 
@@ -1047,7 +1074,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Args:
             request (Union[google.apps.meet_v2beta.types.GetParticipantRequest, dict]):
-                The request object. Request to get a Participant.
+                The request object. Request to get a participant.
             name (str):
                 Required. Resource name of the
                 participant.
@@ -1065,14 +1092,17 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.Participant:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   User who attended or is attending a conference.
+                User who attended or is attending a
+                conference.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1121,9 +1151,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListParticipantsPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the participants in a conference record, by default
+        r"""Lists the participants in a conference record. By default,
         ordered by join time and in descending order. This API supports
         ``fields`` as standard parameters like every other API. However,
         when the ``fields`` request parameter is omitted, this API
@@ -1158,7 +1186,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Args:
             request (Union[google.apps.meet_v2beta.types.ListParticipantsRequest, dict]):
-                The request object. Request to fetch list of participant
+                The request object. Request to fetch list of participants
                 per conference.
             parent (str):
                 Required. Format:
@@ -1187,7 +1215,10 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1247,9 +1278,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.ParticipantSession:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a participant session by participant session ID.
+        r"""Gets a participant session by participant session ID.
 
         .. code-block:: python
 
@@ -1297,20 +1326,24 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.ParticipantSession:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   Refers to each unique join/leave session when a user
-                   joins a conference from a device. Note that any time
-                   a user joins the conference a new unique ID is
-                   assigned. That means if a user joins a space multiple
-                   times from the same device, they're assigned
-                   different IDs, and are also be treated as different
-                   participant sessions.
+                Refers to each unique join or leave
+                session when a user joins a conference
+                from a device. Note that any time a user
+                joins the conference a new unique ID is
+                assigned. That means if a user joins a
+                space multiple times from the same
+                device, they're assigned different IDs,
+                and are also be treated as different
+                participant sessions.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1359,13 +1392,11 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListParticipantSessionsPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the participant sessions of a participant in a conference
-        record, by default ordered by join time and in descending order.
-        This API supports ``fields`` as standard parameters like every
-        other API. However, when the ``fields`` request parameter is
-        omitted this API defaults to
+        r"""Lists the participant sessions of a participant in a conference
+        record. By default, ordered by join time and in descending
+        order. This API supports ``fields`` as standard parameters like
+        every other API. However, when the ``fields`` request parameter
+        is omitted this API defaults to
         ``'participantsessions/*, next_page_token'``.
 
         .. code-block:: python
@@ -1398,7 +1429,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         Args:
             request (Union[google.apps.meet_v2beta.types.ListParticipantSessionsRequest, dict]):
                 The request object. Request to fetch list of participant
-                sessions per conference record per
+                sessions per conference record, per
                 participant.
             parent (str):
                 Required. Format:
@@ -1427,7 +1458,10 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1489,9 +1523,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.Recording:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a recording by recording ID.
+        r"""Gets a recording by recording ID.
 
         .. code-block:: python
 
@@ -1540,15 +1572,17 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.Recording:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   Metadata about a recording created during a
-                   conference.
+                Metadata about a recording created
+                during a conference.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1597,9 +1631,9 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListRecordingsPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the recording resources from the conference record.
+        r"""Lists the recording resources from the conference
+        record. By default, ordered by start time and in
+        ascending order.
 
         .. code-block:: python
 
@@ -1658,7 +1692,10 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1718,9 +1755,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.Transcript:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a transcript by transcript ID.
+        r"""Gets a transcript by transcript ID.
 
         .. code-block:: python
 
@@ -1768,17 +1803,19 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.Transcript:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   Metadata for a transcript generated from a
-                   conference. It refers to the ASR (Automatic Speech
-                   Recognition) result of user's speech during the
-                   conference.
+                Metadata for a transcript generated
+                from a conference. It refers to the ASR
+                (Automatic Speech Recognition) result of
+                user's speech during the conference.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1827,9 +1864,9 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListTranscriptsPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the set of transcripts from the conference record.
+        r"""Lists the set of transcripts from the conference
+        record. By default, ordered by start time and in
+        ascending order.
 
         .. code-block:: python
 
@@ -1888,7 +1925,10 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -1948,9 +1988,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> resource.TranscriptEntry:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Gets a ``TranscriptEntry`` resource by entry ID.
+        r"""Gets a ``TranscriptEntry`` resource by entry ID.
 
         Note: The transcript entries returned by the Google Meet API
         might not match the transcription found in the Google Docs
@@ -2002,15 +2040,17 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
 
         Returns:
             google.apps.meet_v2beta.types.TranscriptEntry:
-                [Developer Preview](\ https://developers.google.com/workspace/preview).
-                   Single entry for one user’s speech during a
-                   transcript session.
+                Single entry for one user’s speech
+                during a transcript session.
 
         """
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([name])
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2059,15 +2099,15 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         timeout: Union[float, object] = gapic_v1.method.DEFAULT,
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> pagers.ListTranscriptEntriesPager:
-        r"""`Developer
-        Preview <https://developers.google.com/workspace/preview>`__.
-        Lists the structured transcript entries per transcript. By
-        default, ordered by start time and in ascending order.
+        r"""Lists the structured transcript entries per
+        transcript. By default, ordered by start time and in
+        ascending order.
 
-        Note: The transcript entries returned by the Google Meet API
-        might not match the transcription found in the Google Docs
-        transcript file. This can occur when the Google Docs transcript
-        file is modified after generation.
+        Note: The transcript entries returned by the Google Meet
+        API might not match the transcription found in the
+        Google Docs transcript file. This can occur when the
+        Google Docs transcript file is modified after
+        generation.
 
         .. code-block:: python
 
@@ -2118,7 +2158,7 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         Returns:
             google.apps.meet_v2beta.services.conference_records_service.pagers.ListTranscriptEntriesPager:
                 Response for ListTranscriptEntries
-                method
+                method.
                 Iterating over this object will yield
                 results and resolve additional pages
                 automatically.
@@ -2127,7 +2167,10 @@ class ConferenceRecordsServiceClient(metaclass=ConferenceRecordsServiceClientMet
         # Create or coerce a protobuf request object.
         # - Quick check: If we got a request object, we should *not* have
         #   gotten any keyword arguments that map to the request.
-        has_flattened_params = any([parent])
+        flattened_params = [parent]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
         if request is not None and has_flattened_params:
             raise ValueError(
                 "If the `request` argument is set, then none of "
@@ -2196,5 +2239,7 @@ DEFAULT_CLIENT_INFO = gapic_v1.client_info.ClientInfo(
     gapic_version=package_version.__version__
 )
 
+if hasattr(DEFAULT_CLIENT_INFO, "protobuf_runtime_version"):  # pragma: NO COVER
+    DEFAULT_CLIENT_INFO.protobuf_runtime_version = google.protobuf.__version__
 
 __all__ = ("ConferenceRecordsServiceClient",)

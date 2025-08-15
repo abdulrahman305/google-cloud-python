@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2024 Google LLC
+# Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ from typing import MutableMapping, MutableSequence
 
 from google.protobuf import timestamp_pb2  # type: ignore
 from google.protobuf import wrappers_pb2  # type: ignore
+from google.type import date_pb2  # type: ignore
 import proto  # type: ignore
 
 from google.analytics.admin_v1alpha.types import channel_group as gaa_channel_group
@@ -77,6 +78,8 @@ __protobuf__ = proto.module(
         "DataRedactionSettings",
         "AdSenseLink",
         "RollupPropertySourceLink",
+        "ReportingDataAnnotation",
+        "SubpropertySyncConfig",
     },
 )
 
@@ -283,8 +286,14 @@ class ChangeHistoryResourceType(proto.Enum):
             Audience resource
         EVENT_CREATE_RULE (29):
             EventCreateRule resource
+        KEY_EVENT (30):
+            KeyEvent resource
         CALCULATED_METRIC (31):
             CalculatedMetric resource
+        REPORTING_DATA_ANNOTATION (32):
+            ReportingDataAnnotation resource
+        SUBPROPERTY_SYNC_CONFIG (33):
+            SubpropertySyncConfig resource
     """
     CHANGE_HISTORY_RESOURCE_TYPE_UNSPECIFIED = 0
     ACCOUNT = 1
@@ -311,7 +320,10 @@ class ChangeHistoryResourceType(proto.Enum):
     ADSENSE_LINK = 27
     AUDIENCE = 28
     EVENT_CREATE_RULE = 29
+    KEY_EVENT = 30
     CALCULATED_METRIC = 31
+    REPORTING_DATA_ANNOTATION = 32
+    SUBPROPERTY_SYNC_CONFIG = 33
 
 
 class GoogleSignalsState(proto.Enum):
@@ -413,17 +425,17 @@ class LinkProposalState(proto.Enum):
 
 
 class PropertyType(proto.Enum):
-    r"""Types of Property resources.
+    r"""Types of ``Property`` resources.
 
     Values:
         PROPERTY_TYPE_UNSPECIFIED (0):
             Unknown or unspecified property type
         PROPERTY_TYPE_ORDINARY (1):
-            Ordinary GA4 property
+            Ordinary Google Analytics property
         PROPERTY_TYPE_SUBPROPERTY (2):
-            GA4 subproperty
+            Google Analytics subproperty
         PROPERTY_TYPE_ROLLUP (3):
-            GA4 rollup property
+            Google Analytics rollup property
     """
     PROPERTY_TYPE_UNSPECIFIED = 0
     PROPERTY_TYPE_ORDINARY = 1
@@ -518,8 +530,7 @@ class Account(proto.Message):
 
 
 class Property(proto.Message):
-    r"""A resource message representing a Google Analytics GA4
-    property.
+    r"""A resource message representing a Google Analytics property.
 
     Attributes:
         name (str):
@@ -831,7 +842,8 @@ class DataStream(proto.Message):
 
 
 class FirebaseLink(proto.Message):
-    r"""A link between a GA4 property and a Firebase project.
+    r"""A link between a Google Analytics property and a Firebase
+    project.
 
     Attributes:
         name (str):
@@ -893,7 +905,8 @@ class GlobalSiteTag(proto.Message):
 
 
 class GoogleAdsLink(proto.Message):
-    r"""A link between a GA4 property and a Google Ads account.
+    r"""A link between a Google Analytics property and a Google Ads
+    account.
 
     Attributes:
         name (str):
@@ -972,24 +985,49 @@ class DataSharingSettings(proto.Message):
             Format: accounts/{account}/dataSharingSettings
             Example: "accounts/1000/dataSharingSettings".
         sharing_with_google_support_enabled (bool):
-            Allows Google support to access the data in
-            order to help troubleshoot issues.
+            Allows Google technical support
+            representatives access to your Google Analytics
+            data and account when necessary to provide
+            service and find solutions to technical issues.
+
+            This field maps to the "Technical support" field
+            in the Google Analytics Admin UI.
         sharing_with_google_assigned_sales_enabled (bool):
-            Allows Google sales teams that are assigned
-            to the customer to access the data in order to
-            suggest configuration changes to improve
-            results. Sales team restrictions still apply
-            when enabled.
+            Allows Google access to your Google Analytics
+            account data, including account usage and
+            configuration data, product spending, and users
+            associated with your Google Analytics account,
+            so that Google can help you make the most of
+            Google products, providing you with insights,
+            offers, recommendations, and optimization tips
+            across Google Analytics and other Google
+            products for business.
+
+            This field maps to the "Recommendations for your
+            business" field in the Google Analytics Admin
+            UI.
         sharing_with_google_any_sales_enabled (bool):
-            Allows any of Google sales to access the data
-            in order to suggest configuration changes to
-            improve results.
+            Deprecated. This field is no longer used and
+            always returns false.
         sharing_with_google_products_enabled (bool):
             Allows Google to use the data to improve
             other Google products or services.
+            This fields maps to the "Google products &
+            services" field in the Google Analytics Admin
+            UI.
         sharing_with_others_enabled (bool):
-            Allows Google to share the data anonymously
-            in aggregate form with others.
+            Enable features like predictions, modeled
+            data, and benchmarking that can provide you with
+            richer business insights when you contribute
+            aggregated measurement data. The data you share
+            (including information about the property from
+            which it is shared) is aggregated and
+            de-identified before being used to generate
+            business insights.
+
+            This field maps to the "Modeling contributions &
+            business insights" field in the Google Analytics
+            Admin UI.
     """
 
     name: str = proto.Field(
@@ -1020,7 +1058,7 @@ class DataSharingSettings(proto.Message):
 
 class AccountSummary(proto.Message):
     r"""A virtual resource representing an overview of an account and
-    all its child GA4 properties.
+    all its child Google Analytics properties.
 
     Attributes:
         name (str):
@@ -1058,7 +1096,8 @@ class AccountSummary(proto.Message):
 
 
 class PropertySummary(proto.Message):
-    r"""A virtual resource representing metadata for a GA4 property.
+    r"""A virtual resource representing metadata for a Google
+    Analytics property.
 
     Attributes:
         property (str):
@@ -1312,9 +1351,9 @@ class EventMapping(proto.Message):
 
     Attributes:
         event_name (str):
-            Required. Name of the GA4 event. It must
-            always be set. The max allowed display name
-            length is 40 UTF-16 code units.
+            Required. Name of the Google Analytics event.
+            It must always be set. The max allowed display
+            name length is 40 UTF-16 code units.
         min_event_count (int):
             At least one of the following four min/max
             values must be set. The values set will be ANDed
@@ -1586,9 +1625,24 @@ class ChangeHistoryChange(proto.Message):
                 change history.
 
                 This field is a member of `oneof`_ ``resource``.
+            key_event (google.analytics.admin_v1alpha.types.KeyEvent):
+                A snapshot of a KeyEvent resource in change
+                history.
+
+                This field is a member of `oneof`_ ``resource``.
             calculated_metric (google.analytics.admin_v1alpha.types.CalculatedMetric):
                 A snapshot of a CalculatedMetric resource in
                 change history.
+
+                This field is a member of `oneof`_ ``resource``.
+            reporting_data_annotation (google.analytics.admin_v1alpha.types.ReportingDataAnnotation):
+                A snapshot of a ReportingDataAnnotation
+                resource in change history.
+
+                This field is a member of `oneof`_ ``resource``.
+            subproperty_sync_config (google.analytics.admin_v1alpha.types.SubpropertySyncConfig):
+                A snapshot of a SubpropertySyncConfig
+                resource in change history.
 
                 This field is a member of `oneof`_ ``resource``.
         """
@@ -1741,11 +1795,29 @@ class ChangeHistoryChange(proto.Message):
             oneof="resource",
             message=event_create_and_edit.EventCreateRule,
         )
+        key_event: "KeyEvent" = proto.Field(
+            proto.MESSAGE,
+            number=30,
+            oneof="resource",
+            message="KeyEvent",
+        )
         calculated_metric: "CalculatedMetric" = proto.Field(
             proto.MESSAGE,
             number=31,
             oneof="resource",
             message="CalculatedMetric",
+        )
+        reporting_data_annotation: "ReportingDataAnnotation" = proto.Field(
+            proto.MESSAGE,
+            number=32,
+            oneof="resource",
+            message="ReportingDataAnnotation",
+        )
+        subproperty_sync_config: "SubpropertySyncConfig" = proto.Field(
+            proto.MESSAGE,
+            number=33,
+            oneof="resource",
+            message="SubpropertySyncConfig",
         )
 
     resource: str = proto.Field(
@@ -1770,8 +1842,8 @@ class ChangeHistoryChange(proto.Message):
 
 
 class DisplayVideo360AdvertiserLink(proto.Message):
-    r"""A link between a GA4 property and a Display & Video 360
-    advertiser.
+    r"""A link between a Google Analytics property and a Display &
+    Video 360 advertiser.
 
     Attributes:
         name (str):
@@ -1794,18 +1866,18 @@ class DisplayVideo360AdvertiserLink(proto.Message):
             on create/update, it will be defaulted to true.
         campaign_data_sharing_enabled (google.protobuf.wrappers_pb2.BoolValue):
             Immutable. Enables the import of campaign
-            data from Display & Video 360 into the GA4
-            property. After link creation, this can only be
-            updated from the Display & Video 360 product. If
-            this field is not set on create, it will be
-            defaulted to true.
+            data from Display & Video 360 into the Google
+            Analytics property. After link creation, this
+            can only be updated from the Display & Video 360
+            product. If this field is not set on create, it
+            will be defaulted to true.
         cost_data_sharing_enabled (google.protobuf.wrappers_pb2.BoolValue):
             Immutable. Enables the import of cost data from Display &
-            Video 360 into the GA4 property. This can only be enabled if
-            campaign_data_sharing_enabled is enabled. After link
-            creation, this can only be updated from the Display & Video
-            360 product. If this field is not set on create, it will be
-            defaulted to true.
+            Video 360 into the Google Analytics property. This can only
+            be enabled if ``campaign_data_sharing_enabled`` is true.
+            After link creation, this can only be updated from the
+            Display & Video 360 product. If this field is not set on
+            create, it will be defaulted to true.
     """
 
     name: str = proto.Field(
@@ -1838,8 +1910,8 @@ class DisplayVideo360AdvertiserLink(proto.Message):
 
 
 class DisplayVideo360AdvertiserLinkProposal(proto.Message):
-    r"""A proposal for a link between a GA4 property and a Display &
-    Video 360 advertiser.
+    r"""A proposal for a link between a Google Analytics property and
+    a Display & Video 360 advertiser.
 
     A proposal is converted to a DisplayVideo360AdvertiserLink once
     approved. Google Analytics admins approve inbound proposals
@@ -1929,7 +2001,8 @@ class DisplayVideo360AdvertiserLinkProposal(proto.Message):
 
 
 class SearchAds360Link(proto.Message):
-    r"""A link between a GA4 property and a Search Ads 360 entity.
+    r"""A link between a Google Analytics property and a Search Ads
+    360 entity.
 
     Attributes:
         name (str):
@@ -1945,17 +2018,17 @@ class SearchAds360Link(proto.Message):
             that has been linked.
         campaign_data_sharing_enabled (google.protobuf.wrappers_pb2.BoolValue):
             Immutable. Enables the import of campaign
-            data from Search Ads 360 into the GA4 property.
-            After link creation, this can only be updated
-            from the Search Ads 360 product.
-            If this field is not set on create, it will be
-            defaulted to true.
+            data from Search Ads 360 into the Google
+            Analytics property. After link creation, this
+            can only be updated from the Search Ads 360
+            product. If this field is not set on create, it
+            will be defaulted to true.
         cost_data_sharing_enabled (google.protobuf.wrappers_pb2.BoolValue):
             Immutable. Enables the import of cost data from Search Ads
-            360 to the GA4 property. This can only be enabled if
-            campaign_data_sharing_enabled is enabled. After link
-            creation, this can only be updated from the Search Ads 360
-            product. If this field is not set on create, it will be
+            360 to the Google Analytics property. This can only be
+            enabled if campaign_data_sharing_enabled is enabled. After
+            link creation, this can only be updated from the Search Ads
+            360 product. If this field is not set on create, it will be
             defaulted to true.
         advertiser_display_name (str):
             Output only. The display name of the Search
@@ -2687,8 +2760,11 @@ class DataRetentionSettings(proto.Message):
             DataRetentionSetting resource. Format:
             properties/{property}/dataRetentionSettings
         event_data_retention (google.analytics.admin_v1alpha.types.DataRetentionSettings.RetentionDuration):
-            The length of time that event-level data is
-            retained.
+            Required. The length of time that event-level
+            data is retained.
+        user_data_retention (google.analytics.admin_v1alpha.types.DataRetentionSettings.RetentionDuration):
+            Required. The length of time that user-level
+            data is retained.
         reset_user_data_on_new_activity (bool):
             If true, reset the retention period for the
             user identifier with every event from that user.
@@ -2709,12 +2785,15 @@ class DataRetentionSettings(proto.Message):
             TWENTY_SIX_MONTHS (4):
                 The data retention time duration is 26
                 months. Available to 360 properties only.
+                Available for event data only.
             THIRTY_EIGHT_MONTHS (5):
                 The data retention time duration is 38
                 months. Available to 360 properties only.
+                Available for event data only.
             FIFTY_MONTHS (6):
                 The data retention time duration is 50
                 months. Available to 360 properties only.
+                Available for event data only.
         """
         RETENTION_DURATION_UNSPECIFIED = 0
         TWO_MONTHS = 1
@@ -2730,6 +2809,11 @@ class DataRetentionSettings(proto.Message):
     event_data_retention: RetentionDuration = proto.Field(
         proto.ENUM,
         number=2,
+        enum=RetentionDuration,
+    )
+    user_data_retention: RetentionDuration = proto.Field(
+        proto.ENUM,
+        number=4,
         enum=RetentionDuration,
     )
     reset_user_data_on_new_activity: bool = proto.Field(
@@ -2940,7 +3024,8 @@ class AccessBinding(proto.Message):
 
 
 class BigQueryLink(proto.Message):
-    r"""A link between a GA4 Property and BigQuery project.
+    r"""A link between a Google Analytics property and BigQuery
+    project.
 
     Attributes:
         name (str):
@@ -3207,8 +3292,8 @@ class DataRedactionSettings(proto.Message):
 
 
 class AdSenseLink(proto.Message):
-    r"""A link between a GA4 Property and an AdSense for Content ad
-    client.
+    r"""A link between a Google Analytics property and an AdSense for
+    Content ad client.
 
     Attributes:
         name (str):
@@ -3218,8 +3303,8 @@ class AdSenseLink(proto.Message):
             Example: properties/1234/adSenseLinks/6789
         ad_client_code (str):
             Immutable. The AdSense ad client code that
-            the GA4 property is linked to. Example format:
-            "ca-pub-1234567890".
+            the Google Analytics property is linked to.
+            Example format: "ca-pub-1234567890".
     """
 
     name: str = proto.Field(
@@ -3254,6 +3339,211 @@ class RollupPropertySourceLink(proto.Message):
     source_property: str = proto.Field(
         proto.STRING,
         number=2,
+    )
+
+
+class ReportingDataAnnotation(proto.Message):
+    r"""A Reporting Data Annotation is a comment connected to certain
+    dates for reporting data.
+
+    This message has `oneof`_ fields (mutually exclusive fields).
+    For each oneof, at most one member field can be set at the same time.
+    Setting any member of the oneof automatically clears all other
+    members.
+
+    .. _oneof: https://proto-plus-python.readthedocs.io/en/stable/fields.html#oneofs-mutually-exclusive-fields
+
+    Attributes:
+        annotation_date (google.type.date_pb2.Date):
+            If set, the Reporting Data Annotation is for
+            a specific date represented by this field. The
+            date must be a valid date with year, month and
+            day set. The date may be in the past, present,
+            or future.
+
+            This field is a member of `oneof`_ ``target``.
+        annotation_date_range (google.analytics.admin_v1alpha.types.ReportingDataAnnotation.DateRange):
+            If set, the Reporting Data Annotation is for
+            a range of dates represented by this field.
+
+            This field is a member of `oneof`_ ``target``.
+        name (str):
+            Required. Identifier. Resource name of this Reporting Data
+            Annotation. Format:
+            'properties/{property_id}/reportingDataAnnotations/{reporting_data_annotation}'
+            Format: 'properties/123/reportingDataAnnotations/456'
+        title (str):
+            Required. Human-readable title for this
+            Reporting Data Annotation.
+        description (str):
+            Optional. Description for this Reporting Data
+            Annotation.
+        color (google.analytics.admin_v1alpha.types.ReportingDataAnnotation.Color):
+            Required. The color used for display of this
+            Reporting Data Annotation.
+        system_generated (bool):
+            Output only. If true, this annotation was
+            generated by the Google Analytics system.
+            System-generated annotations cannot be updated
+            or deleted.
+    """
+
+    class Color(proto.Enum):
+        r"""Colors that may be used for this Reporting Data Annotation
+
+        Values:
+            COLOR_UNSPECIFIED (0):
+                Color unknown or not specified.
+            PURPLE (1):
+                Purple color.
+            BROWN (2):
+                Brown color.
+            BLUE (3):
+                Blue color.
+            GREEN (4):
+                Green color.
+            RED (5):
+                Red color.
+            CYAN (6):
+                Cyan color.
+            ORANGE (7):
+                Orange color. (Only used for system-generated
+                annotations)
+        """
+        COLOR_UNSPECIFIED = 0
+        PURPLE = 1
+        BROWN = 2
+        BLUE = 3
+        GREEN = 4
+        RED = 5
+        CYAN = 6
+        ORANGE = 7
+
+    class DateRange(proto.Message):
+        r"""Represents a Reporting Data Annotation's date range, both
+        start and end dates are inclusive. Time zones are based on the
+        parent property.
+
+        Attributes:
+            start_date (google.type.date_pb2.Date):
+                Required. The start date for this range. Must
+                be a valid date with year, month, and day set.
+                The date may be in the past, present, or future.
+            end_date (google.type.date_pb2.Date):
+                Required. The end date for this range. Must
+                be a valid date with year, month, and day set.
+                This date must be greater than or equal to the
+                start date.
+        """
+
+        start_date: date_pb2.Date = proto.Field(
+            proto.MESSAGE,
+            number=1,
+            message=date_pb2.Date,
+        )
+        end_date: date_pb2.Date = proto.Field(
+            proto.MESSAGE,
+            number=2,
+            message=date_pb2.Date,
+        )
+
+    annotation_date: date_pb2.Date = proto.Field(
+        proto.MESSAGE,
+        number=4,
+        oneof="target",
+        message=date_pb2.Date,
+    )
+    annotation_date_range: DateRange = proto.Field(
+        proto.MESSAGE,
+        number=5,
+        oneof="target",
+        message=DateRange,
+    )
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    title: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    description: str = proto.Field(
+        proto.STRING,
+        number=3,
+    )
+    color: Color = proto.Field(
+        proto.ENUM,
+        number=6,
+        enum=Color,
+    )
+    system_generated: bool = proto.Field(
+        proto.BOOL,
+        number=7,
+    )
+
+
+class SubpropertySyncConfig(proto.Message):
+    r"""Subproperty synchronization configuration controls how
+    ordinary property configurations are synchronized to
+    subproperties. This resource is provisioned automatically for
+    each subproperty.
+
+    Attributes:
+        name (str):
+            Output only. Identifier. Format:
+            properties/{ordinary_property_id}/subpropertySyncConfigs/{subproperty_id}
+            Example: properties/1234/subpropertySyncConfigs/5678
+        apply_to_property (str):
+            Output only. Immutable. Resource name of the
+            Subproperty that these settings apply to.
+        custom_dimension_and_metric_sync_mode (google.analytics.admin_v1alpha.types.SubpropertySyncConfig.SynchronizationMode):
+            Required. Specifies the Custom Dimension /
+            Metric synchronization mode for the Subproperty.
+
+            If set to ALL, Custom Dimension / Metric
+            synchronization will be immediately enabled.
+            Local configuration of Custom Dimensions /
+            Metrics will not be allowed on the Subproperty
+            so long as the synchronization mode is set to
+            ALL.
+
+            If set to NONE, Custom Dimensions / Metric
+            synchronization is disabled. Custom Dimensions /
+            Metrics must be configured explicitly on the
+            Subproperty.
+    """
+
+    class SynchronizationMode(proto.Enum):
+        r"""Synchronization modes for a Subproperty
+
+        Values:
+            SYNCHRONIZATION_MODE_UNSPECIFIED (0):
+                Synchronization mode unknown or not
+                specified.
+            NONE (1):
+                Entities are not synchronized.
+                Local edits are allowed on the Subproperty.
+            ALL (2):
+                Entities are synchronized from Parent
+                Property. Local mutations are not allowed on the
+                Subproperty (Create / Update / Delete)
+        """
+        SYNCHRONIZATION_MODE_UNSPECIFIED = 0
+        NONE = 1
+        ALL = 2
+
+    name: str = proto.Field(
+        proto.STRING,
+        number=1,
+    )
+    apply_to_property: str = proto.Field(
+        proto.STRING,
+        number=2,
+    )
+    custom_dimension_and_metric_sync_mode: SynchronizationMode = proto.Field(
+        proto.ENUM,
+        number=3,
+        enum=SynchronizationMode,
     )
 
 

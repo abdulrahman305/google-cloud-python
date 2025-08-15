@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.20.4](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.20.3...google-cloud-functions-v1.20.4) (2025-06-11)
+
+
+### Documentation
+
+* Update import statement example in README ([821bdb1](https://github.com/googleapis/google-cloud-python/commit/821bdb1d108c8e77a7a576557aa95d4b9c943e12))
+
+## [1.20.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.20.2...google-cloud-functions-v1.20.3) (2025-04-12)
+
+
+### Documentation
+
+* small fixes ([bc9fdfe](https://github.com/googleapis/google-cloud-python/commit/bc9fdfe26b08ac1573abbcb112fe511f70956826))
+* updated `docker_registry` proto to reflect its deprecated status ([bc9fdfe](https://github.com/googleapis/google-cloud-python/commit/bc9fdfe26b08ac1573abbcb112fe511f70956826))
+* updated docker_registry proto to reflect its deprecated status [#13736](https://github.com/googleapis/google-cloud-python/issues/13736) ([bc9fdfe](https://github.com/googleapis/google-cloud-python/commit/bc9fdfe26b08ac1573abbcb112fe511f70956826))
+
+## [1.20.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.20.1...google-cloud-functions-v1.20.2) (2025-03-15)
+
+
+### Bug Fixes
+
+* [Many APIs] Allow Protobuf 6.x ([e06ee32](https://github.com/googleapis/google-cloud-python/commit/e06ee325de4125cdfcaf040a77dc9ccc82843260))
+* remove setup.cfg configuration for creating universal wheels ([#13659](https://github.com/googleapis/google-cloud-python/issues/13659)) ([59bfd42](https://github.com/googleapis/google-cloud-python/commit/59bfd42cf8a2eaeed696a7504890bce5aae815ce))
+
+## [1.20.1](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.20.0...google-cloud-functions-v1.20.1) (2025-02-18)
+
+
+### Bug Fixes
+
+* **deps:** Require grpc-google-iam-v1&gt;=0.14.0 ([16e14c8](https://github.com/googleapis/google-cloud-python/commit/16e14c8d547864360dcab45d90e9e55169204fc6))
+
+## [1.20.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.19.0...google-cloud-functions-v1.20.0) (2025-02-12)
+
+
+### Features
+
+* Add REST Interceptors which support reading metadata ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+* Add support for reading selective GAPIC generation methods from service YAML ([908d742](https://github.com/googleapis/google-cloud-python/commit/908d7421a4adadd7407df7ec2a25e25688ff180f))
+
 ## [1.19.0](https://github.com/googleapis/google-cloud-python/compare/google-cloud-functions-v1.18.1...google-cloud-functions-v1.19.0) (2024-12-12)
 
 
