@@ -21,6 +21,7 @@ import re
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, List
 
 try:
@@ -282,7 +283,8 @@ def _copy_files_needed_for_post_processing(output: str, input: str, library_id: 
 
 def _clean_up_files_after_post_processing(output: str, library_id: str):
     """
-    Clean up files which should not be included in the generated client
+    Clean up files which should not be included in the generated client.
+    This function is idempotent and will not fail if files are already removed.
 
     Args:
         output(str): Path to the directory in the container where code
@@ -290,23 +292,31 @@ def _clean_up_files_after_post_processing(output: str, library_id: str):
         library_id(str): The library id to be used for post processing.
     """
     path_to_library = f"packages/{library_id}"
-    shutil.rmtree(f"{output}/{path_to_library}/.nox")
-    os.remove(f"{output}/{path_to_library}/CHANGELOG.md")
-    os.remove(f"{output}/{path_to_library}/docs/CHANGELOG.md")
-    os.remove(f"{output}/{path_to_library}/docs/README.rst")
+
+    # Safely remove directories, ignoring errors if they don't exist.
+    shutil.rmtree(f"{output}/{path_to_library}/.nox", ignore_errors=True)
+    shutil.rmtree(f"{output}/owl-bot-staging", ignore_errors=True)
+
+    # Safely remove specific files if they exist using pathlib.
+    Path(f"{output}/{path_to_library}/CHANGELOG.md").unlink(missing_ok=True)
+    Path(f"{output}/{path_to_library}/docs/CHANGELOG.md").unlink(missing_ok=True)
+    Path(f"{output}/{path_to_library}/docs/README.rst").unlink(missing_ok=True)
+
+    # The glob loops are already safe, as they do nothing if no files match.
     for post_processing_file in glob.glob(
         f"{output}/{path_to_library}/scripts/client-post-processing/*.yaml"
     ):  # pragma: NO COVER
         os.remove(post_processing_file)
+
     for gapic_version_file in glob.glob(
         f"{output}/{path_to_library}/**/gapic_version.py", recursive=True
     ):  # pragma: NO COVER
         os.remove(gapic_version_file)
+
     for snippet_metadata_file in glob.glob(
         f"{output}/{path_to_library}/samples/generated_samples/snippet_metadata*.json"
     ):  # pragma: NO COVER
         os.remove(snippet_metadata_file)
-    shutil.rmtree(f"{output}/owl-bot-staging")
 
 
 def handle_generate(
@@ -354,11 +364,6 @@ def handle_generate(
         _run_post_processor(output, library_id)
         _clean_up_files_after_post_processing(output, library_id)
 
-        # Write the `generate-response.json` using `generate-request.json` as the source
-        with open(f"{librarian}/generate-response.json", "w") as f:
-            json.dump(request_data, f, indent=4)
-            f.write("\n")
-
     except Exception as e:
         raise ValueError("Generation failed.") from e
 
@@ -381,10 +386,6 @@ def _run_nox_sessions(sessions: List[str], librarian: str, repo: str):
         for nox_session in sessions:
             _run_individual_session(nox_session, library_id, repo)
 
-        # Write the `build-response.json` using `build-request.json` as the source
-        with open(f"{librarian}/build-response.json", "w") as f:
-            json.dump(request_data, f, indent=4)
-            f.write("\n")
     except Exception as e:
         raise ValueError(f"Failed to run the nox session: {current_session}") from e
 

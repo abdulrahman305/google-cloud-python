@@ -1,4 +1,4 @@
-image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/python-librarian-generator:latest
+image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/python-librarian-generator:latest
 libraries:
 - id: google-cloud-language
   version: 2.17.2
@@ -11,7 +11,7 @@ libraries:
   - packages/google-cloud-language
   preserve_regex:
   - .OwlBot.yaml
-  - CHANGELOG.md
+  - packages/google-cloud-language/CHANGELOG.md
   - docs/CHANGELOG.md
   - docs/README.rst
   - samples/README.txt
@@ -20,4 +20,5 @@ libraries:
   - samples/generated_samples/snippet_metadata_
   - scripts/client-post-processing
   remove_regex:
-  - ^packages/google-cloud-language
+  - packages/google-cloud-language
+  tag_format: '{id}-v{version}'
