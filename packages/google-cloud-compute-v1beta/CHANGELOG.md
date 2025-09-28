@@ -1,5 +1,31 @@
 # Changelog
 
+[PyPI History][1]
+
+[1]: https://pypi.org/project/google-cloud-compute-v1beta/#history
+
+## [0.1.8](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1beta-v0.1.7...google-cloud-compute-v1beta-v0.1.8) (2025-09-22)
+
+
+### Features
+
+* [google-cloud-compute-v1beta] Update Compute Engine v1beta API to revision 20250902 ([#14411](https://github.com/googleapis/google-cloud-python/issues/14411)) ([2d33a6b](https://github.com/googleapis/google-cloud-python/commit/2d33a6bf2bfcc314128beb0bdc7ce89a8298512c))
+
+## [0.1.7](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1beta-v0.1.6...google-cloud-compute-v1beta-v0.1.7) (2025-09-04)
+
+
+### Features
+
+* [google-cloud-compute-v1beta] Update Compute Engine v1beta API to revision 20250810 ([#1090](https://github.com/googleapis/google-cloud-python/issues/1090)) ([#14325](https://github.com/googleapis/google-cloud-python/issues/14325)) ([bce9e50](https://github.com/googleapis/google-cloud-python/commit/bce9e50d307212c0d7b1a5b746d03ed9bd430789))
+
+## [0.1.6](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1beta-v0.1.5...google-cloud-compute-v1beta-v0.1.6) (2025-08-29)
+
+
+### Features
+
+* [google-cloud-compute-v1beta] Update Compute Engine v1beta API to ([14b562c](https://github.com/googleapis/google-cloud-python/commit/14b562c73e3509124b519920e10b0c0705baec81))
+* [google-cloud-compute-v1beta] Update Compute Engine v1beta API to revision 20250807 ([14b562c](https://github.com/googleapis/google-cloud-python/commit/14b562c73e3509124b519920e10b0c0705baec81))
+
 ## [0.1.5](https://github.com/googleapis/google-cloud-python/compare/google-cloud-compute-v1beta-v0.1.4...google-cloud-compute-v1beta-v0.1.5) (2025-08-06)
 
 

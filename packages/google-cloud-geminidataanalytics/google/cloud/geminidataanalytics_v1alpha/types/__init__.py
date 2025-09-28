@@ -13,22 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .context import AnalysisOptions, ChartOptions, Context, ConversationOptions
-from .context_retrieval_service import (
-    DirectLookup,
-    RetrieveBigQueryRecentRelevantTablesRequest,
-    RetrieveBigQueryRecentRelevantTablesResponse,
-    RetrieveBigQueryTableContextRequest,
-    RetrieveBigQueryTableContextResponse,
-    RetrieveBigQueryTableContextsFromRecentTablesRequest,
-    RetrieveBigQueryTableContextsFromRecentTablesResponse,
-    RetrieveBigQueryTableContextsRequest,
-    RetrieveBigQueryTableContextsResponse,
-    RetrieveBigQueryTableSuggestedDescriptionsRequest,
-    RetrieveBigQueryTableSuggestedDescriptionsResponse,
-    RetrieveBigQueryTableSuggestedExamplesRequest,
-    RetrieveBigQueryTableSuggestedExamplesResponse,
-    TableCandidate,
+from .context import (
+    AnalysisOptions,
+    ChartOptions,
+    Context,
+    ConversationOptions,
+    ExampleQuery,
 )
 from .conversation import (
     Conversation,
@@ -36,6 +26,7 @@ from .conversation import (
     GetConversationRequest,
     ListConversationsRequest,
     ListConversationsResponse,
+    UpdateConversationRequest,
 )
 from .credentials import Credentials, OAuthCredentials
 from .data_agent import DataAgent
@@ -67,6 +58,7 @@ from .data_chat_service import (
     DataQuery,
     DataResult,
     ErrorMessage,
+    ExampleQueries,
     ListMessagesRequest,
     ListMessagesResponse,
     LookerQuery,
@@ -82,6 +74,8 @@ from .data_chat_service import (
 from .datasource import (
     BigQueryTableReference,
     BigQueryTableReferences,
+    DataFilter,
+    DataFilterType,
     Datasource,
     DatasourceReferences,
     Field,
@@ -98,25 +92,13 @@ __all__ = (
     "ChartOptions",
     "Context",
     "ConversationOptions",
-    "DirectLookup",
-    "RetrieveBigQueryRecentRelevantTablesRequest",
-    "RetrieveBigQueryRecentRelevantTablesResponse",
-    "RetrieveBigQueryTableContextRequest",
-    "RetrieveBigQueryTableContextResponse",
-    "RetrieveBigQueryTableContextsFromRecentTablesRequest",
-    "RetrieveBigQueryTableContextsFromRecentTablesResponse",
-    "RetrieveBigQueryTableContextsRequest",
-    "RetrieveBigQueryTableContextsResponse",
-    "RetrieveBigQueryTableSuggestedDescriptionsRequest",
-    "RetrieveBigQueryTableSuggestedDescriptionsResponse",
-    "RetrieveBigQueryTableSuggestedExamplesRequest",
-    "RetrieveBigQueryTableSuggestedExamplesResponse",
-    "TableCandidate",
+    "ExampleQuery",
     "Conversation",
     "CreateConversationRequest",
     "GetConversationRequest",
     "ListConversationsRequest",
     "ListConversationsResponse",
+    "UpdateConversationRequest",
     "Credentials",
     "OAuthCredentials",
     "DataAgent",
@@ -145,6 +127,7 @@ __all__ = (
     "DataQuery",
     "DataResult",
     "ErrorMessage",
+    "ExampleQueries",
     "ListMessagesRequest",
     "ListMessagesResponse",
     "LookerQuery",
@@ -158,6 +141,7 @@ __all__ = (
     "UserMessage",
     "BigQueryTableReference",
     "BigQueryTableReferences",
+    "DataFilter",
     "Datasource",
     "DatasourceReferences",
     "Field",
@@ -167,4 +151,5 @@ __all__ = (
     "Schema",
     "StudioDatasourceReference",
     "StudioDatasourceReferences",
+    "DataFilterType",
 )

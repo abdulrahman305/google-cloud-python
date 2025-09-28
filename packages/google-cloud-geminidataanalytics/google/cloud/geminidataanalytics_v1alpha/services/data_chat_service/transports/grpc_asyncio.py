@@ -123,7 +123,7 @@ class DataChatServiceGrpcAsyncIOTransport(DataChatServiceTransport):
     """gRPC AsyncIO backend transport for DataChatService.
 
     Service to ask a natural language question on top of BigQuery
-    and LookerStudio datasources to get back streamed responses of
+    and Looker Studio datasources to get back streamed responses of
     various kinds to help provide a rich conversational answer.
 
     This class defines the same methods as the primary client, so the
@@ -343,7 +343,9 @@ class DataChatServiceGrpcAsyncIOTransport(DataChatServiceTransport):
     ]:
         r"""Return a callable for the chat method over gRPC.
 
-        Answers a data question by generating a stream of [Message]s.
+        Answers a data question by generating a stream of
+        [Message][google.cloud.geminidataanalytics.v1alpha.Message]
+        objects.
 
         Returns:
             Callable[[~.ChatRequest],
@@ -395,6 +397,35 @@ class DataChatServiceGrpcAsyncIOTransport(DataChatServiceTransport):
         return self._stubs["create_conversation"]
 
     @property
+    def update_conversation(
+        self,
+    ) -> Callable[
+        [gcg_conversation.UpdateConversationRequest],
+        Awaitable[gcg_conversation.Conversation],
+    ]:
+        r"""Return a callable for the update conversation method over gRPC.
+
+        Updates a conversation.
+
+        Returns:
+            Callable[[~.UpdateConversationRequest],
+                    Awaitable[~.Conversation]]:
+                A function that, when called, will call the underlying RPC
+                on the server.
+        """
+        # Generate a "stub function" on-the-fly which will actually make
+        # the request.
+        # gRPC handles serialization and deserialization, so we just need
+        # to pass in the functions for each.
+        if "update_conversation" not in self._stubs:
+            self._stubs["update_conversation"] = self._logged_channel.unary_unary(
+                "/google.cloud.geminidataanalytics.v1alpha.DataChatService/UpdateConversation",
+                request_serializer=gcg_conversation.UpdateConversationRequest.serialize,
+                response_deserializer=gcg_conversation.Conversation.deserialize,
+            )
+        return self._stubs["update_conversation"]
+
+    @property
     def get_conversation(
         self,
     ) -> Callable[
@@ -402,7 +433,7 @@ class DataChatServiceGrpcAsyncIOTransport(DataChatServiceTransport):
     ]:
         r"""Return a callable for the get conversation method over gRPC.
 
-        Gets details of a single conversation using
+        Gets details of a single conversation by using
         conversation id and parent.
 
         Returns:
@@ -491,6 +522,11 @@ class DataChatServiceGrpcAsyncIOTransport(DataChatServiceTransport):
             ),
             self.create_conversation: self._wrap_method(
                 self.create_conversation,
+                default_timeout=None,
+                client_info=client_info,
+            ),
+            self.update_conversation: self._wrap_method(
+                self.update_conversation,
                 default_timeout=None,
                 client_info=client_info,
             ),

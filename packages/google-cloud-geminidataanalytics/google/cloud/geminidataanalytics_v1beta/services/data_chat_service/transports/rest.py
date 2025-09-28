@@ -527,7 +527,7 @@ class DataChatServiceRestTransport(_BaseDataChatServiceRestTransport):
     """REST backend synchronous transport for DataChatService.
 
     Service to ask a natural language question on top of BigQuery
-    and LookerStudio datasources to get back streamed responses of
+    and Looker Studio datasources to get back streamed responses of
     various kinds to help provide a rich conversational answer.
 
     This class defines the same methods as the primary client, so the
@@ -655,8 +655,8 @@ class DataChatServiceRestTransport(_BaseDataChatServiceRestTransport):
 
             Returns:
                 ~.data_chat_service.Message:
-                    A message from an internaction
-                between the user and the system.
+                    A message from an interaction between
+                the user and the system.
 
             """
 
@@ -731,6 +731,22 @@ class DataChatServiceRestTransport(_BaseDataChatServiceRestTransport):
             resp = self._interceptor.post_chat(resp)
             response_metadata = [(k, str(v)) for k, v in response.headers.items()]
             resp, _ = self._interceptor.post_chat_with_metadata(resp, response_metadata)
+            if CLIENT_LOGGING_SUPPORTED and _LOGGER.isEnabledFor(
+                logging.DEBUG
+            ):  # pragma: NO COVER
+                http_response = {
+                    "headers": dict(response.headers),
+                    "status": response.status_code,
+                }
+                _LOGGER.debug(
+                    "Received response for google.cloud.geminidataanalytics_v1beta.DataChatServiceClient.chat",
+                    extra={
+                        "serviceName": "google.cloud.geminidataanalytics.v1beta.DataChatService",
+                        "rpcName": "Chat",
+                        "metadata": http_response["headers"],
+                        "httpResponse": http_response,
+                    },
+                )
             return resp
 
     class _CreateConversation(

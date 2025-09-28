@@ -117,23 +117,23 @@ class Message(proto.Message):
             capture all formatting visible in the UI, but includes the
             following:
 
-            -  `Markup
-               syntax <https://developers.google.com/workspace/chat/format-messages>`__
-               for bold, italic, strikethrough, monospace, monospace
-               block, and bulleted list.
+            - `Markup
+              syntax <https://developers.google.com/workspace/chat/format-messages>`__
+              for bold, italic, strikethrough, monospace, monospace
+              block, and bulleted list.
 
-            -  `User
-               mentions <https://developers.google.com/workspace/chat/format-messages#messages-@mention>`__
-               using the format ``<users/{user}>``.
+            - `User
+              mentions <https://developers.google.com/workspace/chat/format-messages#messages-@mention>`__
+              using the format ``<users/{user}>``.
 
-            -  Custom hyperlinks using the format
-               ``<{url}|{rendered_text}>`` where the first string is the
-               URL and the second is the rendered text—for example,
-               ``<http://example.com|custom text>``.
+            - Custom hyperlinks using the format
+              ``<{url}|{rendered_text}>`` where the first string is the
+              URL and the second is the rendered text—for example,
+              ``<http://example.com|custom text>``.
 
-            -  Custom emoji using the format ``:{emoji_name}:``—for
-               example, ``:smile:``. This doesn't apply to Unicode
-               emoji, such as ``U+1F600`` for a grinning face emoji.
+            - Custom emoji using the format ``:{emoji_name}:``—for
+              example, ``:smile:``. This doesn't apply to Unicode emoji,
+              such as ``U+1F600`` for a grinning face emoji.
 
             For more information, see `View text formatting sent in a
             message <https://developers.google.com/workspace/chat/format-messages#view_text_formatting_sent_in_a_message>`__
@@ -222,9 +222,9 @@ class Message(proto.Message):
             authentication <https://developers.google.com/workspace/chat/authenticate-authorize-chat-app>`__
             and omit the following:
 
-            -  `Attachments <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages.attachments>`__
-            -  `Accessory
-               widgets <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages#Message.AccessoryWidget>`__
+            - `Attachments <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages.attachments>`__
+            - `Accessory
+              widgets <https://developers.google.com/workspace/chat/api/reference/rest/v1/spaces.messages#Message.AccessoryWidget>`__
 
             For details, see `Send a message
             privately <https://developers.google.com/workspace/chat/create-messages#private>`__.
@@ -232,10 +232,19 @@ class Message(proto.Message):
             Output only. Information about a deleted message. A message
             is deleted when ``delete_time`` is set.
         quoted_message_metadata (google.apps.chat_v1.types.QuotedMessageMetadata):
-            Output only. Information about a message
-            that's quoted by a Google Chat user in a space.
-            Google Chat users can quote a message to reply
-            to it.
+            Optional. Information about a message that another message
+            quotes.
+
+            When you create a message, you can quote messages within the
+            same thread, or quote a root message to create a new root
+            message. However, you can't quote a message reply from a
+            different thread.
+
+            When you update a message, you can't add or replace the
+            ``quotedMessageMetadata`` field, but you can remove it.
+
+            For example usage, see `Quote another
+            message <https://developers.google.com/workspace/chat/create-messages#quote-a-message>`__.
         attached_gifs (MutableSequence[google.apps.chat_v1.types.AttachedGif]):
             Output only. GIF images that are attached to
             the message.
@@ -397,17 +406,33 @@ class AttachedGif(proto.Message):
 
 
 class QuotedMessageMetadata(proto.Message):
-    r"""Information about a quoted message.
+    r"""Information about a message that another message quotes.
+
+    When you create a message, you can quote messages within the same
+    thread, or quote a root message to create a new root message.
+    However, you can't quote a message reply from a different thread.
+
+    When you update a message, you can't add or replace the
+    ``quotedMessageMetadata`` field, but you can remove it.
+
+    For example usage, see `Quote another
+    message <https://developers.google.com/workspace/chat/create-messages#quote-a-message>`__.
 
     Attributes:
         name (str):
-            Output only. Resource name of the quoted message.
+            Required. Resource name of the message that is quoted.
 
             Format: ``spaces/{space}/messages/{message}``
         last_update_time (google.protobuf.timestamp_pb2.Timestamp):
-            Output only. The timestamp when the quoted
-            message was created or when the quoted message
-            was last updated.
+            Required. The timestamp when the quoted message was created
+            or when the quoted message was last updated.
+
+            If the message was edited, use this field,
+            ``last_update_time``. If the message was never edited, use
+            ``create_time``.
+
+            If ``last_update_time`` doesn't match the latest version of
+            the quoted message, the request fails.
     """
 
     name: str = proto.Field(
@@ -667,18 +692,21 @@ class UpdateMessageRequest(proto.Message):
 
             Currently supported field paths:
 
-            -  ``text``
+            - ``text``
 
-            -  ``attachment``
+            - ``attachment``
 
-            -  ``cards`` (Requires `app
-               authentication </chat/api/guides/auth/service-accounts>`__.)
+            - ``cards`` (Requires `app
+              authentication </chat/api/guides/auth/service-accounts>`__.)
 
-            -  ``cards_v2`` (Requires `app
-               authentication </chat/api/guides/auth/service-accounts>`__.)
+            - ``cards_v2`` (Requires `app
+              authentication </chat/api/guides/auth/service-accounts>`__.)
 
-            -  ``accessory_widgets`` (Requires `app
-               authentication </chat/api/guides/auth/service-accounts>`__.)
+            - ``accessory_widgets`` (Requires `app
+              authentication </chat/api/guides/auth/service-accounts>`__.)
+
+            - ``quoted_message_metadata`` (Only allows removal of the
+              quoted message.)
         allow_missing (bool):
             Optional. If ``true`` and the message isn't found, a new
             message is created and ``updateMask`` is ignored. The
@@ -746,13 +774,13 @@ class CreateMessageRequest(proto.Message):
             The value for this field must meet the following
             requirements:
 
-            -  Begins with ``client-``. For example,
-               ``client-custom-name`` is a valid custom ID, but
-               ``custom-name`` is not.
-            -  Contains up to 63 characters and only lowercase letters,
-               numbers, and hyphens.
-            -  Is unique within a space. A Chat app can't use the same
-               custom ID for different messages.
+            - Begins with ``client-``. For example,
+              ``client-custom-name`` is a valid custom ID, but
+              ``custom-name`` is not.
+            - Contains up to 63 characters and only lowercase letters,
+              numbers, and hyphens.
+            - Is unique within a space. A Chat app can't use the same
+              custom ID for different messages.
 
             For details, see `Name a
             message <https://developers.google.com/workspace/chat/create-messages#name_a_created_message>`__.
@@ -889,9 +917,9 @@ class ListMessagesRequest(proto.Message):
             value to order by an ordering operation. Valid ordering
             operation values are as follows:
 
-            -  ``ASC`` for ascending.
+            - ``ASC`` for ascending.
 
-            -  ``DESC`` for descending.
+            - ``DESC`` for descending.
 
             The default ordering is ``create_time ASC``.
         show_deleted (bool):

@@ -187,12 +187,12 @@ Libraries
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `BigQuery Storage <https://github.com/googleapis/python-bigquery-storage>`_
+   * - `BigQuery Storage <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-storage>`_
      - stable
      - |PyPI-google-cloud-bigquery-storage|
      - `API Issues <https://issuetracker.google.com/savedsearches/559654>`_
      - `File an API Issue <https://issuetracker.google.com/issues/new?component=187149>`_
-     - `Client Library Issues <https://github.com/googleapis/python-bigquery-storage/issues>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `BigQuery connector for Jupyter and IPython <https://github.com/googleapis/python-bigquery-magics>`_
      - stable
      - |PyPI-bigquery-magics|
@@ -475,6 +475,72 @@ Libraries
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-accounts>`_
+     - stable
+     - |PyPI-google-shopping-merchant-accounts|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-conversions>`_
+     - stable
+     - |PyPI-google-shopping-merchant-conversions|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-datasources>`_
+     - stable
+     - |PyPI-google-shopping-merchant-datasources|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-issueresolution>`_
+     - stable
+     - |PyPI-google-shopping-merchant-issueresolution|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-lfp>`_
+     - stable
+     - |PyPI-google-shopping-merchant-lfp|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-notifications>`_
+     - stable
+     - |PyPI-google-shopping-merchant-notifications|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-ordertracking>`_
+     - stable
+     - |PyPI-google-shopping-merchant-ordertracking|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-products>`_
+     - stable
+     - |PyPI-google-shopping-merchant-products|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-promotions>`_
+     - stable
+     - |PyPI-google-shopping-merchant-promotions|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant Inventories API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-inventories>`_
+     - stable
+     - |PyPI-google-shopping-merchant-inventories|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Merchant Reports API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-reports>`_
+     - stable
+     - |PyPI-google-shopping-merchant-reports|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Metrics Scopes <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-monitoring-metrics-scopes>`_
      - stable
      - |PyPI-google-cloud-monitoring-metrics-scopes|
@@ -634,6 +700,18 @@ Libraries
    * - `Shell <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-shell>`_
      - stable
      - |PyPI-google-cloud-shell|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Shopping Merchant Quota <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-quota>`_
+     - stable
+     - |PyPI-google-shopping-merchant-quota|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Shopping Type Protos <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-type>`_
+     - stable
+     - |PyPI-google-shopping-type|
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
@@ -931,6 +1009,12 @@ Libraries
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `BigLake API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-biglake>`_
+     - preview
+     - |PyPI-google-cloud-biglake|
+     -
+     -
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `BigLake API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-biglake>`_
      - preview
      - |PyPI-google-cloud-bigquery-biglake|
@@ -1171,6 +1255,12 @@ Libraries
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Location Finder API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-locationfinder>`_
+     - preview
+     - |PyPI-google-cloud-locationfinder|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:1569265>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=1569265&template=1988535>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Maintenance API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-maintenance-api>`_
      - preview
      - |PyPI-google-cloud-maintenance-api|
@@ -1237,77 +1327,11 @@ Libraries
      - `API Issues <https://issuetracker.google.com/issues?q=componentid:1288776>`_
      - `File an API Issue <https://issuetracker.google.com/issues/new?component=1288776&template=1161103>`_
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-accounts>`_
-     - preview
-     - |PyPI-google-shopping-merchant-accounts|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-conversions>`_
-     - preview
-     - |PyPI-google-shopping-merchant-conversions|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-datasources>`_
-     - preview
-     - |PyPI-google-shopping-merchant-datasources|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-issueresolution>`_
-     - preview
-     - |PyPI-google-shopping-merchant-issueresolution|
-     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
-     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-lfp>`_
-     - preview
-     - |PyPI-google-shopping-merchant-lfp|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-notifications>`_
-     - preview
-     - |PyPI-google-shopping-merchant-notifications|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-ordertracking>`_
-     - preview
-     - |PyPI-google-shopping-merchant-ordertracking|
-     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
-     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-products>`_
-     - preview
-     - |PyPI-google-shopping-merchant-products|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-promotions>`_
-     - preview
-     - |PyPI-google-shopping-merchant-promotions|
-     -
-     -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant Inventories API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-inventories>`_
-     - preview
-     - |PyPI-google-shopping-merchant-inventories|
-     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
-     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Merchant ProductStudio API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-productstudio>`_
      - preview
      - |PyPI-google-shopping-merchant-productstudio|
      -
      -
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Merchant Reports API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-reports>`_
-     - preview
-     - |PyPI-google-shopping-merchant-reports|
-     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
-     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Merchant Reviews API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-reviews>`_
      - preview
@@ -1471,23 +1495,17 @@ Libraries
      -
      -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
+   * - `Security Compliance API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-cloudsecuritycompliance>`_
+     - preview
+     - |PyPI-google-cloud-cloudsecuritycompliance|
+     - `API Issues <https://issuetracker.google.com/issues?q=componentid:1761967>`_
+     - `File an API Issue <https://issuetracker.google.com/issues/new?component=1761967&template=0>`_
+     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Service Health API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-servicehealth>`_
      - preview
      - |PyPI-google-cloud-servicehealth|
      - `API Issues <https://issuetracker.google.com/issues?q=componentid:1466723>`_
      - `File an API Issue <https://issuetracker.google.com/issues/new?component=1466723&template=1161103>`_
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Shopping Merchant Quota <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-merchant-quota>`_
-     - preview
-     - |PyPI-google-shopping-merchant-quota|
-     - `API Issues <https://issuetracker.google.com/issues?q=componentid:171084>`_
-     - `File an API Issue <https://issuetracker.google.com/issues/new?component=171084&template=555201>`_
-     - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
-   * - `Shopping Type Protos <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-shopping-type>`_
-     - preview
-     - |PyPI-google-shopping-type|
-     -
-     -
      - `Client Library Issues <https://github.com/googleapis/google-cloud-python/issues>`_
    * - `Solar API <https://github.com/googleapis/google-cloud-python/tree/main/packages/google-maps-solar>`_
      - preview
@@ -1690,6 +1708,28 @@ Libraries
      :target: https://pypi.org/project/google-cloud-managed-identities
 .. |PyPI-google-cloud-memcache| image:: https://img.shields.io/pypi/v/google-cloud-memcache.svg
      :target: https://pypi.org/project/google-cloud-memcache
+.. |PyPI-google-shopping-merchant-accounts| image:: https://img.shields.io/pypi/v/google-shopping-merchant-accounts.svg
+     :target: https://pypi.org/project/google-shopping-merchant-accounts
+.. |PyPI-google-shopping-merchant-conversions| image:: https://img.shields.io/pypi/v/google-shopping-merchant-conversions.svg
+     :target: https://pypi.org/project/google-shopping-merchant-conversions
+.. |PyPI-google-shopping-merchant-datasources| image:: https://img.shields.io/pypi/v/google-shopping-merchant-datasources.svg
+     :target: https://pypi.org/project/google-shopping-merchant-datasources
+.. |PyPI-google-shopping-merchant-issueresolution| image:: https://img.shields.io/pypi/v/google-shopping-merchant-issueresolution.svg
+     :target: https://pypi.org/project/google-shopping-merchant-issueresolution
+.. |PyPI-google-shopping-merchant-lfp| image:: https://img.shields.io/pypi/v/google-shopping-merchant-lfp.svg
+     :target: https://pypi.org/project/google-shopping-merchant-lfp
+.. |PyPI-google-shopping-merchant-notifications| image:: https://img.shields.io/pypi/v/google-shopping-merchant-notifications.svg
+     :target: https://pypi.org/project/google-shopping-merchant-notifications
+.. |PyPI-google-shopping-merchant-ordertracking| image:: https://img.shields.io/pypi/v/google-shopping-merchant-ordertracking.svg
+     :target: https://pypi.org/project/google-shopping-merchant-ordertracking
+.. |PyPI-google-shopping-merchant-products| image:: https://img.shields.io/pypi/v/google-shopping-merchant-products.svg
+     :target: https://pypi.org/project/google-shopping-merchant-products
+.. |PyPI-google-shopping-merchant-promotions| image:: https://img.shields.io/pypi/v/google-shopping-merchant-promotions.svg
+     :target: https://pypi.org/project/google-shopping-merchant-promotions
+.. |PyPI-google-shopping-merchant-inventories| image:: https://img.shields.io/pypi/v/google-shopping-merchant-inventories.svg
+     :target: https://pypi.org/project/google-shopping-merchant-inventories
+.. |PyPI-google-shopping-merchant-reports| image:: https://img.shields.io/pypi/v/google-shopping-merchant-reports.svg
+     :target: https://pypi.org/project/google-shopping-merchant-reports
 .. |PyPI-google-cloud-monitoring-metrics-scopes| image:: https://img.shields.io/pypi/v/google-cloud-monitoring-metrics-scopes.svg
      :target: https://pypi.org/project/google-cloud-monitoring-metrics-scopes
 .. |PyPI-google-cloud-monitoring-dashboards| image:: https://img.shields.io/pypi/v/google-cloud-monitoring-dashboards.svg
@@ -1744,6 +1784,10 @@ Libraries
      :target: https://pypi.org/project/google-cloud-service-usage
 .. |PyPI-google-cloud-shell| image:: https://img.shields.io/pypi/v/google-cloud-shell.svg
      :target: https://pypi.org/project/google-cloud-shell
+.. |PyPI-google-shopping-merchant-quota| image:: https://img.shields.io/pypi/v/google-shopping-merchant-quota.svg
+     :target: https://pypi.org/project/google-shopping-merchant-quota
+.. |PyPI-google-shopping-type| image:: https://img.shields.io/pypi/v/google-shopping-type.svg
+     :target: https://pypi.org/project/google-shopping-type
 .. |PyPI-google-cloud-source-context| image:: https://img.shields.io/pypi/v/google-cloud-source-context.svg
      :target: https://pypi.org/project/google-cloud-source-context
 .. |PyPI-google-cloud-spanner| image:: https://img.shields.io/pypi/v/google-cloud-spanner.svg
@@ -1842,6 +1886,8 @@ Libraries
      :target: https://pypi.org/project/google-cloud-beyondcorp-clientconnectorservices
 .. |PyPI-google-cloud-beyondcorp-clientgateways| image:: https://img.shields.io/pypi/v/google-cloud-beyondcorp-clientgateways.svg
      :target: https://pypi.org/project/google-cloud-beyondcorp-clientgateways
+.. |PyPI-google-cloud-biglake| image:: https://img.shields.io/pypi/v/google-cloud-biglake.svg
+     :target: https://pypi.org/project/google-cloud-biglake
 .. |PyPI-google-cloud-bigquery-biglake| image:: https://img.shields.io/pypi/v/google-cloud-bigquery-biglake.svg
      :target: https://pypi.org/project/google-cloud-bigquery-biglake
 .. |PyPI-google-cloud-bigquery-analyticshub| image:: https://img.shields.io/pypi/v/google-cloud-bigquery-analyticshub.svg
@@ -1922,6 +1968,8 @@ Libraries
      :target: https://pypi.org/project/google-cloud-life-sciences
 .. |PyPI-google-maps-fleetengine| image:: https://img.shields.io/pypi/v/google-maps-fleetengine.svg
      :target: https://pypi.org/project/google-maps-fleetengine
+.. |PyPI-google-cloud-locationfinder| image:: https://img.shields.io/pypi/v/google-cloud-locationfinder.svg
+     :target: https://pypi.org/project/google-cloud-locationfinder
 .. |PyPI-google-cloud-maintenance-api| image:: https://img.shields.io/pypi/v/google-cloud-maintenance-api.svg
      :target: https://pypi.org/project/google-cloud-maintenance-api
 .. |PyPI-google-cloud-lustre| image:: https://img.shields.io/pypi/v/google-cloud-lustre.svg
@@ -1944,30 +1992,8 @@ Libraries
      :target: https://pypi.org/project/google-cloud-memorystore
 .. |PyPI-google-cloud-redis-cluster| image:: https://img.shields.io/pypi/v/google-cloud-redis-cluster.svg
      :target: https://pypi.org/project/google-cloud-redis-cluster
-.. |PyPI-google-shopping-merchant-accounts| image:: https://img.shields.io/pypi/v/google-shopping-merchant-accounts.svg
-     :target: https://pypi.org/project/google-shopping-merchant-accounts
-.. |PyPI-google-shopping-merchant-conversions| image:: https://img.shields.io/pypi/v/google-shopping-merchant-conversions.svg
-     :target: https://pypi.org/project/google-shopping-merchant-conversions
-.. |PyPI-google-shopping-merchant-datasources| image:: https://img.shields.io/pypi/v/google-shopping-merchant-datasources.svg
-     :target: https://pypi.org/project/google-shopping-merchant-datasources
-.. |PyPI-google-shopping-merchant-issueresolution| image:: https://img.shields.io/pypi/v/google-shopping-merchant-issueresolution.svg
-     :target: https://pypi.org/project/google-shopping-merchant-issueresolution
-.. |PyPI-google-shopping-merchant-lfp| image:: https://img.shields.io/pypi/v/google-shopping-merchant-lfp.svg
-     :target: https://pypi.org/project/google-shopping-merchant-lfp
-.. |PyPI-google-shopping-merchant-notifications| image:: https://img.shields.io/pypi/v/google-shopping-merchant-notifications.svg
-     :target: https://pypi.org/project/google-shopping-merchant-notifications
-.. |PyPI-google-shopping-merchant-ordertracking| image:: https://img.shields.io/pypi/v/google-shopping-merchant-ordertracking.svg
-     :target: https://pypi.org/project/google-shopping-merchant-ordertracking
-.. |PyPI-google-shopping-merchant-products| image:: https://img.shields.io/pypi/v/google-shopping-merchant-products.svg
-     :target: https://pypi.org/project/google-shopping-merchant-products
-.. |PyPI-google-shopping-merchant-promotions| image:: https://img.shields.io/pypi/v/google-shopping-merchant-promotions.svg
-     :target: https://pypi.org/project/google-shopping-merchant-promotions
-.. |PyPI-google-shopping-merchant-inventories| image:: https://img.shields.io/pypi/v/google-shopping-merchant-inventories.svg
-     :target: https://pypi.org/project/google-shopping-merchant-inventories
 .. |PyPI-google-shopping-merchant-productstudio| image:: https://img.shields.io/pypi/v/google-shopping-merchant-productstudio.svg
      :target: https://pypi.org/project/google-shopping-merchant-productstudio
-.. |PyPI-google-shopping-merchant-reports| image:: https://img.shields.io/pypi/v/google-shopping-merchant-reports.svg
-     :target: https://pypi.org/project/google-shopping-merchant-reports
 .. |PyPI-google-shopping-merchant-reviews| image:: https://img.shields.io/pypi/v/google-shopping-merchant-reviews.svg
      :target: https://pypi.org/project/google-shopping-merchant-reviews
 .. |PyPI-google-cloud-migrationcenter| image:: https://img.shields.io/pypi/v/google-cloud-migrationcenter.svg
@@ -2022,12 +2048,10 @@ Libraries
      :target: https://pypi.org/project/google-cloud-securesourcemanager
 .. |PyPI-google-cloud-securitycentermanagement| image:: https://img.shields.io/pypi/v/google-cloud-securitycentermanagement.svg
      :target: https://pypi.org/project/google-cloud-securitycentermanagement
+.. |PyPI-google-cloud-cloudsecuritycompliance| image:: https://img.shields.io/pypi/v/google-cloud-cloudsecuritycompliance.svg
+     :target: https://pypi.org/project/google-cloud-cloudsecuritycompliance
 .. |PyPI-google-cloud-servicehealth| image:: https://img.shields.io/pypi/v/google-cloud-servicehealth.svg
      :target: https://pypi.org/project/google-cloud-servicehealth
-.. |PyPI-google-shopping-merchant-quota| image:: https://img.shields.io/pypi/v/google-shopping-merchant-quota.svg
-     :target: https://pypi.org/project/google-shopping-merchant-quota
-.. |PyPI-google-shopping-type| image:: https://img.shields.io/pypi/v/google-shopping-type.svg
-     :target: https://pypi.org/project/google-shopping-type
 .. |PyPI-google-maps-solar| image:: https://img.shields.io/pypi/v/google-maps-solar.svg
      :target: https://pypi.org/project/google-maps-solar
 .. |PyPI-google-cloud-storagebatchoperations| image:: https://img.shields.io/pypi/v/google-cloud-storagebatchoperations.svg

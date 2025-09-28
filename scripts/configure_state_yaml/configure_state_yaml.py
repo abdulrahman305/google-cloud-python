@@ -44,11 +44,18 @@ def configure_state_yaml() -> None:
     with open(PACKAGES_TO_ONBOARD_YAML, "r") as packages_to_onboard_yaml_file:
         packages_to_onboard = yaml.safe_load(packages_to_onboard_yaml_file)
 
-    state_dict[
-        "image"
-    ] = "us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-dev/python-librarian-generator:latest"
-    state_dict["libraries"] = []
+    state_dict = {}
+    with open(LIBRARIAN_YAML, "r") as state_yaml_file:
+        state_dict = yaml.safe_load(state_yaml_file)
+
+    existing_library_ids = {library["id"] for library in state_dict.get("libraries", [])}
+
     for package_name in packages_to_onboard["packages_to_onboard"]:
+        # Check for duplication
+        if package_name in existing_library_ids:
+            print(f"Skipping package '{package_name}' as it already exists in state.yaml.")
+            continue
+
         package_path = Path(PACKAGES_DIR / package_name).resolve()
         api_paths = []
         for individual_metadata_file in package_path.rglob(f"**/{GAPIC_METADATA_JSON}"):
@@ -61,29 +68,31 @@ def configure_state_yaml() -> None:
                         }
                     ]
                 )
-        state_dict["libraries"].append(
-            {
-                "id": package_name,
-                "version": release_please_manifest[f"packages/{package_name}"],
-                "last_generated_commit": "97a83d76a09a7f6dcab43675c87bdfeb5bcf1cb5",
-                "apis": api_paths,
-                "source_roots": [f"packages/{package_path.name}"],
-                "preserve_regex": [
-                    ".OwlBot.yaml",
-                    # Use the full path to avoid ambiguity with the root CHANGELOG.md
-                    f"packages/{package_path.name}/CHANGELOG.md",
-                    "docs/CHANGELOG.md",
-                    "docs/README.rst",
-                    "samples/README.txt",
-                    "tar.gz",
-                    "gapic_version.py",
-                    "samples/generated_samples/snippet_metadata_",
-                    "scripts/client-post-processing",
-                ],
-                "remove_regex": [f"packages/{package_path.name}"],
-                "tag_format": "{id}-v{version}",
-            }
-        )
+
+        # Skip libraries which are not present in the release please manifest as
+        # these are likely libraries that have already onboarded.
+        if release_please_manifest.get(f"packages/{package_name}", None):
+            state_dict["libraries"].append(
+                {
+                    "id": package_name,
+                    "version": release_please_manifest[f"packages/{package_name}"],
+                    "last_generated_commit": "d300b151a973ce0425ae4ad07b3de957ca31bec6",
+                    "apis": api_paths,
+                    "source_roots": [f"packages/{package_path.name}"],
+                    "preserve_regex": [
+                        # Use the full path to avoid ambiguity with the root CHANGELOG.md
+                        f"packages/{package_path.name}/CHANGELOG.md",
+                        "docs/CHANGELOG.md",
+                        "docs/README.rst",
+                        "samples/README.txt",
+                        "scripts/client-post-processing",
+                        "samples/snippets/README.rst",
+                        "tests/system",
+                    ],
+                    "remove_regex": [f"packages/{package_path.name}"],
+                    "tag_format": "{id}-v{version}",
+                }
+            )
 
     with open(LIBRARIAN_YAML, "w") as f:
         yaml.dump(state_dict, f, sort_keys=False, indent=2)

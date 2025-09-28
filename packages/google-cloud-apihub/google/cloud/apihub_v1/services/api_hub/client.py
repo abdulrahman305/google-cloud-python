@@ -70,6 +70,8 @@ from google.cloud.apihub_v1.services.api_hub import pagers
 from google.cloud.apihub_v1.types import apihub_service, common_fields
 
 from .transports.base import DEFAULT_CLIENT_INFO, ApiHubTransport
+from .transports.grpc import ApiHubGrpcTransport
+from .transports.grpc_asyncio import ApiHubGrpcAsyncIOTransport
 from .transports.rest import ApiHubRestTransport
 
 
@@ -82,6 +84,8 @@ class ApiHubClientMeta(type):
     """
 
     _transport_registry = OrderedDict()  # type: Dict[str, Type[ApiHubTransport]]
+    _transport_registry["grpc"] = ApiHubGrpcTransport
+    _transport_registry["grpc_asyncio"] = ApiHubGrpcAsyncIOTransport
     _transport_registry["rest"] = ApiHubRestTransport
 
     def get_transport_class(
@@ -333,6 +337,30 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         """Parses a external_api path into its component segments."""
         m = re.match(
             r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/externalApis/(?P<external_api>.+?)$",
+            path,
+        )
+        return m.groupdict() if m else {}
+
+    @staticmethod
+    def plugin_instance_path(
+        project: str,
+        location: str,
+        plugin: str,
+        instance: str,
+    ) -> str:
+        """Returns a fully-qualified plugin_instance string."""
+        return "projects/{project}/locations/{location}/plugins/{plugin}/instances/{instance}".format(
+            project=project,
+            location=location,
+            plugin=plugin,
+            instance=instance,
+        )
+
+    @staticmethod
+    def parse_plugin_instance_path(path: str) -> Dict[str, str]:
+        """Parses a plugin_instance path into its component segments."""
+        m = re.match(
+            r"^projects/(?P<project>.+?)/locations/(?P<location>.+?)/plugins/(?P<plugin>.+?)/instances/(?P<instance>.+?)$",
             path,
         )
         return m.groupdict() if m else {}
@@ -942,13 +970,13 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 become the final component of the API's resource name.
                 This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another API resource in the API hub.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another API resource in the API hub.
+                - If not provided, a system generated id will be used.
 
                 This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``api_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1258,17 +1286,18 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
     ) -> common_fields.Api:
         r"""Update an API resource in the API hub. The following fields in
-        the [API][] can be updated:
+        the [API][google.cloud.apihub.v1.Api] can be updated:
 
-        -  [display_name][google.cloud.apihub.v1.Api.display_name]
-        -  [description][google.cloud.apihub.v1.Api.description]
-        -  [owner][google.cloud.apihub.v1.Api.owner]
-        -  [documentation][google.cloud.apihub.v1.Api.documentation]
-        -  [target_user][google.cloud.apihub.v1.Api.target_user]
-        -  [team][google.cloud.apihub.v1.Api.team]
-        -  [business_unit][google.cloud.apihub.v1.Api.business_unit]
-        -  [maturity_level][google.cloud.apihub.v1.Api.maturity_level]
-        -  [attributes][google.cloud.apihub.v1.Api.attributes]
+        - [display_name][google.cloud.apihub.v1.Api.display_name]
+        - [description][google.cloud.apihub.v1.Api.description]
+        - [owner][google.cloud.apihub.v1.Api.owner]
+        - [documentation][google.cloud.apihub.v1.Api.documentation]
+        - [target_user][google.cloud.apihub.v1.Api.target_user]
+        - [team][google.cloud.apihub.v1.Api.team]
+        - [business_unit][google.cloud.apihub.v1.Api.business_unit]
+        - [maturity_level][google.cloud.apihub.v1.Api.maturity_level]
+        - [api_style][google.cloud.apihub.v1.Api.api_style]
+        - [attributes][google.cloud.apihub.v1.Api.attributes]
 
         The
         [update_mask][google.cloud.apihub.v1.UpdateApiRequest.update_mask]
@@ -1551,13 +1580,16 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 become the final component of the version's resource
                 name. This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another version in the API resource.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another version in the API resource.
+                - If not provided, a system generated id will be used.
 
-                This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                This value should be 4-500 characters, overall resource
+                name which will be of format
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}``,
+                its length is limited to 700 characters and valid
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``version_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -1880,14 +1912,14 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         [version][google.cloud.apihub.v1.Version] can be updated
         currently:
 
-        -  [display_name][google.cloud.apihub.v1.Version.display_name]
-        -  [description][google.cloud.apihub.v1.Version.description]
-        -  [documentation][google.cloud.apihub.v1.Version.documentation]
-        -  [deployments][google.cloud.apihub.v1.Version.deployments]
-        -  [lifecycle][google.cloud.apihub.v1.Version.lifecycle]
-        -  [compliance][google.cloud.apihub.v1.Version.compliance]
-        -  [accreditation][google.cloud.apihub.v1.Version.accreditation]
-        -  [attributes][google.cloud.apihub.v1.Version.attributes]
+        - [display_name][google.cloud.apihub.v1.Version.display_name]
+        - [description][google.cloud.apihub.v1.Version.description]
+        - [documentation][google.cloud.apihub.v1.Version.documentation]
+        - [deployments][google.cloud.apihub.v1.Version.deployments]
+        - [lifecycle][google.cloud.apihub.v1.Version.lifecycle]
+        - [compliance][google.cloud.apihub.v1.Version.compliance]
+        - [accreditation][google.cloud.apihub.v1.Version.accreditation]
+        - [attributes][google.cloud.apihub.v1.Version.attributes]
 
         The
         [update_mask][google.cloud.apihub.v1.UpdateVersionRequest.update_mask]
@@ -2197,13 +2229,16 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 the final component of the spec's resource name. This
                 field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another spec in the API resource.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another spec in the API resource.
+                - If not provided, a system generated id will be used.
 
-                This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                This value should be 4-500 characters, overall resource
+                name which will be of format
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}/specs/{spec}``,
+                its length is limited to 1000 characters and valid
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``spec_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -2634,12 +2669,12 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         r"""Update spec. The following fields in the
         [spec][google.cloud.apihub.v1.Spec] can be updated:
 
-        -  [display_name][google.cloud.apihub.v1.Spec.display_name]
-        -  [source_uri][google.cloud.apihub.v1.Spec.source_uri]
-        -  [lint_response][google.cloud.apihub.v1.Spec.lint_response]
-        -  [attributes][google.cloud.apihub.v1.Spec.attributes]
-        -  [contents][google.cloud.apihub.v1.Spec.contents]
-        -  [spec_type][google.cloud.apihub.v1.Spec.spec_type]
+        - [display_name][google.cloud.apihub.v1.Spec.display_name]
+        - [source_uri][google.cloud.apihub.v1.Spec.source_uri]
+        - [lint_response][google.cloud.apihub.v1.Spec.lint_response]
+        - [attributes][google.cloud.apihub.v1.Spec.attributes]
+        - [contents][google.cloud.apihub.v1.Spec.contents]
+        - [spec_type][google.cloud.apihub.v1.Spec.spec_type]
 
         In case of an OAS spec, updating spec contents can lead to:
 
@@ -2874,6 +2909,164 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
             metadata=metadata,
         )
 
+    def create_api_operation(
+        self,
+        request: Optional[Union[apihub_service.CreateApiOperationRequest, dict]] = None,
+        *,
+        parent: Optional[str] = None,
+        api_operation: Optional[common_fields.ApiOperation] = None,
+        api_operation_id: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> common_fields.ApiOperation:
+        r"""Create an apiOperation in an API version.
+        An apiOperation can be created only if the version has
+        no apiOperations which were created by parsing a spec.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import apihub_v1
+
+            def sample_create_api_operation():
+                # Create a client
+                client = apihub_v1.ApiHubClient()
+
+                # Initialize request argument(s)
+                request = apihub_v1.CreateApiOperationRequest(
+                    parent="parent_value",
+                )
+
+                # Make the request
+                response = client.create_api_operation(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.apihub_v1.types.CreateApiOperationRequest, dict]):
+                The request object. The
+                [CreateApiOperation][google.cloud.apihub.v1.ApiHub.CreateApiOperation]
+                method's request.
+            parent (str):
+                Required. The parent resource for the operation
+                resource. Format:
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}``
+
+                This corresponds to the ``parent`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            api_operation (google.cloud.apihub_v1.types.ApiOperation):
+                Required. The operation resource to
+                create.
+
+                This corresponds to the ``api_operation`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            api_operation_id (str):
+                Optional. The ID to use for the operation resource,
+                which will become the final component of the operation's
+                resource name. This field is optional.
+
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another operation resource in the API hub.
+                - If not provided, a system generated id will be used.
+
+                This value should be 4-500 characters, overall resource
+                name which will be of format
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}/operations/{operation}``,
+                its length is limited to 700 characters, and valid
+                characters are /[a-z][A-Z][0-9]-\_/.
+
+                This corresponds to the ``api_operation_id`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.apihub_v1.types.ApiOperation:
+                Represents an operation contained in
+                an API version in the API Hub. An
+                operation is added/updated/deleted in an
+                API version when a new spec is added or
+                an existing spec is updated/deleted in a
+                version. Currently, an operation will be
+                created only corresponding to OpenAPI
+                spec as parsing is supported for OpenAPI
+                spec.
+                Alternatively operations can be managed
+                via create,update and delete APIs,
+                creation of apiOperation can be possible
+                only for version with no parsed
+                operations and update/delete can be
+                possible only for operations created via
+                create API.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [parent, api_operation, api_operation_id]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, apihub_service.CreateApiOperationRequest):
+            request = apihub_service.CreateApiOperationRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if parent is not None:
+                request.parent = parent
+            if api_operation is not None:
+                request.api_operation = api_operation
+            if api_operation_id is not None:
+                request.api_operation_id = api_operation_id
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.create_api_operation]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
     def get_api_operation(
         self,
         request: Optional[Union[apihub_service.GetApiOperationRequest, dict]] = None,
@@ -2943,6 +3136,13 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 created only corresponding to OpenAPI
                 spec as parsing is supported for OpenAPI
                 spec.
+                Alternatively operations can be managed
+                via create,update and delete APIs,
+                creation of apiOperation can be possible
+                only for version with no parsed
+                operations and update/delete can be
+                possible only for operations created via
+                create API.
 
         """
         # Create or coerce a protobuf request object.
@@ -3115,6 +3315,263 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
 
         # Done; return the response.
         return response
+
+    def update_api_operation(
+        self,
+        request: Optional[Union[apihub_service.UpdateApiOperationRequest, dict]] = None,
+        *,
+        api_operation: Optional[common_fields.ApiOperation] = None,
+        update_mask: Optional[field_mask_pb2.FieldMask] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> common_fields.ApiOperation:
+        r"""Update an operation in an API version. The following fields in
+        the [ApiOperation resource][google.cloud.apihub.v1.ApiOperation]
+        can be updated:
+
+        - [details.description][ApiOperation.details.description]
+        - [details.documentation][ApiOperation.details.documentation]
+        - [details.http_operation.path][ApiOperation.details.http_operation.path.path]
+        - [details.http_operation.method][ApiOperation.details.http_operation.method]
+        - [details.deprecated][ApiOperation.details.deprecated]
+        - [attributes][google.cloud.apihub.v1.ApiOperation.attributes]
+
+        The
+        [update_mask][google.cloud.apihub.v1.UpdateApiOperationRequest.update_mask]
+        should be used to specify the fields being updated.
+
+        An operation can be updated only if the operation was created
+        via
+        [CreateApiOperation][google.cloud.apihub.v1.ApiHub.CreateApiOperation]
+        API. If the operation was created by parsing the spec, then it
+        can be edited by updating the spec.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import apihub_v1
+
+            def sample_update_api_operation():
+                # Create a client
+                client = apihub_v1.ApiHubClient()
+
+                # Initialize request argument(s)
+                request = apihub_v1.UpdateApiOperationRequest(
+                )
+
+                # Make the request
+                response = client.update_api_operation(request=request)
+
+                # Handle the response
+                print(response)
+
+        Args:
+            request (Union[google.cloud.apihub_v1.types.UpdateApiOperationRequest, dict]):
+                The request object. The
+                [UpdateApiOperation][google.cloud.apihub.v1.ApiHub.UpdateApiOperation]
+                method's request.
+            api_operation (google.cloud.apihub_v1.types.ApiOperation):
+                Required. The apiOperation resource to update.
+
+                The operation resource's ``name`` field is used to
+                identify the operation resource to update. Format:
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}/operations/{operation}``
+
+                This corresponds to the ``api_operation`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            update_mask (google.protobuf.field_mask_pb2.FieldMask):
+                Required. The list of fields to
+                update.
+
+                This corresponds to the ``update_mask`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+
+        Returns:
+            google.cloud.apihub_v1.types.ApiOperation:
+                Represents an operation contained in
+                an API version in the API Hub. An
+                operation is added/updated/deleted in an
+                API version when a new spec is added or
+                an existing spec is updated/deleted in a
+                version. Currently, an operation will be
+                created only corresponding to OpenAPI
+                spec as parsing is supported for OpenAPI
+                spec.
+                Alternatively operations can be managed
+                via create,update and delete APIs,
+                creation of apiOperation can be possible
+                only for version with no parsed
+                operations and update/delete can be
+                possible only for operations created via
+                create API.
+
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [api_operation, update_mask]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, apihub_service.UpdateApiOperationRequest):
+            request = apihub_service.UpdateApiOperationRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if api_operation is not None:
+                request.api_operation = api_operation
+            if update_mask is not None:
+                request.update_mask = update_mask
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.update_api_operation]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(
+                (("api_operation.name", request.api_operation.name),)
+            ),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        response = rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
+
+        # Done; return the response.
+        return response
+
+    def delete_api_operation(
+        self,
+        request: Optional[Union[apihub_service.DeleteApiOperationRequest, dict]] = None,
+        *,
+        name: Optional[str] = None,
+        retry: OptionalRetry = gapic_v1.method.DEFAULT,
+        timeout: Union[float, object] = gapic_v1.method.DEFAULT,
+        metadata: Sequence[Tuple[str, Union[str, bytes]]] = (),
+    ) -> None:
+        r"""Delete an operation in an API version and we can
+        delete only the operations created via create API. If
+        the operation was created by parsing the spec, then it
+        can be deleted by editing or deleting the spec.
+
+        .. code-block:: python
+
+            # This snippet has been automatically generated and should be regarded as a
+            # code template only.
+            # It will require modifications to work:
+            # - It may require correct/in-range values for request initialization.
+            # - It may require specifying regional endpoints when creating the service
+            #   client as shown in:
+            #   https://googleapis.dev/python/google-api-core/latest/client_options.html
+            from google.cloud import apihub_v1
+
+            def sample_delete_api_operation():
+                # Create a client
+                client = apihub_v1.ApiHubClient()
+
+                # Initialize request argument(s)
+                request = apihub_v1.DeleteApiOperationRequest(
+                    name="name_value",
+                )
+
+                # Make the request
+                client.delete_api_operation(request=request)
+
+        Args:
+            request (Union[google.cloud.apihub_v1.types.DeleteApiOperationRequest, dict]):
+                The request object. The
+                [DeleteApiOperation][google.cloud.apihub.v1.ApiHub.DeleteApiOperation]
+                method's request.
+            name (str):
+                Required. The name of the operation resource to delete.
+                Format:
+                ``projects/{project}/locations/{location}/apis/{api}/versions/{version}/operations/{operation}``
+
+                This corresponds to the ``name`` field
+                on the ``request`` instance; if ``request`` is provided, this
+                should not be set.
+            retry (google.api_core.retry.Retry): Designation of what errors, if any,
+                should be retried.
+            timeout (float): The timeout for this request.
+            metadata (Sequence[Tuple[str, Union[str, bytes]]]): Key/value pairs which should be
+                sent along with the request as metadata. Normally, each value must be of type `str`,
+                but for metadata keys ending with the suffix `-bin`, the corresponding values must
+                be of type `bytes`.
+        """
+        # Create or coerce a protobuf request object.
+        # - Quick check: If we got a request object, we should *not* have
+        #   gotten any keyword arguments that map to the request.
+        flattened_params = [name]
+        has_flattened_params = (
+            len([param for param in flattened_params if param is not None]) > 0
+        )
+        if request is not None and has_flattened_params:
+            raise ValueError(
+                "If the `request` argument is set, then none of "
+                "the individual field arguments should be set."
+            )
+
+        # - Use the request object if provided (there's no risk of modifying the input as
+        #   there are no flattened fields), or create one.
+        if not isinstance(request, apihub_service.DeleteApiOperationRequest):
+            request = apihub_service.DeleteApiOperationRequest(request)
+            # If we have keyword arguments corresponding to fields on the
+            # request, apply these.
+            if name is not None:
+                request.name = name
+
+        # Wrap the RPC method; this adds retry and timeout information,
+        # and friendly error handling.
+        rpc = self._transport._wrapped_methods[self._transport.delete_api_operation]
+
+        # Certain fields should be provided within the metadata header;
+        # add these here.
+        metadata = tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata((("name", request.name),)),
+        )
+
+        # Validate the universe domain.
+        self._validate_universe_domain()
+
+        # Send the request.
+        rpc(
+            request,
+            retry=retry,
+            timeout=timeout,
+            metadata=metadata,
+        )
 
     def get_definition(
         self,
@@ -3306,13 +3763,13 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 which will become the final component of the
                 deployment's resource name. This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another deployment resource in the API hub.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another deployment resource in the API hub.
+                - If not provided, a system generated id will be used.
 
                 This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``deployment_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -3641,19 +4098,23 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         fields in the [deployment
         resource][google.cloud.apihub.v1.Deployment] can be updated:
 
-        -  [display_name][google.cloud.apihub.v1.Deployment.display_name]
-        -  [description][google.cloud.apihub.v1.Deployment.description]
-        -  [documentation][google.cloud.apihub.v1.Deployment.documentation]
-        -  [deployment_type][google.cloud.apihub.v1.Deployment.deployment_type]
-        -  [resource_uri][google.cloud.apihub.v1.Deployment.resource_uri]
-        -  [endpoints][google.cloud.apihub.v1.Deployment.endpoints]
-        -  [slo][google.cloud.apihub.v1.Deployment.slo]
-        -  [environment][google.cloud.apihub.v1.Deployment.environment]
-        -  [attributes][google.cloud.apihub.v1.Deployment.attributes]
-
-        The
-        [update_mask][google.cloud.apihub.v1.UpdateDeploymentRequest.update_mask]
-        should be used to specify the fields being updated.
+        - [display_name][google.cloud.apihub.v1.Deployment.display_name]
+        - [description][google.cloud.apihub.v1.Deployment.description]
+        - [documentation][google.cloud.apihub.v1.Deployment.documentation]
+        - [deployment_type][google.cloud.apihub.v1.Deployment.deployment_type]
+        - [resource_uri][google.cloud.apihub.v1.Deployment.resource_uri]
+        - [endpoints][google.cloud.apihub.v1.Deployment.endpoints]
+        - [slo][google.cloud.apihub.v1.Deployment.slo]
+        - [environment][google.cloud.apihub.v1.Deployment.environment]
+        - [attributes][google.cloud.apihub.v1.Deployment.attributes]
+        - [source_project]
+          [google.cloud.apihub.v1.Deployment.source_project]
+        - [source_environment]
+          [google.cloud.apihub.v1.Deployment.source_environment]
+        - [management_url][google.cloud.apihub.v1.Deployment.management_url]
+        - [source_uri][google.cloud.apihub.v1.Deployment.source_uri] The
+          [update_mask][google.cloud.apihub.v1.UpdateDeploymentRequest.update_mask]
+          should be used to specify the fields being updated.
 
         .. code-block:: python
 
@@ -3917,7 +4378,7 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 attribute = apihub_v1.Attribute()
                 attribute.display_name = "display_name_value"
                 attribute.scope = "PLUGIN"
-                attribute.data_type = "STRING"
+                attribute.data_type = "URI"
 
                 request = apihub_v1.CreateAttributeRequest(
                     parent="parent_value",
@@ -3952,13 +4413,13 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 become the final component of the attribute's resource
                 name. This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another attribute resource in the API hub.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another attribute resource in the API hub.
+                - If not provided, a system generated id will be used.
 
                 This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``attribute_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -4159,25 +4620,25 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         r"""Update the attribute. The following fields in the [Attribute
         resource][google.cloud.apihub.v1.Attribute] can be updated:
 
-        -  [display_name][google.cloud.apihub.v1.Attribute.display_name]
-           The display name can be updated for user defined attributes
-           only.
-        -  [description][google.cloud.apihub.v1.Attribute.description]
-           The description can be updated for user defined attributes
-           only.
-        -  [allowed_values][google.cloud.apihub.v1.Attribute.allowed_values]
-           To update the list of allowed values, clients need to use the
-           fetched list of allowed values and add or remove values to or
-           from the same list. The mutable allowed values can be updated
-           for both user defined and System defined attributes. The
-           immutable allowed values cannot be updated or deleted. The
-           updated list of allowed values cannot be empty. If an allowed
-           value that is already used by some resource's attribute is
-           deleted, then the association between the resource and the
-           attribute value will also be deleted.
-        -  [cardinality][google.cloud.apihub.v1.Attribute.cardinality]
-           The cardinality can be updated for user defined attributes
-           only. Cardinality can only be increased during an update.
+        - [display_name][google.cloud.apihub.v1.Attribute.display_name]
+          The display name can be updated for user defined attributes
+          only.
+        - [description][google.cloud.apihub.v1.Attribute.description]
+          The description can be updated for user defined attributes
+          only.
+        - [allowed_values][google.cloud.apihub.v1.Attribute.allowed_values]
+          To update the list of allowed values, clients need to use the
+          fetched list of allowed values and add or remove values to or
+          from the same list. The mutable allowed values can be updated
+          for both user defined and System defined attributes. The
+          immutable allowed values cannot be updated or deleted. The
+          updated list of allowed values cannot be empty. If an allowed
+          value that is already used by some resource's attribute is
+          deleted, then the association between the resource and the
+          attribute value will also be deleted.
+        - [cardinality][google.cloud.apihub.v1.Attribute.cardinality]
+          The cardinality can be updated for user defined attributes
+          only. Cardinality can only be increased during an update.
 
         The
         [update_mask][google.cloud.apihub.v1.UpdateAttributeRequest.update_mask]
@@ -4202,7 +4663,7 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 attribute = apihub_v1.Attribute()
                 attribute.display_name = "display_name_value"
                 attribute.scope = "PLUGIN"
-                attribute.data_type = "STRING"
+                attribute.data_type = "URI"
 
                 request = apihub_v1.UpdateAttributeRequest(
                     attribute=attribute,
@@ -4740,13 +5201,13 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
                 which will become the final component of the External
                 API's resource name. This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if the specified id is already used by
-                   another External API resource in the API hub.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if the specified id is already used by
+                  another External API resource in the API hub.
+                - If not provided, a system generated id will be used.
 
                 This value should be 4-500 characters, and valid
-                characters are /[a-z][A-Z][0-9]-_/.
+                characters are /[a-z][A-Z][0-9]-\_/.
 
                 This corresponds to the ``external_api_id`` field
                 on the ``request`` instance; if ``request`` is provided, this
@@ -4943,11 +5404,11 @@ class ApiHubClient(metaclass=ApiHubClientMeta):
         r"""Update an External API resource in the API hub. The following
         fields can be updated:
 
-        -  [display_name][google.cloud.apihub.v1.ExternalApi.display_name]
-        -  [description][google.cloud.apihub.v1.ExternalApi.description]
-        -  [documentation][google.cloud.apihub.v1.ExternalApi.documentation]
-        -  [endpoints][google.cloud.apihub.v1.ExternalApi.endpoints]
-        -  [paths][google.cloud.apihub.v1.ExternalApi.paths]
+        - [display_name][google.cloud.apihub.v1.ExternalApi.display_name]
+        - [description][google.cloud.apihub.v1.ExternalApi.description]
+        - [documentation][google.cloud.apihub.v1.ExternalApi.documentation]
+        - [endpoints][google.cloud.apihub.v1.ExternalApi.endpoints]
+        - [paths][google.cloud.apihub.v1.ExternalApi.paths]
 
         The
         [update_mask][google.cloud.apihub.v1.UpdateExternalApiRequest.update_mask]

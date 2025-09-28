@@ -1,24 +1,804 @@
 image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/python-librarian-generator:latest
 libraries:
-- id: google-cloud-language
-  version: 2.17.2
-  last_generated_commit: 97a83d76a09a7f6dcab43675c87bdfeb5bcf1cb5
-  apis:
-  - path: google/cloud/language/v1beta2
-  - path: google/cloud/language/v2
-  - path: google/cloud/language/v1
-  source_roots:
-  - packages/google-cloud-language
-  preserve_regex:
-  - .OwlBot.yaml
-  - packages/google-cloud-language/CHANGELOG.md
-  - docs/CHANGELOG.md
-  - docs/README.rst
-  - samples/README.txt
-  - tar.gz
-  - gapic_version.py
-  - samples/generated_samples/snippet_metadata_
-  - scripts/client-post-processing
-  remove_regex:
-  - packages/google-cloud-language
-  tag_format: '{id}-v{version}'
+  - id: google-cloud-dlp
+    version: 3.32.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/privacy/dlp/v2
+        service_config: dlp_v2.yaml
+    source_roots:
+      - packages/google-cloud-dlp
+    preserve_regex:
+      - packages/google-cloud-dlp/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-dlp
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-eventarc
+    version: 1.16.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/eventarc/v1
+        service_config: eventarc_v1.yaml
+    source_roots:
+      - packages/google-cloud-eventarc
+    preserve_regex:
+      - packages/google-cloud-eventarc/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-eventarc
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-video-live-stream
+    version: 1.13.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/video/livestream/v1
+        service_config: livestream_v1.yaml
+    source_roots:
+      - packages/google-cloud-video-live-stream
+    preserve_regex:
+      - packages/google-cloud-video-live-stream/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-video-live-stream
+    tag_format: '{id}-v{version}'
+  - id: google-ads-marketingplatform-admin
+    version: 0.1.6
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/marketingplatform/admin/v1alpha
+        service_config: marketingplatformadmin_v1alpha.yaml
+    source_roots:
+      - packages/google-ads-marketingplatform-admin
+    preserve_regex:
+      - packages/google-ads-marketingplatform-admin/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-ads-marketingplatform-admin
+    tag_format: '{id}-v{version}'
+  - id: google-ai-generativelanguage
+    version: 0.7.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/ai/generativelanguage/v1
+        service_config: generativelanguage_v1.yaml
+      - path: google/ai/generativelanguage/v1beta
+        service_config: generativelanguage_v1beta.yaml
+      - path: google/ai/generativelanguage/v1beta3
+        service_config: generativelanguage_v1beta3.yaml
+      - path: google/ai/generativelanguage/v1beta2
+        service_config: generativelanguage_v1beta2.yaml
+      - path: google/ai/generativelanguage/v1alpha
+        service_config: generativelanguage_v1alpha.yaml
+    source_roots:
+      - packages/google-ai-generativelanguage
+    preserve_regex:
+      - packages/google-ai-generativelanguage/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-ai-generativelanguage
+    tag_format: '{id}-v{version}'
+  - id: google-analytics-admin
+    version: 0.25.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/analytics/admin/v1beta
+        service_config: analyticsadmin_v1beta.yaml
+      - path: google/analytics/admin/v1alpha
+        service_config: analyticsadmin_v1alpha.yaml
+    source_roots:
+      - packages/google-analytics-admin
+    preserve_regex:
+      - packages/google-analytics-admin/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-analytics-admin
+    tag_format: '{id}-v{version}'
+  - id: google-analytics-data
+    version: 0.18.19
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/analytics/data/v1alpha
+        service_config: analyticsdata_v1alpha.yaml
+      - path: google/analytics/data/v1beta
+        service_config: analyticsdata_v1beta.yaml
+    source_roots:
+      - packages/google-analytics-data
+    preserve_regex:
+      - packages/google-analytics-data/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-analytics-data
+    tag_format: '{id}-v{version}'
+  - id: google-ads-admanager
+    version: 0.4.0
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/ads/admanager/v1
+        service_config: admanager_v1.yaml
+    source_roots:
+      - packages/google-ads-admanager
+    preserve_regex:
+      - packages/google-ads-admanager/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-ads-admanager
+    tag_format: '{id}-v{version}'
+  - id: google-apps-card
+    version: 0.1.8
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/apps/card/v1
+        service_config: ''
+    source_roots:
+      - packages/google-apps-card
+    preserve_regex:
+      - packages/google-apps-card/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+      - tests/unit/gapic/card_v1/test_card.py
+    remove_regex:
+      - packages/google-apps-card
+    tag_format: '{id}-v{version}'
+  - id: google-apps-chat
+    version: 0.2.9
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/chat/v1
+        service_config: chat_v1.yaml
+    source_roots:
+      - packages/google-apps-chat
+    preserve_regex:
+      - packages/google-apps-chat/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-apps-chat
+    tag_format: '{id}-v{version}'
+  - id: google-apps-events-subscriptions
+    version: 0.2.2
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/apps/events/subscriptions/v1
+        service_config: workspaceevents_v1.yaml
+      - path: google/apps/events/subscriptions/v1beta
+        service_config: workspaceevents_v1beta.yaml
+    source_roots:
+      - packages/google-apps-events-subscriptions
+    preserve_regex:
+      - packages/google-apps-events-subscriptions/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-apps-events-subscriptions
+    tag_format: '{id}-v{version}'
+  - id: google-apps-meet
+    version: 0.1.16
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/apps/meet/v2beta
+        service_config: meet_v2beta.yaml
+      - path: google/apps/meet/v2
+        service_config: meet_v2.yaml
+    source_roots:
+      - packages/google-apps-meet
+    preserve_regex:
+      - packages/google-apps-meet/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-apps-meet
+    tag_format: '{id}-v{version}'
+  - id: google-apps-script-type
+    version: 0.3.15
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/apps/script/type
+        service_config: ''
+      - path: google/apps/script/type/gmail
+        service_config: ''
+      - path: google/apps/script/type/docs
+        service_config: ''
+      - path: google/apps/script/type/drive
+        service_config: ''
+      - path: google/apps/script/type/sheets
+        service_config: ''
+      - path: google/apps/script/type/calendar
+        service_config: ''
+      - path: google/apps/script/type/slides
+        service_config: ''
+    source_roots:
+      - packages/google-apps-script-type
+    preserve_regex:
+      - packages/google-apps-script-type/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+      - tests/unit/gapic/calendar/test_calendar.py
+      - tests/unit/gapic/docs/test_docs.py
+      - tests/unit/gapic/drive/test_drive.py
+      - tests/unit/gapic/gmail/test_gmail.py
+      - tests/unit/gapic/sheets/test_sheets.py
+      - tests/unit/gapic/slides/test_slides.py
+      - tests/unit/gapic/type/test_type.py
+    remove_regex:
+      - packages/google-apps-script-type
+    tag_format: '{id}-v{version}'
+  - id: google-area120-tables
+    version: 0.11.17
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/area120/tables/v1alpha1
+        service_config: area120tables_v1alpha1.yaml
+    source_roots:
+      - packages/google-area120-tables
+    preserve_regex:
+      - packages/google-area120-tables/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-area120-tables
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-access-approval
+    version: 1.16.2
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/accessapproval/v1
+        service_config: accessapproval_v1.yaml
+    source_roots:
+      - packages/google-cloud-access-approval
+    preserve_regex:
+      - packages/google-cloud-access-approval/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-access-approval
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-advisorynotifications
+    version: 0.3.16
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/advisorynotifications/v1
+        service_config: advisorynotifications_v1.yaml
+    source_roots:
+      - packages/google-cloud-advisorynotifications
+    preserve_regex:
+      - packages/google-cloud-advisorynotifications/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-advisorynotifications
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-alloydb
+    version: 0.4.9
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/alloydb/v1beta
+        service_config: alloydb_v1beta.yaml
+      - path: google/cloud/alloydb/v1
+        service_config: alloydb_v1.yaml
+      - path: google/cloud/alloydb/v1alpha
+        service_config: alloydb_v1alpha.yaml
+    source_roots:
+      - packages/google-cloud-alloydb
+    preserve_regex:
+      - packages/google-cloud-alloydb/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-alloydb
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-alloydb-connectors
+    version: 0.1.11
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/alloydb/connectors/v1
+        service_config: connectors_v1.yaml
+      - path: google/cloud/alloydb/connectors/v1alpha
+        service_config: connectors_v1alpha.yaml
+      - path: google/cloud/alloydb/connectors/v1beta
+        service_config: connectors_v1beta.yaml
+    source_roots:
+      - packages/google-cloud-alloydb-connectors
+    preserve_regex:
+      - packages/google-cloud-alloydb-connectors/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+      - tests/unit/gapic/connectors_v1/test_connectors.py
+    remove_regex:
+      - packages/google-cloud-alloydb-connectors
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-api-gateway
+    version: 1.12.2
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/cloud/apigateway/v1
+        service_config: apigateway_v1.yaml
+    source_roots:
+      - packages/google-cloud-api-gateway
+    preserve_regex:
+      - packages/google-cloud-api-gateway/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-api-gateway
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-api-keys
+    version: 0.5.17
+    last_generated_commit: 329ace5e3712a2e37d6159d4dcd998d8c73f261e
+    apis:
+      - path: google/api/apikeys/v2
+        service_config: apikeys_v2.yaml
+    source_roots:
+      - packages/google-cloud-api-keys
+    preserve_regex:
+      - packages/google-cloud-api-keys/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-api-keys
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-apigee-connect
+    version: 1.12.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/apigeeconnect/v1
+    source_roots:
+      - packages/google-cloud-apigee-connect
+    preserve_regex:
+      - packages/google-cloud-apigee-connect/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-apigee-connect
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-apigee-registry
+    version: 0.6.18
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/apigeeregistry/v1
+    source_roots:
+      - packages/google-cloud-apigee-registry
+    preserve_regex:
+      - packages/google-cloud-apigee-registry/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-apigee-registry
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-appengine-admin
+    version: 1.14.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/appengine/v1
+    source_roots:
+      - packages/google-cloud-appengine-admin
+    preserve_regex:
+      - packages/google-cloud-appengine-admin/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-appengine-admin
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-appengine-logging
+    version: 1.6.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/appengine/logging/v1
+    source_roots:
+      - packages/google-cloud-appengine-logging
+    preserve_regex:
+      - packages/google-cloud-appengine-logging/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+      - tests/unit/gapic/appengine_logging_v1/test_appengine_logging_v1.py
+    remove_regex:
+      - packages/google-cloud-appengine-logging
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-apphub
+    version: 0.1.10
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/apphub/v1
+    source_roots:
+      - packages/google-cloud-apphub
+    preserve_regex:
+      - packages/google-cloud-apphub/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-apphub
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-artifact-registry
+    version: 1.16.1
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/devtools/artifactregistry/v1
+      - path: google/devtools/artifactregistry/v1beta2
+    source_roots:
+      - packages/google-cloud-artifact-registry
+    preserve_regex:
+      - packages/google-cloud-artifact-registry/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-artifact-registry
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-automl
+    version: 2.16.4
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/automl/v1beta1
+      - path: google/cloud/automl/v1
+    source_roots:
+      - packages/google-cloud-automl
+    preserve_regex:
+      - packages/google-cloud-automl/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+      - docs/automl_v1beta1/tables.rst
+      - google/cloud/automl_v1beta1/services/tables
+      - samples/README
+      - tests/unit/test_gcs_client_v1beta1.py
+      - tests/unit/test_tables_client_v1beta1.py
+    remove_regex:
+      - packages/google-cloud-automl
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-backupdr
+    version: 0.2.5
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/backupdr/v1
+    source_roots:
+      - packages/google-cloud-backupdr
+    preserve_regex:
+      - packages/google-cloud-backupdr/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-backupdr
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-bare-metal-solution
+    version: 1.10.3
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/baremetalsolution/v2
+    source_roots:
+      - packages/google-cloud-bare-metal-solution
+    preserve_regex:
+      - packages/google-cloud-bare-metal-solution/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-bare-metal-solution
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-batch
+    version: 0.17.37
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/batch/v1alpha
+      - path: google/cloud/batch/v1
+    source_roots:
+      - packages/google-cloud-batch
+    preserve_regex:
+      - packages/google-cloud-batch/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-batch
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-support
+    version: 0.1.19
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/support/v2beta
+      - path: google/cloud/support/v2
+    source_roots:
+      - packages/google-cloud-support
+    preserve_regex:
+      - packages/google-cloud-support/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-support
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-talent
+    version: 2.17.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/talent/v4beta1
+      - path: google/cloud/talent/v4
+    source_roots:
+      - packages/google-cloud-talent
+    preserve_regex:
+      - packages/google-cloud-talent/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-talent
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-tpu
+    version: 1.23.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/tpu/v2alpha1
+      - path: google/cloud/tpu/v2
+      - path: google/cloud/tpu/v1
+    source_roots:
+      - packages/google-cloud-tpu
+    preserve_regex:
+      - packages/google-cloud-tpu/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-tpu
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-video-transcoder
+    version: 1.17.0
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/video/transcoder/v1
+    source_roots:
+      - packages/google-cloud-video-transcoder
+    preserve_regex:
+      - packages/google-cloud-video-transcoder/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-video-transcoder
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-visionai
+    version: 0.1.10
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/visionai/v1alpha1
+      - path: google/cloud/visionai/v1
+    source_roots:
+      - packages/google-cloud-visionai
+    preserve_regex:
+      - packages/google-cloud-visionai/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-visionai
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-vm-migration
+    version: 1.12.0
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/vmmigration/v1
+    source_roots:
+      - packages/google-cloud-vm-migration
+    preserve_regex:
+      - packages/google-cloud-vm-migration/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-vm-migration
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-vmwareengine
+    version: 1.8.3
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/vmwareengine/v1
+    source_roots:
+      - packages/google-cloud-vmwareengine
+    preserve_regex:
+      - packages/google-cloud-vmwareengine/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-vmwareengine
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-vpc-access
+    version: 1.13.2
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/vpcaccess/v1
+    source_roots:
+      - packages/google-cloud-vpc-access
+    preserve_regex:
+      - packages/google-cloud-vpc-access/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-vpc-access
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-websecurityscanner
+    version: 1.17.3
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/websecurityscanner/v1alpha
+      - path: google/cloud/websecurityscanner/v1beta
+      - path: google/cloud/websecurityscanner/v1
+    source_roots:
+      - packages/google-cloud-websecurityscanner
+    preserve_regex:
+      - packages/google-cloud-websecurityscanner/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-websecurityscanner
+    tag_format: '{id}-v{version}'
+  - id: google-cloud-workstations
+    version: 0.5.15
+    last_generated_commit: d300b151a973ce0425ae4ad07b3de957ca31bec6
+    apis:
+      - path: google/cloud/workstations/v1beta
+      - path: google/cloud/workstations/v1
+    source_roots:
+      - packages/google-cloud-workstations
+    preserve_regex:
+      - packages/google-cloud-workstations/CHANGELOG.md
+      - docs/CHANGELOG.md
+      - docs/README.rst
+      - samples/README.txt
+      - scripts/client-post-processing
+      - samples/snippets/README.rst
+      - tests/system
+    remove_regex:
+      - packages/google-cloud-workstations
+    tag_format: '{id}-v{version}'

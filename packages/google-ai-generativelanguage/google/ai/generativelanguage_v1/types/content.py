@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from typing import MutableMapping, MutableSequence
 
+from google.protobuf import duration_pb2  # type: ignore
 import proto  # type: ignore
 
 __protobuf__ = proto.module(
@@ -26,6 +27,7 @@ __protobuf__ = proto.module(
         "Content",
         "Part",
         "Blob",
+        "VideoMetadata",
         "ModalityTokenCount",
     },
 )
@@ -114,6 +116,12 @@ class Part(proto.Message):
             Inline media bytes.
 
             This field is a member of `oneof`_ ``data``.
+        video_metadata (google.ai.generativelanguage_v1.types.VideoMetadata):
+            Optional. Video metadata. The metadata should only be
+            specified while the video data is presented in inline_data
+            or file_data.
+
+            This field is a member of `oneof`_ ``metadata``.
     """
 
     text: str = proto.Field(
@@ -127,6 +135,12 @@ class Part(proto.Message):
         oneof="data",
         message="Blob",
     )
+    video_metadata: "VideoMetadata" = proto.Field(
+        proto.MESSAGE,
+        number=14,
+        oneof="metadata",
+        message="VideoMetadata",
+    )
 
 
 class Blob(proto.Message):
@@ -138,11 +152,11 @@ class Blob(proto.Message):
         mime_type (str):
             The IANA standard MIME type of the source data. Examples:
 
-            -  image/png
-            -  image/jpeg If an unsupported MIME type is provided, an
-               error will be returned. For a complete list of supported
-               types, see `Supported file
-               formats <https://ai.google.dev/gemini-api/docs/prompting_with_media#supported_file_formats>`__.
+            - image/png
+            - image/jpeg If an unsupported MIME type is provided, an
+              error will be returned. For a complete list of supported
+              types, see `Supported file
+              formats <https://ai.google.dev/gemini-api/docs/prompting_with_media#supported_file_formats>`__.
         data (bytes):
             Raw bytes for media formats.
     """
@@ -154,6 +168,36 @@ class Blob(proto.Message):
     data: bytes = proto.Field(
         proto.BYTES,
         number=2,
+    )
+
+
+class VideoMetadata(proto.Message):
+    r"""Metadata describes the input video content.
+
+    Attributes:
+        start_offset (google.protobuf.duration_pb2.Duration):
+            Optional. The start offset of the video.
+        end_offset (google.protobuf.duration_pb2.Duration):
+            Optional. The end offset of the video.
+        fps (float):
+            Optional. The frame rate of the video sent to the model. If
+            not specified, the default value will be 1.0. The fps range
+            is (0.0, 24.0].
+    """
+
+    start_offset: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=1,
+        message=duration_pb2.Duration,
+    )
+    end_offset: duration_pb2.Duration = proto.Field(
+        proto.MESSAGE,
+        number=2,
+        message=duration_pb2.Duration,
+    )
+    fps: float = proto.Field(
+        proto.DOUBLE,
+        number=3,
     )
 
 

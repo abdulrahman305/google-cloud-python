@@ -68,6 +68,8 @@ from google.protobuf import field_mask_pb2  # type: ignore
 from google.cloud.apihub_v1.types import common_fields, linting_service
 
 from .transports.base import DEFAULT_CLIENT_INFO, LintingServiceTransport
+from .transports.grpc import LintingServiceGrpcTransport
+from .transports.grpc_asyncio import LintingServiceGrpcAsyncIOTransport
 from .transports.rest import LintingServiceRestTransport
 
 
@@ -82,6 +84,8 @@ class LintingServiceClientMeta(type):
     _transport_registry = (
         OrderedDict()
     )  # type: Dict[str, Type[LintingServiceTransport]]
+    _transport_registry["grpc"] = LintingServiceGrpcTransport
+    _transport_registry["grpc_asyncio"] = LintingServiceGrpcAsyncIOTransport
     _transport_registry["rest"] = LintingServiceRestTransport
 
     def get_transport_class(
@@ -774,8 +778,9 @@ class LintingServiceClient(metaclass=LintingServiceClientMeta):
 
         Args:
             request (Union[google.cloud.apihub_v1.types.GetStyleGuideRequest, dict]):
-                The request object. The [GetStyleGuide][ApiHub.GetStyleGuide] method's
-                request.
+                The request object. The
+                [GetStyleGuide][google.cloud.apihub.v1.LintingService.GetStyleGuide]
+                method's request.
             name (str):
                 Required. The name of the spec to retrieve. Format:
                 ``projects/{project}/locations/{location}/plugins/{plugin}/styleGuide``.
@@ -890,8 +895,9 @@ class LintingServiceClient(metaclass=LintingServiceClientMeta):
 
         Args:
             request (Union[google.cloud.apihub_v1.types.UpdateStyleGuideRequest, dict]):
-                The request object. The [UpdateStyleGuide][ApiHub.UpdateStyleGuide] method's
-                request.
+                The request object. The
+                [UpdateStyleGuide][google.cloud.apihub.v1.LintingService.UpdateStyleGuide]
+                method's request.
             style_guide (google.cloud.apihub_v1.types.StyleGuide):
                 Required. The Style guide resource to
                 update.
@@ -1013,7 +1019,7 @@ class LintingServiceClient(metaclass=LintingServiceClientMeta):
         Args:
             request (Union[google.cloud.apihub_v1.types.GetStyleGuideContentsRequest, dict]):
                 The request object. The
-                [GetStyleGuideContents][ApiHub.GetStyleGuideContents]
+                [GetStyleGuideContents][google.cloud.apihub.v1.LintingService.GetStyleGuideContents]
                 method's request.
             name (str):
                 Required. The name of the StyleGuide whose contents need
@@ -1121,7 +1127,9 @@ class LintingServiceClient(metaclass=LintingServiceClientMeta):
 
         Args:
             request (Union[google.cloud.apihub_v1.types.LintSpecRequest, dict]):
-                The request object. The [LintSpec][ApiHub.LintSpec] method's request.
+                The request object. The
+                [LintSpec][google.cloud.apihub.v1.LintingService.LintSpec]
+                method's request.
             retry (google.api_core.retry.Retry): Designation of what errors, if any,
                 should be retried.
             timeout (float): The timeout for this request.

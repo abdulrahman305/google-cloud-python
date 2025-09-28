@@ -43,29 +43,33 @@ class DataAgent(proto.Message):
 
             This field is a member of `oneof`_ ``type``.
         name (str):
-            Optional. Identifier. The unique resource name of a Agent.
-            Format:
+            Optional. Identifier. The unique resource name of a
+            DataAgent. Format:
             ``projects/{project}/locations/{location}/dataAgents/{data_agent_id}``
             ``{data_agent}`` is the resource id and should be 63
             characters or less and must match the format described in
             https://google.aip.dev/122#resource-id-segments
 
             Example:
-            ``projects/1234567890/locations/us-central1/dataAgents/my-agent``.
+            ``projects/1234567890/locations/global/dataAgents/my-agent``.
+
+            It is recommended to skip setting this field during agent
+            creation as it will be inferred automatically and
+            overwritten with the {parent}/dataAgents/{data_agent_id}.
         display_name (str):
             Optional. User friendly display name.
 
-            -  Must be between 1-256 characters.
+            - Must be between 1-256 characters.
         description (str):
             Optional. Description of the agent.
 
-            -  Must be between 1-1024 characters.
+            - Must be between 1-1024 characters.
         labels (MutableMapping[str, str]):
-            Optional. Labels to help users filter related
-            agents. E.g. "sales", "business", "etl", etc.
-            Note labels are only used for filtering and not
-            for policies. See
-            https://cloud.google.com/resource-manager/docs/labels-overview
+            Optional. Labels to help users filter related agents. For
+            example, "sales", "business", "etl", and so on. Note labels
+            are used only for filtering and not for policies. See the
+            `labels
+            documentation <https://cloud.google.com/resource-manager/docs/labels-overview>`__
             for more details on label usage.
         create_time (google.protobuf.timestamp_pb2.Timestamp):
             Output only. The time when the data agent was

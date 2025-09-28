@@ -18,12 +18,6 @@ from google.cloud.geminidataanalytics import gapic_version as package_version
 __version__ = package_version.__version__
 
 
-from google.cloud.geminidataanalytics_v1alpha.services.context_retrieval_service.async_client import (
-    ContextRetrievalServiceAsyncClient,
-)
-from google.cloud.geminidataanalytics_v1alpha.services.context_retrieval_service.client import (
-    ContextRetrievalServiceClient,
-)
 from google.cloud.geminidataanalytics_v1alpha.services.data_agent_service.async_client import (
     DataAgentServiceAsyncClient,
 )
@@ -41,22 +35,7 @@ from google.cloud.geminidataanalytics_v1alpha.types.context import (
     ChartOptions,
     Context,
     ConversationOptions,
-)
-from google.cloud.geminidataanalytics_v1alpha.types.context_retrieval_service import (
-    DirectLookup,
-    RetrieveBigQueryRecentRelevantTablesRequest,
-    RetrieveBigQueryRecentRelevantTablesResponse,
-    RetrieveBigQueryTableContextRequest,
-    RetrieveBigQueryTableContextResponse,
-    RetrieveBigQueryTableContextsFromRecentTablesRequest,
-    RetrieveBigQueryTableContextsFromRecentTablesResponse,
-    RetrieveBigQueryTableContextsRequest,
-    RetrieveBigQueryTableContextsResponse,
-    RetrieveBigQueryTableSuggestedDescriptionsRequest,
-    RetrieveBigQueryTableSuggestedDescriptionsResponse,
-    RetrieveBigQueryTableSuggestedExamplesRequest,
-    RetrieveBigQueryTableSuggestedExamplesResponse,
-    TableCandidate,
+    ExampleQuery,
 )
 from google.cloud.geminidataanalytics_v1alpha.types.conversation import (
     Conversation,
@@ -64,6 +43,7 @@ from google.cloud.geminidataanalytics_v1alpha.types.conversation import (
     GetConversationRequest,
     ListConversationsRequest,
     ListConversationsResponse,
+    UpdateConversationRequest,
 )
 from google.cloud.geminidataanalytics_v1alpha.types.credentials import (
     Credentials,
@@ -100,6 +80,7 @@ from google.cloud.geminidataanalytics_v1alpha.types.data_chat_service import (
     DataQuery,
     DataResult,
     ErrorMessage,
+    ExampleQueries,
     ListMessagesRequest,
     ListMessagesResponse,
     LookerQuery,
@@ -115,6 +96,8 @@ from google.cloud.geminidataanalytics_v1alpha.types.data_chat_service import (
 from google.cloud.geminidataanalytics_v1alpha.types.datasource import (
     BigQueryTableReference,
     BigQueryTableReferences,
+    DataFilter,
+    DataFilterType,
     Datasource,
     DatasourceReferences,
     Field,
@@ -127,8 +110,6 @@ from google.cloud.geminidataanalytics_v1alpha.types.datasource import (
 )
 
 __all__ = (
-    "ContextRetrievalServiceClient",
-    "ContextRetrievalServiceAsyncClient",
     "DataAgentServiceClient",
     "DataAgentServiceAsyncClient",
     "DataChatServiceClient",
@@ -137,25 +118,13 @@ __all__ = (
     "ChartOptions",
     "Context",
     "ConversationOptions",
-    "DirectLookup",
-    "RetrieveBigQueryRecentRelevantTablesRequest",
-    "RetrieveBigQueryRecentRelevantTablesResponse",
-    "RetrieveBigQueryTableContextRequest",
-    "RetrieveBigQueryTableContextResponse",
-    "RetrieveBigQueryTableContextsFromRecentTablesRequest",
-    "RetrieveBigQueryTableContextsFromRecentTablesResponse",
-    "RetrieveBigQueryTableContextsRequest",
-    "RetrieveBigQueryTableContextsResponse",
-    "RetrieveBigQueryTableSuggestedDescriptionsRequest",
-    "RetrieveBigQueryTableSuggestedDescriptionsResponse",
-    "RetrieveBigQueryTableSuggestedExamplesRequest",
-    "RetrieveBigQueryTableSuggestedExamplesResponse",
-    "TableCandidate",
+    "ExampleQuery",
     "Conversation",
     "CreateConversationRequest",
     "GetConversationRequest",
     "ListConversationsRequest",
     "ListConversationsResponse",
+    "UpdateConversationRequest",
     "Credentials",
     "OAuthCredentials",
     "DataAgent",
@@ -184,6 +153,7 @@ __all__ = (
     "DataQuery",
     "DataResult",
     "ErrorMessage",
+    "ExampleQueries",
     "ListMessagesRequest",
     "ListMessagesResponse",
     "LookerQuery",
@@ -197,6 +167,7 @@ __all__ = (
     "UserMessage",
     "BigQueryTableReference",
     "BigQueryTableReferences",
+    "DataFilter",
     "Datasource",
     "DatasourceReferences",
     "Field",
@@ -206,4 +177,5 @@ __all__ = (
     "Schema",
     "StudioDatasourceReference",
     "StudioDatasourceReferences",
+    "DataFilterType",
 )

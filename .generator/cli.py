@@ -14,6 +14,7 @@
 
 import argparse
 import glob
+import itertools
 import json
 import logging
 import os
@@ -21,8 +22,14 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import yaml
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List
+import build.util
+import parse_googleapis_content
+
 
 try:
     import synthtool
@@ -36,13 +43,46 @@ except ImportError as e:  # pragma: NO COVER
 
 logger = logging.getLogger()
 
-LIBRARIAN_DIR = "librarian"
-GENERATE_REQUEST_FILE = "generate-request.json"
-INPUT_DIR = "input"
 BUILD_REQUEST_FILE = "build-request.json"
-SOURCE_DIR = "source"
+GENERATE_REQUEST_FILE = "generate-request.json"
+CONFIGURE_REQUEST_FILE = "configure-request.json"
+RELEASE_INIT_REQUEST_FILE = "release-init-request.json"
+STATE_YAML_FILE = "state.yaml"
+
+INPUT_DIR = "input"
+LIBRARIAN_DIR = "librarian"
 OUTPUT_DIR = "output"
 REPO_DIR = "repo"
+SOURCE_DIR = "source"
+
+_REPO_URL = "https://github.com/googleapis/google-cloud-python"
+
+
+def _read_text_file(path: str) -> str:
+    """Helper function that reads a text file path and returns the content.
+
+    Args:
+        path(str): The file path to read.
+
+    Returns:
+        str: The contents of the file.
+    """
+
+    with open(path, "r") as f:
+        return f.read()
+
+
+def _write_text_file(path: str, updated_content: str):
+    """Helper function that writes a text file path with the given content.
+
+    Args:
+        path(str): The file path to write.
+        updated_content(str): The contents to write to the file.
+    """
+
+    os.makedirs(Path(path).parent, exist_ok=True)
+    with open(path, "w") as f:
+        f.write(updated_content)
 
 
 def _read_json_file(path: str) -> Dict:
@@ -63,49 +103,167 @@ def _read_json_file(path: str) -> Dict:
         return json.load(f)
 
 
-def handle_configure():
-    # TODO(https://github.com/googleapis/librarian/issues/466): Implement configure command and update docstring.
-    logger.info("'configure' command executed.")
-
-
-def _determine_bazel_rule(api_path: str, source: str) -> str:
-    """Finds a Bazel rule by parsing the BUILD.bazel file directly.
+def _write_json_file(path: str, updated_content: Dict):
+    """Helper function that writes a json file with the given dictionary.
 
     Args:
-        api_path (str): The API path, e.g., 'google/cloud/language/v1'.
-        source(str): The path to the root of the Bazel workspace.
+        path(str): The file path to write.
+        updated_content(Dict): The dictionary to write.
+    """
+
+    with open(path, "w") as f:
+        json.dump(updated_content, f, indent=2)
+        f.write("\n")
+
+
+def _add_new_library_source_roots(library_config: Dict, library_id: str) -> None:
+    """Adds the default source_roots to the library configuration if not present.
+
+    Args:
+        library_config(Dict): The library configuration.
+        library_id(str): The id of the library.
+    """
+    if library_config["source_roots"] is None:
+        library_config["source_roots"] = [f"packages/{library_id}"]
+
+
+def _add_new_library_preserve_regex(library_config: Dict, library_id: str) -> None:
+    """Adds the default preserve_regex to the library configuration if not present.
+
+    Args:
+        library_config(Dict): The library configuration.
+        library_id(str): The id of the library.
+    """
+    if library_config["preserve_regex"] is None:
+        library_config["preserve_regex"] = [
+            f"packages/{library_id}/CHANGELOG.md",
+            "docs/CHANGELOG.md",
+            "docs/README.rst",
+            "samples/README.txt",
+            "scripts/client-post-processing",
+            "samples/snippets/README.rst",
+            "tests/system",
+        ]
+
+
+def _add_new_library_remove_regex(library_config: Dict, library_id: str) -> None:
+    """Adds the default remove_regex to the library configuration if not present.
+
+    Args:
+        library_config(Dict): The library configuration.
+        library_id(str): The id of the library.
+    """
+    if library_config["remove_regex"] is None:
+        library_config["remove_regex"] = [f"packages/{library_id}"]
+
+
+def _add_new_library_tag_format(library_config: Dict) -> None:
+    """Adds the default tag_format to the library configuration if not present.
+
+    Args:
+        library_config(Dict): The library configuration.
+    """
+    if "tag_format" not in library_config:
+        library_config["tag_format"] = "{id}-v{version}"
+
+
+def _get_new_library_config(request_data: Dict) -> Dict:
+    """Finds and returns the configuration for a new library.
+
+    Args:
+        request_data(Dict): The request data from which to extract the new
+        library config.
 
     Returns:
-        str: The discovered Bazel rule, e.g., '//google/cloud/language/v1:language-v1-py'.
+        Dict: The unmodified configuration of a new library, or an empty
+        dictionary if not found.
+    """
+    for library_config in request_data.get("libraries", []):
+        all_apis = library_config.get("apis", [])
+        for api in all_apis:
+            if api.get("status") == "new":
+                return library_config
+    return {}
+
+
+def _add_new_library_version(library_config: Dict) -> None:
+    """Adds the library version to the configuration if it's not present.
+
+    Args:
+        library_config(Dict): The library configuration.
+    """
+    if "version" not in library_config or not library_config["version"]:
+        library_config["version"] = "0.0.0"
+
+
+def _prepare_new_library_config(library_config: Dict) -> Dict:
+    """
+    Prepares the new library's configuration by removing temporary keys and
+    adding default values.
+
+    Args:
+        library_config (Dict): The raw library configuration.
+
+    Returns:
+        Dict: The prepared library configuration.
+    """
+    # remove status key from new library config.
+    all_apis = library_config.get("apis", [])
+    for api in all_apis:
+        if "status" in api:
+            del api["status"]
+
+    library_id = _get_library_id(library_config)
+    _add_new_library_source_roots(library_config, library_id)
+    _add_new_library_preserve_regex(library_config, library_id)
+    _add_new_library_remove_regex(library_config, library_id)
+    _add_new_library_tag_format(library_config)
+    _add_new_library_version(library_config)
+
+    return library_config
+
+
+def handle_configure(
+    librarian: str = LIBRARIAN_DIR,
+    source: str = SOURCE_DIR,
+    repo: str = REPO_DIR,
+    input: str = INPUT_DIR,
+):
+    """Onboards a new library by completing its configuration.
+
+    This function reads a partial library definition from `configure-request.json`,
+    fills in missing fields like the version, source roots, and preservation
+    rules, and writes the complete configuration to `configure-response.json`.
+    It ensures that new libraries conform to the repository's standard structure.
+
+    See https://github.com/googleapis/librarian/blob/main/doc/container-contract.md#configure-container-command
+
+    Args:
+        librarian(str): Path to the directory in the container which contains
+            the librarian configuration.
+        source(str): Path to the directory in the container which contains
+            API protos.
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+        input(str): The path to the directory in the container
+            which contains additional generator input.
 
     Raises:
-        ValueError: If the file can't be processed or no matching rule is found.
+        ValueError: If configuring a new library fails.
     """
-    logger.info(f"Determining Bazel rule for api_path: '{api_path}' by parsing file.")
     try:
-        build_file_path = os.path.join(source, api_path, "BUILD.bazel")
+        # configure-request.json contains the library definitions.
+        request_data = _read_json_file(f"{librarian}/{CONFIGURE_REQUEST_FILE}")
+        new_library_config = _get_new_library_config(request_data)
+        prepared_config = _prepare_new_library_config(new_library_config)
 
-        with open(build_file_path, "r") as f:
-            content = f.read()
+        # Write the new library configuration to configure-response.json.
+        _write_json_file(f"{librarian}/configure-response.json", prepared_config)
 
-        match = re.search(r'name\s*=\s*"([^"]+-py)"', content)
-
-        # This check is for a logical failure (no match), not a runtime exception.
-        # It's good to keep it for clear error messaging.
-        if not match:  # pragma: NO COVER
-            raise ValueError(
-                f"No Bazel rule with a name ending in '-py' found in {build_file_path}"
-            )
-
-        rule_name = match.group(1)
-        bazel_rule = f"//{api_path}:{rule_name}"
-
-        logger.info(f"Found Bazel rule: {bazel_rule}")
-        return bazel_rule
     except Exception as e:
-        raise ValueError(
-            f"Failed to determine Bazel rule for '{api_path}' by parsing."
-        ) from e
+        raise ValueError("Configuring a new library failed.") from e
+    logger.info("'configure' command executed.")
 
 
 def _get_library_id(request_data: Dict) -> str:
@@ -124,107 +282,6 @@ def _get_library_id(request_data: Dict) -> str:
     if not library_id:
         raise ValueError("Request file is missing required 'id' field.")
     return library_id
-
-
-def _build_bazel_target(bazel_rule: str, source: str):
-    """Executes `bazelisk build` on a given Bazel rule.
-
-    Args:
-        bazel_rule(str): The Bazel rule to build.
-        source(str): The path to the root of the Bazel workspace.
-
-    Raises:
-        ValueError: If the subprocess call fails.
-    """
-    logger.info(f"Executing build for rule: {bazel_rule}")
-    try:
-        # We're using the prewarmed bazel cache from the docker image to speed up the bazelisk commands.
-        # Previously built artifacts are stored in `/bazel_cache/_bazel_ubuntu/output_base` and will be
-        # used to speed up the build. `disk_cache` is used as the 'remote cache' and is also prewarmed as part of
-        # the docker image.
-        # See https://bazel.build/remote/caching#disk-cache which explains using a file system as a 'remote cache'.
-        command = [
-            "bazelisk",
-            "--output_base=/bazel_cache/_bazel_ubuntu/output_base",
-            "build",
-            "--disk_cache=/bazel_cache/_bazel_ubuntu/cache/repos",
-            "--incompatible_strict_action_env",
-            bazel_rule,
-        ]
-        subprocess.run(
-            command,
-            cwd=source,
-            text=True,
-            check=True,
-        )
-        logger.info(f"Bazel build for {bazel_rule} rule completed successfully.")
-    except Exception as e:
-        raise ValueError(f"Bazel build for {bazel_rule} rule failed.") from e
-
-
-def _locate_and_extract_artifact(
-    bazel_rule: str,
-    library_id: str,
-    source: str,
-    output: str,
-    api_path: str,
-):
-    """Finds and extracts the tarball artifact from a Bazel build.
-
-    Args:
-        bazel_rule(str): The Bazel rule that was built.
-        library_id(str): The ID of the library being generated.
-        source(str): The path to the root of the Bazel workspace.
-        output(str): The path to the location where generated output
-            should be stored.
-        api_path(str): The API path for the artifact
-
-    Raises:
-        ValueError: If failed to locate or extract artifact.
-    """
-    try:
-        # 1. Find the bazel-bin output directory.
-        logger.info("Locating Bazel output directory...")
-        # Previously built artifacts are stored in `/bazel_cache/_bazel_ubuntu/output_base`.
-        # See `--output_base` in `_build_bazel_target`
-        info_command = [
-            "bazelisk",
-            "--output_base=/bazel_cache/_bazel_ubuntu/output_base",
-            "info",
-            "bazel-bin",
-        ]
-        result = subprocess.run(
-            info_command,
-            cwd=source,
-            text=True,
-            check=True,
-            capture_output=True,
-        )
-        bazel_bin_path = result.stdout.strip()
-
-        # 2. Construct the path to the generated tarball.
-        rule_path, rule_name = bazel_rule.split(":")
-        tarball_name = f"{rule_name}.tar.gz"
-        tarball_path = os.path.join(bazel_bin_path, rule_path.strip("/"), tarball_name)
-        logger.info(f"Found artifact at: {tarball_path}")
-
-        # 3. Create a staging directory.
-        api_version = api_path.split("/")[-1]
-        staging_dir = os.path.join(output, "owl-bot-staging", library_id, api_version)
-        os.makedirs(staging_dir, exist_ok=True)
-        logger.info(f"Preparing staging directory: {staging_dir}")
-
-        # 4. Extract the artifact.
-        extract_command = ["tar", "-xvf", tarball_path, "--strip-components=1"]
-        subprocess.run(
-            extract_command, cwd=staging_dir, capture_output=True, text=True, check=True
-        )
-        logger.info(f"Artifact {tarball_path} extracted successfully.")
-
-    except Exception as e:
-        raise ValueError(
-            f"Failed to locate or extract artifact for {bazel_rule} rule"
-        ) from e
 
 
 def _run_post_processor(output: str, library_id: str):
@@ -260,14 +317,22 @@ def _copy_files_needed_for_post_processing(output: str, input: str, library_id: 
     """
 
     path_to_library = f"packages/{library_id}"
+    repo_metadata_path = f"{input}/{path_to_library}/.repo-metadata.json"
 
     # We need to create these directories so that we can copy files necessary for post-processing.
-    os.makedirs(f"{output}/{path_to_library}")
-    os.makedirs(f"{output}/{path_to_library}/scripts/client-post-processing")
-    shutil.copy(
-        f"{input}/{path_to_library}/.repo-metadata.json",
-        f"{output}/{path_to_library}/.repo-metadata.json",
+    os.makedirs(
+        f"{output}/{path_to_library}/scripts/client-post-processing", exist_ok=True
     )
+    # TODO(https://github.com/googleapis/librarian/issues/2334):
+    # if `.repo-metadata.json` for a library exists in
+    # `.librarian/generator-input`, then we override the generated `.repo-metadata.json`
+    # with what we have in `generator-input`. Remove this logic once the
+    # generated `.repo-metadata.json` file is completely backfilled.
+    if os.path.exists(repo_metadata_path):
+        shutil.copy(
+            repo_metadata_path,
+            f"{output}/{path_to_library}/.repo-metadata.json",
+        )
 
     # copy post-procesing files
     for post_processing_file in glob.glob(
@@ -308,15 +373,116 @@ def _clean_up_files_after_post_processing(output: str, library_id: str):
     ):  # pragma: NO COVER
         os.remove(post_processing_file)
 
-    for gapic_version_file in glob.glob(
-        f"{output}/{path_to_library}/**/gapic_version.py", recursive=True
-    ):  # pragma: NO COVER
-        os.remove(gapic_version_file)
 
-    for snippet_metadata_file in glob.glob(
-        f"{output}/{path_to_library}/samples/generated_samples/snippet_metadata*.json"
-    ):  # pragma: NO COVER
-        os.remove(snippet_metadata_file)
+def _determine_release_level(api_path: str) -> str:
+    # TODO(https://github.com/googleapis/librarian/issues/2352): Determine if
+    # this logic can be used to set the release level.
+    # For now, we set the release_level as "preview" for newly generated clients.
+    """Determines the release level from the API path.
+
+    Args:
+        api_path (str): The path to the API.
+
+    Returns:
+        str: The release level, which can be 'preview' or 'stable'.
+    """
+    version = Path(api_path).name
+    if "beta" in version or "alpha" in version:
+        return "preview"
+    return "stable"
+
+
+def _create_repo_metadata_from_service_config(
+    service_config_name: str, api_path: str, source: str, library_id: str
+) -> Dict:
+    """Creates the .repo-metadata.json content from the service config.
+
+    Args:
+        service_config_name (str): The name of the service config file.
+        api_path (str): The path to the API.
+        source (str): The path to the source directory.
+        library_id (str): The ID of the library.
+
+    Returns:
+        Dict: The content of the .repo-metadata.json file.
+    """
+    full_service_config_path = f"{source}/{api_path}/{service_config_name}"
+    with open(full_service_config_path, "r") as f:
+        service_config = yaml.safe_load(f)
+
+    api_id = service_config.get("name", {})
+    publishing = service_config.get("publishing", {})
+    name_pretty = service_config.get("title", "")
+    product_documentation = publishing.get("documentation_uri", "")
+    api_shortname = service_config.get("name", "").split(".")[0]
+    documentation = service_config.get("documentation", {})
+    api_description = documentation.get("summary", "")
+    issue_tracker = service_config.get(
+        "new_issue_uri", "https://github.com/googleapis/google-cloud-python/issues"
+    )
+
+    # TODO(https://github.com/googleapis/librarian/issues/2352): Determine if
+    # `_determine_release_level` can be used to
+    # set the release level. For now, we set the release_level as "preview" for
+    # newly generated clients.
+    release_level = "preview"
+
+    return {
+        "name": library_id,
+        "name_pretty": name_pretty,
+        "api_description": api_description,
+        "product_documentation": product_documentation,
+        "client_documentation": f"https://cloud.google.com/python/docs/reference/{library_id}/latest",
+        "issue_tracker": issue_tracker,
+        "release_level": release_level,
+        "language": "python",
+        "library_type": "GAPIC_AUTO",
+        "repo": "googleapis/google-cloud-python",
+        "distribution_name": library_id,
+        "api_id": api_id,
+        # TODO(https://github.com/googleapis/librarian/issues/2369):
+        # Remove the dependency on `default_version` for Python post processor.
+        "default_version": Path(api_path).name,
+        "api_shortname": api_shortname,
+    }
+
+
+def _generate_repo_metadata_file(
+    output: str, library_id: str, source: str, apis: List[Dict]
+):
+    """Generates the .repo-metadata.json file from the primary API service config.
+
+    Args:
+        output (str): The path to the output directory.
+        library_id (str): The ID of the library.
+        source (str): The path to the source directory.
+        apis (List[Dict]): A list of APIs to generate.
+    """
+    path_to_library = f"packages/{library_id}"
+    output_repo_metadata = f"{output}/{path_to_library}/.repo-metadata.json"
+
+    # TODO(https://github.com/googleapis/librarian/issues/2334)): If `.repo-metadata.json`
+    # already exists in the `output` dir, then this means that it has been successfully copied
+    # over from the `input` dir and we can skip the logic here. Remove the following logic
+    # once we clean up all the `.repo-metadata.json` files from `.librarian/generator-input`.
+    if os.path.exists(output_repo_metadata):
+        return
+
+    os.makedirs(f"{output}/{path_to_library}", exist_ok=True)
+
+    # TODO(https://github.com/googleapis/librarian/issues/2333): Programatically
+    # determine the primary api to be used to
+    # to determine the information for metadata. For now, let's use the first
+    # api in the list.
+    primary_api = apis[0]
+
+    metadata_content = _create_repo_metadata_from_service_config(
+        primary_api.get("service_config"),
+        primary_api.get("path"),
+        source,
+        library_id,
+    )
+    _write_json_file(output_repo_metadata, metadata_content)
 
 
 def handle_generate(
@@ -351,39 +517,179 @@ def handle_generate(
         # Read a generate-request.json file
         request_data = _read_json_file(f"{librarian}/{GENERATE_REQUEST_FILE}")
         library_id = _get_library_id(request_data)
-        for api in request_data.get("apis", []):
+        apis_to_generate = request_data.get("apis", [])
+        version = request_data.get("version")
+        for api in apis_to_generate:
             api_path = api.get("path")
             if api_path:
-                bazel_rule = _determine_bazel_rule(api_path, source)
-                _build_bazel_target(bazel_rule, source)
-                _locate_and_extract_artifact(
-                    bazel_rule, library_id, source, output, api_path
-                )
-
+                _generate_api(api_path, library_id, source, output, version)
         _copy_files_needed_for_post_processing(output, input, library_id)
+        _generate_repo_metadata_file(output, library_id, source, apis_to_generate)
         _run_post_processor(output, library_id)
         _clean_up_files_after_post_processing(output, library_id)
-
     except Exception as e:
         raise ValueError("Generation failed.") from e
-
-    # TODO(https://github.com/googleapis/librarian/issues/448): Implement generate command and update docstring.
     logger.info("'generate' command executed.")
 
 
-def _run_nox_sessions(sessions: List[str], librarian: str, repo: str):
+def _read_bazel_build_py_rule(api_path: str, source: str) -> Dict:
+    """
+    Reads and parses the BUILD.bazel file to find the Python GAPIC rule content.
+
+    Args:
+        api_path (str): The relative path to the API directory (e.g., 'google/cloud/language/v1').
+        source (str): Path to the directory containing API protos.
+
+    Returns:
+        Dict: A dictionary containing the parsed attributes of the `_py_gapic` rule.
+    """
+    build_file_path = f"{source}/{api_path}/BUILD.bazel"
+    content = _read_text_file(build_file_path)
+
+    result = parse_googleapis_content.parse_content(content)
+    py_gapic_entries = [key for key in result.keys() if key.endswith("_py_gapic")]
+
+    # Assuming only one _py_gapic rule per BUILD file for a given language
+    return result[py_gapic_entries[0]]
+
+
+def _get_api_generator_options(
+    api_path: str, py_gapic_config: Dict, gapic_version: str
+) -> List[str]:
+    """
+    Extracts generator options from the parsed Python GAPIC rule configuration.
+
+    Args:
+        api_path (str): The relative path to the API directory.
+        py_gapic_config (Dict): The parsed attributes of the Python GAPIC rule.
+        gapic_version(str): The desired version number for the GAPIC client library
+            in a format which follows PEP-440.
+
+    Returns:
+        List[str]: A list of formatted generator options (e.g., ['retry-config=...', 'transport=...']).
+    """
+    generator_options = []
+
+    # Mapping of Bazel rule attributes to protoc-gen-python_gapic options
+    config_key_map = {
+        "grpc_service_config": "retry-config",
+        "rest_numeric_enums": "rest-numeric-enums",
+        "service_yaml": "service-yaml",
+        "transport": "transport",
+    }
+
+    for bazel_key, protoc_key in config_key_map.items():
+        config_value = py_gapic_config.get(bazel_key)
+        if config_value is not None:
+            if bazel_key in ("service_yaml", "grpc_service_config"):
+                # These paths are relative to the source root
+                generator_options.append(f"{protoc_key}={api_path}/{config_value}")
+            else:
+                # Other options use the value directly
+                generator_options.append(f"{protoc_key}={config_value}")
+
+    # The value of `opt_args` in the `py_gapic` bazel rule is already a list of strings.
+    optional_arguments = py_gapic_config.get("opt_args", [])
+    # Specify `gapic-version` using the version from `state.yaml`
+    optional_arguments.extend([f"gapic-version={gapic_version}"])
+    # Add optional arguments
+    generator_options.extend(optional_arguments)
+
+    return generator_options
+
+
+def _determine_generator_command(
+    api_path: str, tmp_dir: str, generator_options: List[str]
+) -> str:
+    """
+    Constructs the full protoc command string.
+
+    Args:
+        api_path (str): The relative path to the API directory.
+        tmp_dir (str): The temporary directory for protoc output.
+        generator_options (List[str]): Extracted generator options.
+
+    Returns:
+        str: The complete protoc command string suitable for shell execution.
+    """
+    # Start with the protoc base command. The glob pattern requires shell=True.
+    command_parts = [
+        f"protoc {api_path}/*.proto",
+        f"--python_gapic_out={tmp_dir}",
+    ]
+
+    if generator_options:
+        # Protoc options are passed as a comma-separated list to --python_gapic_opt.
+        option_string = "metadata," + ",".join(generator_options)
+        command_parts.append(f"--python_gapic_opt={option_string}")
+
+    return " ".join(command_parts)
+
+
+def _run_generator_command(generator_command: str, source: str):
+    """
+    Executes the protoc generation command using subprocess.
+
+    Args:
+        generator_command (str): The complete protoc command string.
+        source (str): Path to the directory where the command should be run (API protos root).
+    """
+    # shell=True is required because the command string contains a glob pattern (*.proto)
+    subprocess.run(
+        [generator_command],
+        cwd=source,
+        shell=True,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _generate_api(
+    api_path: str, library_id: str, source: str, output: str, gapic_version: str
+):
+    """
+    Handles the generation and staging process for a single API path.
+
+    Args:
+        api_path (str): The relative path to the API directory (e.g., 'google/cloud/language/v1').
+        library_id (str): The ID of the library being generated.
+        source (str): Path to the directory containing API protos.
+        output (str): Path to the output directory where code should be staged.
+        gapic_version(str): The desired version number for the GAPIC client library
+            in a format which follows PEP-440.
+    """
+    py_gapic_config = _read_bazel_build_py_rule(api_path, source)
+    generator_options = _get_api_generator_options(
+        api_path, py_gapic_config, gapic_version=gapic_version
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        generator_command = _determine_generator_command(
+            api_path, tmp_dir, generator_options
+        )
+        _run_generator_command(generator_command, source)
+        api_version = api_path.split("/")[-1]
+        staging_dir = os.path.join(output, "owl-bot-staging", library_id, api_version)
+        shutil.copytree(tmp_dir, staging_dir)
+
+
+def _run_nox_sessions(library_id: str, repo: str):
     """Calls nox for all specified sessions.
 
     Args:
-        sessions(List[str]): The list of nox sessions to run.
-        librarian(str): The path to the librarian build configuration directory
+        library_id(str): The library id under test.
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global files declared in
+            the config.yaml.
     """
-    # Read a build-request.json file
+    sessions = [
+        "unit-3.13(protobuf_implementation='upb')",
+    ]
     current_session = None
     try:
-        request_data = _read_json_file(f"{librarian}/{BUILD_REQUEST_FILE}")
-        library_id = _get_library_id(request_data)
         for nox_session in sessions:
+            current_session = nox_session
             _run_individual_session(nox_session, library_id, repo)
 
     except Exception as e:
@@ -395,8 +701,11 @@ def _run_individual_session(nox_session: str, library_id: str, repo: str):
     Calls nox with the specified sessions.
 
     Args:
-        nox_session(str): The nox session to run
-        library_id(str): The library id under test
+        nox_session(str): The nox session to run.
+        library_id(str): The library id under test.
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
     """
 
     command = [
@@ -410,23 +719,498 @@ def _run_individual_session(nox_session: str, library_id: str, repo: str):
     logger.info(result)
 
 
+def _determine_library_namespace(
+    gapic_parent_path: Path, package_root_path: Path
+) -> str:
+    """
+    Determines the namespace from the gapic file's parent path relative
+    to its package root.
+
+    Args:
+        gapic_parent_path (Path): The absolute path to the directory containing
+                                  gapic_version.py (e.g., .../google/cloud/language).
+        package_root_path (Path): The absolute path to the root of the package
+                                  (e.g., .../packages/google-cloud-language).
+    """
+    # This robustly calculates the relative path, e.g., "google/cloud/language"
+    relative_path = gapic_parent_path.relative_to(package_root_path)
+
+    # relative_path.parts will be like: ('google', 'cloud', 'language')
+    # We want all parts *except* the last one (the service dir) to form the namespace.
+    namespace_parts = relative_path.parts[:-1]
+
+    if not namespace_parts and relative_path.parts:
+        # This handles the edge case where the parts are just ('google',).
+        # This implies the namespace is just "google".
+        return ".".join(relative_path.parts)
+
+    return ".".join(namespace_parts)
+
+
+def _verify_library_namespace(library_id: str, repo: str):
+    """
+    Verifies that all found package namespaces are one of
+    `google`, `google.cloud`, or `google.ads`.
+
+    Args:
+        library_id (str): The library id under test (e.g., "google-cloud-language").
+        repo (str): The path to the root of the repository.
+    """
+    # TODO(https://github.com/googleapis/google-cloud-python/issues/14376): Update the list of namespaces which are exceptions.
+    exception_namespaces = [
+        "google.area120",
+        "google.apps.script",
+        "google.apps.script.type",
+        "google.cloud.alloydb",
+        "google.cloud.billing",
+        "google.cloud.devtools",
+        "google.cloud.gkeconnect",
+        "google.cloud.gkehub_v1",
+        "google.cloud.orchestration.airflow",
+        "google.cloud.security",
+        "google.cloud.video",
+        "google.cloud.workflows",
+        "google.monitoring",
+    ]
+    valid_namespaces = [
+        "google",
+        "google.analytics",
+        "google.apps",
+        "google.ads",
+        "google.ai",
+        "google.cloud",
+        "google.geo",
+        "google.maps",
+        "google.shopping",
+        "grafeas",
+        *exception_namespaces,
+    ]
+    gapic_version_file = "gapic_version.py"
+
+    # This is now the "package root" path we will use for comparison
+    library_path = Path(f"{repo}/packages/{library_id}")
+
+    if not library_path.is_dir():
+        raise ValueError(f"Error: Path is not a directory: {library_path}")
+
+    # Recursively glob (rglob) for all 'gapic_version.py' files
+    all_gapic_files = list(library_path.rglob(gapic_version_file))
+
+    if not all_gapic_files:
+        raise ValueError(
+            f"Error: namespace cannot be determined for {library_id}."
+            f" Library is missing a `{gapic_version_file}`."
+        )
+
+    for gapic_file in all_gapic_files:
+        # The directory we want is the parent of `gapic_version.py` file.
+        gapic_parent_dir = gapic_file.parent
+
+        # Pass both the specific dir and the package root for a safe relative comparison
+        library_namespace = _determine_library_namespace(gapic_parent_dir, library_path)
+
+        if library_namespace not in valid_namespaces:
+            raise ValueError(
+                f"The namespace `{library_namespace}` for `{library_id}` must be one of {valid_namespaces}."
+            )
+
+
+def _get_library_dist_name(library_id: str, repo: str) -> str:
+    """
+    Gets the package name by programmatically building the metadata.
+
+    Args:
+        library_id: id of the library.
+        repo: This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+
+    Returns:
+        str: The library name string if found, otherwise None.
+    """
+    library_path = f"{repo}/packages/{library_id}"
+    metadata = build.util.project_wheel_metadata(library_path)
+    return metadata.get("name")
+
+
+def _verify_library_dist_name(library_id: str, repo: str):
+    """Verifies the library distribution name against its config files.
+
+    This function ensures that:
+    1. At least one of `setup.py` or `pyproject.toml` exists and is valid.
+    2. Any existing config file's 'name' property matches the `library_id`.
+
+    Args:
+        library_id: id of the library.
+        repo: This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+
+    Raises:
+        ValueError: If a name in an existing config file does not match the `library_id`.
+    """
+    dist_name = _get_library_dist_name(library_id, repo)
+    if dist_name != library_id:
+        raise ValueError(
+            f"The distribution name `{dist_name}` does not match the folder `{library_id}`."
+        )
+
+
 def handle_build(librarian: str = LIBRARIAN_DIR, repo: str = REPO_DIR):
     """The main coordinator for validating client library generation."""
-    sessions = [
-        "unit-3.9",
-        "unit-3.10",
-        "unit-3.11",
-        "unit-3.12",
-        "unit-3.13",
-        "docs",
-        "system-3.13",
-        "lint",
-        "lint_setup_py",
-        "mypy-3.13",
-    ]
-    _run_nox_sessions(sessions, librarian, repo)
+    try:
+        request_data = _read_json_file(f"{librarian}/{BUILD_REQUEST_FILE}")
+        library_id = _get_library_id(request_data)
+        _verify_library_namespace(library_id, repo)
+        _verify_library_dist_name(library_id, repo)
+        _run_nox_sessions(library_id, repo)
+    except Exception as e:
+        raise ValueError("Build failed.") from e
 
     logger.info("'build' command executed.")
+
+
+def _get_libraries_to_prepare_for_release(library_entries: Dict) -> List[dict]:
+    """Get libraries which should be prepared for release. Only libraries
+    which have the `release_triggered` field set to `True` will be returned.
+
+    Args:
+        library_entries(Dict): Dictionary containing all of the libraries to
+        evaluate.
+
+    Returns:
+        List[dict]: List of all libraries which should be prepared for release,
+        along with the corresponding information for the release.
+    """
+    return [
+        library
+        for library in library_entries["libraries"]
+        if library.get("release_triggered")
+    ]
+
+
+def _update_global_changelog(
+    changelog_src: str, changelog_dest: str, all_libraries: List[dict]
+):
+    """Updates the versions of libraries in the main CHANGELOG.md.
+
+    Args:
+        changelog_src(str): Path to the changelog file to read.
+        changelog_dest(str): Path to the changelog file to write.
+        all_libraries(Dict): Dictionary containing all of the library versions to
+        modify.
+    """
+
+    def replace_version_in_changelog(content):
+        new_content = content
+        for library in all_libraries:
+            library_id = library["id"]
+            version = library["version"]
+            # Find the entry for the given library in the format`<library_id>==<version>`
+            # Replace the `<version>` part of the string.
+            pattern = re.compile(f"(\\[{re.escape(library_id)})(==)([\\d\\.]+)(\\])")
+            replacement = f"\\g<1>=={version}\\g<4>"
+            new_content = pattern.sub(replacement, new_content)
+        return new_content
+
+    updated_content = replace_version_in_changelog(_read_text_file(changelog_src))
+    _write_text_file(changelog_dest, updated_content)
+
+
+def _process_version_file(content, version, version_path) -> str:
+    """This function searches for a version string in the
+    given content, replaces the version and returns the content.
+
+    Args:
+        content(str): The contents where the version string should be replaced.
+        version(str): The new version of the library.
+        version_path(str): The relative path to the version file
+
+    Raises: ValueError if the version string could not be found in the given content
+
+    Returns: A string with the modified content.
+    """
+    pattern = r"(__version__\s*=\s*[\"'])([^\"']+)([\"'].*)"
+    replacement_string = f"\\g<1>{version}\\g<3>"
+    new_content, num_replacements = re.subn(pattern, replacement_string, content)
+    if num_replacements == 0:
+        raise ValueError(
+            f"Could not find version string in {version_path}. File was not modified."
+        )
+    return new_content
+
+
+def _update_version_for_library(
+    repo: str, output: str, path_to_library: str, version: str
+):
+    """Updates the version string in `**/gapic_version.py` and `samples/**/snippet_metadata.json`
+        for a given library.
+
+    Args:
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+        output(str): Path to the directory in the container where modified
+            code should be placed.
+        path_to_library(str): Relative path to the library to update
+        version(str): The new version of the library
+
+    Raises: `ValueError` if a version string could not be located in `**/gapic_version.py`
+        within the given library.
+    """
+
+    # Find and update gapic_version.py files
+    gapic_version_files = Path(f"{repo}/{path_to_library}").rglob("**/gapic_version.py")
+    for version_file in gapic_version_files:
+        updated_content = _process_version_file(
+            _read_text_file(version_file), version, version_file
+        )
+        output_path = f"{output}/{version_file.relative_to(repo)}"
+        _write_text_file(output_path, updated_content)
+
+    # Find and update snippet_metadata.json files
+    snippet_metadata_files = Path(f"{repo}/{path_to_library}").rglob(
+        "samples/**/*.json"
+    )
+    for metadata_file in snippet_metadata_files:
+        output_path = f"{output}/{metadata_file.relative_to(repo)}"
+        os.makedirs(Path(output_path).parent, exist_ok=True)
+        shutil.copy(metadata_file, output_path)
+
+        metadata_contents = _read_json_file(metadata_file)
+        metadata_contents["clientLibrary"]["version"] = version
+        _write_json_file(output_path, metadata_contents)
+
+
+def _get_previous_version(library_id: str, librarian: str) -> str:
+    """Gets the previous version of the library from state.yaml.
+
+    Args:
+        library_id(str): id of the library.
+        librarian(str): Path to the directory in the container which contains
+            the `state.yaml` file.
+
+    Returns:
+        str: The version for a given library in state.yaml
+    """
+    state_yaml_path = f"{librarian}/{STATE_YAML_FILE}"
+
+    with open(state_yaml_path, "r") as state_yaml_file:
+        state_yaml = yaml.safe_load(state_yaml_file)
+        for library in state_yaml.get("libraries", []):
+            if library.get("id") == library_id:
+                return library.get("version")
+
+    raise ValueError(
+        f"Could not determine previous version for {library_id} from state.yaml"
+    )
+
+
+def _create_main_version_header(
+    version: str, previous_version: str, library_id: str
+) -> str:
+    """This function creates a header to be used in a changelog. The header has the following format:
+    `## [{version}](https://github.com/googleapis/google-cloud-python/compare/{library_id}-v{previous_version}...{library_id}-v{version}) (YYYY-MM-DD)`
+
+    Args:
+        version(str): The new version of the library.
+        previous_version(str): The previous version of the library.
+        library_id(str): The id of the library where the changelog should
+            be updated.
+
+    Returns:
+        A header to be used in the changelog.
+    """
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    # Return the main version header
+    return (
+        f"## [{version}]({_REPO_URL}/compare/{library_id}-v{previous_version}"
+        f"...{library_id}-v{version}) ({current_date})"
+    )
+
+
+def _process_changelog(
+    content: str,
+    library_changes: List[Dict],
+    version: str,
+    previous_version: str,
+    library_id: str,
+):
+    """This function searches the given content for the anchor pattern
+    `[1]: https://pypi.org/project/{library_id}/#history`
+    and adds an entry in the following format:
+
+    ## [{version}](https://github.com/googleapis/google-cloud-python/compare/{library_id}-v{previous_version}...{library_id}-v{version}) (YYYY-MM-DD)
+
+    ### Documentation
+
+    * Update import statement example in README ([868b006](https://github.com/googleapis/google-cloud-python/commit/868b0069baf1a4bf6705986e0b6885419b35cdcc))
+
+    Args:
+        content(str): The contents of an existing changelog.
+        library_changes(List[Dict]): List of dictionaries containing the changes
+            for a given library.
+        version(str): The new version of the library.
+        previous_version(str): The previous version of the library.
+        library_id(str): The id of the library where the changelog should
+            be updated.
+
+    Raises: ValueError if the anchor pattern string could not be found in the given content
+
+    Returns: A string with the modified content.
+    """
+    entry_parts = []
+    entry_parts.append(
+        _create_main_version_header(
+            version=version, previous_version=previous_version, library_id=library_id
+        )
+    )
+
+    # Group changes by type (e.g., feat, fix, docs)
+    type_key = "type"
+    source_commit_hash_key = "source_commit_hash"
+    subject_key = "subject"
+    body_key = "body"
+    library_changes.sort(key=lambda x: x[type_key])
+    grouped_changes = itertools.groupby(library_changes, key=lambda x: x[type_key])
+
+    change_type_map = {
+        "feat": "Features",
+        "fix": "Bug Fixes",
+        "docs": "Documentation",
+    }
+    for library_change_type, library_changes in grouped_changes:
+        # We only care about feat, fix, docs
+        adjusted_change_type = library_change_type.replace("!", "")
+        if adjusted_change_type in change_type_map:
+            entry_parts.append(f"\n\n### {change_type_map[adjusted_change_type]}\n")
+            for change in library_changes:
+                commit_link = f"([{change[source_commit_hash_key]}]({_REPO_URL}/commit/{change[source_commit_hash_key]}))"
+                entry_parts.append(
+                    f"* {change[subject_key]} {change[body_key]} {commit_link}"
+                )
+
+    new_entry_text = "\n".join(entry_parts)
+    anchor_pattern = re.compile(
+        rf"(\[1\]: https://pypi\.org/project/{library_id}/#history)",
+        re.MULTILINE,
+    )
+    replacement_text = f"\\g<1>\n\n{new_entry_text}"
+    updated_content, num_subs = anchor_pattern.subn(replacement_text, content, count=1)
+    if num_subs == 0:
+        raise ValueError("Changelog anchor '[1]: ...#history' not found.")
+
+    return updated_content
+
+
+def _update_changelog_for_library(
+    repo: str,
+    output: str,
+    library_changes: List[Dict],
+    version: str,
+    previous_version: str,
+    library_id: str,
+):
+    """Prepends a new release entry with multiple, grouped changes, to a changelog.
+
+    Args:
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+        output(str): Path to the directory in the container where modified
+            code should be placed.
+        library_changes(List[Dict]): List of dictionaries containing the changes
+            for a given library
+        version(str): The desired version
+        previous_version(str): The version in state.yaml for a given library
+        library_id(str): The id of the library where the changelog should
+            be updated.
+    """
+
+    relative_path = f"packages/{library_id}/CHANGELOG.md"
+    changelog_src = f"{repo}/{relative_path}"
+    changelog_dest = f"{output}/{relative_path}"
+    updated_content = _process_changelog(
+        _read_text_file(changelog_src),
+        library_changes,
+        version,
+        previous_version,
+        library_id,
+    )
+    _write_text_file(changelog_dest, updated_content)
+
+
+def handle_release_init(
+    librarian: str = LIBRARIAN_DIR, repo: str = REPO_DIR, output: str = OUTPUT_DIR
+):
+    """The main coordinator for the release preparation process.
+
+    This function prepares for the release of client libraries by reading a
+    `librarian/release-init-request.json` file. The primary responsibility is
+    to update all required files with the new version and commit information
+    for libraries that have the `release_triggered` field set to `True`.
+
+    See https://github.com/googleapis/librarian/blob/main/doc/container-contract.md#generate-container-command
+
+    Args:
+        librarian(str): Path to the directory in the container which contains
+            the `release-init-request.json` file.
+        repo(str): This directory will contain all directories that make up a
+            library, the .librarian folder, and any global file declared in
+            the config.yaml.
+        output(str): Path to the directory in the container where modified
+            code should be placed.
+
+    Raises:
+        ValueError: if the version in `release-init-request.json` is
+            the same as the version in state.yaml or if the
+            `release-init-request.json` file in the given
+            librarian directory cannot be read.
+    """
+
+    try:
+        # Read a release-init-request.json file
+        request_data = _read_json_file(f"{librarian}/{RELEASE_INIT_REQUEST_FILE}")
+        libraries_to_prep_for_release = _get_libraries_to_prepare_for_release(
+            request_data
+        )
+
+        _update_global_changelog(
+            f"{repo}/CHANGELOG.md",
+            f"{output}/CHANGELOG.md",
+            libraries_to_prep_for_release,
+        )
+
+        # Prepare the release for each library by updating the
+        # library specific version files and library specific changelog.
+        for library_release_data in libraries_to_prep_for_release:
+            version = library_release_data["version"]
+            library_id = library_release_data["id"]
+            library_changes = library_release_data["changes"]
+            path_to_library = f"packages/{library_id}"
+
+            # Get previous version from state.yaml
+            previous_version = _get_previous_version(library_id, librarian)
+            if previous_version == version:
+                raise ValueError(
+                    f"The version in {RELEASE_INIT_REQUEST_FILE} is the same as the version in {STATE_YAML_FILE}\n"
+                    f"{library_id} version: {previous_version}\n"
+                )
+
+            _update_version_for_library(repo, output, path_to_library, version)
+            _update_changelog_for_library(
+                repo,
+                output,
+                library_changes,
+                version,
+                previous_version,
+                library_id,
+            )
+
+    except Exception as e:
+        raise ValueError(f"Release init failed: {e}") from e
+
+    logger.info("'release-init' command executed.")
 
 
 if __name__ == "__main__":  # pragma: NO COVER
@@ -435,17 +1219,19 @@ if __name__ == "__main__":  # pragma: NO COVER
         dest="command", required=True, help="Available commands"
     )
 
-    # Define commands
+    # Define commands and their corresponding handler functions
     handler_map = {
         "configure": handle_configure,
         "generate": handle_generate,
         "build": handle_build,
+        "release-init": handle_release_init,
     }
 
     for command_name, help_text in [
         ("configure", "Onboard a new library or an api path to Librarian workflow."),
         ("generate", "generate a python client for an API."),
         ("build", "Run unit tests via nox for the generated library."),
+        ("release-init", "Prepare to release a given set of libraries"),
     ]:
         parser_cmd = subparsers.add_parser(command_name, help=help_text)
         parser_cmd.set_defaults(func=handler_map[command_name])
@@ -477,8 +1263,9 @@ if __name__ == "__main__":  # pragma: NO COVER
             "--repo",
             type=str,
             help="Path to the directory in the container which contains google-cloud-python repository",
-            default=SOURCE_DIR,
+            default=REPO_DIR,
         )
+
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
@@ -486,7 +1273,14 @@ if __name__ == "__main__":  # pragma: NO COVER
     args = parser.parse_args()
 
     # Pass specific arguments to the handler functions for generate/build
-    if args.command == "generate":
+    if args.command == "configure":
+        args.func(
+            librarian=args.librarian,
+            source=args.source,
+            repo=args.repo,
+            input=args.input,
+        )
+    elif args.command == "generate":
         args.func(
             librarian=args.librarian,
             source=args.source,
@@ -495,5 +1289,7 @@ if __name__ == "__main__":  # pragma: NO COVER
         )
     elif args.command == "build":
         args.func(librarian=args.librarian, repo=args.repo)
+    elif args.command == "release-init":
+        args.func(librarian=args.librarian, repo=args.repo, output=args.output)
     else:
         args.func()

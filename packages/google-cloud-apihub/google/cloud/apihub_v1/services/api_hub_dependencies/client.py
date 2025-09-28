@@ -70,6 +70,8 @@ from google.cloud.apihub_v1.services.api_hub_dependencies import pagers
 from google.cloud.apihub_v1.types import apihub_service, common_fields
 
 from .transports.base import DEFAULT_CLIENT_INFO, ApiHubDependenciesTransport
+from .transports.grpc import ApiHubDependenciesGrpcTransport
+from .transports.grpc_asyncio import ApiHubDependenciesGrpcAsyncIOTransport
 from .transports.rest import ApiHubDependenciesRestTransport
 
 
@@ -84,6 +86,8 @@ class ApiHubDependenciesClientMeta(type):
     _transport_registry = (
         OrderedDict()
     )  # type: Dict[str, Type[ApiHubDependenciesTransport]]
+    _transport_registry["grpc"] = ApiHubDependenciesGrpcTransport
+    _transport_registry["grpc_asyncio"] = ApiHubDependenciesGrpcAsyncIOTransport
     _transport_registry["rest"] = ApiHubDependenciesRestTransport
 
     def get_transport_class(
@@ -812,10 +816,10 @@ class ApiHubDependenciesClient(metaclass=ApiHubDependenciesClientMeta):
                 which will become the final component of the
                 dependency's resource name. This field is optional.
 
-                -  If provided, the same will be used. The service will
-                   throw an error if duplicate id is provided by the
-                   client.
-                -  If not provided, a system generated id will be used.
+                - If provided, the same will be used. The service will
+                  throw an error if duplicate id is provided by the
+                  client.
+                - If not provided, a system generated id will be used.
 
                 This value should be 4-500 characters, and valid
                 characters are ``[a-z][A-Z][0-9]-_``.
@@ -836,9 +840,9 @@ class ApiHubDependenciesClient(metaclass=ApiHubDependenciesClientMeta):
                 A dependency resource defined in the API hub describes a dependency directed
                    from a consumer to a supplier entity. A dependency
                    can be defined between two
-                   [Operations][google.cloud.apihub.v1.Operation] or
+                   [Operations][google.cloud.apihub.v1.ApiOperation] or
                    between an
-                   [Operation][google.cloud.apihub.v1.Operation] and
+                   [Operation][google.cloud.apihub.v1.ApiOperation] and
                    [External API][google.cloud.apihub.v1.ExternalApi].
 
         """
@@ -955,9 +959,9 @@ class ApiHubDependenciesClient(metaclass=ApiHubDependenciesClientMeta):
                 A dependency resource defined in the API hub describes a dependency directed
                    from a consumer to a supplier entity. A dependency
                    can be defined between two
-                   [Operations][google.cloud.apihub.v1.Operation] or
+                   [Operations][google.cloud.apihub.v1.ApiOperation] or
                    between an
-                   [Operation][google.cloud.apihub.v1.Operation] and
+                   [Operation][google.cloud.apihub.v1.ApiOperation] and
                    [External API][google.cloud.apihub.v1.ExternalApi].
 
         """
@@ -1024,7 +1028,7 @@ class ApiHubDependenciesClient(metaclass=ApiHubDependenciesClientMeta):
         The following fields in the
         [dependency][google.cloud.apihub.v1.Dependency] can be updated:
 
-        -  [description][google.cloud.apihub.v1.Dependency.description]
+        - [description][google.cloud.apihub.v1.Dependency.description]
 
         .. code-block:: python
 
@@ -1091,9 +1095,9 @@ class ApiHubDependenciesClient(metaclass=ApiHubDependenciesClientMeta):
                 A dependency resource defined in the API hub describes a dependency directed
                    from a consumer to a supplier entity. A dependency
                    can be defined between two
-                   [Operations][google.cloud.apihub.v1.Operation] or
+                   [Operations][google.cloud.apihub.v1.ApiOperation] or
                    between an
-                   [Operation][google.cloud.apihub.v1.Operation] and
+                   [Operation][google.cloud.apihub.v1.ApiOperation] and
                    [External API][google.cloud.apihub.v1.ExternalApi].
 
         """
