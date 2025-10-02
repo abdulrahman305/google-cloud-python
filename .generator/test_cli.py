@@ -1357,7 +1357,7 @@ def test_verify_library_namespace_error_no_gapic_file(mocker, mock_path_class):
     mock_path_class.assert_called_once_with("repo/packages/my-lib")
 
 
-def test_get_staging_child_directory_gapic():
+def test_get_staging_child_directory_gapic_versioned():
     """
     Tests the behavior for GAPIC clients with standard 'v' prefix versioning.
     Should return only the version segment (e.g., 'v1').
@@ -1365,6 +1365,15 @@ def test_get_staging_child_directory_gapic():
     # Standard v1
     api_path = "google/cloud/language/v1"
     expected = "v1"
+    assert _get_staging_child_directory(api_path, False) == expected
+
+def test_get_staging_child_directory_gapic_non_versioned():
+    """
+    Tests the behavior for GAPIC clients with no standard 'v' prefix versioning.
+    Should return library-py
+    """
+    api_path = "google/cloud/language"
+    expected = "language-py"
     assert _get_staging_child_directory(api_path, False) == expected
 
 
@@ -1440,4 +1449,6 @@ def test_stage_gapic_library(mocker):
     _stage_gapic_library(tmp_dir, staging_dir)
 
     # Assertion: Check copytree was called exactly once with the correct arguments
-    mock_shutil_copytree.assert_called_once_with(tmp_dir, staging_dir)
+    mock_shutil_copytree.assert_called_once_with(
+        tmp_dir, staging_dir, dirs_exist_ok=True
+    )

@@ -694,9 +694,12 @@ def _get_staging_child_directory(api_path: str, is_proto_only_library: bool) -> 
     version_candidate = api_path.split("/")[-1]
     if version_candidate.startswith("v") and not is_proto_only_library:
         return version_candidate
-    else:
-        # Fallback for non-'v' version segment
+    elif is_proto_only_library:
+        # Fallback for non-'v' version segment for proto-only library
         return f"{os.path.basename(api_path)}-py/{api_path}"
+    else:
+        # Fallback for non-'v' version segment for GAPIC
+        return f"{os.path.basename(api_path)}-py"
 
 
 def _stage_proto_only_library(
@@ -741,7 +744,7 @@ def _stage_gapic_library(tmp_dir: str, staging_dir: str) -> None:
     """
     # For GAPIC, the generator output is flat in `tmp_dir` and includes all
     # necessary files like setup.py, client library, etc.
-    shutil.copytree(tmp_dir, staging_dir)
+    shutil.copytree(tmp_dir, staging_dir, dirs_exist_ok=True)
 
 
 def _generate_api(
@@ -775,7 +778,9 @@ def _generate_api(
         _run_protoc_command(command, source)
 
         # 3. Determine staging location
-        staging_child_directory = _get_staging_child_directory(api_path, is_proto_only_library)
+        staging_child_directory = _get_staging_child_directory(
+            api_path, is_proto_only_library
+        )
         staging_dir = os.path.join(
             output, "owl-bot-staging", library_id, staging_child_directory
         )
@@ -886,6 +891,7 @@ def _verify_library_namespace(library_id: str, repo: str):
         "google.cloud.video",
         "google.cloud.workflows",
         "google.gapic",
+        "google.identity.accesscontextmanager",
         "google.logging",
         "google.monitoring",
         "google.rpc",
