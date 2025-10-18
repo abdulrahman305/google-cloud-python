@@ -42,42 +42,6 @@
                 }
             ],
             "release-type": "python"
-        },
-        "packages/google-cloud-dialogflow-cx": {
-            "bump-minor-pre-major": true,
-            "bump-patch-for-minor-pre-major": true,
-            "component": "google-cloud-dialogflow-cx",
-            "extra-files": [
-                "google/cloud/dialogflowcx/gapic_version.py",
-                "google/cloud/dialogflowcx_v3/gapic_version.py",
-                "google/cloud/dialogflowcx_v3beta1/gapic_version.py",
-                {
-                    "jsonpath": "$.clientLibrary.version",
-                    "path": "samples/generated_samples/snippet_metadata_google.cloud.dialogflow.cx.v3.json",
-                    "type": "json"
-                },
-                {
-                    "jsonpath": "$.clientLibrary.version",
-                    "path": "samples/generated_samples/snippet_metadata_google.cloud.dialogflow.cx.v3beta1.json",
-                    "type": "json"
-                }
-            ],
-            "release-type": "python"
-        },
-        "packages/google-cloud-org-policy": {
-            "bump-minor-pre-major": true,
-            "bump-patch-for-minor-pre-major": true,
-            "component": "google-cloud-org-policy",
-            "extra-files": [
-                "google/cloud/orgpolicy/gapic_version.py",
-                "google/cloud/orgpolicy_v2/gapic_version.py",
-                {
-                    "jsonpath": "$.clientLibrary.version",
-                    "path": "samples/generated_samples/snippet_metadata_google.cloud.orgpolicy.v2.json",
-                    "type": "json"
-                }
-            ],
-            "release-type": "python"
         }
     }
 }
