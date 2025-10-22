@@ -71,6 +71,7 @@ from cli import (
     _write_json_file,
     _write_text_file,
     _copy_readme_to_docs,
+    _create_new_changelog_for_library,
     handle_build,
     handle_configure,
     handle_generate,
@@ -293,6 +294,7 @@ def test_handle_configure_success(mock_configure_request_file, mocker):
     mock_prepare_config = mocker.patch(
         "cli._prepare_new_library_config", return_value={"id": "prepared"}
     )
+    mock_create_changelog = mocker.patch("cli._create_new_changelog_for_library")
 
     handle_configure()
 
@@ -309,6 +311,32 @@ def test_handle_configure_no_new_library(mocker):
     # because _get_library_id will fail.
     with pytest.raises(ValueError, match="Configuring a new library failed."):
         handle_configure()
+
+
+def test_create_new_changelog_for_library(mocker):
+    """Tests that the changelog files are created correctly."""
+    library_id = "google-cloud-language"
+    output = "output"
+    mock_makedirs = mocker.patch("os.makedirs")
+    mock_write_text_file = mocker.patch("cli._write_text_file")
+
+    _create_new_changelog_for_library(library_id, output)
+
+    package_changelog_path = f"{output}/packages/{library_id}/CHANGELOG.md"
+    docs_changelog_path = f"{output}/packages/{library_id}/docs/CHANGELOG.md"
+
+    # Check that makedirs was called for both parent directories
+    mock_makedirs.assert_any_call(
+        os.path.dirname(package_changelog_path), exist_ok=True
+    )
+    mock_makedirs.assert_any_call(os.path.dirname(docs_changelog_path), exist_ok=True)
+    assert mock_makedirs.call_count == 2
+
+    # Check that the files were "written" with the correct content
+    changelog_content = f"# Changelog\n\n[PyPI History][1]\n\n[1]: https://pypi.org/project/{library_id}/#history\n"
+    mock_write_text_file.assert_any_call(package_changelog_path, changelog_content)
+    mock_write_text_file.assert_any_call(docs_changelog_path, changelog_content)
+    assert mock_write_text_file.call_count == 2
 
 
 def test_get_new_library_config_found(mock_configure_request_data):
@@ -1116,29 +1144,60 @@ def test_get_previous_version_failure(mock_state_file):
         _get_previous_version("google-cloud-does-not-exist", LIBRARIAN_DIR)
 
 
-def test_update_changelog_for_library_success(mocker):
-    m = mock_open()
-
+def test_update_changelog_for_library_writes_both_changelogs(mocker):
+    """Tests that _update_changelog_for_library writes to both changelogs."""
     mock_content = """# Changelog
 
 [PyPI History][1]
 
 [1]: https://pypi.org/project/google-cloud-language/#history
-
-## [2.17.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-language-v2.17.1...google-cloud-language-v2.17.2) (2025-06-11)
-
 """
-    with unittest.mock.patch("cli.open", m):
-        mocker.patch("cli._read_text_file", return_value=mock_content)
-        _update_changelog_for_library(
-            "repo",
-            "output",
-            _MOCK_LIBRARY_CHANGES,
-            "1.2.3",
-            "1.2.2",
-            "google-cloud-language",
-            "CHANGELOG.md",
-        )
+    mock_read = mocker.patch("cli._read_text_file", return_value=mock_content)
+    mock_write = mocker.patch("cli._write_text_file")
+    mock_path_exists = mocker.patch("cli.os.path.lexists", return_value=True)
+    _update_changelog_for_library(
+        "repo",
+        "output",
+        _MOCK_LIBRARY_CHANGES,
+        "1.2.3",
+        "1.2.2",
+        "google-cloud-language",
+        is_mono_repo=True,
+    )
+
+    assert mock_write.call_count == 2
+    mock_write.assert_any_call(
+        "output/packages/google-cloud-language/CHANGELOG.md", mocker.ANY
+    )
+    mock_write.assert_any_call(
+        "output/packages/google-cloud-language/docs/CHANGELOG.md", mocker.ANY
+    )
+
+
+def test_update_changelog_for_library_single_repo(mocker):
+    """Tests that _update_changelog_for_library writes to both changelogs in a single repo."""
+    mock_content = """# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/google-cloud-language/#history
+"""
+    mock_read = mocker.patch("cli._read_text_file", return_value=mock_content)
+    mock_write = mocker.patch("cli._write_text_file")
+    mock_path_exists = mocker.patch("cli.os.path.lexists", return_value=True)
+    _update_changelog_for_library(
+        "repo",
+        "output",
+        _MOCK_LIBRARY_CHANGES,
+        "1.2.3",
+        "1.2.2",
+        "google-cloud-language",
+        is_mono_repo=False,
+    )
+
+    assert mock_write.call_count == 2
+    mock_write.assert_any_call("output/CHANGELOG.md", mocker.ANY)
+    mock_write.assert_any_call("output/docs/CHANGELOG.md", mocker.ANY)
 
 
 def test_process_changelog_success():

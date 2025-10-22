@@ -223,6 +223,25 @@ def _prepare_new_library_config(library_config: Dict) -> Dict:
     return library_config
 
 
+def _create_new_changelog_for_library(library_id: str, output: str):
+    """Creates a new changelog for the library.
+    Args:
+        library_id(str): The id of the library.
+        output(str): Path to the directory in the container where code
+            should be generated.
+    """
+    package_changelog_path = f"{output}/packages/{library_id}/CHANGELOG.md"
+    docs_changelog_path = f"{output}/packages/{library_id}/docs/CHANGELOG.md"
+
+    changelog_content = f"# Changelog\n\n[PyPI History][1]\n\n[1]: https://pypi.org/project/{library_id}/#history\n"
+
+    os.makedirs(os.path.dirname(package_changelog_path), exist_ok=True)
+    _write_text_file(package_changelog_path, changelog_content)
+
+    os.makedirs(os.path.dirname(docs_changelog_path), exist_ok=True)
+    _write_text_file(docs_changelog_path, changelog_content)
+
+
 def handle_configure(
     librarian: str = LIBRARIAN_DIR,
     source: str = SOURCE_DIR,
@@ -266,6 +285,10 @@ def handle_configure(
             [new_library_config],
         )
         prepared_config = _prepare_new_library_config(new_library_config)
+
+        # Create a `CHANGELOG.md` and `docs/CHANGELOG.md` file for the new library
+        library_id = _get_library_id(prepared_config)
+        _create_new_changelog_for_library(library_id, output)
 
         # Write the new library configuration to configure-response.json.
         _write_json_file(f"{librarian}/configure-response.json", prepared_config)
@@ -1322,7 +1345,7 @@ def _update_changelog_for_library(
     version: str,
     previous_version: str,
     library_id: str,
-    relative_path: str,
+    is_mono_repo: bool,
 ):
     """Prepends a new release entry with multiple, grouped changes, to a changelog.
 
@@ -1338,7 +1361,15 @@ def _update_changelog_for_library(
         previous_version(str): The version in state.yaml for a given library
         library_id(str): The id of the library where the changelog should
             be updated.
+        is_mono_repo(bool): True if the current repository is a mono-repo.
     """
+    if is_mono_repo:
+        relative_path = f"packages/{library_id}/CHANGELOG.md"
+        docs_relative_path = f"packages/{library_id}/docs/CHANGELOG.md"
+    else:
+        relative_path = "CHANGELOG.md"
+        docs_relative_path = f"docs/CHANGELOG.md"
+
     changelog_src = f"{repo}/{relative_path}"
     changelog_dest = f"{output}/{relative_path}"
     updated_content = _process_changelog(
@@ -1349,6 +1380,11 @@ def _update_changelog_for_library(
         library_id,
     )
     _write_text_file(changelog_dest, updated_content)
+
+    docs_changelog_src = f"{repo}/{docs_relative_path}"
+    if os.path.lexists(docs_changelog_src):
+        docs_changelog_dst = f"{output}/{docs_relative_path}"
+        _write_text_file(docs_changelog_dst, updated_content)
 
 
 def _is_mono_repo(repo: str) -> bool:
@@ -1401,7 +1437,6 @@ def handle_release_init(
         )
 
         if is_mono_repo:
-
             # only a mono repo has a global changelog
             _update_global_changelog(
                 f"{repo}/CHANGELOG.md",
@@ -1426,10 +1461,8 @@ def handle_release_init(
 
             if is_mono_repo:
                 path_to_library = f"packages/{library_id}"
-                changelog_relative_path = f"packages/{library_id}/CHANGELOG.md"
             else:
                 path_to_library = "."
-                changelog_relative_path = "CHANGELOG.md"
 
             _update_version_for_library(repo, output, path_to_library, version)
             _update_changelog_for_library(
@@ -1439,7 +1472,7 @@ def handle_release_init(
                 version,
                 previous_version,
                 library_id,
-                relative_path=changelog_relative_path,
+                is_mono_repo=is_mono_repo,
             )
 
     except Exception as e:
