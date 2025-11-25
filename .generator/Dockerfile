@@ -32,34 +32,35 @@ RUN apt-get update && \
     libffi-dev \
     libsqlite3-dev \
     libreadline-dev \
+    # Needed for `google-cloud-bigquery-storage` to avoid
+    # the error `ModuleNotFoundError: No module named '_lzma'`
+    # described in https://github.com/googleapis/google-cloud-python/issues/14884
+    liblzma-dev \
     # ------------------------------------------------------
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install multiple Python versions from source. `make altinstall` is used to
-# prevent replacing the system's default python binary.
-# TODO(http://github.com/googleapis/gapic-generator-python/issues/2435): Remove `3.10.18` when the linked issue is resolved.
-RUN for PYTHON_VERSION in 3.9.23 3.10.18 3.13.7 3.14.0; do \
-    wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz && \
-    tar -xvf Python-${PYTHON_VERSION}.tgz && \
-    cd Python-${PYTHON_VERSION} && \
+# `make altinstall` is used to prevent replacing the system's default python binary.
+# The full Python version, including the minor version, is needed for download/install
+# TODO(https://github.com/googleapis/librarian/issues/2945): Remove `3.13` when the linked issue is resolved.
+RUN for PYTHON_VERSION_WITH_MINOR in 3.13.9 3.14.0; do \
+    wget https://www.python.org/ftp/python/${PYTHON_VERSION_WITH_MINOR}/Python-${PYTHON_VERSION_WITH_MINOR}.tgz && \
+    tar -xvf Python-${PYTHON_VERSION_WITH_MINOR}.tgz && \
+    cd Python-${PYTHON_VERSION_WITH_MINOR} && \
     ./configure --enable-optimizations --prefix=/usr/local && \
     make -j$(nproc) && \
     make altinstall && \
     cd / && \
-    rm -rf Python-${PYTHON_VERSION}* \
+    rm -rf Python-${PYTHON_VERSION_WITH_MINOR}* \
     ; done
 
 # Install pip for each python version
-# TODO(http://github.com/googleapis/gapic-generator-python/issues/2435): Remove `3.10` when the linked issue is resolved.
-RUN wget --no-check-certificate -O /tmp/get-pip.py 'https://bootstrap.pypa.io/get-pip.py' && \
-    for PYTHON_VERSION in 3.9 3.10 3.13 3.14; do \
-        python${PYTHON_VERSION} /tmp/get-pip.py; \
-    done && \
-    rm /tmp/get-pip.py
-
-RUN /usr/local/bin/python3.9 -m venv bazel_env
-RUN . bazel_env/bin/activate
+# TODO(https://github.com/googleapis/librarian/issues/2945): Remove `3.13` when the linked issue is resolved.
+RUN for PYTHON_VERSION in 3.13 3.14; do \
+    wget --no-check-certificate -O /tmp/get-pip.py 'https://bootstrap.pypa.io/get-pip.py' && \
+    python${PYTHON_VERSION} /tmp/get-pip.py && \
+    rm /tmp/get-pip.py \
+    ; done
 
 # Download/extract protoc
 RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v25.3/protoc-25.3-linux-x86_64.zip
@@ -73,8 +74,10 @@ RUN wget https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pando
 RUN tar -xvf pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz -C pandoc-binary --strip-components=1
 
 # Pin synthtool for a more hermetic build
-RUN git clone https://github.com/googleapis/synthtool.git synthtool
-RUN cd synthtool && git checkout 35313ccd8cdd2d12d2447ccdc497a7919aae1e3e
+# This needs to be a single command so that the git clone command is not cached
+RUN git clone https://github.com/googleapis/synthtool.git synthtool && \
+    cd synthtool && \
+    git checkout 6702a344265de050bceaff45d62358bb0023ba7d
 
 # --- Final Stage ---
 # This stage creates the lightweight final image, copying only the
@@ -84,6 +87,8 @@ FROM marketplace.gcr.io/google/ubuntu2404
 # Tell synthtool to pull templates from this docker image instead of from
 # the live repo.
 ENV SYNTHTOOL_TEMPLATES="/synthtool/synthtool/gcp/templates"
+
+ENV PYTHON_VERSION_DEFAULT=3.14
 
 # Install only the essential runtime libraries for Python.
 # These are the non "-dev" versions of the libraries used in the builder.
@@ -104,19 +109,12 @@ COPY --from=builder protoc/include /usr/local/include
 COPY --from=builder pandoc-binary/bin /usr/local/bin
 COPY --from=builder synthtool /synthtool
 
-# Copy all Python interpreters, their pip executables, and their standard libraries from the builder.
-COPY --from=builder /usr/local/bin/python3.9 /usr/local/bin/
-COPY --from=builder /usr/local/lib/python3.9 /usr/local/lib/python3.9
+COPY --from=builder /usr/local/bin/python${PYTHON_VERSION_DEFAULT}  /usr/local/bin/
+COPY --from=builder /usr/local/lib/python${PYTHON_VERSION_DEFAULT}  /usr/local/lib/python${PYTHON_VERSION_DEFAULT}
 
-# TODO(http://github.com/googleapis/gapic-generator-python/issues/2435): Remove `3.10` when the linked issue is resolved.
-COPY --from=builder /usr/local/bin/python3.10 /usr/local/bin/
-COPY --from=builder /usr/local/lib/python3.10 /usr/local/lib/python3.10
-
-COPY --from=builder /usr/local/bin/python3.13 /usr/local/bin/
-COPY --from=builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
-
-COPY --from=builder /usr/local/bin/python3.14 /usr/local/bin/
-COPY --from=builder /usr/local/lib/python3.14 /usr/local/lib/python3.14
+# TODO(https://github.com/googleapis/librarian/issues/2945): Remove `3.13` when the linked issue is resolved.
+COPY --from=builder /usr/local/bin/python3.13  /usr/local/bin
+COPY --from=builder /usr/local/lib/python3.13  /usr/local/lib/python3.13
 
 # Set the working directory in the container.
 WORKDIR /app
@@ -126,12 +124,12 @@ WORKDIR /app
 # Install nox which is used for running client library tests.
 # Install starlark-pyo3 which is used to parse BUILD.bazel files.
 COPY .generator/requirements.in .
-RUN python3.9 -m pip install -r requirements.in
-RUN python3.9 -m pip install /synthtool
+RUN python${PYTHON_VERSION_DEFAULT} -m pip install -r requirements.in
+RUN python${PYTHON_VERSION_DEFAULT} -m pip install /synthtool
 
 # Install build which is used to get the metadata of package config files.
 COPY .generator/requirements.in .
-RUN python3.9 -m pip install -r requirements.in
+RUN python${PYTHON_VERSION_DEFAULT} -m pip install -r requirements.in
 
 # Copy the CLI script into the container.
 COPY .generator/cli.py .
@@ -141,4 +139,4 @@ RUN chmod a+rx ./cli.py
 COPY .generator/parse_googleapis_content.py .
 RUN chmod a+rx ./parse_googleapis_content.py
 
-ENTRYPOINT ["python3.9", "./cli.py"]
+ENTRYPOINT ["python3.14", "./cli.py"]

@@ -20,20 +20,22 @@ import re
 import subprocess
 import yaml
 import unittest.mock
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open
 
 import pytest
 from cli import (
+    _GENERATOR_INPUT_HEADER_TEXT,
     GENERATE_REQUEST_FILE,
     BUILD_REQUEST_FILE,
     CONFIGURE_REQUEST_FILE,
-    RELEASE_INIT_REQUEST_FILE,
+    RELEASE_STAGE_REQUEST_FILE,
     SOURCE_DIR,
     STATE_YAML_FILE,
     LIBRARIAN_DIR,
     REPO_DIR,
+    _add_header_to_files,
     _clean_up_files_after_post_processing,
     _copy_files_needed_for_post_processing,
     _create_main_version_header,
@@ -49,6 +51,7 @@ from cli import (
     _get_libraries_to_prepare_for_release,
     _get_new_library_config,
     _get_previous_version,
+    _get_repo_name_from_repo_metadata,
     _get_staging_child_directory,
     _add_new_library_version,
     _prepare_new_library_config,
@@ -75,7 +78,7 @@ from cli import (
     handle_build,
     handle_configure,
     handle_generate,
-    handle_release_init,
+    handle_release_stage,
 )
 
 
@@ -139,6 +142,23 @@ _MOCK_BAZEL_CONTENT_PY_PROTO = """load(
 py_proto_library(
     name = "language_py_proto",
 )"""
+
+
+@pytest.fixture
+def setup_dirs(tmp_path):
+    """Creates input and output directories."""
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir()
+    output_dir.mkdir()
+    return input_dir, output_dir
+
+
+@pytest.fixture(autouse=True)
+def _clear_lru_cache():
+    """Automatically clears the cache of all LRU-cached functions after each test."""
+    yield
+    _get_repo_name_from_repo_metadata.cache_clear()
 
 
 @pytest.fixture
@@ -235,10 +255,10 @@ def mock_generate_request_data_for_nox():
 
 
 @pytest.fixture
-def mock_release_init_request_file(tmp_path, monkeypatch):
+def mock_release_stage_request_file(tmp_path, monkeypatch):
     """Creates the mock request file at the correct path inside a temp dir."""
     # Create the path as expected by the script: .librarian/release-request.json
-    request_path = f"{LIBRARIAN_DIR}/{RELEASE_INIT_REQUEST_FILE}"
+    request_path = f"{LIBRARIAN_DIR}/{RELEASE_STAGE_REQUEST_FILE}"
     request_dir = tmp_path / os.path.dirname(request_path)
     request_dir.mkdir()
     request_file = request_dir / os.path.basename(request_path)
@@ -251,6 +271,7 @@ def mock_release_init_request_file(tmp_path, monkeypatch):
                 "release_triggered": False,
                 "version": "1.2.3",
                 "changes": [],
+                "tag_format": "{id}-v{version}",
             },
             {
                 "id": "google-cloud-language",
@@ -258,6 +279,7 @@ def mock_release_init_request_file(tmp_path, monkeypatch):
                 "release_triggered": True,
                 "version": "1.2.3",
                 "changes": [],
+                "tag_format": "{id}-v{version}",
             },
         ]
     }
@@ -456,21 +478,36 @@ def test_get_library_id_empty_id():
         _get_library_id(request_data)
 
 
-def test_run_post_processor_success(mocker, caplog):
+@pytest.mark.parametrize(
+    "is_mono_repo,owlbot_py_exists", [(True, False), (False, False), (False, True)]
+)
+def test_run_post_processor_success(mocker, caplog, is_mono_repo, owlbot_py_exists):
     """
     Tests that the post-processor helper calls the correct command.
     """
     caplog.set_level(logging.INFO)
     mocker.patch("cli.SYNTHTOOL_INSTALLED", return_value=True)
     mock_chdir = mocker.patch("cli.os.chdir")
-    mock_owlbot_main = mocker.patch(
-        "cli.synthtool.languages.python_mono_repo.owlbot_main"
+    mocker.patch("pathlib.Path.exists", return_value=owlbot_py_exists)
+    mocker.patch(
+        "cli.subprocess.run", return_value=MagicMock(stdout="ok", stderr="", check=True)
     )
-    _run_post_processor("output", "google-cloud-language")
+
+    if is_mono_repo:
+        mock_owlbot = mocker.patch(
+            "cli.synthtool.languages.python_mono_repo.owlbot_main"
+        )
+    elif not owlbot_py_exists:
+        mock_owlbot = mocker.patch("cli.synthtool.languages.python.owlbot_main")
+    _run_post_processor("output", "google-cloud-language", is_mono_repo)
 
     mock_chdir.assert_called_once()
 
-    mock_owlbot_main.assert_called_once_with("packages/google-cloud-language")
+    if is_mono_repo:
+        mock_owlbot.assert_called_once_with("packages/google-cloud-language")
+    elif not owlbot_py_exists:
+        mock_owlbot.assert_called_once_with()
+
     assert "Python post-processor ran successfully." in caplog.text
 
 
@@ -602,7 +639,8 @@ def test_run_protoc_command_failure(mocker):
         _run_protoc_command(command, source)
 
 
-def test_generate_api_success_py_gapic(mocker, caplog):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_generate_api_success_py_gapic(mocker, caplog, is_mono_repo):
     caplog.set_level(logging.INFO)
 
     API_PATH = "google/cloud/language/v1"
@@ -622,14 +660,15 @@ def test_generate_api_success_py_gapic(mocker, caplog):
     mock_run_protoc_command = mocker.patch("cli._run_protoc_command")
     mock_shutil_copytree = mocker.patch("shutil.copytree")
 
-    _generate_api(API_PATH, LIBRARY_ID, SOURCE, OUTPUT, gapic_version)
+    _generate_api(API_PATH, LIBRARY_ID, SOURCE, OUTPUT, gapic_version, is_mono_repo)
 
     mock_read_bazel_build_py_rule.assert_called_once()
     mock_run_protoc_command.assert_called_once()
     mock_shutil_copytree.assert_called_once()
 
 
-def test_generate_api_success_py_proto(mocker, caplog):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_generate_api_success_py_proto(mocker, caplog, is_mono_repo):
     caplog.set_level(logging.INFO)
 
     API_PATH = "google/cloud/language/v1"
@@ -644,15 +683,16 @@ def test_generate_api_success_py_proto(mocker, caplog):
     mock_run_protoc_command = mocker.patch("cli._run_protoc_command")
     mock_shutil_copytree = mocker.patch("shutil.copytree")
 
-    _generate_api(API_PATH, LIBRARY_ID, SOURCE, OUTPUT, gapic_version)
+    _generate_api(API_PATH, LIBRARY_ID, SOURCE, OUTPUT, gapic_version, is_mono_repo)
 
     mock_read_bazel_build_py_rule.assert_called_once()
     mock_run_protoc_command.assert_called_once()
     mock_shutil_copytree.assert_called_once()
 
 
+@pytest.mark.parametrize("is_mono_repo", [False, True])
 def test_handle_generate_success(
-    caplog, mock_generate_request_file, mock_build_bazel_file, mocker
+    caplog, mock_generate_request_file, mock_build_bazel_file, mocker, is_mono_repo
 ):
     """
     Tests the successful execution path of handle_generate.
@@ -668,15 +708,18 @@ def test_handle_generate_success(
         "cli._clean_up_files_after_post_processing"
     )
     mocker.patch("cli._generate_repo_metadata_file")
+    mocker.patch("pathlib.Path.exists", return_value=is_mono_repo)
 
     handle_generate()
 
-    mock_run_post_processor.assert_called_once_with("output", "google-cloud-language")
+    mock_run_post_processor.assert_called_once_with(
+        "output", "google-cloud-language", is_mono_repo
+    )
     mock_copy_files_needed_for_post_processing.assert_called_once_with(
-        "output", "input", "google-cloud-language"
+        "output", "input", "google-cloud-language", is_mono_repo
     )
     mock_clean_up_files_after_post_processing.assert_called_once_with(
-        "output", "google-cloud-language"
+        "output", "google-cloud-language", is_mono_repo
     )
     mock_generate_api.assert_called_once()
 
@@ -689,7 +732,8 @@ def test_handle_generate_fail(caplog):
         handle_generate()
 
 
-def test_run_individual_session_success(mocker, caplog):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_run_individual_session_success(mocker, caplog, is_mono_repo):
     """Tests that _run_individual_session calls nox with correct arguments and logs success."""
     caplog.set_level(logging.INFO)
 
@@ -700,16 +744,22 @@ def test_run_individual_session_success(mocker, caplog):
     test_session = "unit-3.9"
     test_library_id = "test-library"
     repo = "repo"
-    _run_individual_session(test_session, test_library_id, repo)
+    _run_individual_session(test_session, test_library_id, repo, is_mono_repo)
 
     expected_command = [
         "nox",
         "-s",
         test_session,
         "-f",
-        f"{REPO_DIR}/packages/{test_library_id}/noxfile.py",
+        (
+            f"{REPO_DIR}/packages/{test_library_id}/noxfile.py"
+            if is_mono_repo
+            else f"{REPO_DIR}/noxfile.py"
+        ),
     ]
-    mock_subprocess_run.assert_called_once_with(expected_command, text=True, check=True)
+    mock_subprocess_run.assert_called_once_with(
+        expected_command, text=True, check=True, timeout=600
+    )
 
 
 def test_run_individual_session_failure(mocker):
@@ -722,25 +772,44 @@ def test_run_individual_session_failure(mocker):
     )
 
     with pytest.raises(subprocess.CalledProcessError):
-        _run_individual_session("lint", "another-library", "repo")
+        _run_individual_session("lint", "another-library", "repo", True)
 
 
-def test_run_nox_sessions_success(mocker, mock_generate_request_data_for_nox):
+@pytest.mark.parametrize(
+    "is_mono_repo,py314_constraints_file_exists, nox_session_python_runtime",
+    [
+        (False, True, "3.14"),
+        (True, True, "3.14"),
+        (True, False, "3.13"),
+        (False, False, "3.13"),
+    ],
+)
+def test_run_nox_sessions_success(
+    mocker,
+    mock_generate_request_data_for_nox,
+    is_mono_repo,
+    py314_constraints_file_exists,
+    nox_session_python_runtime,
+):
     """Tests that _run_nox_sessions successfully runs all specified sessions."""
     mocker.patch("cli._read_json_file", return_value=mock_generate_request_data_for_nox)
     mocker.patch("cli._get_library_id", return_value="mock-library")
     mock_run_individual_session = mocker.patch("cli._run_individual_session")
+    mocker.patch("pathlib.Path.exists", return_value=py314_constraints_file_exists)
 
     sessions_to_run = [
-        "unit-3.13(protobuf_implementation='upb')",
+        f"unit-{nox_session_python_runtime}(protobuf_implementation='upb')",
     ]
-    _run_nox_sessions("mock-library", "repo")
+    _run_nox_sessions("mock-library", "repo", is_mono_repo)
 
     assert mock_run_individual_session.call_count == len(sessions_to_run)
     mock_run_individual_session.assert_has_calls(
         [
             mocker.call(
-                "unit-3.13(protobuf_implementation='upb')", "mock-library", "repo"
+                f"unit-{nox_session_python_runtime}(protobuf_implementation='upb')",
+                "mock-library",
+                "repo",
+                is_mono_repo,
             ),
         ]
     )
@@ -751,7 +820,7 @@ def test_run_nox_sessions_read_file_failure(mocker):
     mocker.patch("cli._read_json_file", side_effect=FileNotFoundError("file not found"))
 
     with pytest.raises(ValueError, match="Failed to run the nox session"):
-        _run_nox_sessions("mock-library", "repo")
+        _run_nox_sessions("mock-library", "repo", True)
 
 
 def test_run_nox_sessions_get_library_id_failure(mocker):
@@ -763,11 +832,12 @@ def test_run_nox_sessions_get_library_id_failure(mocker):
     )
 
     with pytest.raises(ValueError, match="Failed to run the nox session"):
-        _run_nox_sessions("mock-library", "repo")
+        _run_nox_sessions("mock-library", "repo", True)
 
 
+@pytest.mark.parametrize("is_mono_repo", [False, True])
 def test_run_nox_sessions_individual_session_failure(
-    mocker, mock_generate_request_data_for_nox
+    mocker, mock_generate_request_data_for_nox, is_mono_repo
 ):
     """Tests that _run_nox_sessions raises ValueError if _run_individual_session fails."""
     mocker.patch("cli._read_json_file", return_value=mock_generate_request_data_for_nox)
@@ -778,7 +848,7 @@ def test_run_nox_sessions_individual_session_failure(
     )
 
     with pytest.raises(ValueError, match="Failed to run the nox session"):
-        _run_nox_sessions("mock-library", "repo")
+        _run_nox_sessions("mock-library", "repo", is_mono_repo)
 
     # Check that _run_individual_session was called at least once
     assert mock_run_individual_session.call_count > 0
@@ -831,64 +901,145 @@ def test_invalid_json(mocker):
         _read_json_file("fake/path.json")
 
 
-def test_copy_files_needed_for_post_processing_copies_metadata_if_exists(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_copy_files_needed_for_post_processing_copies_files_from_generator_input(
+    mocker, is_mono_repo
+):
     """Tests that .repo-metadata.json is copied if it exists."""
     mock_makedirs = mocker.patch("os.makedirs")
-    mock_shutil_copy = mocker.patch("shutil.copy")
-    mocker.patch("os.path.exists", return_value=True)
+    mock_shutil_copytree = mocker.patch("shutil.copytree")
+    mocker.patch("pathlib.Path.exists", return_value=True)
 
-    _copy_files_needed_for_post_processing("output", "input", "library_id")
+    _copy_files_needed_for_post_processing(
+        "output", "input", "library_id", is_mono_repo
+    )
 
-    mock_shutil_copy.assert_called_once()
+    mock_shutil_copytree.assert_called()
     mock_makedirs.assert_called()
 
 
-def test_copy_files_needed_for_post_processing_skips_metadata_if_not_exists(mocker):
-    """Tests that .repo-metadata.json is not copied if it does not exist."""
-    mock_makedirs = mocker.patch("os.makedirs")
-    mock_shutil_copy = mocker.patch("shutil.copy")
-    mocker.patch("os.path.exists", return_value=False)
+def test_copy_files_needed_for_post_processing_copies_files_from_generator_input_skips_json_files(
+    setup_dirs,
+):
+    """Test that .json files are copied but NOT modified."""
+    input_dir, output_dir = setup_dirs
 
-    _copy_files_needed_for_post_processing("output", "input", "library_id")
+    json_content = '{"key": "value"}'
+    (input_dir / ".repo-metadata.json").write_text(json_content)
 
-    mock_shutil_copy.assert_not_called()
-    mock_makedirs.assert_called()
+    _copy_files_needed_for_post_processing(
+        output=str(output_dir),
+        input=str(input_dir),
+        library_id="google-cloud-foo",
+        is_mono_repo=False,
+    )
+
+    dest_file = output_dir / ".repo-metadata.json"
+    assert dest_file.exists()
+    # Content should be exactly the same, no # comments added
+    assert dest_file.read_text() == json_content
 
 
-def test_clean_up_files_after_post_processing_success(mocker):
+def test_add_header_with_existing_license(tmp_path):
+    """
+    Test that the header is inserted AFTER the existing license block.
+    """
+    # Setup: Create a file with a license header
+    file_path = tmp_path / "example.py"
+    original_content = (
+        "# Copyright 2025 Google LLC\n" "# Licensed under Apache 2.0\n" "\n" "import os"
+    )
+    file_path.write_text(original_content, encoding="utf-8")
+
+    # Execute
+    _add_header_to_files(str(tmp_path))
+
+    # Verify
+    new_content = file_path.read_text(encoding="utf-8")
+    expected_content = (
+        "# Copyright 2025 Google LLC\n"
+        "# Licensed under Apache 2.0\n"
+        "\n"
+        f"{_GENERATOR_INPUT_HEADER_TEXT}\n"
+        "\n"
+        "import os"
+    )
+    assert new_content == expected_content
+
+
+def test_add_header_to_files_add_header_no_license(tmp_path):
+    """
+    Test that the header is inserted at the top if no license block exists.
+    """
+    # Setup: Create a file starting directly with code
+    file_path = tmp_path / "script.sh"
+    original_content = "echo 'Hello World'"
+    file_path.write_text(original_content, encoding="utf-8")
+
+    # Execute
+    _add_header_to_files(str(tmp_path))
+
+    # Verify
+    new_content = file_path.read_text(encoding="utf-8")
+    expected_content = f"{_GENERATOR_INPUT_HEADER_TEXT}\n" "echo 'Hello World'"
+    assert new_content == expected_content
+
+
+def test_add_header_to_files_skips_excluded_extensions(tmp_path):
+    """
+    Test that .json and .yaml files are ignored.
+    """
+    # Setup: Create files that should be ignored
+    json_file = tmp_path / "data.json"
+    yaml_file = tmp_path / "config.yaml"
+
+    content = "key: value"
+    json_file.write_text('{"key": "value"}', encoding="utf-8")
+    yaml_file.write_text(content, encoding="utf-8")
+
+    # Execute
+    _add_header_to_files(str(tmp_path))
+
+    # Verify contents remain exactly the same
+    assert json_file.read_text(encoding="utf-8") == '{"key": "value"}'
+    assert yaml_file.read_text(encoding="utf-8") == content
+
+
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_clean_up_files_after_post_processing_success(mocker, is_mono_repo):
     mock_shutil_rmtree = mocker.patch("shutil.rmtree")
     mock_os_remove = mocker.patch("os.remove")
-    _clean_up_files_after_post_processing("output", "library_id")
+    _clean_up_files_after_post_processing("output", "library_id", is_mono_repo)
 
 
-def test_get_libraries_to_prepare_for_release(mock_release_init_request_file):
+def test_get_libraries_to_prepare_for_release(mock_release_stage_request_file):
     """
     Tests that only libraries with the `release_triggered` field set to `True` are
     returned.
     """
-    request_data = _read_json_file(f"{LIBRARIAN_DIR}/{RELEASE_INIT_REQUEST_FILE}")
+    request_data = _read_json_file(f"{LIBRARIAN_DIR}/{RELEASE_STAGE_REQUEST_FILE}")
     libraries_to_prep_for_release = _get_libraries_to_prepare_for_release(request_data)
     assert len(libraries_to_prep_for_release) == 1
     assert "google-cloud-language" in libraries_to_prep_for_release[0]["id"]
     assert libraries_to_prep_for_release[0]["release_triggered"]
 
 
-def test_handle_release_init_success(mocker, mock_release_init_request_file):
+def test_handle_release_stage_success(mocker, mock_release_stage_request_file):
     """
-    Simply tests that `handle_release_init` runs without errors.
+    Simply tests that `handle_release_stage` runs without errors.
     """
     mocker.patch("cli._update_global_changelog", return_value=None)
     mocker.patch("cli._update_version_for_library", return_value=None)
     mocker.patch("cli._get_previous_version", return_value=None)
     mocker.patch("cli._update_changelog_for_library", return_value=None)
-    handle_release_init()
+    handle_release_stage()
 
 
-def test_handle_release_init_is_generated_success(
-    mocker, mock_release_init_request_file
+def test_handle_release_stage_is_generated_success(
+    mocker, mock_release_stage_request_file
 ):
     """
-    Tests that `handle_release_init` calls `_update_global_changelog` when the
+    Tests that `handle_release_stage` calls `_update_global_changelog` when the
     `packages` directory exists.
     """
     mocker.patch("pathlib.Path.exists", return_value=True)
@@ -897,23 +1048,23 @@ def test_handle_release_init_is_generated_success(
     mocker.patch("cli._get_previous_version", return_value="1.2.2")
     mocker.patch("cli._update_changelog_for_library")
 
-    handle_release_init()
+    handle_release_stage()
 
     mock_update_global_changelog.assert_called_once()
 
 
-def test_handle_release_init_fail_value_error_file():
+def test_handle_release_stage_fail_value_error_file():
     """
-    Tests that handle_release_init fails to read `librarian/release-init-request.json`.
+    Tests that handle_release_stage fails to read `librarian/release-stage-request.json`.
     """
     with pytest.raises(ValueError, match="No such file or directory"):
-        handle_release_init()
+        handle_release_stage()
 
 
-def test_handle_release_init_fail_value_error_version(mocker):
+def test_handle_release_stage_fail_value_error_version(mocker):
     m = mock_open()
 
-    mock_release_init_request_content = {
+    mock_release_stage_request_content = {
         "libraries": [
             {
                 "id": "google-cloud-language",
@@ -921,23 +1072,24 @@ def test_handle_release_init_fail_value_error_version(mocker):
                 "release_triggered": True,
                 "version": "1.2.2",
                 "changes": [],
+                "tag_format": "{id}-v{version}",
             },
         ]
     }
     with unittest.mock.patch("cli.open", m):
         mocker.patch(
             "cli._get_libraries_to_prepare_for_release",
-            return_value=mock_release_init_request_content["libraries"],
+            return_value=mock_release_stage_request_content["libraries"],
         )
         mocker.patch("cli._get_previous_version", return_value="1.2.2")
         mocker.patch("cli._process_changelog", return_value=None)
         mocker.patch(
-            "cli._read_json_file", return_value=mock_release_init_request_content
+            "cli._read_json_file", return_value=mock_release_stage_request_content
         )
         with pytest.raises(
             ValueError, match="is the same as the version in state.yaml"
         ):
-            handle_release_init()
+            handle_release_stage()
 
 
 def test_read_valid_text_file(mocker):
@@ -994,13 +1146,13 @@ def test_write_json_file():
         assert written_content == expected_output
 
 
-def test_update_global_changelog(mocker, mock_release_init_request_file):
+def test_update_global_changelog(mocker, mock_release_stage_request_file):
     """Tests that the global changelog is updated
     with the new version for a given library.
     See https://docs.python.org/3/library/unittest.mock.html#mock-open
     """
     m = mock_open()
-    request_data = _read_json_file(f"{LIBRARIAN_DIR}/{RELEASE_INIT_REQUEST_FILE}")
+    request_data = _read_json_file(f"{LIBRARIAN_DIR}/{RELEASE_STAGE_REQUEST_FILE}")
     libraries = _get_libraries_to_prepare_for_release(request_data)
 
     with unittest.mock.patch("cli.open", m):
@@ -1014,20 +1166,33 @@ def test_update_global_changelog(mocker, mock_release_init_request_file):
 
 
 def test_update_version_for_library_success_gapic(mocker):
+    mock_content = '__version__ = "1.2.2"'
+    mock_json_metadata = {"clientLibrary": {"version": "0.1.0"}}
+    mock_shutil_copy = mocker.patch("shutil.copy")
+
     m = mock_open()
 
     mock_rglob = mocker.patch("pathlib.Path.rglob")
     mock_rglob.side_effect = [
-        [pathlib.Path("repo/gapic_version.py")],  # 1st call (gapic_version.py)
-        [],  # 2nd call (version.py)
+        [
+            pathlib.Path("repo/gapic_version.py"),
+            pathlib.Path("repo/tests/gapic_version.py"),
+        ],  # 1st call (gapic_version.py)
+        [pathlib.Path("repo/types/version.py")],  # 2nd call (types/version.py).
         [pathlib.Path("repo/samples/snippet_metadata.json")],  # 3rd call (snippets)
     ]
-    mock_shutil_copy = mocker.patch("shutil.copy")
-    mock_content = '__version__ = "1.2.2"'
-    mock_json_metadata = {"clientLibrary": {"version": "0.1.0"}}
+    mock_read_text_file = mocker.patch("cli._read_text_file")
+    mock_read_text_file.side_effect = [
+        mock_content,  # 1st call (gapic_version.py)
+        # Do not process version files in the `types` directory as some
+        # GAPIC libraries have `version.py` which are generated from
+        # `version.proto` and do not include SDK versions.
+        # Leave the content as empty because it doesn't contain version information
+        "",  # 2nd call (tests/gapic_version.py)
+        "",  # 3rd call (types/version.py)
+    ]
 
     with unittest.mock.patch("cli.open", m):
-        mocker.patch("cli._read_text_file", return_value=mock_content)
         mocker.patch("cli._read_json_file", return_value=mock_json_metadata)
         _update_version_for_library(
             "repo", "output", "packages/google-cloud-language", "1.2.3"
@@ -1069,6 +1234,44 @@ def test_update_version_for_library_success_proto_only_setup_py(mocker):
 
         handle = m()
         assert handle.write.call_args_list[0].args[0] == 'version = "1.2.3"'
+        # Get all the arguments passed to the mock's write method
+        # and join them into a single string.
+        written_content = "".join(
+            [call.args[0] for call in handle.write.call_args_list[1:]]
+        )
+        # Create the expected output string with the correct formatting.
+        assert (
+            written_content
+            == '{\n  "clientLibrary": {\n    "version": "1.2.3"\n  }\n}\n'
+        )
+
+
+def test_update_version_for_library_success_with_date_string(mocker):
+    m = mock_open()
+
+    mock_rglob = mocker.patch("pathlib.Path.rglob")
+    mock_rglob.side_effect = [
+        [],
+        [pathlib.Path("repo/setup.py")],
+        [pathlib.Path("repo/samples/snippet_metadata.json")],
+    ]
+    mock_shutil_copy = mocker.patch("shutil.copy")
+    mock_content = 'version = "1.2.2"\n__release_date__ = "2025-11-03"'
+    mock_json_metadata = {"clientLibrary": {"version": "0.1.0"}}
+    today_iso = date.today().isoformat()
+
+    with unittest.mock.patch("cli.open", m):
+        mocker.patch("cli._read_text_file", return_value=mock_content)
+        mocker.patch("cli._read_json_file", return_value=mock_json_metadata)
+        _update_version_for_library(
+            "repo", "output", "packages/google-cloud-language", "1.2.3"
+        )
+
+        handle = m()
+        assert (
+            handle.write.call_args_list[0].args[0]
+            == f'version = "1.2.3"\n__release_date__ = "{today_iso}"'
+        )
         # Get all the arguments passed to the mock's write method
         # and join them into a single string.
         written_content = "".join(
@@ -1162,7 +1365,8 @@ def test_update_changelog_for_library_writes_both_changelogs(mocker):
         "1.2.3",
         "1.2.2",
         "google-cloud-language",
-        is_mono_repo=True,
+        True,
+        "{id}-v{version}",
     )
 
     assert mock_write.call_count == 2
@@ -1185,6 +1389,10 @@ def test_update_changelog_for_library_single_repo(mocker):
     mock_read = mocker.patch("cli._read_text_file", return_value=mock_content)
     mock_write = mocker.patch("cli._write_text_file")
     mock_path_exists = mocker.patch("cli.os.path.lexists", return_value=True)
+    mocker.patch(
+        "cli._get_repo_name_from_repo_metadata",
+        return_value="googleapis/google-cloud-python",
+    )
     _update_changelog_for_library(
         "repo",
         "output",
@@ -1192,7 +1400,8 @@ def test_update_changelog_for_library_single_repo(mocker):
         "1.2.3",
         "1.2.2",
         "google-cloud-language",
-        is_mono_repo=False,
+        False,
+        "v{version}",
     )
 
     assert mock_write.call_count == 2
@@ -1208,19 +1417,26 @@ def test_process_changelog_success():
     expected_result = f"""# Changelog\n[PyPI History][1]\n[1]: https://pypi.org/project/google-cloud-language/#history\n
 ## [1.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-language-v1.2.2...google-cloud-language-v1.2.3) ({current_date})\n\n
 ### Documentation\n
-* fix typo in BranchRule comment  ([9461532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/9461532e7d19c8d71709ec3b502e5d81340fb661))\n\n
+* fix typo in BranchRule comment ([9461532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/9461532e7d19c8d71709ec3b502e5d81340fb661))\n\n
 ### Features\n
-* add new UpdateRepository API This adds the ability to update a repository's properties. ([9461532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/9461532e7d19c8d71709ec3b502e5d81340fb661))\n\n
+* add new UpdateRepository API ([9461532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/9461532e7d19c8d71709ec3b502e5d81340fb661))\n\n
 ### Bug Fixes\n
-* some fix some body ([1231532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/1231532e7d19c8d71709ec3b502e5d81340fb661))
-* another fix  ([1241532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/1241532e7d19c8d71709ec3b502e5d81340fb661))\n
+* some fix ([1231532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/1231532e7d19c8d71709ec3b502e5d81340fb661))
+* another fix ([1241532e7d19c8d71709ec3b502e5d81340fb661](https://github.com/googleapis/google-cloud-python/commit/1241532e7d19c8d71709ec3b502e5d81340fb661))\n
 ## [1.2.2](https://github.com/googleapis/google-cloud-python/compare/google-cloud-language-v1.2.1...google-cloud-language-v1.2.2) (2025-06-11)"""
     version = "1.2.3"
     previous_version = "1.2.2"
     library_id = "google-cloud-language"
+    tag_format = "{id}-v{version}"
 
     result = _process_changelog(
-        mock_content, _MOCK_LIBRARY_CHANGES, version, previous_version, library_id
+        mock_content,
+        _MOCK_LIBRARY_CHANGES,
+        version,
+        previous_version,
+        library_id,
+        "googleapis/google-cloud-python",
+        tag_format,
     )
     assert result == expected_result
 
@@ -1228,7 +1444,7 @@ def test_process_changelog_success():
 def test_process_changelog_failure():
     """Tests that value error is raised if the changelog anchor string cannot be found"""
     with pytest.raises(ValueError):
-        _process_changelog("", [], "", "", "")
+        _process_changelog("", [], "", "", "", "googleapis/google-cloud-python", "")
 
 
 def test_update_changelog_for_library_failure(mocker):
@@ -1246,7 +1462,8 @@ def test_update_changelog_for_library_failure(mocker):
                 "1.2.3",
                 "1.2.2",
                 "google-cloud-language",
-                "CHANGELOG.md",
+                True,
+                "{id}-v{version}",
             )
 
 
@@ -1265,13 +1482,24 @@ def test_process_version_file_failure():
         _process_version_file("", "", Path(""))
 
 
-def test_create_main_version_header():
+@pytest.mark.parametrize(
+    "tag_format,expected_tag_result",
+    [(r"{id}-v{version}", "google-cloud-language-v"), (r"v{version}", "v")],
+)
+def test_create_main_version_header(tag_format, expected_tag_result):
     current_date = datetime.now().strftime("%Y-%m-%d")
-    expected_header = f"## [1.2.3](https://github.com/googleapis/google-cloud-python/compare/google-cloud-language-v1.2.2...google-cloud-language-v1.2.3) ({current_date})"
+    expected_header = f"## [1.2.3](https://github.com/googleapis/google-cloud-python/compare/{expected_tag_result}1.2.2...{expected_tag_result}1.2.3) ({current_date})"
     previous_version = "1.2.2"
     version = "1.2.3"
     library_id = "google-cloud-language"
-    actual_header = _create_main_version_header(version, previous_version, library_id)
+    tag_format = tag_format
+    actual_header = _create_main_version_header(
+        version,
+        previous_version,
+        library_id,
+        "googleapis/google-cloud-python",
+        tag_format,
+    )
     assert actual_header == expected_header
 
 
@@ -1368,7 +1596,8 @@ def test_create_repo_metadata_from_service_config(mocker):
     assert metadata["default_version"] == "v1"
 
 
-def test_generate_repo_metadata_file(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_generate_repo_metadata_file(mocker, is_mono_repo):
     """Tests the generation of the .repo-metadata.json file."""
     mock_write_json = mocker.patch("cli._write_json_file")
     mock_create_metadata = mocker.patch(
@@ -1387,24 +1616,26 @@ def test_generate_repo_metadata_file(mocker):
         }
     ]
 
-    _generate_repo_metadata_file(output, library_id, source, apis)
+    _generate_repo_metadata_file(output, library_id, source, apis, is_mono_repo)
 
     mock_create_metadata.assert_called_once_with(
         "service_config.yaml", "google/cloud/language/v1", source, library_id
     )
+    path_to_library = f"packages/{library_id}" if is_mono_repo else "."
     mock_write_json.assert_called_once_with(
-        f"{output}/packages/{library_id}/.repo-metadata.json",
+        f"{output}/{path_to_library}/.repo-metadata.json",
         {"repo": "googleapis/google-cloud-python"},
     )
 
 
-def test_generate_repo_metadata_file_skips_if_exists(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_generate_repo_metadata_file_skips_if_exists(mocker, is_mono_repo):
     """Tests that the generation of the .repo-metadata.json file is skipped if it already exists."""
     mock_write_json = mocker.patch("cli._write_json_file")
     mock_create_metadata = mocker.patch("cli._create_repo_metadata_from_service_config")
     mocker.patch("os.path.exists", return_value=True)
 
-    _generate_repo_metadata_file("output", "library_id", "source", [])
+    _generate_repo_metadata_file("output", "library_id", "source", [], is_mono_repo)
 
     mock_create_metadata.assert_not_called()
     mock_write_json.assert_not_called()
@@ -1419,48 +1650,109 @@ def test_determine_library_namespace_fails_not_subpath():
         _determine_library_namespace(gapic_parent_path, pkg_root_path)
 
 
-def test_get_library_dist_name_success(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_get_library_dist_name_success(mocker, is_mono_repo):
     mock_metadata = {"name": "my-lib", "version": "1.0.0"}
     mocker.patch("build.util.project_wheel_metadata", return_value=mock_metadata)
-    assert _get_library_dist_name("my-lib", "repo") == "my-lib"
+    assert _get_library_dist_name("my-lib", "repo", is_mono_repo) == "my-lib"
 
 
-def test_verify_library_dist_name_setup_success(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_verify_library_dist_name_setup_success(mocker, is_mono_repo):
     """Tests success when a library distribution name in setup.py is valid."""
     mock_setup_file = mocker.patch("cli._get_library_dist_name", return_value="my-lib")
-    _verify_library_dist_name("my-lib", "repo")
-    mock_setup_file.assert_called_once_with("my-lib", "repo")
+    _verify_library_dist_name("my-lib", "repo", is_mono_repo)
+    mock_setup_file.assert_called_once_with("my-lib", "repo", is_mono_repo)
 
 
 def test_verify_library_dist_name_fail(mocker):
     """Tests failure when a library-id does not match the libary distribution name."""
     mocker.patch("cli._get_library_dist_name", return_value="invalid-lib")
     with pytest.raises(ValueError):
-        _verify_library_dist_name("my-lib", "repo")
+        _verify_library_dist_name("my-lib", "repo", True)
 
 
-def test_verify_library_namespace_success_valid(mocker, mock_path_class):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_verify_library_namespace_success_valid(mocker, mock_path_class, is_mono_repo):
     """Tests success when a single valid namespace is found."""
+
     # 1. Get the mock instance from the mock class's return_value
-    mock_instance = mock_path_class.return_value
+    mock_instance = mock_path_class.return_value  # This is library_path
 
     # 2. Configure the mock instance
     mock_instance.is_dir.return_value = True
-    mock_file = MagicMock(spec=Path)
-    mock_file.parent = Path("/abs/repo/packages/my-lib/google/cloud/language")
-    mock_instance.rglob.return_value = [mock_file]
+    mock_files_gapic_version = MagicMock(spec=Path)
+    mock_gapic_parent = MagicMock(spec=Path)
+    mock_gapic_parent.__str__.return_value = (
+        "/abs/repo/packages/my-lib/google/cloud/language"
+        if is_mono_repo
+        else "/abs/repo/google/cloud/language"
+    )
+    mock_files_gapic_version.parent = mock_gapic_parent
+    mock_files_proto = MagicMock(spec=Path)
+    mock_proto_parent = MagicMock(spec=Path)
+    mock_files_proto.parent = mock_proto_parent
+    mock_proto_parent.relative_to.return_value = MagicMock()
+    mock_proto_parent.relative_to.return_value.__str__.return_value = (
+        "google/cloud/language/v1"
+    )
+    mock_proto_parent.__str__.return_value = (
+        "/abs/repo/packages/my-lib/google/cloud/language/v1/proto"
+        if is_mono_repo
+        else "/abs/repo/google/cloud/language/v1/proto"
+    )
+    mock_instance.rglob.return_value = [mock_files_gapic_version, mock_files_proto]
 
     mock_determine_ns = mocker.patch(
         "cli._determine_library_namespace", return_value="google.cloud"
     )
 
-    _verify_library_namespace("my-lib", "/abs/repo")
+    _verify_library_namespace("my-lib", "/abs/repo", is_mono_repo)
 
     # 3. Assert against the mock CLASS (from the fixture)
-    mock_path_class.assert_called_once_with("/abs/repo/packages/my-lib")
+    mock_path_class.assert_called_once_with(
+        "/abs/repo/packages/my-lib" if is_mono_repo else "/abs/repo"
+    )
 
     # 4. Verify the helper was called with the correct instance
-    mock_determine_ns.assert_called_once_with(mock_file.parent, mock_instance)
+    assert mock_determine_ns.call_count == 2
+    mock_determine_ns.assert_any_call(mock_gapic_parent, mock_instance)
+    mock_determine_ns.assert_any_call(mock_proto_parent, mock_instance)
+
+
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_verify_library_namespace_excludes_proto_dir(
+    mocker, mock_path_class, is_mono_repo
+):
+    """Tests that a proto file path ending in 'proto' is correctly excluded."""
+
+    mock_instance = mock_path_class.return_value  # This is library_path
+    mock_instance.is_dir.return_value = True
+
+    mock_exclude_file = MagicMock(spec=Path)
+    mock_exclude_parent = MagicMock(spec=Path)
+    mock_exclude_file.parent = mock_exclude_parent
+
+    mock_relative_result = MagicMock()
+    mock_relative_result.__str__.return_value = "google/cloud/language/v1/proto"
+    mock_exclude_parent.relative_to.return_value = mock_relative_result
+    mock_exclude_parent.__str__.return_value = (
+        "/abs/repo/packages/my-lib/google/cloud/language/v1/proto"
+        if is_mono_repo
+        else "/abs/repo/google/cloud/language/v1/proto"
+    )
+
+    mock_instance.rglob.side_effect = [[], [mock_exclude_file]]
+    mock_determine_ns = mocker.patch("cli._determine_library_namespace", autospec=True)
+
+    with pytest.raises(ValueError) as excinfo:
+        _verify_library_namespace("my-lib", "/abs/repo", is_mono_repo)
+
+    assert "namespace cannot be determined" in str(excinfo.value)
+    mock_determine_ns.assert_not_called()
+    mock_path_class.assert_called_once_with(
+        "/abs/repo/packages/my-lib" if is_mono_repo else "/abs/repo"
+    )
 
 
 def test_verify_library_namespace_failure_invalid(mocker, mock_path_class):
@@ -1469,44 +1761,63 @@ def test_verify_library_namespace_failure_invalid(mocker, mock_path_class):
     mock_instance.is_dir.return_value = True
 
     mock_file = MagicMock(spec=Path)
-    mock_file.parent = Path("/abs/repo/packages/my-lib/google/api/core")
-    mock_instance.rglob.return_value = [mock_file]
-
-    mock_determine_ns = mocker.patch(
-        "cli._determine_library_namespace", return_value="google.apis"
+    mock_parent = MagicMock(spec=Path)
+    mock_parent.__str__.return_value = "/abs/repo/packages/my-lib/google/api/core"
+    mock_file.parent = mock_parent
+    mock_relative_result = MagicMock()
+    mock_relative_result.__str__.return_value = (
+        "google/api/core"  # Does not end with 'proto' or start with 'samples'
     )
-
-    with pytest.raises(ValueError):
-        _verify_library_namespace("my-lib", "/abs/repo")
+    mock_parent.relative_to.return_value = mock_relative_result
+    mock_instance.rglob.return_value = [mock_file]
+    mock_determine_ns = mocker.patch(
+        "cli._determine_library_namespace",
+        return_value="google.apis",  # NOT in valid_namespaces
+    )
+    with pytest.raises(ValueError) as excinfo:
+        _verify_library_namespace("my-lib", "/abs/repo", True)
+    assert "The namespace `google.apis` for `my-lib` must be one of" in str(
+        excinfo.value
+    )
 
     # Verify the class was still called correctly
     mock_path_class.assert_called_once_with("/abs/repo/packages/my-lib")
-    mock_determine_ns.assert_called_once_with(mock_file.parent, mock_instance)
+    mock_determine_ns.assert_called_once_with(mock_parent, mock_instance)
 
 
-def test_verify_library_namespace_error_no_directory(mocker, mock_path_class):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_verify_library_namespace_error_no_directory(
+    mocker, mock_path_class, is_mono_repo
+):
     """Tests that the specific ValueError is raised if the path isn't a directory."""
     mock_instance = mock_path_class.return_value
     mock_instance.is_dir.return_value = False  # Configure the failure case
 
     with pytest.raises(ValueError, match="Error: Path is not a directory"):
-        _verify_library_namespace("my-lib", "repo")
+        _verify_library_namespace("my-lib", "repo", is_mono_repo)
 
     # Verify the function was called and triggered the check
-    mock_path_class.assert_called_once_with("repo/packages/my-lib")
+    mock_path_class.assert_called_once_with(
+        "repo/packages/my-lib" if is_mono_repo else "repo"
+    )
 
 
-def test_verify_library_namespace_error_no_gapic_file(mocker, mock_path_class):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_verify_library_namespace_error_no_gapic_file(
+    mocker, mock_path_class, is_mono_repo
+):
     """Tests that the specific ValueError is raised if no gapic files are found."""
     mock_instance = mock_path_class.return_value
     mock_instance.is_dir.return_value = True
     mock_instance.rglob.return_value = []  # rglob returns an empty list
 
     with pytest.raises(ValueError, match="Library is missing a `gapic_version.py`"):
-        _verify_library_namespace("my-lib", "repo")
+        _verify_library_namespace("my-lib", "repo", is_mono_repo)
 
     # Verify the initial path logic still ran
-    mock_path_class.assert_called_once_with("repo/packages/my-lib")
+    mock_path_class.assert_called_once_with(
+        "repo/packages/my-lib" if is_mono_repo else "repo"
+    )
 
 
 def test_get_staging_child_directory_gapic_versioned():
@@ -1607,7 +1918,8 @@ def test_stage_gapic_library(mocker):
     )
 
 
-def test_copy_readme_to_docs(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_copy_readme_to_docs(mocker, is_mono_repo):
     """Tests that the README.rst is copied to the docs directory, handling symlinks."""
     mock_makedirs = mocker.patch("os.makedirs")
     mock_shutil_copy = mocker.patch("shutil.copy")
@@ -1620,11 +1932,12 @@ def test_copy_readme_to_docs(mocker):
 
     output = "output"
     library_id = "google-cloud-language"
-    _copy_readme_to_docs(output, library_id)
+    _copy_readme_to_docs(output, library_id, is_mono_repo)
 
-    expected_source = "output/packages/google-cloud-language/README.rst"
-    expected_docs_path = "output/packages/google-cloud-language/docs"
-    expected_destination = "output/packages/google-cloud-language/docs/README.rst"
+    path_to_library = f"packages/{library_id}" if is_mono_repo else "."
+    expected_source = f"output/{path_to_library}/README.rst"
+    expected_docs_path = f"output/{path_to_library}/docs"
+    expected_destination = f"output/{path_to_library}/docs/README.rst"
 
     mock_os_lexists.assert_called_once_with(expected_source)
     mock_open.assert_any_call(expected_source, "r")
@@ -1636,7 +1949,8 @@ def test_copy_readme_to_docs(mocker):
     mock_open().write.assert_called_once_with("dummy content")
 
 
-def test_copy_readme_to_docs_handles_symlink(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_copy_readme_to_docs_handles_symlink(mocker, is_mono_repo):
     """Tests that the README.rst is copied to the docs directory, handling symlinks."""
     mock_makedirs = mocker.patch("os.makedirs")
     mock_shutil_copy = mocker.patch("shutil.copy")
@@ -1655,11 +1969,12 @@ def test_copy_readme_to_docs_handles_symlink(mocker):
 
     output = "output"
     library_id = "google-cloud-language"
-    _copy_readme_to_docs(output, library_id)
+    _copy_readme_to_docs(output, library_id, is_mono_repo)
 
-    expected_source = "output/packages/google-cloud-language/README.rst"
-    expected_docs_path = "output/packages/google-cloud-language/docs"
-    expected_destination = "output/packages/google-cloud-language/docs/README.rst"
+    path_to_library = f"packages/{library_id}" if is_mono_repo else "."
+    expected_source = f"output/{path_to_library}/README.rst"
+    expected_docs_path = f"output/{path_to_library}/docs"
+    expected_destination = f"output/{path_to_library}/docs/README.rst"
 
     mock_os_lexists.assert_called_once_with(expected_source)
     mock_open.assert_any_call(expected_source, "r")
@@ -1671,7 +1986,8 @@ def test_copy_readme_to_docs_handles_symlink(mocker):
     mock_open().write.assert_called_once_with("dummy content")
 
 
-def test_copy_readme_to_docs_destination_path_is_symlink(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_copy_readme_to_docs_destination_path_is_symlink(mocker, is_mono_repo):
     """Tests that the README.rst is copied to the docs directory, handling destination_path being a symlink."""
     mock_makedirs = mocker.patch("os.makedirs")
     mock_shutil_copy = mocker.patch("shutil.copy")
@@ -1684,14 +2000,17 @@ def test_copy_readme_to_docs_destination_path_is_symlink(mocker):
 
     output = "output"
     library_id = "google-cloud-language"
-    _copy_readme_to_docs(output, library_id)
+    _copy_readme_to_docs(output, library_id, is_mono_repo)
 
-    expected_destination = "output/packages/google-cloud-language/docs/README.rst"
+    path_to_library = f"packages/{library_id}" if is_mono_repo else "."
+    expected_destination = f"output/{path_to_library}/docs/README.rst"
     mock_os_remove.assert_called_once_with(expected_destination)
 
 
-def test_copy_readme_to_docs_source_not_exists(mocker):
+@pytest.mark.parametrize("is_mono_repo", [False, True])
+def test_copy_readme_to_docs_source_not_exists(mocker, is_mono_repo):
     """Tests that the function returns early if the source README.rst does not exist."""
+
     mock_makedirs = mocker.patch("os.makedirs")
     mock_shutil_copy = mocker.patch("shutil.copy")
     mock_os_islink = mocker.patch("os.path.islink")
@@ -1703,9 +2022,10 @@ def test_copy_readme_to_docs_source_not_exists(mocker):
 
     output = "output"
     library_id = "google-cloud-language"
-    _copy_readme_to_docs(output, library_id)
+    _copy_readme_to_docs(output, library_id, is_mono_repo)
 
-    expected_source = "output/packages/google-cloud-language/README.rst"
+    path_to_library = f"packages/{library_id}" if is_mono_repo else "."
+    expected_source = f"output/{path_to_library}/README.rst"
 
     mock_os_lexists.assert_called_once_with(expected_source)
     mock_open.assert_not_called()
@@ -1713,3 +2033,19 @@ def test_copy_readme_to_docs_source_not_exists(mocker):
     mock_os_remove.assert_not_called()
     mock_makedirs.assert_not_called()
     mock_shutil_copy.assert_not_called()
+
+
+def test_get_repo_name_from_repo_metadata_success(mocker):
+    """Tests that the repo name is returned when it exists."""
+    mocker.patch(
+        "cli._read_json_file", return_value={"repo": "googleapis/google-cloud-python"}
+    )
+    repo_name = _get_repo_name_from_repo_metadata("base", "library_id", False)
+    assert repo_name == "googleapis/google-cloud-python"
+
+
+def test_get_repo_name_from_repo_metadata_missing_repo(mocker):
+    """Tests that a ValueError is raised when the repo field is missing."""
+    mocker.patch("cli._read_json_file", return_value={})
+    with pytest.raises(ValueError):
+        _get_repo_name_from_repo_metadata("base", "library_id", False)

@@ -18,6 +18,16 @@ from google.cloud.cloudsecuritycompliance import gapic_version as package_versio
 __version__ = package_version.__version__
 
 
+from google.cloud.cloudsecuritycompliance_v1.services.audit.async_client import (
+    AuditAsyncClient,
+)
+from google.cloud.cloudsecuritycompliance_v1.services.audit.client import AuditClient
+from google.cloud.cloudsecuritycompliance_v1.services.cm_enrollment_service.async_client import (
+    CmEnrollmentServiceAsyncClient,
+)
+from google.cloud.cloudsecuritycompliance_v1.services.cm_enrollment_service.client import (
+    CmEnrollmentServiceClient,
+)
 from google.cloud.cloudsecuritycompliance_v1.services.config.async_client import (
     ConfigAsyncClient,
 )
@@ -28,6 +38,37 @@ from google.cloud.cloudsecuritycompliance_v1.services.deployment.async_client im
 from google.cloud.cloudsecuritycompliance_v1.services.deployment.client import (
     DeploymentClient,
 )
+from google.cloud.cloudsecuritycompliance_v1.services.monitoring.async_client import (
+    MonitoringAsyncClient,
+)
+from google.cloud.cloudsecuritycompliance_v1.services.monitoring.client import (
+    MonitoringClient,
+)
+from google.cloud.cloudsecuritycompliance_v1.types.audit import (
+    BucketDestination,
+    CloudControlAuditDetails,
+    CloudControlGroupAuditDetails,
+    ComplianceState,
+    CreateFrameworkAuditRequest,
+    EvidenceDetails,
+    FindingDetails,
+    FrameworkAudit,
+    FrameworkAuditDestination,
+    GenerateFrameworkAuditScopeReportRequest,
+    GenerateFrameworkAuditScopeReportResponse,
+    GetFrameworkAuditRequest,
+    ListFrameworkAuditsRequest,
+    ListFrameworkAuditsResponse,
+    ObservationDetails,
+    ReportSummary,
+)
+from google.cloud.cloudsecuritycompliance_v1.types.cm_enrollment_service import (
+    AuditConfig,
+    CalculateEffectiveCmEnrollmentRequest,
+    CalculateEffectiveCmEnrollmentResponse,
+    CmEnrollment,
+    UpdateCmEnrollmentRequest,
+)
 from google.cloud.cloudsecuritycompliance_v1.types.common import (
     AllowedValues,
     AttributeSubstitutionRule,
@@ -36,6 +77,7 @@ from google.cloud.cloudsecuritycompliance_v1.types.common import (
     CloudControlCategory,
     CloudControlDetails,
     CloudProvider,
+    ControlFamily,
     EnforcementMode,
     Framework,
     FrameworkCategory,
@@ -48,6 +90,7 @@ from google.cloud.cloudsecuritycompliance_v1.types.common import (
     ParamValue,
     PlaceholderSubstitutionRule,
     RegexpPattern,
+    RegulatoryControlResponsibilityType,
     Rule,
     RuleActionType,
     Severity,
@@ -89,17 +132,69 @@ from google.cloud.cloudsecuritycompliance_v1.types.deployment import (
     TargetResourceConfig,
     TargetResourceCreationConfig,
 )
+from google.cloud.cloudsecuritycompliance_v1.types.monitoring import (
+    AggregatedComplianceReport,
+    AggregateFrameworkComplianceReportRequest,
+    AggregateFrameworkComplianceReportResponse,
+    CloudControlAssessmentDetails,
+    CloudControlReport,
+    ControlAssessmentDetails,
+    ControlComplianceSummary,
+    EvaluationState,
+    FetchFrameworkComplianceReportRequest,
+    FindingClass,
+    FindingSummary,
+    FrameworkComplianceReport,
+    FrameworkComplianceSummary,
+    ListControlComplianceSummariesRequest,
+    ListControlComplianceSummariesResponse,
+    ListFindingSummariesRequest,
+    ListFindingSummariesResponse,
+    ListFrameworkComplianceSummariesRequest,
+    ListFrameworkComplianceSummariesResponse,
+    ManualCloudControlAssessmentDetails,
+    SimilarControls,
+    TargetResourceDetails,
+)
 
 __all__ = (
+    "AuditClient",
+    "AuditAsyncClient",
+    "CmEnrollmentServiceClient",
+    "CmEnrollmentServiceAsyncClient",
     "ConfigClient",
     "ConfigAsyncClient",
     "DeploymentClient",
     "DeploymentAsyncClient",
+    "MonitoringClient",
+    "MonitoringAsyncClient",
+    "BucketDestination",
+    "CloudControlAuditDetails",
+    "CloudControlGroupAuditDetails",
+    "CreateFrameworkAuditRequest",
+    "EvidenceDetails",
+    "FindingDetails",
+    "FrameworkAudit",
+    "FrameworkAuditDestination",
+    "GenerateFrameworkAuditScopeReportRequest",
+    "GenerateFrameworkAuditScopeReportResponse",
+    "GetFrameworkAuditRequest",
+    "ListFrameworkAuditsRequest",
+    "ListFrameworkAuditsResponse",
+    "ObservationDetails",
+    "ReportSummary",
+    "ComplianceState",
+    "AuditConfig",
+    "CalculateEffectiveCmEnrollmentRequest",
+    "CalculateEffectiveCmEnrollmentResponse",
+    "CmEnrollment",
+    "UpdateCmEnrollmentRequest",
     "AllowedValues",
     "AttributeSubstitutionRule",
     "CELExpression",
     "CloudControl",
     "CloudControlDetails",
+    "ControlFamily",
     "Framework",
     "FrameworkReference",
     "IntRange",
@@ -117,6 +212,7 @@ __all__ = (
     "CloudProvider",
     "EnforcementMode",
     "FrameworkCategory",
+    "RegulatoryControlResponsibilityType",
     "RuleActionType",
     "Severity",
     "TargetResourceType",
@@ -150,4 +246,26 @@ __all__ = (
     "TargetResourceConfig",
     "TargetResourceCreationConfig",
     "DeploymentState",
+    "AggregatedComplianceReport",
+    "AggregateFrameworkComplianceReportRequest",
+    "AggregateFrameworkComplianceReportResponse",
+    "CloudControlAssessmentDetails",
+    "CloudControlReport",
+    "ControlAssessmentDetails",
+    "ControlComplianceSummary",
+    "FetchFrameworkComplianceReportRequest",
+    "FindingSummary",
+    "FrameworkComplianceReport",
+    "FrameworkComplianceSummary",
+    "ListControlComplianceSummariesRequest",
+    "ListControlComplianceSummariesResponse",
+    "ListFindingSummariesRequest",
+    "ListFindingSummariesResponse",
+    "ListFrameworkComplianceSummariesRequest",
+    "ListFrameworkComplianceSummariesResponse",
+    "ManualCloudControlAssessmentDetails",
+    "SimilarControls",
+    "TargetResourceDetails",
+    "EvaluationState",
+    "FindingClass",
 )
