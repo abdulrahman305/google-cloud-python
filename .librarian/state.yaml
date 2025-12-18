@@ -1613,7 +1613,7 @@ libraries:
       - packages/google-cloud-dialogflow-cx
     tag_format: '{id}-v{version}'
   - id: google-cloud-discoveryengine
-    version: 0.15.0
+    version: 0.16.0
     last_generated_commit: c288189b43c016dd3cf1ec73ce3cadee8b732f07
     apis:
       - path: google/cloud/discoveryengine/v1
@@ -3043,7 +3043,7 @@ libraries:
       - packages/google-cloud-scheduler/
     tag_format: '{id}-v{version}'
   - id: google-cloud-secret-manager
-    version: 2.25.0
+    version: 2.26.0
     last_generated_commit: 3322511885371d2b2253f209ccc3aa60d4100cfd
     apis:
       - path: google/cloud/secretmanager/v1
@@ -3264,7 +3264,7 @@ libraries:
       - packages/google-cloud-source-context/
     tag_format: '{id}-v{version}'
   - id: google-cloud-speech
-    version: 2.34.0
+    version: 2.35.0
     last_generated_commit: 3322511885371d2b2253f209ccc3aa60d4100cfd
     apis:
       - path: google/cloud/speech/v1
